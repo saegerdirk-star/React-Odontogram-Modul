@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.4.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -540,6 +540,51 @@ const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
 
 يقرأ `parseFhirBundle` **كلتا** اللهجتين، بما في ذلك الحزمة المختلطة، فتظل الحزم
 المُصدَّرة سابقًا قابلة للاستيراد دون تغيير.
+**فحوص مؤرَّخة وحالة التقييم وتسجيل ما حول الزرعة (اعتباراً من 2.4.0):**
+
+تُعاد فحوص الحالة اللثوية على مدى سنوات، لذا صار بإمكان المستند أن يحمل هوية الفحص نفسه
+وأرشيفاً للفحوص السابقة:
+
+```ts
+setExaminationContext({
+  id: "exam-2026-06-30", subject: "Patient/123", effectiveDateTime: "2026-06-30",
+  performer: "Practitioner/dr-mueller", encounter: "Encounter/9912",
+});
+
+captureExamination({ effectiveDateTime: "2026-06-30" });
+listExaminations();
+getExamination(id);
+loadExamination(id);
+startExamination({ effectiveDateTime: "2027-01-15" });
+```
+
+- كل فحص مؤرشف هو **لقطة مستقلة** لنتائج الفم كاملاً ولسياق الحالة لحظة التسجيل؛ لا تصل إليه
+  التعديلات اللاحقة أبداً، والتسجيل مرة أخرى يُنشئ فحص متابعة بدل أن يطمس خط الأساس الذي يعتمد
+  عليه التتبّع.
+- يظل المخطط الحالي والمخطط المقترح يعنيان **الوضع الحالي مقابل المقترح ضمن فحص واحد** — فمخطط
+  الخطة ليس سجلاً تاريخياً أبداً، ولا يدخل في اللقطة إطلاقاً.
+- كل حقل هوية هو نص معتم يملكه التطبيق المضيف: يخزّنه المكوّن ويعيده كما هو دون أن يفسّره. أما
+  المستندات السابقة للإصدار 2.21 من الحمولة فلا تحمل شيئاً من ذلك وتُحمَّل دون تغيير.
+
+يسجّل المخطط اللثوي النتائج لا فعل الفحص نفسه، لذلك بدا "جرى السبر ولم يحدث نزف" و"لم يسبره أحد"
+متطابقين. كل محور ضمن النطاق (PD وGM وBOP والتقيّح والقلقلة والتشعّب واللويحة وPI وGI وmPI وmBI
+وKG) صار قادراً على تحديد أيّهما:
+
+```ts
+setAssessmentStatus(16, "bop", "MB", "assessed");
+setAssessmentStatus(16, "pd", "DB", "unmeasurable");
+getAssessmentStatus(16, "mpi", "buccal");
+perioAxisApplies(11, "gm");
+```
+
+تُشتق حالة "غير منطبق" مما هو عليه السنّ فعلاً، والقياس الحقيقي يتقدّم دائماً على فجوة مسجَّلة.
+وعند التصدير تصبح القيمة غير المتاحة `dataAbsentReason` الخاص بـ FHIR — لا رمزاً سريرياً مخترعاً —
+ويصبح التقييم الطبيعي قيمة `false` صريحة أو الدرجة `0`.
+
+صار مخطط الفم الكامل يسجّل أيضاً **التقيّح** لكل نقطة، ويدعم عمود الزرعة فحص ما حول الزرعة: عمق
+السبر في ست نقاط، والنزف، والتقيّح، وقلقلة الزرعة، وعرض النسيج المتقرن. ولا يبقى معطّلاً هناك سوى
+المحاور التي تحتاج إلى الوصل المينائي الملاطي (حافة اللثة وما يُشتق منها من CAL) ومؤشرات لويحة
+السنّ الطبيعي — فـ mPI وmBI هما مقابلاهما حول الزرعة.
 ### 🧪 الاختبار
 ```bash
 npm run test           # تشغيل كل الاختبارات الـ1704 (مع تخطي اختبار إضافي واحد)

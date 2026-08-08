@@ -5,6 +5,70 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-08-09
+
+### Added
+
+- **Examination identity and context.** A document can carry the examination it
+  belongs to: `id`, `subject`, `effectiveDateTime`, `performer`, `recorder`,
+  `encounter` and `previousExaminationId`, through `getExaminationContext()` /
+  `setExaminationContext(patch)` / `resetExaminationContext()`. Every field is an
+  opaque host-owned identity string the engine stores and round-trips but never
+  interprets; `effectiveDateTime` is validated as an ISO date or date-time and a
+  malformed value is a silent no-op, mirroring `setExamDate`.
+- **Dated examination snapshots.** `captureExamination(patch?)` archives the
+  STATUS findings plus the case context and examination identity of that moment;
+  `listExaminations()`, `getExamination(id)`, `removeExamination(id)`,
+  `loadExamination(id)` and `startExamination(patch?)` read, review, remove and
+  succeed them. Each snapshot is independent — later edits never reach into an
+  archived examination, and capturing again files a follow-up (linked through
+  `previousExaminationId`) instead of overwriting the baseline a trend depends
+  on; correcting an archived examination requires passing its `id` explicitly.
+  Status and plan keep meaning current-versus-proposed within ONE examination:
+  a snapshot never carries a `plan`, and capturing neither initializes the plan
+  chart nor changes the chart mode.
+- **Explicit assessment status per periodontal axis.** `AssessmentStatus`
+  (`assessed` / `not-assessed` / `unmeasurable` / `not-applicable`) with
+  `getAssessmentStatus()`, `setAssessmentStatus()`, `getToothAssessments()` and
+  the capability matrix `perioAxisApplies(toothNo, axis)` over
+  `PERIO_ASSESSMENT_AXES` (PD, GM, BOP, suppuration, mobility, furcation,
+  plaque, PI, GI, mPI, mBI, KG). Assessed-normal ("probed, did not bleed") is
+  now recordable instead of indistinguishable from "nobody probed";
+  not-applicable is derived from what the tooth actually is and cannot be
+  overridden; a real measurement always wins over a recorded gap. The default,
+  `not-assessed`, is never stored, so an ordinary chart serializes unchanged.
+- **Suppuration in the full-mouth periodontal chart.** A buccal and a
+  palatal/lingual suppuration row per arch, charted through the existing
+  `setPerioSite(..., { sup })` patch, with its own Settings → Periodontal
+  visibility toggle, info popover, canonical index name and i18n in all 12
+  languages. The standalone periodontal SVG/PNG/JPG/PDF export renders the same
+  rows.
+- **Peri-implant examination in the full-mouth chart.** An implant column now
+  supports six-site probing depth, bleeding, suppuration, implant mobility and
+  keratinized-tissue width alongside the Mombelli mPI/mBI indices. The axes that
+  require a CEJ (gingival margin, and the CAL derived from it) and the
+  natural-tooth plaque indices stay inactive there — one capability matrix
+  (`perioAxisApplies`) now decides this for the domain, the grid and the export
+  instead of a per-row guess in the view.
+- **Suppuration and absent-data reasons in the FHIR export.** The periodontal
+  panel emits an explicit per-site suppuration boolean, and an explicitly
+  recorded gap is emitted as FHIR's own `dataAbsentReason`
+  (`http://terminology.hl7.org/CodeSystem/data-absent-reason`: `not-performed`
+  for not assessed, `unknown` for unmeasurable, `not-applicable`) — never a
+  renderer-invented clinical code. Assessed-normal is emitted as an explicit
+  `false` or grade `0`.
+- The canonical `dental-de` dialect now prefers `examination.effectiveDateTime`
+  for `Observation.effective[x]`, falling back to `case.examDate` as before.
+
+### Changed
+
+- Payload version **2.20 → 2.21** (additive): the top-level `examination` and
+  `examinations` keys and the per-tooth `assessment` map, each omitted when
+  empty. Documents written before 2.21 hydrate unchanged and gain no examination
+  identity from the previously loaded case. The frozen SVG-fingerprint and
+  FHIR-golden fixtures are byte-identical; the roundtrip golden changes only by
+  its version string.
+
 ## [2.3.0] - 2026-08-08
 
 ### Added

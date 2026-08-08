@@ -197,7 +197,43 @@ export interface OdontogramExportPayload {
     patientDob?: string;
     examDate?: string;
   };
+  /** Bead odontogram-2vd: WHICH examination this document is. Opaque
+   *  host-owned identity strings plus an ISO effective date/date-time; absent
+   *  entirely when no field is recorded (every document written before payload
+   *  2.21). Distinct from `case.examDate`, which stays the PDF report header's
+   *  date; `examination.effectiveDateTime` is the examination's clinical
+   *  effective time and takes precedence where both are available. */
+  examination?: ExaminationContextRecord;
+  /** Bead odontogram-2vd: previously captured examinations, oldest first. Each
+   *  entry is an INDEPENDENT dated snapshot of the whole-mouth findings — it is
+   *  never a `plan`, and `plan` is never history. Absent when none was
+   *  captured. */
+  examinations?: ExaminationSnapshotRecord[];
 }
+
+/** Serialized examination identity/context (omit-when-empty per field). */
+export interface ExaminationContextRecord {
+  id?: string;
+  subject?: string;
+  effectiveDateTime?: string;
+  performer?: string;
+  recorder?: string;
+  encounter?: string;
+  previousExaminationId?: string;
+}
+
+/** One archived examination: its own identity/context plus the whole-mouth
+ *  findings and case context as they stood when it was captured. */
+export interface ExaminationSnapshotRecord {
+  examination: ExaminationContextRecord;
+  teeth: Record<string, ToothRecord>;
+  case?: OdontogramExportPayload["case"];
+}
+
+/** The payload/document version this engine writes. Readers accept every
+ *  earlier version (1.4 upwards) — see `isLegacyPayloadVersion()` and the
+ *  per-axis hydration defaults in `odontogram.ts`. */
+export const PAYLOAD_VERSION = "2.21";
 
 /**
  * The UI-domain document (bead odontogram-3l1, AC2/AC4).

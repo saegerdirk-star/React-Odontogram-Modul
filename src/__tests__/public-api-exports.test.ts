@@ -87,3 +87,26 @@ describe("public API exports — App.tsx re-exports", () => {
     expect(typeof exportPerioSvg).toBe("function");
   });
 });
+
+// Bead odontogram-2vd: the examination-identity / snapshot / assessment API is
+// part of the package's public surface, like the session contract before it.
+describe("public API exports — examinations and assessment status", () => {
+  it("exports the examination context and snapshot API", async () => {
+    const api = await import("../App");
+    for (const name of [
+      "getExaminationContext", "setExaminationContext", "resetExaminationContext",
+      "captureExamination", "startExamination", "listExaminations", "getExamination",
+      "removeExamination", "loadExamination", "resetExaminations",
+    ]) {
+      expect(typeof (api as unknown as Record<string, unknown>)[name]).toBe("function");
+    }
+  });
+
+  it("exports the assessment-status API", async () => {
+    const api = await import("../App");
+    for (const name of ["getAssessmentStatus", "setAssessmentStatus", "getToothAssessments", "perioAxisApplies"]) {
+      expect(typeof (api as unknown as Record<string, unknown>)[name]).toBe("function");
+    }
+    expect(Array.isArray((api as unknown as Record<string, unknown>).PERIO_ASSESSMENT_AXES)).toBe(true);
+  });
+});

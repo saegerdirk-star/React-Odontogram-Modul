@@ -191,10 +191,14 @@ describe("P2 Task 2: perioRowHidden gate", () => {
     expect((document.getElementById("perio-fg-mobility-11") as HTMLSelectElement).disabled).toBe(true);
   });
 
-  it("an implant tooth's site cells are disabled", () => {
+  // Bead odontogram-2vd: an implant IS probed at the six sites (peri-implant
+  // examination), so probing depth is enabled there — what stays disabled is
+  // the gingival margin, which is measured against a CEJ an implant has not.
+  it("an implant tooth's probing cells are enabled and its CEJ-referenced cells are not", () => {
     __setToothStateForTest(21, { toothSelection: "implant" });
     openGrid();
-    expect((document.getElementById("perio-fg-pd-21-B") as HTMLInputElement).disabled).toBe(true);
+    expect((document.getElementById("perio-fg-pd-21-B") as HTMLInputElement).disabled).toBe(false);
+    expect((document.getElementById("perio-fg-gm-21-B") as HTMLInputElement).disabled).toBe(true);
   });
 
   it("a normal present tooth's cells are enabled", () => {

@@ -8,6 +8,8 @@ import { type OdontogramPlugin, getQuadrant, LAYER_Z } from "./plugin";
 import { buildFhirBundle } from "./fhir/toFhir";
 import { parseFhirBundle } from "./fhir/fromFhir";
 import type { FhirExportOptions, OdontogramDocument } from "./fhir/types";
+import { PAYLOAD_VERSION } from "./fhir/types";
+import type { ExaminationSnapshotRecord } from "./fhir/types";
 export type { OdontogramDocument } from "./fhir/types";
 import { allClearLayers } from "./registry/svgLayers";
 import { applyFlagLayers, buildFlagCtx } from "./registry/svgActivate";
@@ -331,6 +333,14 @@ function defaultState(){
     // per-surface unlike pi/gi/perio above. `null` = not charted (never a
     // stored 0 vs "uncharted" ambiguity — see clampKg()/setKeratinizedWidth()).
     kg: null as number | null,
+    // Bead odontogram-2vd: explicit ASSESSMENT status per periodontal axis (and
+    // measurement point), for the cases the value itself cannot express —
+    // assessed-normal (probed, did not bleed), unmeasurable (the point exists
+    // but could not be read) and not-applicable. "Not assessed" is the default
+    // and is never stored, so this map stays empty for an ordinary chart and
+    // the payload stays byte-identical. Keyed `axis` or `axis:qualifier` — see
+    // setAssessmentStatus()/getAssessmentStatus().
+    assessment: new Map(), // "pd:MB" | "mobility" -> AssessmentStatus
     customStates: {} as Record<string, unknown>,
     note: "",
   };
@@ -645,6 +655,307 @@ function caseContextSummaryFragment(c: CaseMeta): string {
   }
   return parts.join(" · ");
 }
+// ---- Bead odontogram-2vd: examination identity and context ---------------
+// The engine's SECOND case-level object (after `caseMeta`): WHICH examination
+// this document is, WHO performed and recorded it, WHEN it was effective, and
+// in which encounter. Chart-independent exactly like `caseMeta` — status and
+// plan are two views of ONE examination (current versus proposed), never two
+// examinations — and serialized once into the payload's top-level
+// `examination` key (omit-when-empty), hydrated through the shared
+// `hydrateImportedCharts` data path.
+//
+// Every field is an OPAQUE host-owned identity string. The engine stores,
+// validates the shape of, and round-trips them; it never interprets them and
+// never turns them into clinical codes. `effectiveDateTime` is the one shaped
+// field: an ISO date (`YYYY-MM-DD`) or date-time, mirroring `examDate`'s
+// existing validate-or-no-op contract.
+export type ExaminationContext = {
+  /** Stable identifier for this examination, unique within the host's record. */
+  id: string | null;
+  /** The examined subject (e.g. a `Patient/<id>` reference the host owns). */
+  subject: string | null;
+  /** When the examination was clinically effective: ISO date or date-time. */
+  effectiveDateTime: string | null;
+  /** Who carried the examination out. */
+  performer: string | null;
+  /** Who entered the findings, when that is not the performer. */
+  recorder: string | null;
+  /** The encounter/visit the examination belongs to. */
+  encounter: string | null;
+  /** The `id` of the examination this one follows, for longitudinal linking. */
+  previousExaminationId: string | null;
+};
+
+const EXAMINATION_FIELDS = [
+  "id", "subject", "effectiveDateTime", "performer", "recorder", "encounter", "previousExaminationId",
+] as const;
+type ExaminationField = typeof EXAMINATION_FIELDS[number];
+
+/** ISO date (`YYYY-MM-DD`) or date-time (`YYYY-MM-DDThh:mm[:ss[.sss]][Z|±hh:mm]`). */
+const ISO_DATE_TIME = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})?)?$/;
+
+function defaultExaminationContext(): ExaminationContext {
+  return { id: null, subject: null, effectiveDateTime: null, performer: null,
+    recorder: null, encounter: null, previousExaminationId: null };
+}
+
+let examinationContext: ExaminationContext = defaultExaminationContext();
+
+/** Normalize ONE incoming examination field. `null`/blank clears it, a string
+ *  is trimmed, and anything the field cannot hold (a non-string, or a
+ *  malformed `effectiveDateTime`) returns `undefined` — the caller's signal to
+ *  leave that field untouched, mirroring `setExamDate`'s malformed-is-a-no-op
+ *  contract. */
+function normalizeExaminationField(field: ExaminationField, v: unknown): string | null | undefined {
+  if(v === null) return null;
+  if(typeof v !== "string") return undefined;
+  const trimmed = v.trim();
+  if(trimmed === "") return null;
+  if(field === "effectiveDateTime" && !ISO_DATE_TIME.test(trimmed)) return undefined;
+  return trimmed;
+}
+
+/** The current examination's identity and context. Not part of the status/plan
+ *  dual-state — one document describes one examination. */
+export function getExaminationContext(): ExaminationContext { return { ...examinationContext }; }
+
+/**
+ * Patch the examination context. Only the fields present on `patch` are
+ * touched; `null` (or a blank string) clears a field, a string is trimmed, and
+ * a value the field cannot hold is a silent no-op — the same contract every
+ * other case-level setter in this file uses. Fires {@link onStateChange} only
+ * when something actually changed.
+ */
+export function setExaminationContext(patch: Partial<Record<ExaminationField, string | null>>): void {
+  if(!patch || typeof patch !== "object") return;
+  let changed = false;
+  const target = examinationContext as Record<string, string | null>;
+  for(const field of EXAMINATION_FIELDS){
+    if(!Object.prototype.hasOwnProperty.call(patch, field)) continue;
+    const next = normalizeExaminationField(field, patch[field]);
+    if(next === undefined) continue;
+    if(target[field] !== next){ target[field] = next; changed = true; }
+  }
+  if(changed) notifyStateChange();
+}
+
+/** Clear the examination context back to "no examination identity recorded". */
+export function resetExaminationContext(): void { examinationContext = defaultExaminationContext(); }
+
+function examinationContextIsEmpty(c: ExaminationContext): boolean {
+  const src = c as unknown as Record<string, string | null>;
+  return EXAMINATION_FIELDS.every((f) => src[f] === null);
+}
+
+function serializeExaminationContext(c: ExaminationContext): Record<string, unknown> {
+  const src = c as unknown as Record<string, string | null>;
+  const o: Record<string, unknown> = {};
+  for(const field of EXAMINATION_FIELDS){
+    if(src[field] !== null) o[field] = src[field];
+  }
+  return o;
+}
+
+/** Read an examination context out of a raw payload block, self-healing every
+ *  malformed value to `null` (never throws). A payload with no `examination`
+ *  key at all — every document written before payload 2.21 — yields the empty
+ *  context, which is exactly "this document records no examination identity". */
+function readExaminationContext(raw: Any): ExaminationContext {
+  const c = defaultExaminationContext();
+  if(!raw || typeof raw !== "object") return c;
+  const target = c as unknown as Record<string, string | null>;
+  for(const field of EXAMINATION_FIELDS){
+    const v = normalizeExaminationField(field, raw[field]);
+    if(v !== undefined) target[field] = v;
+  }
+  return c;
+}
+
+// ---- Bead odontogram-2vd: dated examination snapshots --------------------
+// A periodontal case is re-examined over years, and comparing today's pockets
+// with the baseline is the whole point of charting them. The engine therefore
+// keeps an ARCHIVE of examinations: each entry is an independent, dated
+// snapshot of the whole-mouth findings plus the case context and examination
+// identity they were recorded under.
+//
+// WHAT THIS IS NOT. It is not the plan chart. Status and plan mean current
+// versus proposed within ONE examination and keep that meaning exactly:
+// `captureExamination()` archives the STATUS chart explicitly (never the
+// active-chart alias, never the plan), a snapshot carries no `plan` section,
+// and capturing neither initializes the plan chart nor touches the chart mode.
+// It is also not persistence: snapshots are pure in-document data that travel
+// with the payload; storing, versioning and auditing them is the host's job.
+type ExaminationSnapshot = {
+  examination: ExaminationContext;
+  teeth: Record<string, Any>;
+  case: Record<string, unknown> | null;
+};
+
+let examinations: ExaminationSnapshot[] = [];
+let examinationSeq = 0;
+
+function deepCopyJson<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+/** Next unused generated examination id. Never collides with an id already in
+ *  the archive (including one that arrived through an import). */
+function nextExaminationId(): string {
+  const taken = new Set(examinations.map((s) => s.examination.id));
+  let id: string;
+  do { id = `examination-${++examinationSeq}`; } while(taken.has(id));
+  return id;
+}
+
+function serializeSnapshot(s: ExaminationSnapshot): ExaminationSnapshotRecord {
+  return {
+    examination: serializeExaminationContext(s.examination),
+    teeth: deepCopyJson(s.teeth),
+    ...(s.case === null ? {} : { case: deepCopyJson(s.case) }),
+  } as ExaminationSnapshotRecord;
+}
+
+/** Read the archive out of a raw payload, dropping every entry that could not
+ *  be a usable examination (not an object, no identity, no teeth, or a
+ *  duplicate identity) instead of throwing — the same tolerant contract every
+ *  other hydration path here has. */
+function readExaminationSnapshots(raw: Any): ExaminationSnapshot[] {
+  if(!Array.isArray(raw)) return [];
+  const out: ExaminationSnapshot[] = [];
+  const seen = new Set<string>();
+  for(const entry of raw){
+    if(!entry || typeof entry !== "object") continue;
+    const examination = readExaminationContext((entry as Any).examination);
+    if(examination.id === null || seen.has(examination.id)) continue;
+    const teeth = (entry as Any).teeth;
+    if(!teeth || typeof teeth !== "object") continue;
+    const rawCase = (entry as Any).case;
+    seen.add(examination.id);
+    out.push({
+      examination,
+      teeth: deepCopyJson(teeth as Record<string, Any>),
+      case: rawCase && typeof rawCase === "object" ? deepCopyJson(rawCase as Record<string, unknown>) : null,
+    });
+  }
+  return out;
+}
+
+/** Drop every archived examination (blank-slate reset / test seam). */
+export function resetExaminations(): void {
+  examinations = [];
+  examinationSeq = 0;
+}
+
+/**
+ * Archive the CURRENT status findings as a dated examination.
+ *
+ * `patch` is applied to the live examination context first, so the usual call
+ * is `captureExamination({ effectiveDateTime: "2026-06-30" })`. When no `id`
+ * has been recorded, one is generated and adopted, so the archived examination
+ * and the live context always agree on which examination this is.
+ *
+ * An examination is NEVER silently overwritten. Capturing again while the live
+ * identity is already archived files a NEW examination — a fresh id, linked to
+ * the archived one through `previousExaminationId` — so the routine "capture at
+ * every visit" call cannot destroy the baseline a trend depends on. Correcting
+ * an already-archived examination is possible but must be explicit: pass its
+ * `id` in `patch`, and that entry is replaced in place.
+ *
+ * Returns the archived examination's id.
+ */
+export function captureExamination(patch: Partial<Record<ExaminationField, string | null>> = {}): string {
+  const explicitId = typeof patch.id === "string" && patch.id.trim() !== "" ? patch.id.trim() : null;
+  setExaminationContext(patch);
+  const liveId = examinationContext.id;
+  const alreadyArchived = liveId !== null && examinations.some((s) => s.examination.id === liveId);
+  if(liveId === null || (alreadyArchived && explicitId === null)){
+    setExaminationContext({
+      id: nextExaminationId(),
+      ...(liveId !== null ? { previousExaminationId: liveId } : {}),
+    });
+  }
+  const snapshot: ExaminationSnapshot = {
+    examination: { ...examinationContext },
+    // The STATUS chart explicitly (like every export path here) — an
+    // examination records what was observed, never what is proposed.
+    teeth: deepCopyJson(collectTeeth(charts.status)),
+    case: caseMetaIsEmpty(caseMeta) ? null : serializeCaseMeta(caseMeta),
+  };
+  const at = examinations.findIndex((s) => s.examination.id === snapshot.examination.id);
+  if(at >= 0) examinations[at] = snapshot;
+  else examinations.push(snapshot);
+  notifyStateChange();
+  return snapshot.examination.id as string;
+}
+
+/**
+ * Begin a NEW examination: clear the examination identity, link it to the most
+ * recently archived examination through `previousExaminationId`, then apply
+ * `patch`. The findings are deliberately left alone — a follow-up examination
+ * starts from the mouth as last charted and is corrected chairside.
+ *
+ * Returns the new examination's id, or `null` when the caller supplied none
+ * (an id is only minted when the examination is captured).
+ */
+export function startExamination(patch: Partial<Record<ExaminationField, string | null>> = {}): string | null {
+  const previous = examinations.length > 0
+    ? examinations[examinations.length - 1].examination.id
+    : examinationContext.id;
+  examinationContext = defaultExaminationContext();
+  if(previous !== null) examinationContext.previousExaminationId = previous;
+  setExaminationContext(patch);
+  notifyStateChange();
+  return examinationContext.id;
+}
+
+/** Every archived examination's identity/context, oldest first. Detached
+ *  copies — mutating one can never reach the archive. */
+export function listExaminations(): ExaminationContext[] {
+  return examinations.map((s) => ({ ...s.examination }));
+}
+
+/** One archived examination in full (identity, findings, case context) as a
+ *  detached copy, or `null` when no examination has that id. */
+export function getExamination(id: string): ExaminationSnapshotRecord | null {
+  const found = examinations.find((s) => s.examination.id === id);
+  return found ? serializeSnapshot(found) : null;
+}
+
+/** Remove one archived examination. Returns whether it existed. */
+export function removeExamination(id: string): boolean {
+  const at = examinations.findIndex((s) => s.examination.id === id);
+  if(at < 0) return false;
+  examinations.splice(at, 1);
+  notifyStateChange();
+  return true;
+}
+
+/**
+ * Load an archived examination back into the STATUS chart for review, through
+ * the SAME hydration path an import uses. The archive itself is untouched —
+ * the loaded examination stays in it, so reviewing a baseline can never
+ * consume it. Like an import this replaces the whole case, so the plan chart
+ * (a proposal about the CURRENT findings) is dropped rather than silently
+ * re-attached to older findings.
+ *
+ * Returns whether an examination with that id existed.
+ */
+export function loadExamination(id: string): boolean {
+  const found = examinations.find((s) => s.examination.id === id);
+  if(!found) return false;
+  const archive = examinations;
+  loadLiveDocument({
+    version: PAYLOAD_VERSION,
+    globals: collectGlobals(),
+    teeth: deepCopyJson(found.teeth),
+    ...(found.case === null ? {} : { case: deepCopyJson(found.case) }),
+    examination: serializeExaminationContext(found.examination),
+  } as OdontogramDocument);
+  examinations = archive;
+  notifyStateChange();
+  return true;
+}
+
 // Plan chart is lazily deep-cloned from status the FIRST time plan mode is
 // entered; subsequent entries reuse whatever is already in charts.plan (so
 // plan edits are never silently overwritten by re-cloning from status).
@@ -2882,6 +3193,8 @@ export function __resetChartStateForTest(): void {
   chartMode = "status";
   toothState = charts.status;
   resetCaseMeta();
+  resetExaminationContext();
+  resetExaminations();
   // Bead odontogram-3l1: hand the engine back to the default session and drop
   // any restore stack or ownership claim, so one test's sessions cannot leak
   // into the next.
@@ -5314,6 +5627,10 @@ function serializeState(s: Any){
     // round-trip via validateEnum in hydrateState.
     ...(s.gingivalThickness && s.gingivalThickness !== "unknown" ? { gingivalThickness: s.gingivalThickness } : {}),
     ...(s.millerClass && s.millerClass !== "none" ? { millerClass: s.millerClass } : {}),
+    // Bead odontogram-2vd: explicit assessment status per axis/measurement
+    // point. "Not assessed" is the default and is never stored, so an ordinary
+    // chart emits no `assessment` key at all and stays byte-identical.
+    ...((s.assessment?.size ?? 0) > 0 ? { assessment: Object.fromEntries(s.assessment) } : {}),
     ...(Object.keys(s.customStates || {}).length > 0 ? { customStates: s.customStates } : {}),
     ...(s.note ? { note: s.note } : {}),
   };
@@ -5928,6 +6245,21 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
       if(VALID_PLAQUE_SURFACE.has(surface) && (g === 1 || g === 2 || g === 3)) s.mbi.set(surface, g);
     }
   }
+  // Bead odontogram-2vd: restore the explicit assessment-status map. Absent
+  // (every payload <= 2.20) means "nothing but the values themselves was
+  // recorded", which is exactly the empty default. Each entry is validated
+  // against the axis/qualifier grammar and the four known statuses; anything
+  // else (unknown axis, foreign qualifier, unknown status) is dropped, never
+  // throws. The qualifier is checked tooth-INDEPENDENTLY here for the same
+  // reason furcation is: hydrateState has no tooth number.
+  const rawAssessment = raw.assessment;
+  if(rawAssessment && typeof rawAssessment === "object"){
+    for(const [key, status] of Object.entries(rawAssessment)){
+      if(typeof status !== "string" || !ASSESSMENT_STATUSES.has(status)) continue;
+      if(!assessmentKeyValid(key)) continue;
+      s.assessment.set(key, status);
+    }
+  }
   // SP-perio PG-D Task 2: restore keratinized gingiva width. Absent/legacy
   // payloads have no `kg` key -> stays the default null (no throw).
   // `clampKg` tolerates any input (non-numeric/out-of-range) and returns
@@ -5988,10 +6320,16 @@ function collectExportPayload(){
   const planTeeth = planInitialized ? collectTeeth(charts.plan) : null;
   const planDiffers = planTeeth !== null && JSON.stringify(planTeeth) !== JSON.stringify(statusTeeth);
   return {
-    version: "2.20",
+    version: PAYLOAD_VERSION,
     globals: collectGlobals(),
     teeth: statusTeeth,
     ...(caseMetaIsEmpty(caseMeta) ? {} : { case: serializeCaseMeta(caseMeta) }),
+    ...(examinationContextIsEmpty(examinationContext)
+      ? {} : { examination: serializeExaminationContext(examinationContext) }),
+    // The archive of earlier examinations belongs to the DOCUMENT, not to
+    // either chart, so it rides on the status-primary payload only (like
+    // `teeth` itself) and is omitted entirely when nothing was captured.
+    ...(examinations.length === 0 ? {} : { examinations: examinations.map(serializeSnapshot) }),
     ...(planDiffers ? { plan: planTeeth } : {}),
   };
 }
@@ -6018,10 +6356,12 @@ export function getStatusChart(): Any {
  */
 export function getPlanChart(): Any {
   return {
-    version: "2.20",
+    version: PAYLOAD_VERSION,
     globals: collectGlobals(),
     teeth: collectTeeth(charts.plan),
     ...(caseMetaIsEmpty(caseMeta) ? {} : { case: serializeCaseMeta(caseMeta) }),
+    ...(examinationContextIsEmpty(examinationContext)
+      ? {} : { examination: serializeExaminationContext(examinationContext) }),
   };
 }
 
@@ -6598,6 +6938,183 @@ export function setKeratinizedWidth(toothNo: number, mm: number | null): void {
     if(s.kg === next) return false;
     s.kg = next; notifyStateChange(); return true;
   });
+}
+
+// ---- Bead odontogram-2vd: explicit assessment status --------------------
+// Periodontal charting stores findings, not the act of looking. A site with no
+// probing depth, a surface with no plaque and a tooth with mobility "none" all
+// look identical to a site nobody probed, a surface nobody disclosed and a
+// tooth nobody tested — yet clinically they are opposites, and a follow-up
+// examination compares against them. This axis records what the value cannot:
+//
+//   assessed        the axis WAS examined. Either a value is stored (the usual
+//                   case) or the finding is normal/negative and stores none,
+//                   which is recorded explicitly here — "assessed-normal".
+//   not-assessed    nobody looked. The default; never stored.
+//   unmeasurable    the measurement point exists but could not be read.
+//   not-applicable  the tooth has no such measurement point at all.
+//
+// It is deliberately a GENERIC assessment axis, not a set of renderer-invented
+// clinical codes: exchange formats already model exactly this (FHIR's
+// `dataAbsentReason`), and inventing a local "could not probe" finding code
+// would be the renderer claiming terminology it has no authority over.
+export type AssessmentStatus = "assessed" | "not-assessed" | "unmeasurable" | "not-applicable";
+
+/** The periodontal / peri-implant axes this assessment status applies to. */
+export const PERIO_ASSESSMENT_AXES = [
+  "pd", "gm", "bop", "sup", "mobility", "furcation", "plaque", "pi", "gi", "mpi", "mbi", "kg",
+] as const;
+export type PerioAssessmentAxis = typeof PERIO_ASSESSMENT_AXES[number];
+
+const ASSESSMENT_STATUSES = new Set<string>(["assessed", "not-assessed", "unmeasurable", "not-applicable"]);
+
+/** What a given axis is measured AT: one of the six probing sites, one of the
+ *  four index surfaces, a furcation entrance, or the tooth as a whole. */
+const ASSESSMENT_AXIS_KIND: Record<PerioAssessmentAxis, "site" | "surface" | "entrance" | "tooth"> = {
+  pd: "site", gm: "site", bop: "site", sup: "site",
+  plaque: "surface", pi: "surface", gi: "surface", mpi: "surface", mbi: "surface",
+  furcation: "entrance",
+  mobility: "tooth", kg: "tooth",
+};
+
+/** The peri-implant examination Dental-DE defines: probing depth, bleeding,
+ *  suppuration, implant mobility, keratinized tissue width, and the two
+ *  Mombelli indices. Everything else in {@link PERIO_ASSESSMENT_AXES} is
+ *  natural-tooth-only — the gingival margin is measured against the CEJ, which
+ *  an implant does not have, and plaque/PI/GI have mPI/mBI as their
+ *  peri-implant equivalents. */
+const IMPLANT_PERIO_AXES = new Set<string>(["pd", "bop", "sup", "mobility", "kg", "mpi", "mbi"]);
+
+function isPerioAssessmentAxis(axis: string): axis is PerioAssessmentAxis {
+  return Object.prototype.hasOwnProperty.call(ASSESSMENT_AXIS_KIND, axis);
+}
+
+/**
+ * Whether a periodontal axis has a measurement point on this tooth at all — the
+ * single capability matrix the assessment status, the full-mouth grid's enabled
+ * cells and the perio export all read, so the UI can never offer a measurement
+ * the domain calls not-applicable (or refuse one it calls applicable).
+ */
+export function perioAxisApplies(toothNo: number, axis: string): boolean {
+  if(!isPerioAssessmentAxis(axis)) return false;
+  const s = toothState.get(toothNo);
+  if(s?.toothSelection === "implant") return IMPLANT_PERIO_AXES.has(axis);
+  // Missing, unerupted/under-gum and post-extraction positions have no
+  // periodontium to examine at all.
+  if(perioRowHidden(s)) return false;
+  if(axis === "mpi" || axis === "mbi") return false;
+  if(axis === "furcation") return furcationEntrances(toothNo).length > 0;
+  return true;
+}
+
+/** Whether `qualifier` names a real measurement point for `axis` ON THIS TOOTH
+ *  (furcation entrances are position-dependent). A per-tooth axis takes no
+ *  qualifier. */
+function assessmentQualifierValid(toothNo: number, axis: PerioAssessmentAxis, qualifier: string | null): boolean {
+  switch(ASSESSMENT_AXIS_KIND[axis]){
+    case "site": return qualifier !== null && (PERIO_SITES as readonly string[]).includes(qualifier);
+    case "surface": return qualifier !== null && VALID_PLAQUE_SURFACE.has(qualifier);
+    case "entrance": return qualifier !== null && furcationEntrances(toothNo).includes(qualifier);
+    default: return qualifier === null || qualifier === undefined;
+  }
+}
+
+function assessmentKey(axis: PerioAssessmentAxis, qualifier: string | null): string {
+  return ASSESSMENT_AXIS_KIND[axis] === "tooth" ? axis : `${axis}:${qualifier}`;
+}
+
+/** Tooth-INDEPENDENT key validation for hydration (see hydrateState). */
+function assessmentKeyValid(key: string): boolean {
+  const at = key.indexOf(":");
+  const axis = at < 0 ? key : key.slice(0, at);
+  const qualifier = at < 0 ? null : key.slice(at + 1);
+  if(!isPerioAssessmentAxis(axis)) return false;
+  switch(ASSESSMENT_AXIS_KIND[axis]){
+    case "site": return qualifier !== null && (PERIO_SITES as readonly string[]).includes(qualifier);
+    case "surface": return qualifier !== null && VALID_PLAQUE_SURFACE.has(qualifier);
+    case "entrance": return qualifier !== null && VALID_FURCATION_ENTRANCE.has(qualifier);
+    default: return qualifier === null;
+  }
+}
+
+/** Whether the axis actually holds a charted value at that measurement point —
+ *  the strongest possible evidence that it was assessed. */
+function assessmentValuePresent(s: Any, axis: PerioAssessmentAxis, qualifier: string | null): boolean {
+  if(!s) return false;
+  switch(axis){
+    case "pd": return s.perio?.pd?.has(qualifier) ?? false;
+    case "gm": return s.perio?.gm?.has(qualifier) ?? false;
+    case "bop": return s.perio?.bop?.has(qualifier) ?? false;
+    case "sup": return s.perio?.sup?.has(qualifier) ?? false;
+    case "plaque": return s.plaque?.has(qualifier) ?? false;
+    case "furcation": return s.furcation?.has(qualifier) ?? false;
+    case "pi": case "gi": case "mpi": case "mbi": return (s[axis] as Map<string, number> | undefined)?.has(qualifier as string) ?? false;
+    case "mobility": return typeof s.mobility === "string" && s.mobility !== "none";
+    case "kg": return s.kg !== null && s.kg !== undefined;
+    default: return false;
+  }
+}
+
+/**
+ * Resolve one axis's assessment status on the active chart, in this order:
+ *
+ * 1. the tooth has no such measurement point -> `not-applicable`;
+ * 2. a value is charted there -> `assessed`;
+ * 3. an explicitly recorded status (assessed-normal / unmeasurable /
+ *    not-applicable) -> that status;
+ * 4. otherwise -> `not-assessed`.
+ *
+ * Structure therefore beats a stored status, and an actual measurement beats a
+ * recorded gap — a chart can never claim a tooth was unmeasurable at a point
+ * where it holds a measurement.
+ */
+export function getAssessmentStatus(toothNo: number, axis: string, qualifier: string | null = null): AssessmentStatus {
+  if(!isPerioAssessmentAxis(axis)) return "not-applicable";
+  if(!perioAxisApplies(toothNo, axis)) return "not-applicable";
+  if(!assessmentQualifierValid(toothNo, axis, qualifier)) return "not-applicable";
+  const s = toothState.get(toothNo);
+  if(assessmentValuePresent(s, axis, qualifier)) return "assessed";
+  const stored = (s?.assessment as Map<string, AssessmentStatus> | undefined)?.get(assessmentKey(axis, qualifier));
+  return stored ?? "not-assessed";
+}
+
+/**
+ * Record an axis's assessment status on the active chart. `"not-assessed"`
+ * clears the record (it is the default and is never stored). An unknown axis,
+ * status, or measurement point — and any axis the tooth does not have — is a
+ * silent no-op, exactly like every other per-tooth setter here. Routes through
+ * the DS-1 status/plan gate, so it participates in the dual-state model like
+ * any other clinical edit.
+ */
+export function setAssessmentStatus(
+  toothNo: number, axis: string, qualifier: string | null, status: AssessmentStatus,
+): void {
+  if(!ASSESSMENT_STATUSES.has(status)) return;
+  if(!isPerioAssessmentAxis(axis)) return;
+  if(!perioAxisApplies(toothNo, axis)) return;
+  if(!assessmentQualifierValid(toothNo, axis, qualifier)) return;
+  let s = toothState.get(toothNo);
+  if(!s){ s = defaultState(); toothState.set(toothNo, s); }
+  const key = assessmentKey(axis, qualifier);
+  gateToothEdit(toothNo, () => {
+    const map = s.assessment as Map<string, AssessmentStatus>;
+    if(status === "not-assessed"){
+      if(map.has(key)){ map.delete(key); notifyStateChange(); return true; }
+      return false;
+    }
+    if(map.get(key) === status) return false;
+    map.set(key, status);
+    notifyStateChange();
+    return true;
+  });
+}
+
+/** Every explicitly recorded assessment status on this tooth, keyed `axis` or
+ *  `axis:qualifier`. A plain detached object; `{}` when nothing was recorded. */
+export function getToothAssessments(toothNo: number): Record<string, AssessmentStatus> {
+  const map = toothState.get(toothNo)?.assessment as Map<string, AssessmentStatus> | undefined;
+  if(!map || map.size === 0) return {};
+  return Object.fromEntries(map);
 }
 
 // ---- SP-perio PG-C Task 2: cejVisibility + rootConcavity public API.
@@ -7357,10 +7874,11 @@ export function setPerioViewMode(mode: PerioViewMode): void {
 // English/Latin canonical name (T3). Both are wired into the Settings ->
 // Periodontal tab via `SettingsState` in `SettingsModal.tsx`.
 
-/** The 16 toggleable periodontal index rows the Dental Chart can show/hide. */
+/** The 17 toggleable periodontal index rows the Dental Chart can show/hide. */
 export type PerioRowId =
   | "plaque"
   | "bop"
+  | "sup"
   | "cal"
   | "gm"
   | "pd"
@@ -7377,7 +7895,7 @@ export type PerioRowId =
   | "miller";
 
 const PERIO_ROW_IDS: readonly PerioRowId[] = [
-  "plaque", "bop", "cal", "gm", "pd", "furcation", "mobility", "cej",
+  "plaque", "bop", "sup", "cal", "gm", "pd", "furcation", "mobility", "cej",
   "rootConcavity", "pi", "gi", "mpi", "mbi", "kg", "gt", "miller",
 ];
 
@@ -7921,6 +8439,14 @@ function hydrateImportedCharts(data: Any): void {
   // P4a: shared case-level metadata — mirrors `globals`, hydrated once here
   // regardless of status/plan, self-healing any bad/missing values.
   hydrateCaseMeta(data.case);
+  // Bead odontogram-2vd: the examination's identity/context and its archive of
+  // previously captured examinations travel with the document exactly like
+  // `case` above. A legacy document carries neither key, which correctly reads
+  // as "no examination identity, no earlier examinations" — never as the
+  // previous document's identity, so an import can't silently attribute one
+  // patient's examination to another's chart.
+  examinationContext = readExaminationContext(data.examination);
+  examinations = readExaminationSnapshots(data.examinations);
   if(data.plan && typeof data.plan === "object"){
     for(const toothNo of ALL_TEETH){
       const raw = data.plan[toothNo];
@@ -8799,6 +9325,8 @@ function wireControls(){
   $("#btnResetAll").addEventListener("click", ()=>{
     setEdentulous(false);
     resetCaseMeta(); // case-level patient metadata is part of the blank-slate reset (like edentulous)
+    resetExaminationContext(); // ... as is the examination identity it was recorded under
+    resetExaminations();
     for(const toothNo of ALL_TEETH){
       toothState.set(toothNo, defaultState());
       applyStateToSvg(toothNo);
@@ -9100,6 +9628,8 @@ export function destroyOdontogram(){
   chartMode = "status";
   toothState = charts.status;
   resetCaseMeta();
+  resetExaminationContext();
+  resetExaminations();
   toothSvgRoot.clear();
   toothTile.clear();
   toothLabelUpper.clear();
@@ -9632,7 +10162,7 @@ export interface OdontogramSession {
 }
 
 function blankDocument(): OdontogramDocument {
-  return { version: "2.20", globals: {}, teeth: {} };
+  return { version: PAYLOAD_VERSION, globals: {}, teeth: {} };
 }
 
 function cloneDocument(doc: OdontogramDocument): OdontogramDocument {

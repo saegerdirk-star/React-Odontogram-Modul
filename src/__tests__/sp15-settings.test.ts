@@ -59,7 +59,7 @@ function makeSettings(overrides: Partial<SettingsState> = {}): SettingsState {
     perioRowVisibility: {
       plaque: true, bop: true, cal: true, gm: true, pd: true, furcation: true,
       mobility: true, cej: true, rootConcavity: true, pi: true, gi: true,
-      mpi: true, mbi: true, kg: true, gt: true, miller: true,
+      mpi: true, mbi: true, kg: true, gt: true, miller: true, sup: true,
     },
     onPerioRowVisibility: vi.fn(),
     perioIndexNameMode: "translated",

@@ -2,6 +2,7 @@
 // Created by Zoltan Dul (https://github.com/ZoliQua) 2025-2026
 
 import type { OdontogramExportPayload, ToothRecord } from "../fhir/types";
+import { PAYLOAD_VERSION } from "../fhir/types";
 import { localCode, ensureTooth } from "../fhir/primitives";
 import { AXES } from "./axes";
 import type { ClinicalAxis } from "./types";
@@ -143,5 +144,5 @@ export function parseFhirBundleFromRegistry(bundle: unknown): OdontogramExportPa
     for (const surf of Object.keys(rec.secondaryCaries)) delete rec.cariesSeverity[surf];
     if (Object.keys(rec.cariesSeverity).length === 0) delete rec.cariesSeverity;
   }
-  return { version: "2.20", globals, teeth };
+  return { version: PAYLOAD_VERSION, globals, teeth };
 }

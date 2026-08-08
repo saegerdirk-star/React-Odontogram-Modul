@@ -27,6 +27,7 @@ import {
   setRootConcavity,
   getRootConcavity,
   isPerioRowHidden,
+  perioAxisApplies,
   isToothImplant,
   getReadOnly,
   onStateChange,
@@ -225,6 +226,10 @@ type ToothCellRefs = {
   pd: Partial<Record<PerioSite, HTMLInputElement>>;
   gm: Partial<Record<PerioSite, HTMLInputElement>>;
   bop: Partial<Record<PerioSite, HTMLInputElement>>;
+  // Bead odontogram-2vd: per-site suppuration-on-probing toggles — the same
+  // shape as `bop` above (they are charted the same way, at the same sites, on
+  // natural teeth AND implants).
+  sup: Partial<Record<PerioSite, HTMLInputElement>>;
   cal: Partial<Record<PerioSite, HTMLSpanElement>>;
   mobility: HTMLSelectElement | null;
   // SP-perio P2b Task 4: per-entrance furcation cycle buttons (keyed by
@@ -257,6 +262,7 @@ type GridHandlers = {
   onPd: (toothNo: number, site: PerioSite, raw: string) => void;
   onGm: (toothNo: number, site: PerioSite, raw: string) => void;
   onBop: (toothNo: number, site: PerioSite, checked: boolean) => void;
+  onSup: (toothNo: number, site: PerioSite, checked: boolean) => void;
   onMobility: (toothNo: number, value: string) => void;
   onFurcation: (toothNo: number, entrance: string) => void;
   onPlaque: (toothNo: number, surface: string) => void;
@@ -721,22 +727,34 @@ function syncToothCells(
   readOnly: boolean,
 ): void {
   const hidden = isPerioRowHidden(toothNo);
+  // Bead odontogram-2vd: which axes this tooth actually HAS is one domain
+  // decision (`perioAxisApplies`), not a per-row guess in the view. An implant
+  // is probed at the same six sites as a natural tooth and carries bleeding,
+  // suppuration, mobility and keratinized-tissue width — it only lacks the
+  // axes measured against a CEJ (GM, and CAL derived from it) and the
+  // natural-tooth plaque indices, which have mPI/mBI as their equivalents.
+  const applies = (axis: string) => perioAxisApplies(toothNo, axis);
   for (const site of PERIO_SITES) {
     const charted = Object.prototype.hasOwnProperty.call(perio.pd, site);
     const pdInput = cells.pd[site];
     if (pdInput) {
       pdInput.value = charted ? String(perio.pd[site]) : "";
-      pdInput.disabled = readOnly || hidden;
+      pdInput.disabled = readOnly || !applies("pd");
     }
     const gmInput = cells.gm[site];
     if (gmInput) {
       gmInput.value = charted && Object.prototype.hasOwnProperty.call(perio.gm, site) ? String(perio.gm[site]) : "";
-      gmInput.disabled = readOnly || hidden || !charted;
+      gmInput.disabled = readOnly || !applies("gm") || !charted;
     }
     const bopInput = cells.bop[site];
     if (bopInput) {
       bopInput.checked = perio.bop.includes(site);
-      bopInput.disabled = readOnly || hidden || !charted;
+      bopInput.disabled = readOnly || !applies("bop") || !charted;
+    }
+    const supInput = cells.sup[site];
+    if (supInput) {
+      supInput.checked = perio.sup.includes(site);
+      supInput.disabled = readOnly || !applies("sup") || !charted;
     }
     const calSpan = cells.cal[site];
     if (calSpan) {
@@ -746,7 +764,7 @@ function syncToothCells(
   }
   if (cells.mobility) {
     cells.mobility.value = getToothMobility(toothNo);
-    cells.mobility.disabled = readOnly || hidden;
+    cells.mobility.disabled = readOnly || !applies("mobility");
   }
   // SP-perio P2b Task 4: furcation cycle buttons — face + grade + pressed
   // state from the active chart's per-entrance grade (getToothFurcation).
@@ -760,7 +778,7 @@ function syncToothCells(
     btn.textContent = FURCATION_ROMAN[grade];
     btn.dataset.grade = String(grade);
     btn.setAttribute("aria-pressed", grade > 0 ? "true" : "false");
-    btn.disabled = readOnly || hidden;
+    btn.disabled = readOnly || !applies("furcation");
   }
   // SP-perio P2b Task 4: plaque toggles — present/absent mark + pressed state
   // from the active chart's plaque surface set (getToothPlaque). Disabled on
@@ -772,7 +790,7 @@ function syncToothCells(
     const present = plaque.includes(surface);
     btn.dataset.present = present ? "1" : "0";
     btn.setAttribute("aria-pressed", present ? "true" : "false");
-    btn.disabled = readOnly || hidden;
+    btn.disabled = readOnly || !applies("plaque");
   }
   // SP-perio PG-C Task 3: cejVisibility / rootConcavity cycle buttons — face
   // + value + pressed/disabled state from the active chart (getCejVisibility/
@@ -804,7 +822,7 @@ function syncToothCells(
     btn.textContent = GRADE_FACE[grade] ?? "–";
     btn.dataset.grade = String(grade);
     btn.setAttribute("aria-pressed", grade > 0 ? "true" : "false");
-    btn.disabled = readOnly || hidden;
+    btn.disabled = readOnly || !applies("pi");
   }
   for (const surface of Object.keys(cells.gi)) {
     const btn = cells.gi[surface];
@@ -813,17 +831,13 @@ function syncToothCells(
     btn.textContent = GRADE_FACE[grade] ?? "–";
     btn.dataset.grade = String(grade);
     btn.setAttribute("aria-pressed", grade > 0 ? "true" : "false");
-    btn.disabled = readOnly || hidden;
+    btn.disabled = readOnly || !applies("gi");
   }
   // SP-perio PG-E Task 2: mPI/mBI per-surface grade buttons — mirror PI/GI's
-  // value sync exactly, but IMPLANT-GATED: active only on an implant tooth
-  // (`isToothImplant`, status/plan aware — mirrors `setSurfaceGrade`'s own
-  // implant guard in odontogram.ts). Deliberately NOT gated on `hidden`
-  // (`isPerioRowHidden`) like every other row above — that predicate hides
-  // implant teeth precisely because they have no periodontal PROBING site,
-  // the opposite of what these peri-implant indices need; it still respects
-  // the global readOnly lock.
-  const implant = isToothImplant(toothNo);
+  // value sync exactly, but IMPLANT-ONLY: `perioAxisApplies` reports these two
+  // axes only on an implant tooth (mirroring `setSurfaceGrade`'s own implant
+  // guard in odontogram.ts), which is the exact inverse of the natural-tooth
+  // plaque indices above. They still respect the global readOnly lock.
   for (const surface of Object.keys(cells.mpi)) {
     const btn = cells.mpi[surface];
     if (!btn) continue;
@@ -831,7 +845,7 @@ function syncToothCells(
     btn.textContent = GRADE_FACE[grade] ?? "–";
     btn.dataset.grade = String(grade);
     btn.setAttribute("aria-pressed", grade > 0 ? "true" : "false");
-    btn.disabled = readOnly || !implant;
+    btn.disabled = readOnly || !applies("mpi");
   }
   for (const surface of Object.keys(cells.mbi)) {
     const btn = cells.mbi[surface];
@@ -840,14 +854,14 @@ function syncToothCells(
     btn.textContent = GRADE_FACE[grade] ?? "–";
     btn.dataset.grade = String(grade);
     btn.setAttribute("aria-pressed", grade > 0 ? "true" : "false");
-    btn.disabled = readOnly || !implant;
+    btn.disabled = readOnly || !applies("mbi");
   }
   // SP-perio PG-D Task 4: KG — a single per-tooth mm number input (mirrors
   // the pd/gm inputs' omit-when-empty value sync).
   if (cells.kg) {
     const mm = getKeratinizedWidth(toothNo);
     cells.kg.value = mm === null ? "" : String(mm);
-    cells.kg.disabled = readOnly || hidden;
+    cells.kg.disabled = readOnly || !applies("kg");
   }
   // SP-perio PG-D Task 4: gingivalThickness / millerClass cycle buttons —
   // mirror cejVisibility/rootConcavity above exactly.
@@ -884,7 +898,7 @@ type BuiltArch = { grid: HTMLDivElement; buccalCell: HTMLDivElement; palatalCell
  *  the DOM moves. */
 function buildFieldCell(
   toothNo: number,
-  field: "pd" | "gm" | "cal" | "bop",
+  field: "pd" | "gm" | "cal" | "bop" | "sup",
   sites: readonly PerioSite[],
   aspect: "buccal" | "palatal",
   cells: ToothCellRefs,
@@ -900,15 +914,18 @@ function buildFieldCell(
       span.id = `perio-fg-cal-${toothNo}-${site}`;
       group.appendChild(span);
       cells.cal[site] = span;
-    } else if (field === "bop") {
-      const input = mkEl("input", "perio-fullgrid-bop");
+    } else if (field === "bop" || field === "sup") {
+      const input = mkEl("input", `perio-fullgrid-${field}`);
       input.type = "checkbox";
-      input.id = `perio-fg-bop-${toothNo}-${site}`;
+      input.id = `perio-fg-${field}-${toothNo}-${site}`;
       input.title = t(`perio.site.${site}`);
-      input.dataset.perio = `${toothNo}:${site}:bop`;
-      input.addEventListener("change", () => handlers.onBop(toothNo, site, input.checked));
+      input.dataset.perio = `${toothNo}:${site}:${field}`;
+      input.addEventListener("change", () => {
+        if (field === "bop") handlers.onBop(toothNo, site, input.checked);
+        else handlers.onSup(toothNo, site, input.checked);
+      });
       group.appendChild(input);
-      cells.bop[site] = input;
+      cells[field][site] = input;
     } else if (field === "pd") {
       const input = mkEl("input", "perio-fullgrid-input");
       input.type = "number";
@@ -955,7 +972,7 @@ function buildFurcationCell(
   const cell = mkEl("div", "perio-fullgrid-cell perio-fullgrid-cell-furcation");
   cell.dataset.perioField = "furcation";
   const entrances = furcationEntrances(toothNo);
-  if (entrances.length === 0 || isPerioRowHidden(toothNo)) return cell; // empty placeholder
+  if (entrances.length === 0 || !perioAxisApplies(toothNo, "furcation")) return cell; // empty placeholder
   const group = mkEl("div", "perio-fullgrid-sitegroup");
   for (const entrance of entrances) {
     const btn = mkEl("button", "perio-fullgrid-furc");
@@ -1208,7 +1225,7 @@ function buildArch(teeth: readonly number[], registry: Map<number, ToothCellRefs
   // below reference these before the header row (which used to create them).
   for (const toothNo of teeth) {
     registry.set(toothNo, {
-      pd: {}, gm: {}, bop: {}, cal: {}, mobility: null, furcation: {}, plaque: {},
+      pd: {}, gm: {}, bop: {}, sup: {}, cal: {}, mobility: null, furcation: {}, plaque: {},
       cejVisibility: null, rootConcavity: null,
       pi: {}, gi: {}, kg: null, gingivalThickness: null, millerClass: null,
       mpi: {}, mbi: {},
@@ -1223,7 +1240,7 @@ function buildArch(teeth: readonly number[], registry: Map<number, ToothCellRefs
   // BOP each has exactly ONE explanation, shared by both its buccal- and
   // palatal-aspect rows (SP-perio PG-B Task 1).
   const appendFieldRow = (
-    field: "pd" | "gm" | "cal" | "bop",
+    field: "pd" | "gm" | "cal" | "bop" | "sup",
     sites: readonly PerioSite[],
     aspect: "buccal" | "palatal",
     label: string,
@@ -1258,6 +1275,7 @@ function buildArch(teeth: readonly number[], registry: Map<number, ToothCellRefs
   // translated in BOTH name modes — only the index NAME (`indexName(...)`)
   // switches between `t(...)` and the canonical form.
   if (visible.bop) appendFieldRow("bop", BUCCAL_SITES, "buccal", `${buccalLabel} ${indexName("bop")}`);
+  if (visible.sup) appendFieldRow("sup", BUCCAL_SITES, "buccal", `${buccalLabel} ${indexName("sup")}`);
   if (visible.cal) appendFieldRow("cal", BUCCAL_SITES, "buccal", `${buccalLabel} ${indexName("cal")}`);
   if (visible.gm) appendFieldRow("gm", BUCCAL_SITES, "buccal", `${buccalLabel} ${indexName("gm")}`);
   if (visible.pd) appendFieldRow("pd", BUCCAL_SITES, "buccal", `${buccalLabel} ${indexName("pd")}`);
@@ -1367,6 +1385,7 @@ function buildArch(teeth: readonly number[], registry: Map<number, ToothCellRefs
   if (visible.pd) appendFieldRow("pd", LINGUAL_SITES, "palatal", `${lingualLabel} ${indexName("pd")}`);
   if (visible.gm) appendFieldRow("gm", LINGUAL_SITES, "palatal", `${lingualLabel} ${indexName("gm")}`);
   if (visible.cal) appendFieldRow("cal", LINGUAL_SITES, "palatal", `${lingualLabel} ${indexName("cal")}`);
+  if (visible.sup) appendFieldRow("sup", LINGUAL_SITES, "palatal", `${lingualLabel} ${indexName("sup")}`);
   if (visible.bop) appendFieldRow("bop", LINGUAL_SITES, "palatal", `${lingualLabel} ${indexName("bop")}`);
 
   // --- Mobility row: one select per tooth, no site subdivision. ---
@@ -1813,6 +1832,15 @@ export default function PerioChart({
       onBop: (toothNo, site, checked) => {
         suppressResyncRef.current = true;
         setPerioSite(toothNo, site, { bop: checked });
+        suppressResyncRef.current = false;
+        syncOneTooth(toothNo);
+      },
+      // Bead odontogram-2vd: suppuration on probing, through the SAME
+      // `setPerioSite` patch the per-tooth panel already writes — the value was
+      // always in the domain, only the full-mouth chart could not reach it.
+      onSup: (toothNo, site, checked) => {
+        suppressResyncRef.current = true;
+        setPerioSite(toothNo, site, { sup: checked });
         suppressResyncRef.current = false;
         syncOneTooth(toothNo);
       },

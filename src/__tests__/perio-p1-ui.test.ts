@@ -131,6 +131,7 @@ vi.mock("../odontogram", async () => {
     getToothMobility: actual.getToothMobility,
     setToothMobility: actual.setToothMobility,
     isPerioRowHidden: actual.isPerioRowHidden,
+    perioAxisApplies: actual.perioAxisApplies,
     __syncPerioRowForTest: actual.__syncPerioRowForTest,
     __perioRowHiddenForTest: actual.__perioRowHiddenForTest,
     __buildPerioGridForTest: actual.__buildPerioGridForTest,

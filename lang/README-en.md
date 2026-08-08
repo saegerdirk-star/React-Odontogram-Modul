@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.4.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -545,6 +545,54 @@ value itself always stays in the UI-domain document and round-trips through JSON
 `parseFhirBundle` reads **both** dialects, including a bundle that mixes them, so
 previously exported bundles keep importing unchanged.
 
+**Dated examinations, assessment status and peri-implant capture (from 2.4.0):**
+
+A periodontal case is re-examined over years, so a document can now carry the examination's
+own identity and an archive of earlier examinations:
+
+```ts
+setExaminationContext({
+  id: "exam-2026-06-30", subject: "Patient/123", effectiveDateTime: "2026-06-30",
+  performer: "Practitioner/dr-mueller", encounter: "Encounter/9912",
+});
+
+captureExamination({ effectiveDateTime: "2026-06-30" });
+listExaminations();
+getExamination(id);
+loadExamination(id);
+startExamination({ effectiveDateTime: "2027-01-15" });
+```
+
+- Each archived examination is an **independent snapshot** of the whole-mouth findings and case
+  context at capture time; later edits never reach into it, and capturing again files a
+  follow-up instead of overwriting the baseline a trend depends on.
+- Status and plan keep meaning **current versus proposed within one examination** — the plan
+  chart is never history and is never part of a snapshot.
+- Every identity field is an opaque, host-owned string that the component stores and
+  round-trips but never interprets. Documents written before payload 2.21 carry none of this
+  and hydrate unchanged.
+
+Periodontal charting stores findings, not the act of looking, so "probed, did not bleed" and
+"nobody probed" used to look identical. Every axis in scope (PD, GM, BOP, suppuration,
+mobility, furcation, plaque, PI, GI, mPI, mBI, KG) can now say which it is:
+
+```ts
+setAssessmentStatus(16, "bop", "MB", "assessed");
+setAssessmentStatus(16, "pd", "DB", "unmeasurable");
+getAssessmentStatus(16, "mpi", "buccal");
+perioAxisApplies(11, "gm");
+```
+
+Not-applicable is derived from what the tooth actually is, and a real measurement always wins
+over a recorded gap. On export an unavailable value becomes FHIR's own `dataAbsentReason` —
+never a renderer-invented clinical code — and assessed-normal becomes an explicit `false` or
+grade `0`.
+
+The full-mouth periodontal chart now also captures **suppuration** per site, and an implant
+column supports the peri-implant examination: six-site probing depth, bleeding, suppuration,
+implant mobility and keratinized-tissue width. Only the axes that need a CEJ (gingival margin
+and the CAL derived from it) and the natural-tooth plaque indices stay inactive there — mPI
+and mBI are their peri-implant equivalents.
 ### 🧪 Testing
 ```bash
 npm run test           # Run all 1704 tests (1 additional test skipped)

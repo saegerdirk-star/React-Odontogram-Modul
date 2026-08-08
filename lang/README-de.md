@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.4.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -542,6 +542,56 @@ immer im UI-Domain-Dokument und ueberlebt den JSON-Roundtrip.
 
 `parseFhirBundle` liest **beide** Dialekte, auch ein gemischtes Bundle, sodass bereits
 exportierte Bundles unveraendert importierbar bleiben.
+**Datierte Untersuchungen, Erhebungsstatus und periimplantaere Erfassung (ab 2.4.0):**
+
+Ein Parodontalfall wird ueber Jahre nachuntersucht. Ein Dokument traegt daher jetzt die
+eigene Identitaet der Untersuchung und ein Archiv frueherer Untersuchungen:
+
+```ts
+setExaminationContext({
+  id: "exam-2026-06-30", subject: "Patient/123", effectiveDateTime: "2026-06-30",
+  performer: "Practitioner/dr-mueller", encounter: "Encounter/9912",
+});
+
+captureExamination({ effectiveDateTime: "2026-06-30" });
+listExaminations();
+getExamination(id);
+loadExamination(id);
+startExamination({ effectiveDateTime: "2027-01-15" });
+```
+
+- Jede archivierte Untersuchung ist eine **unabhaengige Momentaufnahme** der Befunde und des
+  Fallkontexts zum Zeitpunkt der Erfassung; spaetere Aenderungen greifen nicht mehr hinein,
+  und ein erneutes Erfassen legt eine Folgeuntersuchung an, statt den Ausgangsbefund zu
+  ueberschreiben, auf dem der Verlauf beruht.
+- Status und Plan bedeuten weiterhin **aktuell gegenueber geplant innerhalb einer
+  Untersuchung** — der Planbefund ist keine Historie und nie Teil einer Momentaufnahme.
+- Jedes Identitaetsfeld ist eine opake, der Host-Anwendung gehoerende Zeichenkette, die die
+  Komponente speichert und zurueckgibt, aber nie interpretiert. Dokumente vor Payload-Version
+  2.21 enthalten nichts davon und werden unveraendert geladen.
+
+Die Parodontalkarte speichert Befunde, nicht den Akt des Untersuchens: "sondiert, keine
+Blutung" und "niemand hat sondiert" sahen bisher gleich aus. Jede betroffene Achse (PD, GM,
+BOP, Pusaustritt, Lockerung, Furkation, Plaque, PI, GI, mPI, mBI, KG) kann das jetzt sagen:
+
+```ts
+setAssessmentStatus(16, "bop", "MB", "assessed");
+setAssessmentStatus(16, "pd", "DB", "unmeasurable");
+getAssessmentStatus(16, "mpi", "buccal");
+perioAxisApplies(11, "gm");
+```
+
+"Nicht anwendbar" wird daraus abgeleitet, was der Zahn tatsaechlich ist, und ein echter
+Messwert schlaegt immer eine vermerkte Luecke. Beim Export wird ein nicht verfuegbarer Wert
+zum FHIR-eigenen `dataAbsentReason` — nie zu einem erfundenen klinischen Code — und ein
+unauffaelliger Befund zu einem expliziten `false` bzw. Grad `0`.
+
+Die Ganzkiefer-Parodontalkarte erfasst jetzt zusaetzlich **Pusaustritt** je Messstelle, und
+eine Implantatspalte unterstuetzt die periimplantaere Untersuchung: Sondierungstiefe an sechs
+Stellen, Blutung, Pusaustritt, Implantatlockerung und Breite der keratinisierten Mukosa.
+Inaktiv bleiben dort nur die Achsen, die eine Schmelz-Zement-Grenze brauchen (Gingivarand und
+das daraus abgeleitete CAL) sowie die Plaque-Indizes des natuerlichen Zahns — mPI und mBI sind
+deren periimplantaere Entsprechungen.
 ### 🧪 Tests
 ```bash
 npm run test           # Alle 1704 Tests ausführen (1 zusätzlicher Test übersprungen)

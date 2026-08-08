@@ -338,12 +338,21 @@ export async function buildPerioSvg(): Promise<{ xml: string; width: number; hei
     }
 
     // --- Buccal-aspect rows (PD innermost / nearest the teeth in the live
-    //     grid — order here matches buildArch's append order: BOP, CAL, GM, PD). ---
+    //     grid — order here matches buildArch's append order: BOP, SUP, CAL,
+    //     GM, PD). ---
     if (visible.bop) {
       appendSiteRow(svg, cursorY, `${buccalLabel} ${indexName("bop")}`, layout, BUCCAL_SITES, (n, site) => {
         const perio = getToothPerio(n);
         const charted = Object.prototype.hasOwnProperty.call(perio.pd, site);
         return charted && perio.bop.includes(site) ? "•" : null;
+      });
+      cursorY += ROW_HEIGHT;
+    }
+    if (visible.sup) {
+      appendSiteRow(svg, cursorY, `${buccalLabel} ${indexName("sup")}`, layout, BUCCAL_SITES, (n, site) => {
+        const perio = getToothPerio(n);
+        const charted = Object.prototype.hasOwnProperty.call(perio.pd, site);
+        return charted && perio.sup.includes(site) ? "•" : null;
       });
       cursorY += ROW_HEIGHT;
     }
@@ -454,6 +463,14 @@ export async function buildPerioSvg(): Promise<{ xml: string; width: number; hei
       appendSiteRow(svg, cursorY, `${lingualLabel} ${indexName("cal")}`, layout, LINGUAL_SITES, (n, site) => {
         const v = getToothCal(n).get(site);
         return v === undefined ? null : String(v);
+      });
+      cursorY += ROW_HEIGHT;
+    }
+    if (visible.sup) {
+      appendSiteRow(svg, cursorY, `${lingualLabel} ${indexName("sup")}`, layout, LINGUAL_SITES, (n, site) => {
+        const perio = getToothPerio(n);
+        const charted = Object.prototype.hasOwnProperty.call(perio.pd, site);
+        return charted && perio.sup.includes(site) ? "•" : null;
       });
       cursorY += ROW_HEIGHT;
     }

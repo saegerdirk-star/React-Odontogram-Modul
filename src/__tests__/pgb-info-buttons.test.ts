@@ -45,14 +45,14 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-// One arch's labelled rows: plaque(1) + bop(buccal+palatal) + cal(buccal+
-// palatal) + gm(buccal+palatal) + pd(buccal+palatal) + furcation(1) +
-// mobility(1) + cejVisibility(1) + rootConcavity(1) [SP-perio PG-C Task 3] +
-// pi(1) + gi(1) + kg(1) + gt(1) + miller(1) [SP-perio PG-D Task 4] +
-// mpi(1) + mbi(1) [SP-perio PG-E Task 2] = 20. Two arches (upper+lower) =>
-// 40 total. The tooth-number header row and the tooth-graphic placeholder
-// row have NO label/infoKey and so get no button.
-const BUTTONS_PER_ARCH = 20;
+// One arch's labelled rows: plaque(1) + bop(buccal+palatal) + sup(buccal+
+// palatal) [bead odontogram-2vd] + cal(buccal+palatal) + gm(buccal+palatal) +
+// pd(buccal+palatal) + furcation(1) + mobility(1) + cejVisibility(1) +
+// rootConcavity(1) [SP-perio PG-C Task 3] + pi(1) + gi(1) + kg(1) + gt(1) +
+// miller(1) [SP-perio PG-D Task 4] + mpi(1) + mbi(1) [SP-perio PG-E Task 2]
+// = 22. Two arches (upper+lower) => 44 total. The tooth-number header row and
+// the tooth-graphic placeholder row have NO label/infoKey and so get no button.
+const BUTTONS_PER_ARCH = 22;
 
 describe("PG-B Task 1: .perio-info-btn on every labelled row", () => {
   it("every labelled row-label cell has exactly one .perio-info-btn", () => {

@@ -128,6 +128,7 @@ vi.mock("../odontogram", async () => {
     getToothPlaque: actual.getToothPlaque,
     setPlaque: actual.setPlaque,
     isPerioRowHidden: actual.isPerioRowHidden,
+    perioAxisApplies: actual.perioAxisApplies,
     getToothRecessionType: actual.getToothRecessionType,
     getCejVisibility: actual.getCejVisibility,
     setCejVisibility: actual.setCejVisibility,

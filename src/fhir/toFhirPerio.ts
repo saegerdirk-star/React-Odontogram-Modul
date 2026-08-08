@@ -191,6 +191,120 @@ function attachPlaqueBodySite(component: Any, tooth: string, surface: PlaqueSurf
   attachBodySite(component, tooth, `plaque-surface:${surface}`, PLAQUE_SURFACE_DISPLAY[surface]);
 }
 
+// ---- Bead odontogram-2vd: assessment status -> FHIR --------------------
+// The engine records WHETHER an axis was examined separately from its value
+// (see `AssessmentStatus` in odontogram.ts). FHIR already models exactly that
+// on any element with no value — `dataAbsentReason` — so an unavailable
+// measurement is exported with a STANDARD reason code and no value, and the
+// renderer invents no clinical code of its own for it. An assessed-normal
+// finding is the opposite case: it IS a result, so it exports as an explicit
+// negative (`false`) or zero grade rather than as an absence.
+const DATA_ABSENT_REASON_SYSTEM = "http://terminology.hl7.org/CodeSystem/data-absent-reason";
+
+const DATA_ABSENT_REASON: Record<string, { code: string; display: string }> = {
+  // Nobody looked: the workflow did not produce this value.
+  "not-assessed": { code: "not-performed", display: "Not Performed" },
+  // The measurement point exists and a value is expected, but it could not be read.
+  unmeasurable: { code: "unknown", display: "Unknown" },
+  // There is no such measurement point on this tooth.
+  "not-applicable": { code: "not-applicable", display: "Not Applicable" },
+};
+
+/** How one axis is expressed when it was assessed and the finding is normal:
+ *  an explicit `false` for the presence booleans, an explicit `0` for the
+ *  graded scales. The quantitative axes (PD, recession, keratinized width)
+ *  have no "normal without a number", so they are absent from this table and
+ *  an assessed-normal marker on them emits nothing. */
+const ASSESSED_NORMAL_VALUE: Record<string, { valueBoolean: boolean } | { valueInteger: number }> = {
+  bop: { valueBoolean: false },
+  sup: { valueBoolean: false },
+  plaque: { valueBoolean: false },
+  furcation: { valueInteger: 0 },
+  pi: { valueInteger: 0 },
+  gi: { valueInteger: 0 },
+  mpi: { valueInteger: 0 },
+  mbi: { valueInteger: 0 },
+};
+
+/** The component code each assessable axis is reported under — the SAME code
+ *  the axis's own value component uses, so a reader sees one vocabulary
+ *  whether the measurement is present, normal, or absent. */
+function assessmentAxisCode(axis: string): CodeableConcept | undefined {
+  switch(axis){
+    case "pd": return loincConcept(LOINC.pd);
+    case "gm": return loincConcept(LOINC.recession);
+    case "furcation": return loincConcept(LOINC.furcation);
+    case "bop": return localConcept("perio-bop", "Bleeding on probing");
+    case "sup": return localConcept("perio-sup", "Suppuration on probing");
+    case "plaque": return localConcept("plaque-surface", "Dental plaque present");
+    case "pi": return localConcept("plaque-index-silness-loe", "Plaque index (Silness-Löe)");
+    case "gi": return localConcept("gingival-index-loe-silness", "Gingival index (Löe-Silness)");
+    case "mpi": return localConcept("mod-plaque-index-mombelli", "Modified plaque index (Mombelli)");
+    case "mbi": return localConcept("mod-bleeding-index-mombelli", "Modified sulcus bleeding index (Mombelli)");
+    case "kg": return localConcept("keratinized-gingiva-width", "Keratinized gingiva width");
+    default: return undefined;
+  }
+}
+
+/** Attach the axis's measurement point to a component, using the same
+ *  qualifier shape that axis's value components already use. */
+function attachAssessmentBodySite(component: Any, tooth: string, axis: string, qualifier: string | null): void {
+  if(qualifier !== null && (PERIO_SITES as readonly string[]).includes(qualifier)){
+    attachSiteBodySite(component, tooth, qualifier as PerioSite);
+    return;
+  }
+  if(qualifier !== null && (PLAQUE_SURFACES as readonly string[]).includes(qualifier)){
+    if(axis === "furcation") attachFurcationBodySite(component, tooth, qualifier as FurcationEntrance);
+    else attachPlaqueBodySite(component, tooth, qualifier as PlaqueSurface);
+    return;
+  }
+  if(axis === "kg"){
+    attachBodySite(component, tooth, "site:buccal", "Buccal");
+    return;
+  }
+  attachBodySite(component, tooth, `tooth:${tooth}`, "Whole tooth");
+}
+
+/**
+ * Build the components that report explicitly recorded assessment statuses for
+ * one tooth. A status is only reported where the axis carries NO value: an
+ * actual measurement is the stronger statement and always wins, exactly as
+ * `getAssessmentStatus()` resolves it in the engine.
+ */
+function buildAssessmentComponents(tooth: string, rec: ToothRecord, hasValue: (axis: string, qualifier: string | null) => boolean): Any[] {
+  const raw = (rec as Any).assessment;
+  if(!raw || typeof raw !== "object") return [];
+  const out: Any[] = [];
+  for(const [key, status] of Object.entries(raw as Record<string, unknown>)){
+    if(typeof status !== "string") continue;
+    const at = key.indexOf(":");
+    const axis = at < 0 ? key : key.slice(0, at);
+    const qualifier = at < 0 ? null : key.slice(at + 1);
+    const code = assessmentAxisCode(axis);
+    if(!code) continue;
+    if(hasValue(axis, qualifier)) continue;
+    let component: Any | undefined;
+    if(status === "assessed"){
+      const normal = ASSESSED_NORMAL_VALUE[axis];
+      if(!normal) continue;
+      component = { code, ...normal };
+    }else{
+      const reason = DATA_ABSENT_REASON[status];
+      if(!reason) continue;
+      component = {
+        code,
+        dataAbsentReason: {
+          coding: [{ system: DATA_ABSENT_REASON_SYSTEM, code: reason.code, display: reason.display }],
+          text: reason.display,
+        },
+      };
+    }
+    attachAssessmentBodySite(component, tooth, axis, qualifier);
+    out.push(component);
+  }
+  return out;
+}
+
 function isFiniteNumber(v: unknown): v is number {
   return typeof v === "number" && Number.isFinite(v);
 }
@@ -244,6 +358,7 @@ function buildToothPerioObservation(subjectRef: string, tooth: string, rec: Toot
   const pd = perio && typeof perio.pd === "object" ? (perio.pd as Record<string, unknown>) : undefined;
   const gm = perio && typeof perio.gm === "object" ? (perio.gm as Record<string, unknown>) : {};
   const bop = Array.isArray(perio?.bop) ? (perio!.bop as unknown[]).filter((v): v is string => typeof v === "string") : [];
+  const sup = Array.isArray(perio?.sup) ? (perio!.sup as unknown[]).filter((v): v is string => typeof v === "string") : [];
   const chartedSites = pd ? PERIO_SITES.filter((s) => Object.prototype.hasOwnProperty.call(pd, s) && isFiniteNumber(pd[s])) : [];
 
   const furcationRaw =
@@ -302,10 +417,32 @@ function buildToothPerioObservation(subjectRef: string, tooth: string, rec: Toot
   const kgRaw = rec.kg;
   const kgValue = isFiniteNumber(kgRaw) && Number.isInteger(kgRaw) && kgRaw >= 0 && kgRaw <= 15 ? kgRaw : undefined;
 
+  // Bead odontogram-2vd: what was explicitly recorded ABOUT the examination
+  // (assessed-normal, unmeasurable, not applicable) is reportable on its own —
+  // a tooth whose only record is "the distal site could not be probed" still
+  // deserves a panel, because that is a finding.
+  const hasAssessmentValue = (axis: string, qualifier: string | null): boolean => {
+    switch (axis) {
+      case "pd": return qualifier !== null && chartedSites.includes(qualifier as PerioSite);
+      case "gm": return qualifier !== null && chartedSites.includes(qualifier as PerioSite) && isFiniteNumber(gm[qualifier]) && (gm[qualifier] as number) > 0;
+      case "bop": return qualifier !== null && chartedSites.includes(qualifier as PerioSite);
+      case "sup": return qualifier !== null && chartedSites.includes(qualifier as PerioSite);
+      case "furcation": return qualifier !== null && gradedEntrances.includes(qualifier as FurcationEntrance);
+      case "plaque": return qualifier !== null && plaqueSurfaces.includes(qualifier as PlaqueSurface);
+      case "pi": return piEntries.some(([surface]) => surface === qualifier);
+      case "gi": return giEntries.some(([surface]) => surface === qualifier);
+      case "mpi": return mpiEntries.some(([surface]) => surface === qualifier);
+      case "mbi": return mbiEntries.some(([surface]) => surface === qualifier);
+      case "kg": return kgValue !== undefined;
+      default: return false;
+    }
+  };
+  const assessmentComponents = buildAssessmentComponents(tooth, rec, hasAssessmentValue);
+
   if (
     chartedSites.length === 0 && gradedEntrances.length === 0 && plaqueSurfaces.length === 0 &&
     piEntries.length === 0 && giEntries.length === 0 && kgValue === undefined &&
-    mpiEntries.length === 0 && mbiEntries.length === 0
+    mpiEntries.length === 0 && mbiEntries.length === 0 && assessmentComponents.length === 0
   ) return undefined;
 
   const components: Any[] = [];
@@ -353,6 +490,17 @@ function buildToothPerioObservation(subjectRef: string, tooth: string, rec: Toot
     };
     attachSiteBodySite(bopComponent, tooth, site);
     components.push(bopComponent);
+
+    // Bead odontogram-2vd: suppuration on probing, the same explicit
+    // true/false per charted site as BOP above (and, like BOP, with no
+    // dedicated LOINC code — LOINC defines no per-site suppuration observable,
+    // so it rides on the engine-local system exactly as BOP does).
+    const supComponent: Any = {
+      code: { coding: [{ system: LOCAL_SYSTEM, code: "perio-sup", display: "Suppuration on probing" }], text: "Suppuration on probing" },
+      valueBoolean: sup.includes(site),
+    };
+    attachSiteBodySite(supComponent, tooth, site);
+    components.push(supComponent);
   }
 
   // SP-perio P2b Task 2: one component per graded furcation entrance,
@@ -429,6 +577,8 @@ function buildToothPerioObservation(subjectRef: string, tooth: string, rec: Toot
     attachBodySite(kgComponent, tooth, "site:buccal", "Buccal");
     components.push(kgComponent);
   }
+
+  components.push(...assessmentComponents);
 
   const obs = baseObservation(subjectRef, tooth, loincConcept(LOINC.panel));
   obs.component = components as Observation["component"];
