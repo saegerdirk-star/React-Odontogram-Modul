@@ -20,6 +20,11 @@ import {
   setToothMobility,
   setPeriImplantPlaque,
   setChartMode,
+  getToothPerio,
+  getKeratinizedWidth,
+  getToothMobility,
+  getToothPlaque,
+  getPlaqueIndex,
   __setToothStateForTest,
   __resetChartStateForTest,
   __collectExportPayloadForTest,
@@ -156,6 +161,35 @@ describe("periodontal assessment status", () => {
       },
     });
     expect(getToothAssessments(16)).toEqual({ "pd:DB": "unmeasurable" });
+  });
+
+  it("treats a probed site's bleeding and suppuration as assessed, like %BOP does", () => {
+    // The whole-mouth %BOP divides bleeding sites by CHARTED sites, and the
+    // FHIR export emits an explicit false per charted site: a probed site that
+    // did not bleed is an assessed negative, not a gap in the record.
+    setPerioSite(16, "MB", { pd: 4 });
+    expect(getAssessmentStatus(16, "bop", "MB")).toBe("assessed");
+    expect(getAssessmentStatus(16, "sup", "MB")).toBe("assessed");
+    expect(getAssessmentStatus(16, "bop", "DB")).toBe("not-assessed");
+  });
+
+  it("refuses an edit the capability matrix calls not applicable", () => {
+    __setToothStateForTest(21, { toothSelection: "none" });
+    setPerioSite(21, "MB", { pd: 4 });
+    setKeratinizedWidth(21, 3);
+    setToothMobility(21, "m1");
+    setPlaque(21, "buccal", true);
+    expect(getToothPerio(21).pd).toEqual({});
+    expect(getKeratinizedWidth(21)).toBeNull();
+    expect(getToothMobility(21)).toBe("none");
+    expect(getToothPlaque(21)).toEqual([]);
+
+    __setToothStateForTest(11, { toothSelection: "implant" });
+    setPerioSite(11, "MB", { pd: 5, gm: 2 }); // pd applies, gm does not
+    setPlaqueIndex(11, "mesial", 2);          // natural-tooth index
+    expect(getToothPerio(11).pd).toEqual({ MB: 5 });
+    expect(getToothPerio(11).gm).toEqual({});
+    expect(getPlaqueIndex(11, "mesial")).toBe(0);
   });
 
   it("is per-chart state, like every other per-tooth axis", () => {

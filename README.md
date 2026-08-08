@@ -178,13 +178,15 @@ furcation, plaque, PI, GI, mPI, mBI, KG) can say which it is:
 setAssessmentStatus(16, "bop", "MB", "assessed");    // assessed-normal
 setAssessmentStatus(16, "pd", "DB", "unmeasurable"); // the point exists, it could not be read
 getAssessmentStatus(16, "mpi", "buccal");            // "not-applicable" on a natural tooth
-perioAxisApplies(11, "gm");                          // false on an implant (it has no CEJ)
+perioAxisApplies(16, "gm");                          // true  — a natural tooth has a CEJ
+perioAxisApplies(11, "gm");                          // false — once tooth 11 is an implant
 ```
 
 Not-applicable is derived from what the tooth actually is, and a real measurement always wins
-over a recorded gap. On export an unavailable value becomes FHIR's own `dataAbsentReason` —
-never a renderer-invented clinical code — and assessed-normal becomes an explicit `false` or
-grade `0`.
+over a recorded gap. The same matrix, `perioAxisApplies()`, also governs the periodontal
+setters, so a measurement the chart shows as inapplicable cannot be written through the API
+either. On export an unavailable value becomes FHIR's own `dataAbsentReason` — never a
+renderer-invented clinical code — and assessed-normal becomes an explicit `false` or grade `0`.
 
 ## ✨ Highlights
 

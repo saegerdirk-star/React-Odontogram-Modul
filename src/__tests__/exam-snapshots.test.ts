@@ -21,6 +21,8 @@ import {
   getPlanChanges,
   setCaseAge,
   getCaseMeta,
+  __setEdentulousForTest,
+  getStatusChart,
   __resetChartStateForTest,
   __collectExportPayloadForTest,
   __hydrateImportedChartsForTest,
@@ -92,9 +94,20 @@ describe("dated examination snapshots", () => {
     expect(getExamination(id)!.teeth["16"].perio!.pd).toEqual({ MB: 4 });
     // A snapshot is observed findings only — it never carries a plan.
     expect(Object.prototype.hasOwnProperty.call(getExamination(id)!, "plan")).toBe(false);
-    // ... and capturing changed neither the active chart nor the plan diff.
+    // ... and capturing changed neither the active chart nor the plan the user
+    // is still working on: the proposed 8 is still there, as a plan change.
     expect(getChartMode()).toBe("plan");
-    expect(getPlanChanges().length).toBeGreaterThanOrEqual(0);
+    expect(getPlanChanges().some((c) => c.toothNo === 16 && c.axis === "perio")).toBe(true);
+  });
+
+  it("captures the whole-mouth edentulous finding, not only the teeth", () => {
+    __setEdentulousForTest(true);
+    const id = captureExamination({ effectiveDateTime: "2026-01-12" });
+    expect(getExamination(id)!.globals.edentulous).toBe(true);
+    __setEdentulousForTest(false);
+    expect(getStatusChart().globals.edentulous).toBe(false);
+    loadExamination(id);
+    expect(getStatusChart().globals.edentulous).toBe(true);
   });
 
   it("capturing does not initialize or disturb the plan chart", () => {

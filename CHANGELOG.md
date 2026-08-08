@@ -48,8 +48,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   keratinized-tissue width alongside the Mombelli mPI/mBI indices. The axes that
   require a CEJ (gingival margin, and the CAL derived from it) and the
   natural-tooth plaque indices stay inactive there — one capability matrix
-  (`perioAxisApplies`) now decides this for the domain, the grid and the export
-  instead of a per-row guess in the view.
+  (`perioAxisApplies`) now decides this for the assessment status, the grid and
+  every interactive periodontal setter instead of a per-row guess in the view.
+  An archived examination also carries the whole-mouth `globals` of its moment,
+  so the clinical `edentulous` finding travels with the snapshot it belongs to.
 - **Suppuration and absent-data reasons in the FHIR export.** The periodontal
   panel emits an explicit per-site suppuration boolean, and an explicitly
   recorded gap is emitted as FHIR's own `dataAbsentReason`
@@ -62,6 +64,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Periodontal edits are refused where the tooth has no such measurement
+  point.** `setPerioSite`, `setFurcation`, `setPlaque`, `setPlaqueIndex` /
+  `setGingivalIndex`, `setKeratinizedWidth` and `setToothMobility` now consult
+  `perioAxisApplies()`: probing a missing, unerupted or post-extraction position
+  is a silent no-op, as is writing a gingival margin or a natural-tooth plaque
+  index onto an implant, while an implant's probing depth, bleeding,
+  suppuration, mobility and keratinized-tissue width are accepted. Hydration and
+  import stay tolerant of foreign data as before, and the exporters keep
+  reporting whatever is stored.
 - Payload version **2.20 → 2.21** (additive): the top-level `examination` and
   `examinations` keys and the per-tooth `assessment` map, each omitted when
   empty. Documents written before 2.21 hydrate unchanged and gain no examination

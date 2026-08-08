@@ -23,6 +23,7 @@ import {
   getPlanChanges,
   getStatusChart,
   setPerioSite,
+  setCejVisibility,
   getToothPerio,
   setPlanChart,
   isDualStateConfirmPending,
@@ -165,7 +166,12 @@ describe("Fix 3: a dentition preset over a plan-edited tooth, then Cancel", () =
     // becomes 'milktooth' (differs from the current 'none'), so the preset's
     // `changed` set includes it -> the confirm fires.
     setChartMode("plan");
-    setPerioSite(15, "MB", { pd: 6 });
+    // Any plan-only edit on tooth 15 marks it; CEJ visibility is used here
+    // because bead odontogram-2vd refuses periodontal PROBING on a tooth that
+    // is not in the mouth (this arch is edentulous), which is what this test
+    // sets up. The Fix-3 behaviour under review is unrelated to which axis
+    // marked the tooth.
+    setCejVisibility(15, "detectable");
     expect(__planEditedTeethForTest()).toContain(15);
     setChartMode("status");
 
@@ -182,7 +188,12 @@ describe("Fix 3: a dentition preset over a plan-edited tooth, then Cancel", () =
   it("accept flips globals.edentulous off (the preset re-populates the arch)", () => {
     __setEdentulousForTest(true);
     setChartMode("plan");
-    setPerioSite(15, "MB", { pd: 6 });
+    // Any plan-only edit on tooth 15 marks it; CEJ visibility is used here
+    // because bead odontogram-2vd refuses periodontal PROBING on a tooth that
+    // is not in the mouth (this arch is edentulous), which is what this test
+    // sets up. The Fix-3 behaviour under review is unrelated to which axis
+    // marked the tooth.
+    setCejVisibility(15, "detectable");
     setChartMode("status");
 
     __applyDentitionPresetForTest("primary");

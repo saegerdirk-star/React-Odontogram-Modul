@@ -226,6 +226,9 @@ export interface ExaminationContextRecord {
  *  findings and case context as they stood when it was captured. */
 export interface ExaminationSnapshotRecord {
   examination: ExaminationContextRecord;
+  /** Whole-mouth flags as they stood at capture time — notably the clinical
+   *  `edentulous` finding, which is not per-tooth state. */
+  globals: Record<string, boolean>;
   teeth: Record<string, ToothRecord>;
   case?: OdontogramExportPayload["case"];
 }

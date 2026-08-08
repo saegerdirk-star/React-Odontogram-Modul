@@ -131,6 +131,22 @@ describe("assessed-normal is exported as a real negative result", () => {
     expect(panelFor(bundle, "16")).toBeTruthy();
   });
 
+  it("reports a recorded mobility gap instead of dropping it", () => {
+    const bundle = buildFhirBundle(payload({ assessment: { mobility: "unmeasurable" } }));
+    const mobility = componentsWithLocalCode(panelFor(bundle, "16"), "tooth-mobility");
+    expect(mobility).toHaveLength(1);
+    expect(mobility[0].dataAbsentReason.coding[0].code).toBe("unknown");
+  });
+
+  it("lets a charted gingival margin of zero out-rank a stale gap", () => {
+    const bundle = buildFhirBundle(payload({
+      perio: { pd: { MB: 4 }, gm: { MB: 0 }, bop: [], sup: [] },
+      assessment: { "gm:MB": "unmeasurable" },
+    }));
+    const panel = panelFor(bundle, "16");
+    expect((panel.component ?? []).some((c: Any) => c.dataAbsentReason)).toBe(false);
+  });
+
   it("adds nothing at all to a chart that records no assessment", () => {
     const bundle = buildFhirBundle(payload({ perio: { pd: { MB: 4 }, gm: {}, bop: ["MB"], sup: [] } }));
     const panel = panelFor(bundle, "16");

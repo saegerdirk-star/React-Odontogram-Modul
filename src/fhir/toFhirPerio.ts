@@ -242,6 +242,10 @@ function assessmentAxisCode(axis: string): CodeableConcept | undefined {
     case "mpi": return localConcept("mod-plaque-index-mombelli", "Modified plaque index (Mombelli)");
     case "mbi": return localConcept("mod-bleeding-index-mombelli", "Modified sulcus bleeding index (Mombelli)");
     case "kg": return localConcept("keratinized-gingiva-width", "Keratinized gingiva width");
+    // The SAME engine-local finding code the registry-driven per-tooth
+    // Observation uses for a mobility VALUE (see registry/axes.ts), so a
+    // recorded gap and a recorded grade speak one vocabulary.
+    case "mobility": return localConcept("tooth-mobility", "Tooth mobility");
     default: return undefined;
   }
 }
@@ -424,7 +428,10 @@ function buildToothPerioObservation(subjectRef: string, tooth: string, rec: Toot
   const hasAssessmentValue = (axis: string, qualifier: string | null): boolean => {
     switch (axis) {
       case "pd": return qualifier !== null && chartedSites.includes(qualifier as PerioSite);
-      case "gm": return qualifier !== null && chartedSites.includes(qualifier as PerioSite) && isFiniteNumber(gm[qualifier]) && (gm[qualifier] as number) > 0;
+      // A charted margin is a value even at 0 or below the CEJ; only the
+      // RECESSION component is gated on gm > 0. Reading it as "no value" here
+      // would let a stale gap out-rank a measurement the engine already has.
+      case "gm": return qualifier !== null && chartedSites.includes(qualifier as PerioSite) && isFiniteNumber(gm[qualifier]);
       case "bop": return qualifier !== null && chartedSites.includes(qualifier as PerioSite);
       case "sup": return qualifier !== null && chartedSites.includes(qualifier as PerioSite);
       case "furcation": return qualifier !== null && gradedEntrances.includes(qualifier as FurcationEntrance);
@@ -434,6 +441,10 @@ function buildToothPerioObservation(subjectRef: string, tooth: string, rec: Toot
       case "mpi": return mpiEntries.some(([surface]) => surface === qualifier);
       case "mbi": return mbiEntries.some(([surface]) => surface === qualifier);
       case "kg": return kgValue !== undefined;
+      // Mobility is not part of this panel's own value set — the registry-driven
+      // Observation carries the grade — so only its recorded ASSESSMENT rides
+      // here, and never alongside a value that would contradict it.
+      case "mobility": return typeof rec.mobility === "string" && rec.mobility !== "none";
       default: return false;
     }
   };

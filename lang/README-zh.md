@@ -563,6 +563,7 @@ startExamination({ effectiveDateTime: "2027-01-15" });
 setAssessmentStatus(16, "bop", "MB", "assessed");
 setAssessmentStatus(16, "pd", "DB", "unmeasurable");
 getAssessmentStatus(16, "mpi", "buccal");
+perioAxisApplies(16, "gm");
 perioAxisApplies(11, "gm");
 ```
 

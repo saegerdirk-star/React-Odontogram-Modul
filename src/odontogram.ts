@@ -787,6 +787,7 @@ function readExaminationContext(raw: Any): ExaminationContext {
 // with the payload; storing, versioning and auditing them is the host's job.
 type ExaminationSnapshot = {
   examination: ExaminationContext;
+  globals: Record<string, boolean>;
   teeth: Record<string, Any>;
   case: Record<string, unknown> | null;
 };
@@ -810,6 +811,7 @@ function nextExaminationId(): string {
 function serializeSnapshot(s: ExaminationSnapshot): ExaminationSnapshotRecord {
   return {
     examination: serializeExaminationContext(s.examination),
+    globals: deepCopyJson(s.globals),
     teeth: deepCopyJson(s.teeth),
     ...(s.case === null ? {} : { case: deepCopyJson(s.case) }),
   } as ExaminationSnapshotRecord;
@@ -830,9 +832,12 @@ function readExaminationSnapshots(raw: Any): ExaminationSnapshot[] {
     const teeth = (entry as Any).teeth;
     if(!teeth || typeof teeth !== "object") continue;
     const rawCase = (entry as Any).case;
+    const rawGlobals = (entry as Any).globals;
     seen.add(examination.id);
     out.push({
       examination,
+      globals: rawGlobals && typeof rawGlobals === "object"
+        ? deepCopyJson(rawGlobals as Record<string, boolean>) : {},
       teeth: deepCopyJson(teeth as Record<string, Any>),
       case: rawCase && typeof rawCase === "object" ? deepCopyJson(rawCase as Record<string, unknown>) : null,
     });
@@ -876,6 +881,10 @@ export function captureExamination(patch: Partial<Record<ExaminationField, strin
   }
   const snapshot: ExaminationSnapshot = {
     examination: { ...examinationContext },
+    // `globals` carries `edentulous`, a WHOLE-MOUTH clinical finding rather than
+    // a view flag (see `loadLiveDocument`), so an examination that is not
+    // snapshotting it would archive a full dentition for an edentulous mouth.
+    globals: collectGlobals() as unknown as Record<string, boolean>,
     // The STATUS chart explicitly (like every export path here) — an
     // examination records what was observed, never what is proposed.
     teeth: deepCopyJson(collectTeeth(charts.status)),
@@ -946,7 +955,7 @@ export function loadExamination(id: string): boolean {
   const archive = examinations;
   loadLiveDocument({
     version: PAYLOAD_VERSION,
-    globals: collectGlobals(),
+    globals: deepCopyJson(found.globals),
     teeth: deepCopyJson(found.teeth),
     ...(found.case === null ? {} : { case: deepCopyJson(found.case) }),
     examination: serializeExaminationContext(found.examination),
@@ -6615,6 +6624,13 @@ type PlainPerio = { pd: Record<string, number>; gm: Record<string, number>; bop:
  */
 export function setPerioSite(toothNo: number, site: string, patch: PerioSitePatch): void {
   if(!(PERIO_SITES as readonly string[]).includes(site)) return;
+  // Bead odontogram-2vd: the capability matrix decides which axes this tooth
+  // HAS, so a measurement the chart shows as inapplicable can never be written
+  // through the API either. Probing depth is the charting key, so a tooth
+  // without it takes no part of the patch at all; the gingival margin is
+  // measured from the CEJ and is therefore refused on an implant while its
+  // probing depth, bleeding and suppuration are accepted.
+  if(!perioAxisApplies(toothNo, "pd")) return;
   let s = toothState.get(toothNo);
   if(!s){ s = defaultState(); toothState.set(toothNo, s); }
   // DS-1: route the actual mutation through the status->plan gate. The closure
@@ -6648,15 +6664,15 @@ export function setPerioSite(toothNo: number, site: string, patch: PerioSitePatc
       return changed; // never orphan gm/bop/sup onto an un-charted site
     }
 
-    if(patch.gm !== undefined){
+    if(patch.gm !== undefined && perioAxisApplies(toothNo, "gm")){
       const clampedGm = clampPerio("gm", patch.gm);
       if(clampedGm !== null && perio.gm.get(site) !== clampedGm){ perio.gm.set(site, clampedGm); changed = true; }
     }
-    if(patch.bop !== undefined){
+    if(patch.bop !== undefined && perioAxisApplies(toothNo, "bop")){
       if(patch.bop){ if(!perio.bop.has(site)){ perio.bop.add(site); changed = true; } }
       else if(perio.bop.has(site)){ perio.bop.delete(site); changed = true; }
     }
-    if(patch.sup !== undefined){
+    if(patch.sup !== undefined && perioAxisApplies(toothNo, "sup")){
       if(patch.sup){ if(!perio.sup.has(site)){ perio.sup.add(site); changed = true; } }
       else if(perio.sup.has(site)){ perio.sup.delete(site); changed = true; }
     }
@@ -6704,6 +6720,7 @@ export function getToothPerio(toothNo: number): PlainPerio {
  */
 export function setFurcation(toothNo: number, entrance: string, grade: number | null | undefined): void {
   if(!furcationEntrances(toothNo).includes(entrance)) return;
+  if(!perioAxisApplies(toothNo, "furcation")) return; // see setPerioSite
   let s = toothState.get(toothNo);
   if(!s){ s = defaultState(); toothState.set(toothNo, s); }
   // DS-1: gate the mutation (see setPerioSite). Returns whether it changed so a
@@ -6753,6 +6770,7 @@ export function getToothFurcation(toothNo: number): Record<string, number> {
  */
 export function setPlaque(toothNo: number, surface: string, present: boolean): void {
   if(!VALID_PLAQUE_SURFACE.has(surface)) return;
+  if(!perioAxisApplies(toothNo, "plaque")) return; // see setPerioSite
   let s = toothState.get(toothNo);
   if(!s){ s = defaultState(); toothState.set(toothNo, s); }
   // DS-1: gate the mutation (see setPerioSite). Returns whether it changed so a
@@ -6808,10 +6826,12 @@ function getSurfaceGrade(map: Map<string, number>, surface: string): 0|1|2|3 {
  */
 function setSurfaceGrade(toothNo: number, mapKey: "pi"|"gi"|"mpi"|"mbi", surface: string, grade: number): void {
   if(!VALID_PLAQUE_SURFACE.has(surface)) return;
+  // Bead odontogram-2vd: the capability matrix subsumes PG-E's bespoke implant
+  // guard — it reports mPI/mBI on implants only and PI/GI on natural teeth
+  // only, so one predicate now covers both directions (see setPerioSite).
+  if(!perioAxisApplies(toothNo, mapKey)) return;
   let s = toothState.get(toothNo);
   if(!s){ s = defaultState(); toothState.set(toothNo, s); }
-  // PG-E: mPI/mBI are peri-implant indices — only settable on implant teeth.
-  if((mapKey === "mpi" || mapKey === "mbi") && s.toothSelection !== "implant") return;
   gateToothEdit(toothNo, () => {
     const map = s[mapKey] as Map<string, number>;
     if(grade === 0){
@@ -6929,6 +6949,7 @@ export function getKeratinizedWidth(toothNo: number): number | null {
  * a no-op so the DS-1 protocol never marks/mirrors a tooth that didn't change.
  */
 export function setKeratinizedWidth(toothNo: number, mm: number | null): void {
+  if(!perioAxisApplies(toothNo, "kg")) return; // see setPerioSite
   let s = toothState.get(toothNo);
   if(!s){ s = defaultState(); toothState.set(toothNo, s); }
   const next = mm === null ? null : clampKg(mm);
@@ -6991,9 +7012,13 @@ function isPerioAssessmentAxis(axis: string): axis is PerioAssessmentAxis {
 
 /**
  * Whether a periodontal axis has a measurement point on this tooth at all — the
- * single capability matrix the assessment status, the full-mouth grid's enabled
- * cells and the perio export all read, so the UI can never offer a measurement
- * the domain calls not-applicable (or refuse one it calls applicable).
+ * single capability matrix the assessment status, every interactive periodontal
+ * setter and the full-mouth grid's enabled cells all read, so the UI can never
+ * offer a measurement the domain refuses (or refuse one the domain accepts).
+ *
+ * The exporters deliberately do NOT consult it: serialization reports what is
+ * stored, and hydration stays tolerant of foreign data, exactly like every
+ * other axis in this engine. The matrix is enforced at the edit boundary.
  */
 export function perioAxisApplies(toothNo: number, axis: string): boolean {
   if(!isPerioAssessmentAxis(axis)) return false;
@@ -7038,14 +7063,22 @@ function assessmentKeyValid(key: string): boolean {
 }
 
 /** Whether the axis actually holds a charted value at that measurement point —
- *  the strongest possible evidence that it was assessed. */
+ *  the strongest possible evidence that it was assessed.
+ *
+ *  Bleeding and suppuration are the one place where "holds a value" is not the
+ *  same as "is in the set": both are membership-only Sets over a site that was
+ *  PROBED, and probing depth is the charting key for that site. The rest of the
+ *  engine already reads them that way — `getPerioSummary()` divides bleeding
+ *  sites by CHARTED sites, so a charted site with no bleeding entry counts as an
+ *  assessed negative — and so does the FHIR export, which emits an explicit
+ *  `false` for every charted site. Resolving them from the set alone here would
+ *  have made this axis contradict both. */
 function assessmentValuePresent(s: Any, axis: PerioAssessmentAxis, qualifier: string | null): boolean {
   if(!s) return false;
   switch(axis){
     case "pd": return s.perio?.pd?.has(qualifier) ?? false;
     case "gm": return s.perio?.gm?.has(qualifier) ?? false;
-    case "bop": return s.perio?.bop?.has(qualifier) ?? false;
-    case "sup": return s.perio?.sup?.has(qualifier) ?? false;
+    case "bop": case "sup": return s.perio?.pd?.has(qualifier) ?? false;
     case "plaque": return s.plaque?.has(qualifier) ?? false;
     case "furcation": return s.furcation?.has(qualifier) ?? false;
     case "pi": case "gi": case "mpi": case "mbi": return (s[axis] as Map<string, number> | undefined)?.has(qualifier as string) ?? false;
@@ -7800,6 +7833,7 @@ export function getToothMobility(toothNo: number): string {
  */
 export function setToothMobility(toothNo: number, value: string): void {
   if(!VALID_MOBILITY.has(value)) return;
+  if(!perioAxisApplies(toothNo, "mobility")) return; // see setPerioSite
   let s = toothState.get(toothNo);
   if(!s){ s = defaultState(); toothState.set(toothNo, s); }
   if(s.mobility === value) return;
