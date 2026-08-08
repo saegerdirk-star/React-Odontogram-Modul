@@ -669,7 +669,7 @@ Oltre all'esportazione propria dell'odontogramma in Stato JSON / FHIR / PNG / JP
 - `src/assets/icon-svgs/` - SVG delle icone della barra degli strumenti (5 file)
 
 ### ⚙️ Stack tecnologico
-- React 18 + Vite + TypeScript
+- React 19 + Vite + TypeScript
 - Tailwind CSS per lo stile dell'interfaccia
 - Stratificazione SVG tramite manipolazione del DOM (stato non-React per le prestazioni)
 - Sistema i18n personalizzato leggero

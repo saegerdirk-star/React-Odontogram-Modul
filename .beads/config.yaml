@@ -1,0 +1,13 @@
+# Beads configuration for the React Odontogram repository.
+issue-prefix: "odontogram"
+
+# Dolt is the source of truth; JSONL remains a local interchange artifact only.
+no-auto-import: true
+import.auto: false
+export.auto: false
+export.git-add: false
+
+# Use the workstation-wide Dolt service and the Cognovis remote.
+dolt.shared-server: true
+sync.remote: "https://dolt.cognovis.de/beads_odontogram"
+federation.remote: "https://dolt.cognovis.de/beads_odontogram"

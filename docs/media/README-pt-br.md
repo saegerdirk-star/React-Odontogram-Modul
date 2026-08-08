@@ -597,7 +597,7 @@ A exportação cria um arquivo JSON (versão `2.10`; as importações também ac
 - `src/assets/icon-svgs/` - SVGs dos ícones da barra de ferramentas (5 arquivos)
 
 ### ⚙️ Stack de tecnologia
-- React 18 + Vite + TypeScript
+- React 19 + Vite + TypeScript
 - Tailwind CSS para a estilização da interface
 - Camadas SVG via manipulação do DOM (estado fora do React para desempenho)
 - Sistema de i18n personalizado e leve

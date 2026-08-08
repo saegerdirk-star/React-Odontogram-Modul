@@ -671,7 +671,7 @@ npm run docs           # 在 docs/ 目录生成 TypeDoc 文档
 - `src/assets/icon-svgs/` - 工具栏图标 SVG（5 个文件）
 
 ### ⚙️ 技术栈
-- React 18 + Vite + TypeScript
+- React 19 + Vite + TypeScript
 - Tailwind CSS 用于界面样式
 - 通过 DOM 操作实现 SVG 分层渲染（出于性能考虑不使用 React 状态）
 - 轻量级自研国际化系统

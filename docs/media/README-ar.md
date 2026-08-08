@@ -671,7 +671,7 @@ npm run docs           # توليد توثيق TypeDoc داخل docs/
 - `src/assets/icon-svgs/` - أيقونات SVG لشريط الأدوات (5 ملفات)
 
 ### ⚙️ حزمة التقنيات
-- React 18 + Vite + TypeScript
+- React 19 + Vite + TypeScript
 - Tailwind CSS لتنسيق الواجهة
 - طبقات SVG عبر معالجة DOM (حالة غير مرتبطة بـReact لأجل الأداء)
 - نظام ترجمة داخلي خفيف الوزن

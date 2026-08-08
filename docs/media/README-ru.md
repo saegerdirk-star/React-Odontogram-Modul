@@ -669,7 +669,7 @@ npm run docs           # Generate TypeDoc docs in docs/
 - `src/assets/icon-svgs/` — SVG-иконки панели инструментов (5 файлов)
 
 ### ⚙️ Технологический стек
-- React 18 + Vite + TypeScript
+- React 19 + Vite + TypeScript
 - Tailwind CSS для стилизации интерфейса
 - Слоирование SVG через манипуляции с DOM (без React-состояния для производительности)
 - Лёгкая кастомная система i18n

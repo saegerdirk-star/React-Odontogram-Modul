@@ -42,4 +42,9 @@ graphics/
 # === SNOMED CT working files ===
 snomed/
 
+# === Beads runtime state ===
+.dolt/
+*.db
+.beads-credential-key
+.beads/proxieddb/
 

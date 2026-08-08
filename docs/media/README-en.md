@@ -669,7 +669,7 @@ Beyond the odontogram's own Status JSON / FHIR / PNG / JPG / SVG export, the **p
 - `src/assets/icon-svgs/` - toolbar icon SVGs (5 files)
 
 ### ⚙️ Tech Stack
-- React 18 + Vite + TypeScript
+- React 19 + Vite + TypeScript
 - Tailwind CSS for UI styling
 - SVG layering via DOM manipulation (non-React state for performance)
 - Lightweight custom i18n system

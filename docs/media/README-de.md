@@ -671,7 +671,7 @@ Der Export erzeugt eine JSON-Datei (Version `2.20`; Importe akzeptieren weiterhi
 - `src/assets/icon-svgs/` - Toolbar-Icon-SVGs (5 Dateien)
 
 ### ⚙️ Technologie-Stack
-- React 18 + Vite + TypeScript
+- React 19 + Vite + TypeScript
 - Tailwind CSS für UI-Styling
 - SVG-Schichtung über DOM-Manipulation (kein React-State für Performance)
 - Leichtgewichtiges eigenes i18n-System
