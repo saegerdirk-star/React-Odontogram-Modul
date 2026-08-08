@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.2.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -128,7 +128,7 @@ Ewentualnie załaduj go za pomocą dynamicznego importu tylko po stronie klienta
 - **Arkusz stylów jest oddzielny** — **musisz** zaimportować `react-advanced-odontogram/style.css` raz; nie jest on wstrzykiwany automatycznie. Stylowanie to globalny CSS ograniczony do `.odontogram-root` i sterowany zmiennymi CSS `--odon-*`.
 - **SSR / tylko po stronie klienta** — komponent odczytuje DOM przy montowaniu (`document`), więc musi działać w przeglądarce. W frameworkach SSR renderuj go w komponencie klienckim (`"use client"`) lub poprzez dynamiczny import tylko po stronie klienta.
 - **Zasoby są samodzielne** — pliki SVG zębów i ikon są osadzane w pakiecie JavaScript w czasie budowania; **nie ma żadnego pobierania zasobów w czasie działania** do konfigurowania ani niczego dodatkowego do skopiowania do folderu publicznego.
-- **Jedna instancja na stronę** — stan silnika jest obecnie singletonem na poziomie modułu, więc renderowanie dwóch instancji `<OdontogramShell>` na tej samej stronie spowodowałoby współdzielenie przez nie stanu jednego wykresu. Obsługa wielu instancji jest planowana w przyszłej wersji.
+- **Wiele instancji, jeden aktywny edytor** — każda zamontowana `<OdontogramShell>` może utrzymywać własny stan kliniczny poprzez odizolowaną sesję (`createOdontogramSession()`), a dwie sesje nigdy nie współdzielą danych. Interaktywny edytor DOM pozostaje jednym globalnym silnikiem, więc steruje nim dokładnie jedna zamontowana instancja naraz: to ona renderuje wykres, pozostałe renderują nieaktywny znacznik i pozostają w pełni czytelne oraz zapisywalne przez swoje API sesji. Po odmontowaniu aktywnej instancji przejmuje ją oczekująca.
 
 ---
 
@@ -469,6 +469,76 @@ const myPlugin: OdontogramPlugin = {
 setPluginState(11, "implant-brand", "Straumann");
 ```
 
+**Integracja kontrolowana — dokument domeny interfejsu (od 2.3.0):**
+
+Stan kliniczny komponentu to **dokument domeny interfejsu**: ten sam wersjonowany JSON,
+który zapisuje `exportStatus()` i odczytuje `importStatus()`. To ten dokument — a nie FHIR
+— przechowuje stan Reacta i należy do aplikacji hosta.
+
+Powiąż instancję z odizolowaną **sesją**, aby ją zainicjować i obserwować oraz zachować
+niezależność dwóch osadzonych odontogramów:
+
+```tsx
+import App, {
+  createOdontogramSession,
+  type OdontogramDocument, type OdontogramSession,
+} from "./App";
+
+const upper: OdontogramSession = createOdontogramSession(savedUpperDocument);
+const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
+
+<App session={upper} onDocumentChange={(doc: OdontogramDocument) => save("upper", doc)} />
+<App session={lower} onDocumentChange={(doc: OdontogramDocument) => save("lower", doc)} />
+```
+
+- `session.getDocument()` / `setDocument(doc)` / `subscribe(listener)` to cały kontrakt;
+  `createOdontogramSession(initial?)` tworzy sesję.
+- Zwykły prop `document` zamiast `session` sprawia, że instancja tworzy własną sesję
+  zainicjowaną tym dokumentem.
+- Pominięcie **obu** zachowuje dotychczasowe zachowanie samodzielne: komponent działa na
+  domyślnej sesji procesu (`getDefaultOdontogramSession()`), a wszystkie modułowe punkty
+  wejścia działają na nią dokładnie tak jak wcześniej. **Migracja nie jest wymagana.**
+- W silniku DOM *aktywna* jest naraz tylko jedna sesja (jest jeden globalny silnik
+  powiązany z jedną siatką zębów); pozostałe zachowują własny dokument i pozostają w pełni
+  czytelne i zapisywalne przez swoje API sesji.
+
+**Dialekty FHIR — czysta, opcjonalna projekcja:**
+
+Konwersja FHIR jest czystym adapterem nad dokumentem: bez DOM, bez sieci, bez zegara
+systemowego, bez losowości i bez kwestii transportu, uwierzytelniania czy trwałości
+wewnątrz komponentu.
+
+```ts
+import { buildFhirBundle, parseFhirBundle, buildDentalDeBundle } from "./App";
+
+const legacy = buildFhirBundle(session.getDocument());
+
+const canonical = buildFhirBundle(session.getDocument(), {
+  dialect: "dental-de", subject: "Patient/123", effectiveDateTime: "2026-08-08",
+});
+
+const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
+  effectiveDateTime: "2026-08-08",
+});
+```
+
+Dialekt `dental-de` emituje `OdontogramObservationDE`, `CariesObservationDE` i
+`DentalFindingDE` z wycinkami komponentów z `OdontogramComponentCS`, tożsamością zęba FDI
+(`ToothIdentificationFDICS`), punktacją ICDAS (`ICDASCariesScoreCS`) oraz powtarzalnym
+rozszerzeniem `ToothSurfacesExt` nad HL7 `FDI-surface`. Kodowanie powierzchni zależy od
+zęba: powierzchnia żująca to `I` (sieczna) w zębie przednim i `O` (zwarciowa) w bocznym;
+przy imporcie `I` wraca do klucza `occlusal` silnika, `V` do `buccal`, a kody złożone
+`MO`/`DO`/`DI`/`MOD` są rozbijane na składowe.
+
+Tam gdzie IG nie definiuje wartości kodowanej, adapter używa `CodeableConcept.text` w
+ramach odpowiedniego wiązania **extensible** — nigdy wymyślonego kodu — a tam gdzie
+wiązanie **required** nie ma pasującego pojęcia, nie emituje nic. Oba przypadki trafiają do
+`report.textFallback` i `report.unmapped` wraz z zębem, polem, zachowaną wartością i
+uzasadnieniem, więc nic nie degraduje się po cichu. Sama wartość zawsze pozostaje w
+dokumencie domeny interfejsu i przechodzi pełny obieg przez JSON.
+
+`parseFhirBundle` czyta **oba** dialekty, również pakiet mieszany, więc wcześniej
+wyeksportowane pakiety importują się bez zmian.
 ### 🧪 Testowanie
 ```bash
 npm run test           # Uruchom wszystkie 1704 testy (1 dodatkowy test pominięty)

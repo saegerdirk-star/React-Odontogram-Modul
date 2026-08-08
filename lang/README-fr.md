@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.2.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -115,6 +115,79 @@ export default function OdontogramClient() {
 
 ---
 
+### 🔗 Intégration contrôlée
+
+**Le document du domaine de l'interface (depuis 2.3.0) :**
+
+L'état clinique du composant est un **document du domaine de l'interface** : le même JSON
+versionné qu'`exportStatus()` écrit et qu'`importStatus()` lit. C'est ce document — et non
+FHIR — que l'état React conserve et que l'application hôte possède.
+
+Reliez une instance à une **session** isolée pour l'initialiser et l'observer, et pour que
+deux odontogrammes montés restent indépendants :
+
+```tsx
+import App, {
+  createOdontogramSession,
+  type OdontogramDocument, type OdontogramSession,
+} from "./App";
+
+const upper: OdontogramSession = createOdontogramSession(savedUpperDocument);
+const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
+
+<App session={upper} onDocumentChange={(doc: OdontogramDocument) => save("upper", doc)} />
+<App session={lower} onDocumentChange={(doc: OdontogramDocument) => save("lower", doc)} />
+```
+
+- `session.getDocument()` / `setDocument(doc)` / `subscribe(listener)` constitue tout le
+  contrat ; `createOdontogramSession(initial?)` en crée une.
+- Une simple prop `document` à la place de `session` fait créer à l'instance une session
+  privée initialisée à partir de ce document.
+- N'en passer **aucune des deux** conserve le comportement autonome historique : le
+  composant s'exécute sur la session par défaut du processus
+  (`getDefaultOdontogramSession()`) et tous les points d'entrée du module s'y appliquent
+  exactement comme avant. **Aucune migration n'est nécessaire.**
+- Une seule session est *active* dans le moteur DOM à la fois (c'est un moteur global
+  unique lié à une grille dentaire) ; les autres conservent leur propre document et restent
+  entièrement lisibles et modifiables via leur API de session.
+
+**Dialectes FHIR — une projection pure et facultative :**
+
+La conversion FHIR est un adaptateur pur au-dessus du document : pas de DOM, pas de réseau,
+pas d'horloge système, pas d'aléatoire, et aucune préoccupation de transport,
+d'authentification ou de persistance à l'intérieur du composant.
+
+```ts
+import { buildFhirBundle, parseFhirBundle, buildDentalDeBundle } from "./App";
+
+const legacy = buildFhirBundle(session.getDocument());
+
+const canonical = buildFhirBundle(session.getDocument(), {
+  dialect: "dental-de", subject: "Patient/123", effectiveDateTime: "2026-08-08",
+});
+
+const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
+  effectiveDateTime: "2026-08-08",
+});
+```
+
+Le dialecte `dental-de` émet `OdontogramObservationDE`, `CariesObservationDE` et
+`DentalFindingDE` avec les tranches de composants d'`OdontogramComponentCS`, l'identité
+dentaire FDI (`ToothIdentificationFDICS`), les scores ICDAS (`ICDASCariesScoreCS`) et
+l'extension répétable `ToothSurfacesExt` sur `FDI-surface` de HL7. Le codage des faces
+dépend de la dent : la face de mastication est `I` (incisive) sur une dent antérieure et
+`O` (occlusale) sur une postérieure ; à l'import, `I` revient à la clé `occlusal` du moteur,
+`V` à `buccal`, et les codes combinés `MO`/`DO`/`DI`/`MOD` sont scindés en leurs membres.
+
+Là où l'IG ne définit aucune valeur codée, l'adaptateur utilise `CodeableConcept.text` sous
+la liaison **extensible** correspondante — jamais un code inventé — et là où une liaison
+**required** n'a pas de concept équivalent, il n'émet rien. Les deux cas figurent dans
+`report.textFallback` et `report.unmapped`, avec la dent, le champ, la valeur préservée et
+la raison, de sorte que rien ne se dégrade en silence. La valeur elle-même reste toujours
+dans le document du domaine de l'interface et survit à l'aller-retour JSON.
+
+`parseFhirBundle` lit **les deux** dialectes, y compris un bundle qui les mélange, si bien
+que les bundles déjà exportés continuent de s'importer sans changement.
 ### ✨ Fonctionnalités clés
 - 🖱️ Sélection rapide et multi-sélection (CMD/CTRL + clic)
 - 🦷 Types de dents : permanente, temporaire (lactéale), implant, sous-gingivale, absente

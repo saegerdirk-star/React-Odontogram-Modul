@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.2.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -128,7 +128,7 @@ Vagy töltsd be egy kizárólag kliensoldali dinamikus importtal: `dynamic(() =>
 - **A stíluslap külön van** — kötelező egyszer importálnod a `react-advanced-odontogram/style.css` fájlt; ez nem töltődik be automatikusan. A stílus globális CSS, amely a `.odontogram-root` alá van skálázva, és `--odon-*` CSS változók vezérlik.
 - **SSR / kizárólag kliensoldali** — a komponens csatoláskor (mount) olvassa a DOM-ot (`document`), ezért a böngészőben kell futnia. SSR keretrendszerekben egy Client Component-ben (`"use client"`) vagy kizárólag kliensoldali dinamikus importon keresztül kell renderelni.
 - **Az eszközök (assets) önállóak** — a fog- és ikon-SVG-k build időben be vannak ágyazva a JavaScript bundle-be; **nincs futásidejű asset lekérés**, amit be kellene állítani, és semmi extrát nem kell átmásolni a public mappádba.
-- **Oldalanként egy példány** — a motor állapota jelenleg modul-szintű singleton, ezért ha ugyanazon az oldalon két `<OdontogramShell>` példányt renderelsz, azok egyetlen diagram állapotát osztanák meg egymással. A több példány támogatása egy jövőbeli kiadásban tervezett.
+- **Több példány, egy élő szerkesztő** — minden beillesztett `<OdontogramShell>` saját klinikai állapotot tarthat egy elszigetelt munkameneten keresztül (`createOdontogramSession()`), és két munkamenet soha nem oszt meg adatot. Az interaktív DOM-szerkesztő továbbra is egyetlen globális motor, ezért egyszerre pontosan egy beillesztett példány vezérli: az rendereli a diagramot, a többi inaktív helyőrzőt rendel, és a munkamenet API-ján át továbbra is teljesen olvasható és írható. Az aktív példány leszerelésekor egy várakozó veszi át.
 
 ---
 
@@ -469,6 +469,76 @@ const myPlugin: OdontogramPlugin = {
 setPluginState(11, "implant-brand", "Straumann");
 ```
 
+**Vezérelt integráció — a felületi tartomány dokumentuma (2.3.0-tól):**
+
+A komponens klinikai állapota egy **felületi tartományú dokumentum**: ugyanaz a
+verziózott JSON, amelyet az `exportStatus()` ír és az `importStatus()` olvas. Ez a
+dokumentum — nem a FHIR — az, amit a React állapot tárol, és ami a gazdaalkalmazásé.
+
+Kösd az példányt egy elszigetelt **munkamenethez**, hogy inicializálni és figyelni tudd,
+és hogy két beillesztett fogtérkép független maradjon:
+
+```tsx
+import App, {
+  createOdontogramSession,
+  type OdontogramDocument, type OdontogramSession,
+} from "./App";
+
+const upper: OdontogramSession = createOdontogramSession(savedUpperDocument);
+const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
+
+<App session={upper} onDocumentChange={(doc: OdontogramDocument) => save("upper", doc)} />
+<App session={lower} onDocumentChange={(doc: OdontogramDocument) => save("lower", doc)} />
+```
+
+- `session.getDocument()` / `setDocument(doc)` / `subscribe(listener)` — ez a teljes
+  szerződés; a `createOdontogramSession(initial?)` hoz létre egyet.
+- A `session` helyett megadott egyszerű `document` prop hatására a példány saját, abból
+  inicializált munkamenetet hoz létre.
+- Ha **egyiket sem** adod meg, a korábbi önálló viselkedés marad: a komponens a folyamat
+  alapértelmezett munkamenetén (`getDefaultOdontogramSession()`) dolgozik, és minden
+  modulszintű belépési pont változatlanul arra hat. **Migráció nem szükséges.**
+- Egyszerre csak egy munkamenet *él* a DOM-motorban (egyetlen globális motor van egy
+  fográcshoz kötve); a többi megőrzi saját dokumentumát, és a munkamenet API-ján keresztül
+  továbbra is teljesen olvasható és írható.
+
+**FHIR-nyelvjárások — tiszta, opcionális vetület:**
+
+A FHIR-konverzió tiszta adapter a dokumentum felett: nincs DOM, nincs hálózat, nincs
+rendszeróra, nincs véletlenszerűség, és nincs szállítási, hitelesítési vagy tárolási
+szempont a komponensben.
+
+```ts
+import { buildFhirBundle, parseFhirBundle, buildDentalDeBundle } from "./App";
+
+const legacy = buildFhirBundle(session.getDocument());
+
+const canonical = buildFhirBundle(session.getDocument(), {
+  dialect: "dental-de", subject: "Patient/123", effectiveDateTime: "2026-08-08",
+});
+
+const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
+  effectiveDateTime: "2026-08-08",
+});
+```
+
+A `dental-de` nyelvjárás `OdontogramObservationDE`, `CariesObservationDE` és
+`DentalFindingDE` erőforrásokat állít elő az `OdontogramComponentCS` komponens-szeleteivel,
+FDI fogazonossággal (`ToothIdentificationFDICS`), ICDAS-pontszámokkal
+(`ICDASCariesScoreCS`) és az ismételhető `ToothSurfacesExt` kiterjesztéssel a HL7
+`FDI-surface` felett. A felszínkódolás fogfüggő: a rágófelszín `I` (incizális) front-, és
+`O` (okkluzális) őrlőfogon; importkor az `I` visszakerül a motor `occlusal` kulcsára, a `V`
+a `buccal`-ra, a `MO`/`DO`/`DI`/`MOD` kombinált kódok pedig tagjaikra bomlanak.
+
+Ahol az IG nem definiál kódolt értéket, az adapter a vonatkozó **extensible** kötés alatt
+`CodeableConcept.text`-et használ — sosem kitalált kódot —, ahol pedig egy **required**
+kötéshez nincs megfelelő fogalom, ott semmit sem ad ki. Mindkét eset szerepel a
+`report.textFallback`, illetve `report.unmapped` listában a foggal, a mezővel, a megőrzött
+értékkel és az indoklással, így semmi nem vész el észrevétlenül. Maga az érték mindig a
+felületi tartomány dokumentumában marad, és túléli a JSON oda-vissza utat.
+
+A `parseFhirBundle` **mindkét** nyelvjárást olvassa, a vegyes köteget is, így a korábban
+exportált kötegek változatlanul importálhatók.
 ### 🧪 Tesztelés
 ```bash
 npm run test           # Összes 1704 teszt futtatása (1 további teszt kihagyva)

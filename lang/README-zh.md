@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.2.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -130,7 +130,7 @@ export default function OdontogramClient() {
 - **样式表是独立的** —— 你**必须**导入一次 `react-advanced-odontogram/style.css`；它不会被自动注入。样式为全局 CSS，作用域限定在 `.odontogram-root` 下，并由 `--odon-*` CSS 变量驱动。
 - **SSR / 仅限客户端** —— 该组件在挂载时会读取 DOM（`document`），因此必须在浏览器中运行。在支持 SSR 的框架中，请在 Client Component（`"use client"`）中渲染它，或通过仅限客户端的动态导入方式加载。
 - **资源是自包含的** —— 牙齿和图标的 SVG 在构建时被内联到 JavaScript 包中；**无需配置任何运行时资源请求**，也无需向你的 public 文件夹额外复制任何文件。
-- **每个页面仅限一个实例** —— 引擎状态目前是模块级单例，因此在同一页面渲染两个 `<OdontogramShell>` 实例会导致它们共享同一份图表状态。多实例支持计划在未来版本中提供。
+- **多实例，单个生效编辑器** —— 每个挂载的 `<OdontogramShell>` 都可通过独立会话（`createOdontogramSession()`）持有自己的临床状态，两个会话之间永不共享数据。交互式 DOM 编辑器仍是全局唯一引擎，因此同一时刻恰好由一个挂载实例驱动：该实例渲染图表，其余实例渲染未激活占位符，并可继续通过其会话 API 完整读写。当前实例卸载后，等待中的实例接管。
 
 ---
 
@@ -471,6 +471,68 @@ const myPlugin: OdontogramPlugin = {
 setPluginState(11, "implant-brand", "Straumann");
 ```
 
+**受控集成 —— 界面域文档（自 2.3.0 起）：**
+
+组件的临床状态是一份**界面域文档**：与 `exportStatus()` 写出、`importStatus()` 读入的
+带版本 JSON 完全相同。React 状态保存的是这份文档而不是 FHIR，它归宿主应用所有。
+
+把一个实例绑定到独立的**会话**，即可初始化并观察它，同时让两个已挂载的牙位图彼此独立：
+
+```tsx
+import App, {
+  createOdontogramSession,
+  type OdontogramDocument, type OdontogramSession,
+} from "./App";
+
+const upper: OdontogramSession = createOdontogramSession(savedUpperDocument);
+const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
+
+<App session={upper} onDocumentChange={(doc: OdontogramDocument) => save("upper", doc)} />
+<App session={lower} onDocumentChange={(doc: OdontogramDocument) => save("lower", doc)} />
+```
+
+- `session.getDocument()` / `setDocument(doc)` / `subscribe(listener)` 就是全部契约；
+  `createOdontogramSession(initial?)` 用于创建会话。
+- 用普通的 `document` 属性代替 `session`，实例会创建并拥有一个由该文档初始化的私有会话。
+- **两者都不传**则保持原有的独立运行行为：组件运行在进程级默认会话
+  （`getDefaultOdontogramSession()`）上，所有模块级入口对它的作用与以前完全一致。
+  **无需任何迁移。**
+- 同一时刻只有一个会话在 DOM 引擎中*生效*（引擎是全局唯一的，绑定在一个牙位网格上）；
+  其余会话各自保留自己的文档，并可通过其会话 API 完整读写。
+
+**FHIR 方言 —— 纯粹且可选的投影：**
+
+FHIR 转换是文档之上的纯适配器：不访问 DOM、不联网、不读系统时钟、不使用随机数，
+组件内部也不涉及传输、鉴权或持久化。
+
+```ts
+import { buildFhirBundle, parseFhirBundle, buildDentalDeBundle } from "./App";
+
+const legacy = buildFhirBundle(session.getDocument());
+
+const canonical = buildFhirBundle(session.getDocument(), {
+  dialect: "dental-de", subject: "Patient/123", effectiveDateTime: "2026-08-08",
+});
+
+const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
+  effectiveDateTime: "2026-08-08",
+});
+```
+
+`dental-de` 方言输出 `OdontogramObservationDE`、`CariesObservationDE` 和
+`DentalFindingDE`，使用 IG 的 `OdontogramComponentCS` 组件切片、FDI 牙位标识
+（`ToothIdentificationFDICS`）、ICDAS 评分（`ICDASCariesScoreCS`）以及基于 HL7
+`FDI-surface` 的可重复扩展 `ToothSurfacesExt`。牙面编码与牙位相关：咬合面在前牙记为
+`I`（切端），在后牙记为 `O`（𬌗面）；导入时 `I` 归回引擎的 `occlusal` 键、`V` 归回
+`buccal`，组合码 `MO`/`DO`/`DI`/`MOD` 会拆分为各个成员。
+
+凡 IG 未定义编码值之处，适配器在相应的 **extensible** 绑定下使用
+`CodeableConcept.text` —— 绝不臆造编码；而在 **required** 绑定下若无对应概念，则完全不
+输出。两种情况都会连同牙位、字段、保留的原值与原因列入 `report.textFallback` 与
+`report.unmapped`，因此不会有任何内容被悄悄丢失。原值始终留在界面域文档中，并可经 JSON
+完整往返。
+
+`parseFhirBundle` 可读取**两种**方言，包括混合的 Bundle，因此此前导出的 Bundle 仍可原样导入。
 ### 🧪 测试
 ```bash
 npm run test           # 运行全部 1704 个测试（另有 1 个测试被跳过）

@@ -189,8 +189,46 @@ export interface OdontogramExportPayload {
     stageOverride?: string;
     gradeOverride?: string;
     extentOverride?: string;
+    /** UI-3b/2.2.1 report identity. `patientName` and `patientDob` are NEVER
+     *  emitted to FHIR; `examDate` (ISO `YYYY-MM-DD`) is the document's own
+     *  observation time and is used as the canonical dialect's
+     *  `Observation.effectiveDateTime` when the caller supplies none. */
+    patientName?: string;
+    patientDob?: string;
+    examDate?: string;
   };
 }
+
+/**
+ * The UI-domain document (bead odontogram-3l1, AC2/AC4).
+ *
+ * This is the contract a host application owns: a versioned, JSON-serializable
+ * snapshot of the editor's clinical state, structurally identical to what
+ * `exportStatus()` writes and `importStatus()` reads. React state stays this
+ * document; FHIR is a pure, optional projection of it produced by
+ * {@link buildFhirBundle} and read back by `parseFhirBundle`.
+ *
+ * Deliberately an ALIAS of {@link OdontogramExportPayload} rather than a new
+ * shape: every payload a consumer has already stored is already a valid
+ * document, so adopting the controlled surface requires no migration.
+ */
+export type OdontogramDocument = OdontogramExportPayload;
+
+/**
+ * Which FHIR representation {@link buildFhirBundle} produces.
+ *
+ * - `"legacy"` (DEFAULT) — the engine-local representation this repository has
+ *   always emitted. Kept as the default so existing consumers and stored
+ *   bundles are unaffected; it is also the only dialect the round-trip golden
+ *   fixtures describe.
+ * - `"dental-de"` — canonical `fhir-dental-de` profiles, component slices and
+ *   extensions. Opt-in, additive, and never emits an engine-local code as if it
+ *   were canonical terminology.
+ *
+ * `parseFhirBundle` needs no dialect: it reads BOTH, including a bundle that
+ * mixes them.
+ */
+export type FhirDialect = "legacy" | "dental-de";
 
 /** Options for buildFhirBundle / exportFhir. */
 export interface FhirExportOptions {
@@ -200,4 +238,49 @@ export interface FhirExportOptions {
    * referenced by every Observation.
    */
   subject?: string;
+  /**
+   * Target FHIR representation. Defaults to `"legacy"` — see {@link FhirDialect}.
+   */
+  dialect?: FhirDialect;
+  /**
+   * `Observation.effective[x]` for the canonical dialect, which requires it
+   * (`DentalFindingDE.effective[x] 1..1`). An explicit ISO date/dateTime keeps
+   * the conversion PURE — the adapter never reads the wall clock. When omitted,
+   * the document's `case.examDate` is used; when that is absent too, the
+   * observations carry no effective time and the omission is reported.
+   */
+  effectiveDateTime?: string;
+}
+
+/**
+ * One editor concept the canonical `fhir-dental-de` conversion could not emit
+ * as a coded value. Reported rather than silently dropped or silently coerced
+ * (bead odontogram-3l1 compatibility strategy).
+ */
+export interface DentalDeConversionEntry {
+  /** FDI position, or `"*"` for a document-level concern. */
+  tooth: string;
+  /** The engine field the value came from. */
+  field: string;
+  /** The engine value, preserved verbatim in the UI-domain document. */
+  value: string;
+  /** Why it could not be emitted as a coded canonical value. */
+  reason: string;
+}
+
+/**
+ * What the canonical conversion did with the parts of the document the IG does
+ * not give a coded value for.
+ *
+ * - `textFallback` — emitted canonically as `CodeableConcept.text` under an
+ *   EXTENSIBLE binding. This is the IG's own sanctioned pattern; the source
+ *   assessment is preserved exactly and no code is invented.
+ * - `unmapped` — not emitted at all, because the target element has a REQUIRED
+ *   binding with no matching concept, or the IG routes the concept to a
+ *   resource this adapter does not build. The value stays in the UI-domain
+ *   document and round-trips through JSON.
+ */
+export interface DentalDeConversionReport {
+  textFallback: DentalDeConversionEntry[];
+  unmapped: DentalDeConversionEntry[];
 }

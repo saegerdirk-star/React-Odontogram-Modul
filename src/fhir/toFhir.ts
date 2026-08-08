@@ -4,6 +4,7 @@
 import type { Bundle, OdontogramExportPayload, FhirExportOptions } from "./types";
 import { buildFhirBundleFromRegistry } from "../registry/fhir";
 import { appendPerioObservations, appendPerioCondition } from "./toFhirPerio";
+import { buildDentalDeBundle } from "./toFhirDentalDe";
 
 /**
  * Convert a serialized odontogram payload into a FHIR R4 collection Bundle.
@@ -22,8 +23,16 @@ import { appendPerioObservations, appendPerioCondition } from "./toFhirPerio";
  * payload whose final classification is "health" contributes nothing, so
  * every existing parity fixture (none of which derives a periodontal
  * diagnosis) is unaffected.
+ *
+ * Bead odontogram-3l1: `options.dialect` selects the representation. It
+ * DEFAULTS to `"legacy"` — the shape described above and frozen in the
+ * round-trip goldens — so no existing consumer or stored bundle is affected.
+ * `"dental-de"` produces canonical `fhir-dental-de` profiles instead; use
+ * {@link buildDentalDeBundle} directly when you also want the conversion
+ * report naming everything the IG has no coded value for.
  */
 export function buildFhirBundle(payload: OdontogramExportPayload, options: FhirExportOptions = {}): Bundle {
+  if (options.dialect === "dental-de") return buildDentalDeBundle(payload, options).bundle;
   const bundle = buildFhirBundleFromRegistry(payload, options);
   appendPerioObservations(bundle, payload, options);
   appendPerioCondition(bundle, payload, options);

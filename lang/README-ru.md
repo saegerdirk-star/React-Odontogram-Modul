@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.2.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -128,7 +128,7 @@ export default function OdontogramClient() {
 - **Таблица стилей отдельная** — вы **обязаны** импортировать `react-advanced-odontogram/style.css` один раз; она не подключается автоматически. Стилизация — это глобальный CSS, ограниченный областью `.odontogram-root` и управляемый CSS-переменными `--odon-*`.
 - **SSR / только клиент** — компонент обращается к DOM при монтировании (`document`), поэтому он должен выполняться в браузере. В SSR-фреймворках отрисовывайте его в клиентском компоненте (`"use client"`) или через клиентский динамический импорт.
 - **Ресурсы самодостаточны** — SVG зубов и иконок встраиваются в JavaScript-бандл на этапе сборки; **не требуется** загрузка ресурсов во время выполнения и нечего дополнительно копировать в вашу публичную папку.
-- **Один экземпляр на страницу** — состояние движка в настоящее время является одиночным объектом на уровне модуля, поэтому отрисовка двух экземпляров `<OdontogramShell>` на одной странице приведёт к тому, что они будут использовать общее состояние одной карты. Поддержка нескольких экземпляров запланирована на будущий релиз.
+- **Несколько экземпляров, один активный редактор** — каждый смонтированный `<OdontogramShell>` может хранить собственное клиническое состояние через изолированную сессию (`createOdontogramSession()`), и две сессии никогда не разделяют данные. Интерактивный DOM-редактор по-прежнему остаётся единым глобальным движком, поэтому им управляет ровно один смонтированный экземпляр: он отрисовывает карту, остальные отрисовывают неактивную заглушку и остаются полностью доступными для чтения и записи через API сессии. При размонтировании активного экземпляра управление принимает ожидающий.
 
 ---
 
@@ -469,6 +469,77 @@ const myPlugin: OdontogramPlugin = {
 setPluginState(11, "implant-brand", "Straumann");
 ```
 
+**Управляемая интеграция — документ домена интерфейса (с версии 2.3.0):**
+
+Клиническое состояние компонента — это **документ домена интерфейса**: тот же
+версионированный JSON, который пишет `exportStatus()` и читает `importStatus()`. Именно
+этот документ, а не FHIR, хранится в состоянии React и принадлежит хост-приложению.
+
+Свяжите экземпляр с изолированной **сессией**, чтобы инициализировать и наблюдать его и
+чтобы две смонтированные одонтограммы оставались независимыми:
+
+```tsx
+import App, {
+  createOdontogramSession,
+  type OdontogramDocument, type OdontogramSession,
+} from "./App";
+
+const upper: OdontogramSession = createOdontogramSession(savedUpperDocument);
+const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
+
+<App session={upper} onDocumentChange={(doc: OdontogramDocument) => save("upper", doc)} />
+<App session={lower} onDocumentChange={(doc: OdontogramDocument) => save("lower", doc)} />
+```
+
+- `session.getDocument()` / `setDocument(doc)` / `subscribe(listener)` — это весь
+  контракт; `createOdontogramSession(initial?)` создаёт сессию.
+- Простой проп `document` вместо `session` заставляет экземпляр создать собственную
+  сессию, инициализированную этим документом.
+- Если не передать **ни того, ни другого**, сохраняется прежнее автономное поведение:
+  компонент работает с общепроцессной сессией по умолчанию
+  (`getDefaultOdontogramSession()`), и все модульные точки входа действуют на неё в
+  точности как раньше. **Миграция не требуется.**
+- В DOM-движке одновременно *активна* только одна сессия (движок один и привязан к одной
+  сетке зубов); остальные сохраняют свой документ и остаются полностью доступными для
+  чтения и записи через API сессии.
+
+**Диалекты FHIR — чистая, необязательная проекция:**
+
+Преобразование в FHIR — это чистый адаптер над документом: без DOM, без сети, без
+системных часов, без случайности и без вопросов транспорта, аутентификации или хранения
+внутри компонента.
+
+```ts
+import { buildFhirBundle, parseFhirBundle, buildDentalDeBundle } from "./App";
+
+const legacy = buildFhirBundle(session.getDocument());
+
+const canonical = buildFhirBundle(session.getDocument(), {
+  dialect: "dental-de", subject: "Patient/123", effectiveDateTime: "2026-08-08",
+});
+
+const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
+  effectiveDateTime: "2026-08-08",
+});
+```
+
+Диалект `dental-de` выдаёт `OdontogramObservationDE`, `CariesObservationDE` и
+`DentalFindingDE` со срезами компонентов из `OdontogramComponentCS`, идентификацией зуба
+по FDI (`ToothIdentificationFDICS`), баллами ICDAS (`ICDASCariesScoreCS`) и повторяемым
+расширением `ToothSurfacesExt` над HL7 `FDI-surface`. Кодирование поверхностей зависит от
+зуба: жевательная поверхность — `I` (режущая) у переднего зуба и `O` (окклюзионная) у
+бокового; при импорте `I` возвращается к ключу движка `occlusal`, `V` — к `buccal`, а
+комбинированные коды `MO`/`DO`/`DI`/`MOD` разбиваются на составляющие.
+
+Там, где IG не определяет кодированного значения, адаптер использует
+`CodeableConcept.text` в рамках соответствующей **extensible**-привязки — и никогда
+выдуманный код, — а там, где у **required**-привязки нет подходящего понятия, не выдаёт
+ничего. Оба случая попадают в `report.textFallback` и `report.unmapped` с указанием зуба,
+поля, сохранённого значения и причины, так что ничто не теряется незаметно. Само значение
+всегда остаётся в документе домена интерфейса и переживает круговой обход через JSON.
+
+`parseFhirBundle` читает **оба** диалекта, включая смешанный набор, поэтому ранее
+экспортированные наборы импортируются без изменений.
 ### 🧪 Тестирование
 ```bash
 npm run test           # Запустить все 1704 тестов (1 дополнительный тест пропущен)

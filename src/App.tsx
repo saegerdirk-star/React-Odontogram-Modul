@@ -5,6 +5,24 @@ import { useEffect, useRef, useState } from "react";
 import { destroyOdontogram, initOdontogram, setNumberingSystem, clearSelection, setOcclusalVisible, setWisdomVisible, setShowBase, setHealthyPulpVisible, registerPlugins, setPluginState, getPluginState, getToothStateSummary, getOdontogramSummary, formatToothLabel, onStateChange, setReadOnly, getReadOnly, setNotesEnabled, getNotesEnabled, setIcdasEnabled, getIcdasEnabled, setPulpDetailLevel, getPulpDetailLevel, setSecondaryCariesMode, getSecondaryCariesMode, setRootCariesMode, getRootCariesMode, setRadiographicDepthMode, getRadiographicDepthMode, setCariesDepthEnabled, getCariesDepthEnabled, setWearDetailLevel, getWearDetailLevel, setDiscolorationDetailLevel, getDiscolorationDetailLevel, setSurfaceNotation, getSurfaceNotation, exportFhir, exportImage, exportSvg, setImportFormat, openPerioOverlay, closePerioOverlay, isPerioOverlayOpen, getPerioViewMode, setPerioViewMode, getPerioRowVisibility, setPerioRowVisibility, getPerioIndexNameMode, setPerioIndexNameMode, isDualStateConfirmPending, acceptDualStateConfirm, cancelDualStateConfirm, hasAnyPerioData, getChartMode, setChartMode, getStatusChart, getPlanChart, setPlanChart, getPlanChanges, exportStatus, importStatus, exportPdf, exportPerioImage, exportPerioSvg } from "./odontogram";
 export { clearSelection, setOcclusalVisible, setWisdomVisible, setShowBase, setHealthyPulpVisible, registerPlugins, setPluginState, getPluginState, getToothStateSummary, getOdontogramSummary, formatToothLabel, onStateChange, setReadOnly, getReadOnly, setNotesEnabled, getNotesEnabled, setIcdasEnabled, getIcdasEnabled, setPulpDetailLevel, getPulpDetailLevel, setSecondaryCariesMode, getSecondaryCariesMode, setRootCariesMode, getRootCariesMode, setRadiographicDepthMode, getRadiographicDepthMode, setCariesDepthEnabled, getCariesDepthEnabled, setWearDetailLevel, getWearDetailLevel, setDiscolorationDetailLevel, getDiscolorationDetailLevel, setSurfaceNotation, getSurfaceNotation, exportFhir, exportImage, exportSvg, setImportFormat, getPerioViewMode, setPerioViewMode, getPerioRowVisibility, setPerioRowVisibility, getPerioIndexNameMode, setPerioIndexNameMode, isDualStateConfirmPending, acceptDualStateConfirm, cancelDualStateConfirm, initOdontogram, destroyOdontogram, setNumberingSystem, getChartMode, setChartMode, getStatusChart, getPlanChart, setPlanChart, getPlanChanges, openPerioOverlay, closePerioOverlay, isPerioOverlayOpen, hasAnyPerioData, exportStatus, importStatus, exportPdf, exportPerioImage, exportPerioSvg };
 export { default as PerioChart } from "./PerioChart";
+// Bead odontogram-3l1: the controlled-integration surface (UI-domain document
+// + instance-isolated clinical sessions) and the canonical fhir-dental-de codec.
+import {
+  createOdontogramSession, getDefaultOdontogramSession,
+  createEngineClaim, claimEngine, releaseEngine, ownsEngine, onEngineOwnerChange,
+} from "./odontogram";
+export {
+  createOdontogramSession, getDefaultOdontogramSession, getActiveOdontogramSession,
+} from "./odontogram";
+export type { OdontogramSession, OdontogramDocument } from "./odontogram";
+import type { EngineClaim } from "./odontogram";
+export { buildFhirBundle } from "./fhir/toFhir";
+export { parseFhirBundle } from "./fhir/fromFhir";
+export { buildDentalDeBundle } from "./fhir/toFhirDentalDe";
+export type {
+  FhirDialect, DentalDeConversionEntry, DentalDeConversionReport,
+} from "./fhir/types";
+import type { OdontogramSession, OdontogramDocument } from "./odontogram";
 import type { OdontogramSummary, PulpDetailLevel, SecondaryCariesMode, RootCariesMode, RadiographicDepthMode, ToothDetailLevel, SurfaceNotation, PerioViewMode, PerioRowId, PerioIndexNameMode } from "./odontogram";
 export type { PulpDetailLevel, SecondaryCariesMode, RootCariesMode, RadiographicDepthMode, ToothDetailLevel, SurfaceNotation, PerioViewMode, PerioRowId, PerioIndexNameMode } from "./odontogram";
 export type { OdontogramSummary, OdontogramSummarySection } from "./odontogram";
@@ -155,6 +173,33 @@ type AppProps = {
    * the panel to render.
    */
   showOrthoCard?: boolean;
+  /**
+   * Bind this instance to an isolated clinical session created with
+   * `createOdontogramSession()`. This is the instance-isolation contract: two
+   * mounted odontograms holding two different sessions never share clinical
+   * state.
+   *
+   * Omit BOTH `session` and `document` to keep the historical standalone
+   * behaviour, where the component runs on the process-wide default session and
+   * every module-level entry point (`exportStatus`, `importStatus`, ...) applies
+   * to it unchanged.
+   */
+  session?: OdontogramSession;
+  /**
+   * Initialize this instance from a UI-domain document — the same versioned
+   * JSON `exportStatus()` produces. Supplying it (without `session`) makes the
+   * component create and own a private session seeded with the document;
+   * replacing the prop loads the new document into that session.
+   *
+   * Ignored when `session` is given: the session is then the source of truth.
+   */
+  document?: OdontogramDocument;
+  /**
+   * Observe this instance's document. Called whenever its clinical state
+   * changes, with the current document. Purely observational — the component
+   * never asks the host to store or transport it.
+   */
+  onDocumentChange?: (doc: OdontogramDocument) => void;
 };
 
 const LANGUAGE_OPTIONS: { value: Language; labelKey: string }[] = [
@@ -217,6 +262,9 @@ export default function App({
   surfaceNotation,
   showStatusCard: showStatusCardProp,
   showOrthoCard: showOrthoCardProp,
+  session: sessionProp,
+  document: documentProp,
+  onDocumentChange,
 }: AppProps){
   const { lang, setLang, t } = useI18n({ language, onLanguageChange });
   const [internalNumbering, setInternalNumbering] = useState<NumberingSystem>(numberingSystem ?? "FDI");
@@ -317,12 +365,81 @@ export default function App({
     onNumberingChange?.(next);
   };
 
+  // ---- Bead odontogram-3l1: per-instance clinical session ----------------
+  // Resolved once per instance and never swapped afterwards: an explicit
+  // `session` prop wins; a `document` prop makes this instance own a private
+  // session seeded from it; supplying neither keeps the historical standalone
+  // behaviour on the process-wide default session (`ownedSession` stays null,
+  // so nothing is activated or released and existing consumers see no change).
+  const ownedSessionRef = useRef<OdontogramSession | null | undefined>(undefined);
+  if (ownedSessionRef.current === undefined) {
+    ownedSessionRef.current = sessionProp
+      ?? (documentProp !== undefined ? createOdontogramSession(documentProp) : null);
+  }
+  const instanceSession = sessionProp ?? ownedSessionRef.current;
+  // The session this instance OBSERVES. An instance with no session of its own
+  // observes the default session, but ONLY when the host actually asked for
+  // change notifications — an unconfigured standalone mount must not reach into
+  // the session API at all, so nothing about the historical behaviour changes.
+  const observedSession = instanceSession
+    ?? (onDocumentChange ? getDefaultOdontogramSession() : null);
+
+  // ---- Engine ownership --------------------------------------------------
+  // The DOM editor is one global engine bound to a fixed set of element ids, so
+  // exactly one mounted instance may drive it. This instance claims it on
+  // mount; the winner activates its session and renders the editor, and a
+  // loser renders a placeholder instead of a second copy of the same ids. That
+  // pairing matters clinically: if a non-owning instance still rendered the
+  // chart chrome, the duplicated ids would let it display the OWNER's session
+  // data under its own heading. Ownership transfers when the owner unmounts.
+  const engineClaimRef = useRef<EngineClaim | null>(null);
+  if (engineClaimRef.current === null) engineClaimRef.current = createEngineClaim();
+  const engineClaim = engineClaimRef.current;
+  const [ownsTheEngine, setOwnsTheEngine] = useState(false);
+
   useEffect(() => {
+    setOwnsTheEngine(claimEngine(engineClaim));
+    const unsubscribe = onEngineOwnerChange(() => {
+      setOwnsTheEngine(ownsEngine(engineClaim) || claimEngine(engineClaim));
+    });
+    return () => {
+      unsubscribe();
+      releaseEngine(engineClaim);
+    };
+  }, [engineClaim]);
+
+  // The engine owner is the instance whose session is live, so what the chart
+  // paints always belongs to the instance the user is looking at.
+  useEffect(() => {
+    if (!instanceSession || !ownsTheEngine) return;
+    instanceSession.activate();
+    return () => { instanceSession.release(); };
+  }, [instanceSession, ownsTheEngine]);
+
+  const onDocumentChangeRef = useRef(onDocumentChange);
+  onDocumentChangeRef.current = onDocumentChange;
+  useEffect(() => {
+    if (!observedSession) return;
+    return observedSession.subscribe((doc) => { onDocumentChangeRef.current?.(doc); });
+  }, [observedSession]);
+
+  // A replaced `document` prop loads a new document into the owned session.
+  // Skipped when the host drives the instance through an explicit session.
+  const lastDocumentRef = useRef<OdontogramDocument | undefined>(documentProp);
+  useEffect(() => {
+    if (sessionProp || !instanceSession) return;
+    if (documentProp === undefined || documentProp === lastDocumentRef.current) return;
+    lastDocumentRef.current = documentProp;
+    instanceSession.setDocument(documentProp);
+  }, [documentProp, sessionProp, instanceSession]);
+
+  useEffect(() => {
+    if (!ownsTheEngine) return;
     initOdontogram();
     return () => {
       destroyOdontogram();
     };
-  }, []);
+  }, [ownsTheEngine]);
 
   useEffect(() => {
     setNumberingSystem(currentNumbering);
@@ -511,6 +628,25 @@ export default function App({
     perioIndexNameMode,
     onPerioIndexNameMode: (v) => setPerioIndexNameMode(v),
   };
+
+  // A non-owning instance renders NO editor chrome. The engine's element ids
+  // (`#toothGrid`, `#chartModeToggle`, `#activeToothLabel`, ...) are global, so
+  // a second copy would be both invalid HTML and clinically unsafe: the engine
+  // resolves each id to the first match, and this instance would then display
+  // the OWNER's session data under its own heading. Its session stays fully
+  // readable and writable through the session API while it waits.
+  if (!ownsTheEngine) {
+    return (
+      <div
+        ref={themeRootRef}
+        className="odontogram-root odontogram-inactive"
+        dir={isRtl(lang) ? "rtl" : "ltr"}
+        lang={lang}
+        data-odontogram-inactive="true"
+        aria-hidden="true"
+      />
+    );
+  }
 
   return (
     <div ref={themeRootRef} className="odontogram-root" dir={isRtl(lang) ? "rtl" : "ltr"} lang={lang}>

@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
-[![Version](https://img.shields.io/badge/version-2.2.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
+[![Version](https://img.shields.io/badge/version-2.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](https://raw.githubusercontent.com/ZoliQua/React-Odontogram-Modul/main/src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
 
@@ -57,7 +57,82 @@ import {
 
 > **SSR:** the component is client-only (reads the DOM on mount). In Next.js render it in a Client Component (`"use client"`) or via a client-only dynamic import.
 > **Assets are self-contained** — tooth/icon SVGs are inlined into the bundle; there is no runtime asset fetch to configure.
-> **One instance per page** in this release (engine state is a module-level singleton).
+
+## 🔌 Host integration: the UI-domain document
+
+The component's clinical state is a **UI-domain document** — the same versioned
+JSON `exportStatus()` writes and `importStatus()` reads. That document, not FHIR,
+is what React state holds and what a host owns.
+
+Bind an instance to an isolated **session** to initialize and observe it, and to
+keep two mounted odontograms independent:
+
+```tsx
+import {
+  OdontogramShell, createOdontogramSession,
+  type OdontogramDocument, type OdontogramSession,
+} from "react-advanced-odontogram";
+
+const upper: OdontogramSession = createOdontogramSession(savedUpperDocument);
+const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
+
+<OdontogramShell session={upper} onDocumentChange={(doc) => save("upper", doc)} />
+<OdontogramShell session={lower} onDocumentChange={(doc) => save("lower", doc)} />
+```
+
+`session.getDocument()` / `setDocument()` / `subscribe()` are the whole contract.
+Passing a plain `document` prop instead makes the instance create and own a
+private session seeded from it. Passing **neither** keeps the historical
+standalone behaviour: the component runs on the process-wide default session and
+every module-level entry point (`exportStatus`, `importStatus`, `getStatusChart`,
+…) applies to it exactly as before — no migration is required.
+
+> **One live editor at a time.** The interactive DOM editor is a single global
+> engine bound to one tooth grid, so exactly one mounted instance drives it:
+> that instance renders the chart and its session is the live one. The others
+> render an inactive placeholder instead of a second copy of the engine's global
+> element ids, and keep their own document — still fully readable and writable
+> through their session API. Ownership passes to a waiting instance when the
+> current one unmounts.
+
+### FHIR is a pure, optional projection
+
+FHIR conversion is a **pure adapter** over that document: no DOM, no network, no
+wall clock, no randomness, and no transport or persistence concerns inside the
+component. Two dialects are available:
+
+```ts
+import { buildFhirBundle, parseFhirBundle, buildDentalDeBundle } from "react-advanced-odontogram";
+
+// Default: the engine-local representation this package has always emitted.
+const legacy = buildFhirBundle(session.getDocument());
+
+// Canonical fhir-dental-de (de.cognovis.fhir.dental) profiles and extensions.
+const canonical = buildFhirBundle(session.getDocument(), {
+  dialect: "dental-de",
+  subject: "Patient/123",
+  effectiveDateTime: "2026-08-08",
+});
+
+// Same canonical bundle, plus a report of everything the IG has no coded value for.
+const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
+  effectiveDateTime: "2026-08-08",
+});
+```
+
+The `dental-de` dialect emits `OdontogramObservationDE`, `CariesObservationDE`
+and `DentalFindingDE` with the IG's `OdontogramComponentCS` slices, FDI tooth
+identity and the repeatable `ToothSurfacesExt` (HL7 `FDI-surface`, tooth-aware —
+the biting surface is coded `I` on an anterior tooth and `O` on a posterior one).
+Where the IG defines no coded value it uses `CodeableConcept.text` under the
+relevant extensible binding — never an invented code — and `report.textFallback`
+/ `report.unmapped` name every such value so nothing degrades silently.
+
+`parseFhirBundle` reads **both** dialects, including a bundle that mixes them, so
+previously exported bundles keep importing unchanged.
+
+Transport, authentication, audit and persistence stay outside this package: it
+converts, it does not talk to a server.
 
 ## 🦷 Periodontal charting
 

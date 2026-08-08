@@ -29,6 +29,13 @@ vi.mock("../odontogram", async () => {
   const actual = await vi.importActual<typeof import("../odontogram")>("../odontogram");
   return {
     // Heavy imperative DOM/SVG lifecycle — stubbed (no real SVG assets in jsdom).
+    // Bead odontogram-3l1: engine-ownership helpers the shell calls on every
+    // mount. A single mocked instance is always the sole owner.
+    createEngineClaim: vi.fn(() => ({ id: 1 })),
+    claimEngine: vi.fn(() => true),
+    releaseEngine: vi.fn(),
+    ownsEngine: vi.fn(() => true),
+    onEngineOwnerChange: vi.fn(() => () => {}),
     initOdontogram: vi.fn().mockResolvedValue(undefined),
     destroyOdontogram: vi.fn(),
     setNumberingSystem: vi.fn(),
