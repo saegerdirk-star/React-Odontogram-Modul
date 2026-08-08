@@ -7,7 +7,7 @@
 - All changes must maintain backward compatibility with existing integrations
 
 ## Architecture
-- **React 18.3** + **TypeScript 5.5** — single-page interactive dental charting component
+- **React 19.2** + **TypeScript 5.5** — single-page interactive dental charting component
 - **Vite 7.3** — dev server and library build
 - **Tailwind CSS** — utility-first styling with custom theme via CSS variables (`--odon-*`)
 - SVG-based tooth rendering with per-surface interaction

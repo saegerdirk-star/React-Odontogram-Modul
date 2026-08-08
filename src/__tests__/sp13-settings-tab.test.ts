@@ -6,10 +6,19 @@
 // this file must stay plain TS (no JSX) per the task brief. We call the tab's
 // `render({ t, s })` directly and inspect the returned React element tree.
 import { describe, it, expect, vi } from "vitest";
-import { Children, isValidElement, type ReactElement } from "react";
+import { Children, isValidElement, type ReactElement, type ReactNode } from "react";
 import { SETTINGS_TABS, type SettingsState } from "../SettingsModal";
 
 const t = (key: string) => key;
+
+interface SettingsRowProps {
+  children?: ReactNode;
+  value: string;
+  descKey: string;
+  label: string;
+  options: { value: string; labelKey: string }[];
+  onChange: (value: string) => void;
+}
 
 function stubSettings(): SettingsState {
   return {
@@ -80,9 +89,11 @@ describe("SP13 Task 3: toothDetails settings tab", () => {
     const s = stubSettings();
     const node = tab.render({ t, s });
 
-    const children = Children.toArray((node as ReactElement).props.children).filter(
+    const children = Children.toArray(
+      (node as ReactElement<{ children?: ReactNode }>).props.children,
+    ).filter(
       isValidElement,
-    ) as ReactElement<any>[];
+    ) as ReactElement<SettingsRowProps>[];
     expect(children).toHaveLength(3);
 
     const [wearRow, discoRow, notationRow] = children;
@@ -115,9 +126,11 @@ describe("SP13 Task 3: toothDetails settings tab", () => {
     const tab = SETTINGS_TABS.find((tab) => tab.id === "toothDetails")!;
     const s = stubSettings();
     const node = tab.render({ t, s });
-    const children = Children.toArray((node as ReactElement).props.children).filter(
+    const children = Children.toArray(
+      (node as ReactElement<{ children?: ReactNode }>).props.children,
+    ).filter(
       isValidElement,
-    ) as ReactElement<any>[];
+    ) as ReactElement<SettingsRowProps>[];
     const [wearRow, discoRow, notationRow] = children;
 
     wearRow.props.onChange("simple");

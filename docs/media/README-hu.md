@@ -669,7 +669,7 @@ Az odontogram saját Státusz JSON / FHIR / PNG / JPG / SVG exportján túl a **
 - `src/assets/icon-svgs/` - eszköztár ikon SVG-k (5 fájl)
 
 ### ⚙️ Technológia
-- React 18 + Vite + TypeScript
+- React 19 + Vite + TypeScript
 - Tailwind CSS a UI stílusokhoz
 - SVG rétegelés DOM manipulációval (nem React state, a teljesítmény érdekében)
 - Egyszerű egyedi i18n rendszer

@@ -669,7 +669,7 @@ Poza własnym eksportem Status JSON / FHIR / PNG / JPG / SVG odontogramu, **wykr
 - `src/assets/icon-svgs/` - ikony SVG paska narzędzi (5 plików)
 
 ### ⚙️ Stos technologiczny
-- React 18 + Vite + TypeScript
+- React 19 + Vite + TypeScript
 - Tailwind CSS do stylowania interfejsu
 - Warstwowanie SVG przez manipulację DOM (nie stan React dla wydajności)
 - Lekki niestandardowy system i18n

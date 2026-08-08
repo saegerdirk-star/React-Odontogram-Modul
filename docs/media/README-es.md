@@ -669,7 +669,7 @@ Además de la propia exportación de Estado JSON / FHIR / PNG / JPG / SVG del od
 - `src/assets/icon-svgs/` - SVGs de iconos de barra de herramientas (5 archivos)
 
 ### ⚙️ Stack tecnológico
-- React 18 + Vite + TypeScript
+- React 19 + Vite + TypeScript
 - Tailwind CSS para estilos de UI
 - Capas SVG mediante manipulación del DOM (no React state por rendimiento)
 - Sistema i18n propio ligero

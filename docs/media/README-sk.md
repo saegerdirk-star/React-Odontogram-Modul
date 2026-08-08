@@ -669,7 +669,7 @@ Okrem vlastného exportu odontogramu Stav JSON / FHIR / PNG / JPG / SVG má **pa
 - `src/assets/icon-svgs/` - SVG ikony panela nástrojov (5 súborov)
 
 ### ⚙️ Technologický zásobník
-- React 18 + Vite + TypeScript
+- React 19 + Vite + TypeScript
 - Tailwind CSS pre štýlovanie rozhrania
 - Vrstvenie SVG cez manipuláciu DOM (nie React stav pre výkon)
 - Ľahký vlastný systém i18n
