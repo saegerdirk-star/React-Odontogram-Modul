@@ -128,7 +128,7 @@ Alebo ho načítajte pomocou dynamického importu iba na strane klienta: `dynami
 - **Hárok štýlov je samostatný** — **musíte** raz importovať `react-advanced-odontogram/style.css`; nevkladá sa automaticky. Štýlovanie je globálne CSS ohraničené pod `.odontogram-root` a riadené CSS premennými `--odon-*`.
 - **SSR / iba klient** — komponent pri pripojení číta DOM (`document`), preto musí bežať v prehliadači. V SSR frameworkoch ho vykresľujte v klientskom komponente (`"use client"`) alebo cez dynamický import iba na strane klienta.
 - **Zdroje sú samostatné** — SVG súbory zubov a ikon sú pri zostavení vložené priamo do JavaScriptového balíka; **nie je potrebné konfigurovať žiadne získavanie zdrojov za behu** a nič netreba kopírovať do vášho verejného priečinka.
-- **Jedna inštancia na stránku** — stav enginu je momentálne singleton na úrovni modulu, takže vykreslenie dvoch inštancií `<OdontogramShell>` na tej istej stránke by spôsobilo, že by zdieľali stav jednej karty. Podpora viacerých inštancií je plánovaná pre budúce vydanie.
+- **Viac inštancií, jeden aktívny editor** — každá pripojená `<OdontogramShell>` môže držať vlastný klinický stav cez izolovanú reláciu (`createOdontogramSession()`) a dve relácie nikdy nezdieľajú dáta. Interaktívny DOM editor zostáva jediným globálnym enginom, takže ho naraz ovláda práve jedna pripojená inštancia: tá vykresľuje kartu, ostatné vykresľujú neaktívny zástupný prvok a zostávajú plne čitateľné a zapisovateľné cez svoje API relácie. Po odpojení aktívnej inštancie ju prevezme čakajúca.
 
 ---
 

@@ -102,6 +102,32 @@ describe("odontogram-3l1 AC2: UI-domain document contract", () => {
     expect(s.getDocument().teeth["11"].toothSelection).toBe("none");
   });
 
+  it("does not leak a whole-mouth clinical global between sessions", () => {
+    // `edentulous` is a clinical finding about the whole mouth, not a view
+    // flag, so it must travel with the session's document rather than stay
+    // behind in the engine when a different session becomes live.
+    const edentulousCase = createOdontogramSession({
+      version: "2.20",
+      globals: { edentulous: true },
+      teeth: {},
+    });
+    const dentateCase = createOdontogramSession({
+      version: "2.20",
+      globals: { edentulous: false },
+      teeth: {},
+    });
+
+    edentulousCase.activate();
+    expect(edentulousCase.getDocument().globals?.edentulous).toBe(true);
+
+    dentateCase.activate();
+    expect(dentateCase.getDocument().globals?.edentulous).toBe(false);
+
+    dentateCase.release();
+    expect(edentulousCase.getDocument().globals?.edentulous).toBe(true);
+    edentulousCase.release();
+  });
+
   it("activating a session swaps the module's active clinical state and restores on release", () => {
     const def = getDefaultOdontogramSession();
     const s = createOdontogramSession(docWithMissing(11));

@@ -128,7 +128,7 @@ Or load it with a client-only dynamic import: `dynamic(() => import("./Odontogra
 - **The stylesheet is separate** — you **must** import `react-advanced-odontogram/style.css` once; it is not injected automatically. Styling is global CSS scoped under `.odontogram-root` and driven by `--odon-*` CSS variables.
 - **SSR / client-only** — the component reads the DOM on mount (`document`), so it must run in the browser. In SSR frameworks, render it in a Client Component (`"use client"`) or via a client-only dynamic import.
 - **Assets are self-contained** — the tooth and icon SVGs are inlined into the JavaScript bundle at build time; there is **no runtime asset fetch** to configure and nothing extra to copy to your public folder.
-- **One instance per page** — engine state is currently a module-level singleton, so rendering two `<OdontogramShell>` instances on the same page would make them share a single chart's state. Multi-instance support is planned for a future release.
+- **Multiple instances, one live editor** — each mounted `<OdontogramShell>` can hold its own clinical state through an isolated session (`createOdontogramSession()`), and two sessions never share data. The interactive DOM editor is still a single global engine, so exactly one mounted instance drives it at a time: that instance renders the chart, the others render an inactive placeholder and stay fully readable and writable through their session API. Ownership passes to a waiting instance when the current one unmounts.
 
 ---
 

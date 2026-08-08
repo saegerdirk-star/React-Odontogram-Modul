@@ -87,9 +87,13 @@ standalone behaviour: the component runs on the process-wide default session and
 every module-level entry point (`exportStatus`, `importStatus`, `getStatusChart`,
 …) applies to it exactly as before — no migration is required.
 
-> **One live editor at a time.** Only one session is *live* in the DOM engine
-> (it is a single global engine bound to one tooth grid); the others keep their
-> own document and stay fully readable and writable through their session API.
+> **One live editor at a time.** The interactive DOM editor is a single global
+> engine bound to one tooth grid, so exactly one mounted instance drives it:
+> that instance renders the chart and its session is the live one. The others
+> render an inactive placeholder instead of a second copy of the engine's global
+> element ids, and keep their own document — still fully readable and writable
+> through their session API. Ownership passes to a waiting instance when the
+> current one unmounts.
 
 ### FHIR is a pure, optional projection
 

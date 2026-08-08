@@ -26,9 +26,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`OdontogramShell` props `session`, `document` and `onDocumentChange`.**
   `session` binds an instance to an isolated session; `document` makes the
   instance create and own a private session seeded from it; `onDocumentChange`
-  observes that instance's document. Only one session is live in the DOM engine
-  at a time (it is a single global engine bound to one tooth grid); the others
-  keep their own document and stay readable and writable through their API.
+  observes that instance's document.
+- **Engine ownership across mounted instances.** The interactive DOM editor is
+  a single global engine bound to one tooth grid, so exactly one mounted
+  `OdontogramShell` drives it, and that owner is the instance whose session is
+  live. A non-owning instance renders an inactive placeholder instead of a
+  second copy of the engine's global element ids — which previously meant its
+  chart could paint another instance's session data under its own heading —
+  and keeps its own document, still readable and writable through its session
+  API. Unmounting the owner hands the engine to a waiting instance instead of
+  tearing it down underneath it.
+- Whole-mouth `globals` (notably the clinical `edentulous` flag) now travel
+  with the session document, so switching sessions cannot leave one case's
+  edentulous state behind on another.
 - **Canonical `fhir-dental-de` FHIR dialect.** `buildFhirBundle(payload, {
   dialect: "dental-de" })` and `buildDentalDeBundle(payload, options)` emit
   `OdontogramObservationDE`, `CariesObservationDE` and `DentalFindingDE` against
@@ -63,7 +73,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `parseFhirBundle` now reads BOTH representations — the previously supported
   legacy bundle and canonical `fhir-dental-de` resources — including a bundle
   that mixes them. Canonical resources are detected by their canonical
-  identifiers only, so a legacy bundle is never misparsed.
+  identifiers only, so a legacy bundle is never misparsed. The canonical reader
+  covers every profile the canonical emitter writes, including
+  `DentalFindingDE`, and resolves each text-fallback value by exact equality
+  against the same display table the emitter used — so the canonical round-trip
+  restores root caries, resorption, apical and periapical findings, prosthetic
+  state, filling defects, recurrent and subcrown caries, radiographic depth and
+  clinician notes rather than dropping them.
 
 ### Compatibility
 
@@ -72,7 +88,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   byte-identical. No existing public export was removed or renamed.
 - Omitting both `session` and `document` keeps the historical standalone
   behaviour on the process-wide default session, so no consumer has to migrate.
+  A single mounted instance always owns the engine, exactly as before.
 - Payload version is unchanged at **2.20**; no stored JSON needs rewriting.
+- **Test doubles only:** the shell now calls `createEngineClaim`, `claimEngine`,
+  `releaseEngine`, `ownsEngine` and `onEngineOwnerChange` on the engine module.
+  A consumer that replaces the module with an explicit mock factory (rather
+  than a partial mock over the real module) must add those five names. Runtime
+  behaviour and the public API are unaffected.
 
 ## [2.2.1] - 2026-08-06
 

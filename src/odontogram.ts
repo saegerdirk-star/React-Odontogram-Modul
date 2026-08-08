@@ -2883,9 +2883,12 @@ export function __resetChartStateForTest(): void {
   toothState = charts.status;
   resetCaseMeta();
   // Bead odontogram-3l1: hand the engine back to the default session and drop
-  // any restore stack, so one test's sessions cannot leak into the next.
+  // any restore stack or ownership claim, so one test's sessions cannot leak
+  // into the next.
   activeSession = defaultSession;
   sessionStack.length = 0;
+  engineOwner = null;
+  engineWaiters.length = 0;
 }
 
 /** TEST-ONLY (DS-1 Task 2 seam): set the active tooth (and lazily vivify its
@@ -9649,7 +9652,29 @@ function snapshotLiveDocument(): OdontogramDocument {
 function loadLiveDocument(doc: OdontogramDocument): void {
   hydrateImportedCharts(doc);
   resetActiveChartToStatusAfterImport();
-  if(initialized){
+  // `hydrateImportedCharts` covers the per-tooth charts and the case block but
+  // deliberately not `globals` — `importStatus()` applies those in its own tail.
+  // A session switch must apply them too, otherwise `edentulous` (a WHOLE-MOUTH
+  // clinical finding, not a view flag) would stay behind from the outgoing
+  // session and be read as belonging to the incoming one.
+  const globals = doc && typeof doc === "object" ? doc.globals : undefined;
+  const edentulousNext = typeof globals?.edentulous === "boolean" ? globals.edentulous : false;
+  // `initialized` alone is not enough: a session is released during the owning
+  // React instance's unmount, when the flag is still set but the control-panel
+  // DOM has already gone. Probe the grid itself instead.
+  const domReady = initialized && !!$("#toothGrid");
+  if(edentulous !== edentulousNext){
+    edentulous = edentulousNext;
+    if(domReady) setToggleButton($("#btnEdentulous"), edentulous);
+  }
+  if(domReady){
+    // The remaining globals are VIEW flags whose setters drive the live control
+    // panel, so they are applied only with a mounted grid — `edentulous` above
+    // is the clinical one and travels regardless.
+    if(typeof globals?.wisdomVisible === "boolean") setWisdomVisible(globals.wisdomVisible);
+    if(typeof globals?.showBase === "boolean") setShowBase(globals.showBase);
+    if(typeof globals?.occlusalVisible === "boolean") setOcclusalVisible(globals.occlusalVisible);
+    if(typeof globals?.showHealthyPulp === "boolean") setHealthyPulpVisible(globals.showHealthyPulp);
     for(const toothNo of ALL_TEETH){
       applyStateToSvg(toothNo);
       updateToothTileNumber(toothNo);
@@ -9772,4 +9797,85 @@ export function getActiveOdontogramSession(): OdontogramSession {
  *  session's subscribers without every session hearing every case's changes. */
 function notifyActiveSession(): void {
   activeSession.notify();
+}
+
+// ---------------------------------------------------------------------------
+// Engine ownership (bead odontogram-3l1, review repair)
+// ---------------------------------------------------------------------------
+//
+// The DOM editor is ONE global engine: it builds `#toothGrid` and reads a fixed
+// set of element ids through `document.querySelector`. Two mounted shells
+// therefore cannot both drive it, and before this claim existed they tried:
+// the second mount's `initOdontogram()` returned early, either shell's unmount
+// ran `destroyOdontogram()` and tore the engine down under the other, and both
+// rendered the same ids — so the chart visible inside instance A could be
+// painted from instance B's session. Showing one patient's teeth under another
+// patient's heading is the worst failure this component can have.
+//
+// The claim makes that structural fact explicit and safe: exactly one mounted
+// instance owns the engine, that owner is the instance whose session is live,
+// and ownership transfers to a waiting instance when the owner unmounts.
+
+/** Opaque per-instance ownership token. */
+export type EngineClaim = { readonly id: number };
+
+let engineOwner: EngineClaim | null = null;
+let engineClaimSeq = 0;
+/** Instances that asked for the engine while it was taken, oldest first. */
+const engineWaiters: EngineClaim[] = [];
+const engineOwnerListeners = new Set<() => void>();
+
+function notifyEngineOwnerChange(): void {
+  for(const cb of engineOwnerListeners){
+    try{ cb(); }
+    catch(e){ console.error("odontogram engine-owner listener failed", e); }
+  }
+}
+
+/** Mint a token for one mounted instance. */
+export function createEngineClaim(): EngineClaim {
+  return { id: ++engineClaimSeq };
+}
+
+/**
+ * Try to become the single instance that drives the DOM engine. Returns true
+ * when this token owns it — either because it was free or because this token
+ * already owned it. A losing caller is queued and re-notified through
+ * {@link onEngineOwnerChange} when the engine becomes free.
+ */
+export function claimEngine(claim: EngineClaim): boolean {
+  if(engineOwner === claim) return true;
+  if(engineOwner === null){
+    engineOwner = claim;
+    const queued = engineWaiters.indexOf(claim);
+    if(queued >= 0) engineWaiters.splice(queued, 1);
+    notifyEngineOwnerChange();
+    return true;
+  }
+  if(!engineWaiters.includes(claim)) engineWaiters.push(claim);
+  return false;
+}
+
+/** Give the engine up (or leave the waiting queue), handing it to the next
+ *  waiting instance if there is one. */
+export function releaseEngine(claim: EngineClaim): void {
+  const queued = engineWaiters.indexOf(claim);
+  if(queued >= 0) engineWaiters.splice(queued, 1);
+  if(engineOwner !== claim) return;
+  engineOwner = null;
+  const next = engineWaiters.shift();
+  if(next) engineOwner = next;
+  notifyEngineOwnerChange();
+}
+
+/** Whether this token currently owns the DOM engine. */
+export function ownsEngine(claim: EngineClaim | null): boolean {
+  return claim !== null && engineOwner === claim;
+}
+
+/** Observe ownership handovers, so a waiting instance can mount the engine as
+ *  soon as the previous owner unmounts. */
+export function onEngineOwnerChange(cb: () => void): () => void {
+  engineOwnerListeners.add(cb);
+  return () => { engineOwnerListeners.delete(cb); };
 }

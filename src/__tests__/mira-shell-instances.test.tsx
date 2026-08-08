@@ -6,7 +6,7 @@
 // module singleton.
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { render, cleanup } from "@testing-library/react";
+import { render, cleanup, waitFor } from "@testing-library/react";
 import OdontogramShell from "../App";
 import {
   createOdontogramSession,
@@ -133,9 +133,51 @@ describe("odontogram-3l1 AC2: two mounted odontograms", () => {
   });
 
   it("leaves the module-singleton entry points untouched when no session/document prop is given", () => {
-    render(<OdontogramShell />);
-    // Standalone mode still runs on the default session — no throw, no
-    // per-instance session required.
-    expect(true).toBe(true);
+    const { container } = render(<OdontogramShell />);
+    // Standalone mode still runs on the default session and still renders the
+    // editor: a single instance always owns the engine.
+    expect(container.querySelector("#toothGrid")).not.toBeNull();
+    expect(container.querySelector("[data-odontogram-inactive]")).toBeNull();
+  });
+
+  it("renders the engine-bound DOM ids exactly once across two mounted instances", () => {
+    const sessionA = createOdontogramSession(docWithMissing(11));
+    const sessionB = createOdontogramSession(docWithMissing(46));
+
+    const { container } = render(
+      <>
+        <OdontogramShell session={sessionA} />
+        <OdontogramShell session={sessionB} />
+      </>,
+    );
+
+    // The engine resolves its ids globally; a duplicate would let a non-owning
+    // instance display the owner's session data under its own heading.
+    for (const id of ["toothGrid", "chartModeToggle", "activeToothLabel"]) {
+      expect(container.querySelectorAll(`#${id}`).length, `duplicate #${id}`).toBeLessThanOrEqual(1);
+    }
+    expect(container.querySelectorAll("[data-odontogram-inactive]").length).toBe(1);
+  });
+
+  it("hands the engine to the surviving instance when the owner unmounts", async () => {
+    const sessionA = createOdontogramSession(docWithMissing(11));
+    const sessionB = createOdontogramSession(docWithMissing(46));
+
+    const { container, rerender } = render(
+      <>
+        <OdontogramShell key="a" session={sessionA} />
+        <OdontogramShell key="b" session={sessionB} />
+      </>,
+    );
+    expect(container.querySelectorAll("[data-odontogram-inactive]").length).toBe(1);
+
+    // Unmount the owner; the waiting instance must take over rather than be
+    // left with a torn-down engine.
+    rerender(<OdontogramShell key="b" session={sessionB} />);
+    await waitFor(() => {
+      expect(container.querySelector("[data-odontogram-inactive]")).toBeNull();
+    });
+    expect(container.querySelector("#toothGrid")).not.toBeNull();
+    expect(sessionB.getDocument().teeth["46"].toothSelection).toBe("none");
   });
 });

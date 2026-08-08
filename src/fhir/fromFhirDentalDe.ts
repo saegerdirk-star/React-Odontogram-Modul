@@ -11,8 +11,10 @@
 // PURE: no DOM, no network, no wall clock, no randomness.
 
 import type { ToothRecord } from "./types";
+import { LOCAL_VALUE_MAPS } from "./codesystems";
 import {
-  DENTAL_DE_ODONTOGRAM_PROFILE, DENTAL_DE_CARIES_PROFILE,
+  DENTAL_DE_ODONTOGRAM_PROFILE, DENTAL_DE_CARIES_PROFILE, DENTAL_DE_FINDING_PROFILE,
+  FINDING_TEXT,
   DENTAL_DE_COMPONENT_SYSTEM, DENTAL_DE_ASSESSMENT_SYSTEM,
   DENTAL_DE_FDI_SYSTEM, DENTAL_DE_ICDAS_SYSTEM,
   DENTAL_DE_RESTORATION_TYPE_SYSTEM, DENTAL_DE_MATERIAL_SYSTEM,
@@ -51,17 +53,62 @@ function surfacesOf(node: unknown): string[] {
   return out;
 }
 
-/** True when the resource is a canonical Dental-DE odontogram/caries resource. */
+/** True when the resource is a canonical Dental-DE odontogram, caries or
+ *  finding resource — every profile this repository's canonical emitter can
+ *  produce, so the round-trip reads back everything it writes. */
 export function isDentalDeResource(res: unknown): boolean {
   const r = res as {
     resourceType?: string; meta?: { profile?: unknown }; code?: unknown; component?: Any[];
   } | undefined;
   if (!r || r.resourceType !== "Observation") return false;
   const profiles = Array.isArray(r.meta?.profile) ? (r.meta!.profile as string[]) : [];
-  if (profiles.includes(DENTAL_DE_ODONTOGRAM_PROFILE) || profiles.includes(DENTAL_DE_CARIES_PROFILE)) return true;
+  if (
+    profiles.includes(DENTAL_DE_ODONTOGRAM_PROFILE)
+    || profiles.includes(DENTAL_DE_CARIES_PROFILE)
+    || profiles.includes(DENTAL_DE_FINDING_PROFILE)
+  ) return true;
   const assessment = codeIn(r.code, DENTAL_DE_ASSESSMENT_SYSTEM);
   if (assessment === "odontogram-assessment" || assessment === "icdas-caries-assessment") return true;
   return (r.component ?? []).some((c) => !!codeIn(c?.code, DENTAL_DE_COMPONENT_SYSTEM));
+}
+
+/**
+ * Reverse of the emitter's `display(group, value)` lookup.
+ *
+ * The emitter writes an English display string as `CodeableConcept.text`
+ * wherever the IG has no coded value; this reads that exact string back to the
+ * engine enum. It is an equality lookup against the SAME table the emitter
+ * used, per group — never a heuristic on free prose, and never cross-group, so
+ * an unrelated text simply does not resolve.
+ */
+const DISPLAY_TO_VALUE: Record<string, Record<string, string>> = {};
+function valueFromDisplay(group: string, text: string): string | undefined {
+  let reverse = DISPLAY_TO_VALUE[group];
+  if (!reverse) {
+    reverse = {};
+    for (const [value, entry] of Object.entries(LOCAL_VALUE_MAPS[group] ?? {})) {
+      // "none"/"normal" displays are never emitted (the emitter skips them), so
+      // they are excluded to keep the reverse map unambiguous.
+      if (value === "none" || value === "normal") continue;
+      reverse[entry.display] = value;
+    }
+    DISPLAY_TO_VALUE[group] = reverse;
+  }
+  return reverse[text];
+}
+
+/** Trailing integer of a "<prefix><n>" value string, e.g. "CARS score 3". */
+function scoreAfter(text: string, prefix: string): number | undefined {
+  if (!text.startsWith(prefix)) return undefined;
+  const n = Number(text.slice(prefix.length).trim());
+  return Number.isFinite(n) ? n : undefined;
+}
+
+function addCariesSurface(rec: ToothRecord, surface: string, score?: number): void {
+  const caries = (rec.caries ??= []);
+  const key = `caries-${surface}`;
+  if (!caries.includes(key)) caries.push(key);
+  if (typeof score === "number") (rec.cariesSeverity ??= {})[surface] = score;
 }
 
 /** Reverse of the emitter's restoration-type mapping. */
@@ -106,11 +153,13 @@ function applyPresence(rec: ToothRecord, value: unknown): void {
     return;
   }
   if (sctCode === VERIFIED_SCT.toothAbsent) {
-    rec.toothSelection = /extraction/i.test(text) ? "no-tooth-after-extraction" : "none";
+    rec.toothSelection = text === FINDING_TEXT.missingAfterExtraction
+      ? "no-tooth-after-extraction"
+      : "none";
     return;
   }
-  if (/implant/i.test(text)) { rec.toothSelection = "implant"; return; }
-  if (/gingiva|not erupted/i.test(text)) { rec.toothSelection = "tooth-under-gum"; return; }
+  if (text === FINDING_TEXT.implantPresent) { rec.toothSelection = "implant"; return; }
+  if (text === FINDING_TEXT.toothUnderGum) { rec.toothSelection = "tooth-under-gum"; return; }
 }
 
 /** Apply one canonical resource to the accumulating tooth records. */
@@ -132,19 +181,51 @@ export function applyDentalDeResource(
     const score = codeIn(r.valueCodeableConcept, DENTAL_DE_ICDAS_SYSTEM);
     const surfaces = surfacesOf(r.bodySite);
     if (surfaces.length === 0) return;
-    const caries = (rec.caries ??= []);
-    const severity = (rec.cariesSeverity ??= {});
-    for (const surface of surfaces) {
-      const key = `caries-${surface}`;
-      if (!caries.includes(key)) caries.push(key);
-      const numeric = Number(score);
-      if (score !== undefined && Number.isFinite(numeric)) severity[surface] = numeric;
-    }
+    const numeric = Number(score);
+    const parsed = score !== undefined && Number.isFinite(numeric) ? numeric : undefined;
+    for (const surface of surfaces) addCariesSurface(rec, surface, parsed);
     return;
   }
 
   if (Array.isArray(r.note) && typeof r.note[0]?.text === "string") {
     rec.note = r.note[0].text as string;
+  }
+
+  // DentalFindingDE carries the concepts the odontogram profile has no slice
+  // for. The emitter writes a fixed English `code.text` for each; read it back
+  // by equality against the SAME constants, never by guessing at free prose.
+  const codeText = conceptText(r.code);
+  if (codeText) {
+    const valueText = conceptText(r.valueCodeableConcept) ?? "";
+    const surfaces = surfacesOf(r.bodySite);
+    switch (codeText) {
+      case FINDING_TEXT.recurrentCaries: {
+        const score = scoreAfter(valueText, FINDING_TEXT.carsScorePrefix);
+        for (const surface of surfaces) addCariesSurface(rec, surface, score);
+        return;
+      }
+      case FINDING_TEXT.subcrownCaries: {
+        const score = scoreAfter(valueText, FINDING_TEXT.severityScorePrefix);
+        addCariesSurface(rec, "subcrown", score);
+        return;
+      }
+      case FINDING_TEXT.coronalCaries: {
+        for (const surface of surfaces) addCariesSurface(rec, surface);
+        return;
+      }
+      case FINDING_TEXT.radiographicDepth: {
+        const depth = valueFromDisplay("radiographicDepth", valueText);
+        if (depth) {
+          const map = (rec.radiographicDepth ??= {});
+          for (const surface of surfaces) map[surface] = depth;
+        }
+        return;
+      }
+      case FINDING_TEXT.clinicianNote:
+        return; // the note itself was applied above
+      default:
+        break;
+    }
   }
 
   for (const comp of r.component ?? []) {
@@ -159,11 +240,27 @@ export function applyDentalDeResource(
         break;
 
       case ODONTO_COMPONENT.rootEndodonticState: {
+        // The slice is 0..* and carries five independent engine axes, each
+        // emitted as its own component. Resolve the text against exactly the
+        // groups the emitter draws from, in that order.
         if (codeIn(value, SNOMED_SYSTEM) === VERIFIED_SCT.rootCanalFillingComplete) {
           rec.endo = "endo-filling";
-        } else if (/incomplete/i.test(text)) {
-          rec.endo = "endo-filling-incomplete";
+          break;
         }
+        if (text === FINDING_TEXT.rootFillingIncomplete) {
+          rec.endo = "endo-filling-incomplete";
+          break;
+        }
+        const endo = valueFromDisplay("endo", text);
+        if (endo) { rec.endo = endo; break; }
+        const rootCaries = valueFromDisplay("rootCaries", text);
+        if (rootCaries) { rec.rootCaries = rootCaries; break; }
+        const resorption = valueFromDisplay("resorptionType", text);
+        if (resorption) { rec.resorptionType = resorption; break; }
+        const apical = valueFromDisplay("apicalDx", text);
+        if (apical) { rec.apicalDx = apical; break; }
+        const periapical = valueFromDisplay("periapicalType", text);
+        if (periapical) rec.periapicalType = periapical;
         break;
       }
 
@@ -184,7 +281,18 @@ export function applyDentalDeResource(
       }
 
       case ODONTO_COMPONENT.restorationStatus: {
-        if (/leakage/i.test(text)) rec.crownLeakage = true;
+        if (text === FINDING_TEXT.marginalLeakage) { rec.crownLeakage = true; break; }
+        const defect = valueFromDisplay("fillingDefect", text);
+        if (defect) {
+          const map = (rec.fillingDefect ??= {});
+          for (const surface of surfacesOf(comp)) map[surface] = defect;
+        }
+        break;
+      }
+
+      case ODONTO_COMPONENT.prostheticState: {
+        const prosthesis = valueFromDisplay("prosthesis", text);
+        if (prosthesis) rec.prosthesis = prosthesis;
         break;
       }
 

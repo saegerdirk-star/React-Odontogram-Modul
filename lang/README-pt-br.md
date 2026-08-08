@@ -128,7 +128,7 @@ Ou carregue-o com um import dinâmico somente client-side: `dynamic(() => import
 - **A folha de estilos é separada** — você **deve** importar `react-advanced-odontogram/style.css` uma vez; ela não é injetada automaticamente. A estilização é CSS global escopado sob `.odontogram-root` e controlado pelas variáveis CSS `--odon-*`.
 - **SSR / somente client-side** — o componente lê o DOM na montagem (`document`), portanto deve rodar no navegador. Em frameworks com SSR, renderize-o em um Client Component (`"use client"`) ou via um import dinâmico somente client-side.
 - **Recursos autocontidos** — os SVGs de dentes e ícones são embutidos (inline) no bundle JavaScript em tempo de build; **não há busca de recursos em tempo de execução** a configurar e nada extra para copiar para sua pasta pública.
-- **Uma instância por página** — o estado do engine é atualmente um singleton em nível de módulo, então renderizar duas instâncias de `<OdontogramShell>` na mesma página faria com que compartilhassem o estado de um único gráfico. O suporte a múltiplas instâncias está planejado para uma versão futura.
+- **Várias instâncias, um editor ativo** — cada `<OdontogramShell>` montado pode manter seu próprio estado clínico por meio de uma sessão isolada (`createOdontogramSession()`), e duas sessões nunca compartilham dados. O editor DOM interativo continua sendo um único engine global, portanto exatamente uma instância montada o controla por vez: essa instância renderiza o gráfico, as demais renderizam um marcador inativo e seguem totalmente legíveis e graváveis pela sua API de sessão. Ao desmontar a instância ativa, uma em espera assume.
 
 ---
 

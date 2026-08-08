@@ -30,7 +30,7 @@ import {
   DENTAL_DE_FDI_SYSTEM, DENTAL_DE_ICDAS_SYSTEM,
   DENTAL_DE_RESTORATION_TYPE_SYSTEM, DENTAL_DE_MATERIAL_SYSTEM,
   TOOTH_SURFACES_EXT_URL, FDI_SURFACE_SYSTEM, SNOMED_SYSTEM,
-  ODONTO_COMPONENT, VERIFIED_SCT,
+  ODONTO_COMPONENT, VERIFIED_SCT, FINDING_TEXT,
   toFdiSurface, restorationTypeCode, restorationMaterialCode,
 } from "./dentalDeCodesystems";
 
@@ -125,15 +125,15 @@ function presenceComponent(ctx: BuildContext, fdi: string, rec: ToothRecord): An
   const selection = rec.toothSelection ?? "";
   const substrate = rec.toothSubstrate ?? "";
   const value = (): CodeableConcept | undefined => {
-    if (substrate === "radix") return sct(VERIFIED_SCT.rootRemnant, "Root remnant (radix)");
+    if (substrate === "radix") return sct(VERIFIED_SCT.rootRemnant, FINDING_TEXT.rootRemnant);
     switch (selection) {
       case "tooth-base":
       case "milktooth":
         return sct(VERIFIED_SCT.toothPresent, display("toothSelection", selection));
       case "none":
-        return sct(VERIFIED_SCT.toothAbsent, "Tooth absent");
+        return sct(VERIFIED_SCT.toothAbsent, FINDING_TEXT.toothAbsent);
       case "no-tooth-after-extraction":
-        return sct(VERIFIED_SCT.toothAbsent, "Missing after extraction");
+        return sct(VERIFIED_SCT.toothAbsent, FINDING_TEXT.missingAfterExtraction);
       case "implant":
         // The IG models an implant as a Device (`DentalImplantDE`) with the
         // findings referring to it, not as a presence value. Emitting a coded
@@ -142,13 +142,13 @@ function presenceComponent(ctx: BuildContext, fdi: string, rec: ToothRecord): An
           tooth: fdi, field: "toothSelection", value: selection,
           reason: "Implant identity is a DentalImplantDE Device in the IG; the position state is preserved as text.",
         });
-        return textOnly("Dental implant present at this position");
+        return textOnly(FINDING_TEXT.implantPresent);
       case "tooth-under-gum":
         reportText(ctx, {
           tooth: fdi, field: "toothSelection", value: selection,
           reason: "No eruption/retention SNOMED concept in ToothPresenceStateVS is identifiable from the published IG artifacts.",
         });
-        return textOnly("Tooth retained under the gingiva (not erupted)");
+        return textOnly(FINDING_TEXT.toothUnderGum);
       default:
         return undefined;
     }
@@ -167,7 +167,7 @@ function rootEndodonticComponents(ctx: BuildContext, fdi: string, rec: ToothReco
   const endo = rec.endo ?? "none";
   if (endo && endo !== "none") {
     if (endo === "endo-filling") {
-      push(sct(VERIFIED_SCT.rootCanalFillingComplete, "Root canal filling assessed as complete"));
+      push(sct(VERIFIED_SCT.rootCanalFillingComplete, FINDING_TEXT.rootFillingComplete));
     } else {
       reportText(ctx, {
         tooth: fdi, field: "endo", value: endo,
@@ -175,7 +175,7 @@ function rootEndodonticComponents(ctx: BuildContext, fdi: string, rec: ToothReco
       });
       push(textOnly(
         endo === "endo-filling-incomplete"
-          ? "Root canal filling assessed as incomplete"
+          ? FINDING_TEXT.rootFillingIncomplete
           : display("endo", endo),
       ));
     }
@@ -287,7 +287,7 @@ function restorationStatusComponents(ctx: BuildContext, fdi: string, rec: ToothR
     });
     out.push({
       code: componentCode(ODONTO_COMPONENT.restorationStatus),
-      valueCodeableConcept: textOnly("Marginal leakage of the restoration"),
+      valueCodeableConcept: textOnly(FINDING_TEXT.marginalLeakage),
     });
   }
 
@@ -380,9 +380,9 @@ function cariesObservations(ctx: BuildContext, fdi: string, rec: ToothRecord): O
         tooth: fdi, field: "caries", value: surface,
         reason: "CariesObservationDE requires an ICDAS score; the unscored surface is retained as a text finding.",
       });
-      const finding = baseCanonicalObservation(ctx, DENTAL_DE_FINDING_PROFILE, textOnly("Coronal caries observed"));
+      const finding = baseCanonicalObservation(ctx, DENTAL_DE_FINDING_PROFILE, textOnly(FINDING_TEXT.coronalCaries));
       (finding as Any).bodySite = toothBodySite(fdi, surfaceExtensions([surface], fdi));
-      (finding as Any).valueCodeableConcept = textOnly("Caries present, ICDAS score not recorded");
+      (finding as Any).valueCodeableConcept = textOnly(FINDING_TEXT.unscoredCaries);
       out.push(finding);
       continue;
     }
@@ -425,8 +425,8 @@ function extraFindings(ctx: BuildContext, fdi: string, rec: ToothRecord): Observ
         reason: "Subcrown caries has no HL7 FDI-surface code; emitted as a DentalFindingDE text finding.",
       });
       out.push(finding(
-        "Subcrown caries (caries beneath a restoration margin)",
-        typeof score === "number" ? `Severity score ${score}` : "Present",
+        FINDING_TEXT.subcrownCaries,
+        typeof score === "number" ? `${FINDING_TEXT.severityScorePrefix}${score}` : "Present",
       ));
       continue;
     }
@@ -437,8 +437,8 @@ function extraFindings(ctx: BuildContext, fdi: string, rec: ToothRecord): Observ
         reason: "Recurrent caries on a restored surface is not an ICDAS value (ICDASCariesScoreCS scopes restoration status out); emitted as a DentalFindingDE text finding.",
       });
       out.push(finding(
-        "Recurrent caries at a restoration margin",
-        typeof score === "number" ? `CARS score ${score}` : "Present",
+        FINDING_TEXT.recurrentCaries,
+        typeof score === "number" ? `${FINDING_TEXT.carsScorePrefix}${score}` : "Present",
         surface,
       ));
     }
@@ -453,7 +453,7 @@ function extraFindings(ctx: BuildContext, fdi: string, rec: ToothRecord): Observ
         reason: "The IG carries radiographic caries depth on DentalFindingDE with an EXTERNAL finding code the editor does not hold; the source grade is retained as text and never mislabelled as ICDAS.",
       });
       out.push(finding(
-        "Radiographic caries depth",
+        FINDING_TEXT.radiographicDepth,
         display("radiographicDepth", value),
         surface,
       ));
@@ -561,7 +561,7 @@ export function buildDentalDeBundle(
     for (const obs of extraFindings(ctx, fdi, rec)) entries.push({ resource: obs });
 
     if (typeof rec.note === "string" && rec.note.trim().length > 0) {
-      const obs = baseCanonicalObservation(ctx, DENTAL_DE_FINDING_PROFILE, textOnly("Clinician note"));
+      const obs = baseCanonicalObservation(ctx, DENTAL_DE_FINDING_PROFILE, textOnly(FINDING_TEXT.clinicianNote));
       (obs as Any).bodySite = toothBodySite(fdi);
       (obs as Any).note = [{ text: rec.note }];
       entries.push({ resource: obs });

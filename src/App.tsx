@@ -7,11 +7,15 @@ export { clearSelection, setOcclusalVisible, setWisdomVisible, setShowBase, setH
 export { default as PerioChart } from "./PerioChart";
 // Bead odontogram-3l1: the controlled-integration surface (UI-domain document
 // + instance-isolated clinical sessions) and the canonical fhir-dental-de codec.
-import { createOdontogramSession, getDefaultOdontogramSession } from "./odontogram";
+import {
+  createOdontogramSession, getDefaultOdontogramSession,
+  createEngineClaim, claimEngine, releaseEngine, ownsEngine, onEngineOwnerChange,
+} from "./odontogram";
 export {
   createOdontogramSession, getDefaultOdontogramSession, getActiveOdontogramSession,
 } from "./odontogram";
 export type { OdontogramSession, OdontogramDocument } from "./odontogram";
+import type { EngineClaim } from "./odontogram";
 export { buildFhirBundle } from "./fhir/toFhir";
 export { parseFhirBundle } from "./fhir/fromFhir";
 export { buildDentalDeBundle } from "./fhir/toFhirDentalDe";
@@ -380,15 +384,37 @@ export default function App({
   const observedSession = instanceSession
     ?? (onDocumentChange ? getDefaultOdontogramSession() : null);
 
-  // Claim the engine for this instance's session while mounted, and hand it
-  // back on unmount. Only one session can be live at a time because the DOM
-  // editor is a single global engine; every other session keeps its own
-  // document and stays independently readable through its own API.
+  // ---- Engine ownership --------------------------------------------------
+  // The DOM editor is one global engine bound to a fixed set of element ids, so
+  // exactly one mounted instance may drive it. This instance claims it on
+  // mount; the winner activates its session and renders the editor, and a
+  // loser renders a placeholder instead of a second copy of the same ids. That
+  // pairing matters clinically: if a non-owning instance still rendered the
+  // chart chrome, the duplicated ids would let it display the OWNER's session
+  // data under its own heading. Ownership transfers when the owner unmounts.
+  const engineClaimRef = useRef<EngineClaim | null>(null);
+  if (engineClaimRef.current === null) engineClaimRef.current = createEngineClaim();
+  const engineClaim = engineClaimRef.current;
+  const [ownsTheEngine, setOwnsTheEngine] = useState(false);
+
   useEffect(() => {
-    if (!instanceSession) return;
+    setOwnsTheEngine(claimEngine(engineClaim));
+    const unsubscribe = onEngineOwnerChange(() => {
+      setOwnsTheEngine(ownsEngine(engineClaim) || claimEngine(engineClaim));
+    });
+    return () => {
+      unsubscribe();
+      releaseEngine(engineClaim);
+    };
+  }, [engineClaim]);
+
+  // The engine owner is the instance whose session is live, so what the chart
+  // paints always belongs to the instance the user is looking at.
+  useEffect(() => {
+    if (!instanceSession || !ownsTheEngine) return;
     instanceSession.activate();
     return () => { instanceSession.release(); };
-  }, [instanceSession]);
+  }, [instanceSession, ownsTheEngine]);
 
   const onDocumentChangeRef = useRef(onDocumentChange);
   onDocumentChangeRef.current = onDocumentChange;
@@ -408,11 +434,12 @@ export default function App({
   }, [documentProp, sessionProp, instanceSession]);
 
   useEffect(() => {
+    if (!ownsTheEngine) return;
     initOdontogram();
     return () => {
       destroyOdontogram();
     };
-  }, []);
+  }, [ownsTheEngine]);
 
   useEffect(() => {
     setNumberingSystem(currentNumbering);
@@ -601,6 +628,25 @@ export default function App({
     perioIndexNameMode,
     onPerioIndexNameMode: (v) => setPerioIndexNameMode(v),
   };
+
+  // A non-owning instance renders NO editor chrome. The engine's element ids
+  // (`#toothGrid`, `#chartModeToggle`, `#activeToothLabel`, ...) are global, so
+  // a second copy would be both invalid HTML and clinically unsafe: the engine
+  // resolves each id to the first match, and this instance would then display
+  // the OWNER's session data under its own heading. Its session stays fully
+  // readable and writable through the session API while it waits.
+  if (!ownsTheEngine) {
+    return (
+      <div
+        ref={themeRootRef}
+        className="odontogram-root odontogram-inactive"
+        dir={isRtl(lang) ? "rtl" : "ltr"}
+        lang={lang}
+        data-odontogram-inactive="true"
+        aria-hidden="true"
+      />
+    );
+  }
 
   return (
     <div ref={themeRootRef} className="odontogram-root" dir={isRtl(lang) ? "rtl" : "ltr"} lang={lang}>

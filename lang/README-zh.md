@@ -130,7 +130,7 @@ export default function OdontogramClient() {
 - **样式表是独立的** —— 你**必须**导入一次 `react-advanced-odontogram/style.css`；它不会被自动注入。样式为全局 CSS，作用域限定在 `.odontogram-root` 下，并由 `--odon-*` CSS 变量驱动。
 - **SSR / 仅限客户端** —— 该组件在挂载时会读取 DOM（`document`），因此必须在浏览器中运行。在支持 SSR 的框架中，请在 Client Component（`"use client"`）中渲染它，或通过仅限客户端的动态导入方式加载。
 - **资源是自包含的** —— 牙齿和图标的 SVG 在构建时被内联到 JavaScript 包中；**无需配置任何运行时资源请求**，也无需向你的 public 文件夹额外复制任何文件。
-- **每个页面仅限一个实例** —— 引擎状态目前是模块级单例，因此在同一页面渲染两个 `<OdontogramShell>` 实例会导致它们共享同一份图表状态。多实例支持计划在未来版本中提供。
+- **多实例，单个生效编辑器** —— 每个挂载的 `<OdontogramShell>` 都可通过独立会话（`createOdontogramSession()`）持有自己的临床状态，两个会话之间永不共享数据。交互式 DOM 编辑器仍是全局唯一引擎，因此同一时刻恰好由一个挂载实例驱动：该实例渲染图表，其余实例渲染未激活占位符，并可继续通过其会话 API 完整读写。当前实例卸载后，等待中的实例接管。
 
 ---
 

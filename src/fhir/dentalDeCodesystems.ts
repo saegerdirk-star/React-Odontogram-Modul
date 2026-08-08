@@ -67,6 +67,37 @@ export const ODONTO_COMPONENT = {
 } as const;
 
 /**
+ * Fixed English texts the adapter uses for the concepts the IG carries as a
+ * `DentalFindingDE`, and for the two restoration/endodontic assessments it
+ * spells out rather than coding.
+ *
+ * They are `CodeableConcept.text` values, not codes: FHIR's own fallback for a
+ * source assessment with no admitted concept. Shared by the emitter and the
+ * reader so the canonical round-trip is exact — the reader recognizes them by
+ * equality and never has to guess at free prose.
+ */
+export const FINDING_TEXT = {
+  rootFillingComplete: "Root canal filling assessed as complete",
+  rootFillingIncomplete: "Root canal filling assessed as incomplete",
+  marginalLeakage: "Marginal leakage of the restoration",
+  recurrentCaries: "Recurrent caries at a restoration margin",
+  subcrownCaries: "Subcrown caries (caries beneath a restoration margin)",
+  radiographicDepth: "Radiographic caries depth",
+  coronalCaries: "Coronal caries observed",
+  unscoredCaries: "Caries present, ICDAS score not recorded",
+  clinicianNote: "Clinician note",
+  implantPresent: "Dental implant present at this position",
+  toothUnderGum: "Tooth retained under the gingiva (not erupted)",
+  toothAbsent: "Tooth absent",
+  missingAfterExtraction: "Missing after extraction",
+  rootRemnant: "Root remnant (radix)",
+  /** Prefix of a recurrent-caries value, followed by the CARS score. */
+  carsScorePrefix: "CARS score ",
+  /** Prefix of a subcrown-caries value, followed by the severity score. */
+  severityScorePrefix: "Severity score ",
+} as const;
+
+/**
  * SNOMED CT concepts whose meaning is PROVABLE from the IG's own published
  * artifacts. Each entry names the artifact that fixes its meaning.
  *

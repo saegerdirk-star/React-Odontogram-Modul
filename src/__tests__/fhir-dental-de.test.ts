@@ -411,6 +411,69 @@ describe("odontogram-3l1 AC3: canonical read-back and legacy tolerance", () => {
     expect(payload.teeth["11"].cariesSeverity).toEqual({ occlusal: 5, buccal: 5 });
   });
 
+  it("reads back every text-fallback value the canonical emitter writes", () => {
+    const payload: OdontogramExportPayload = {
+      version: "2.20",
+      globals: {},
+      teeth: {
+        "46": {
+          toothSelection: "tooth-base",
+          endo: "endo-filling-incomplete",
+          rootCaries: "active",
+          resorptionType: "internal",
+          apicalDx: "chronic-apical-abscess",
+          periapicalType: "cyst",
+          prosthesis: "removable-partial",
+          restorationType: "crown",
+          crownLeakage: true,
+          fillingSurfaceMaterials: { occlusal: "composite" },
+          fillingDefect: { occlusal: "marginal" },
+          radiographicDepth: { distal: "D2" },
+          note: "Review at recall.",
+        },
+      },
+    };
+    const bundle = buildFhirBundle(payload, { dialect: "dental-de", effectiveDateTime: EFFECTIVE });
+    const back = parseFhirBundle(bundle).teeth["46"];
+
+    expect(back.toothSelection).toBe("tooth-base");
+    expect(back.endo).toBe("endo-filling-incomplete");
+    expect(back.rootCaries).toBe("active");
+    expect(back.resorptionType).toBe("internal");
+    expect(back.apicalDx).toBe("chronic-apical-abscess");
+    expect(back.periapicalType).toBe("cyst");
+    expect(back.prosthesis).toBe("removable-partial");
+    expect(back.restorationType).toBe("crown");
+    expect(back.crownLeakage).toBe(true);
+    expect(back.fillingDefect).toEqual({ occlusal: "marginal" });
+    expect(back.radiographicDepth).toEqual({ distal: "D2" });
+    expect(back.note).toBe("Review at recall.");
+  });
+
+  it("reads back recurrent and subcrown caries emitted as DentalFindingDE", () => {
+    const payload: OdontogramExportPayload = {
+      version: "2.20",
+      globals: {},
+      teeth: {
+        "46": {
+          toothSelection: "tooth-base",
+          caries: ["caries-occlusal", "caries-subcrown", "caries-distal"],
+          cariesSeverity: { occlusal: 3, subcrown: 2, distal: 5 },
+          fillingSurfaceMaterials: { occlusal: "composite" },
+        },
+      },
+    };
+    const bundle = buildFhirBundle(payload, { dialect: "dental-de", effectiveDateTime: EFFECTIVE });
+    const back = parseFhirBundle(bundle).teeth["46"];
+
+    expect(back.caries?.sort()).toEqual(
+      ["caries-distal", "caries-occlusal", "caries-subcrown"].sort(),
+    );
+    // The occlusal surface is restored, and its CARS score survives even though
+    // it was NOT emitted as an ICDAS value.
+    expect(back.cariesSeverity).toEqual({ occlusal: 3, subcrown: 2, distal: 5 });
+  });
+
   it("still accepts the previously supported legacy bundle representation", () => {
     const legacy = buildFhirBundle(RESTORED_TOOTH);
     const payload = parseFhirBundle(legacy);

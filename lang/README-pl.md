@@ -128,7 +128,7 @@ Ewentualnie załaduj go za pomocą dynamicznego importu tylko po stronie klienta
 - **Arkusz stylów jest oddzielny** — **musisz** zaimportować `react-advanced-odontogram/style.css` raz; nie jest on wstrzykiwany automatycznie. Stylowanie to globalny CSS ograniczony do `.odontogram-root` i sterowany zmiennymi CSS `--odon-*`.
 - **SSR / tylko po stronie klienta** — komponent odczytuje DOM przy montowaniu (`document`), więc musi działać w przeglądarce. W frameworkach SSR renderuj go w komponencie klienckim (`"use client"`) lub poprzez dynamiczny import tylko po stronie klienta.
 - **Zasoby są samodzielne** — pliki SVG zębów i ikon są osadzane w pakiecie JavaScript w czasie budowania; **nie ma żadnego pobierania zasobów w czasie działania** do konfigurowania ani niczego dodatkowego do skopiowania do folderu publicznego.
-- **Jedna instancja na stronę** — stan silnika jest obecnie singletonem na poziomie modułu, więc renderowanie dwóch instancji `<OdontogramShell>` na tej samej stronie spowodowałoby współdzielenie przez nie stanu jednego wykresu. Obsługa wielu instancji jest planowana w przyszłej wersji.
+- **Wiele instancji, jeden aktywny edytor** — każda zamontowana `<OdontogramShell>` może utrzymywać własny stan kliniczny poprzez odizolowaną sesję (`createOdontogramSession()`), a dwie sesje nigdy nie współdzielą danych. Interaktywny edytor DOM pozostaje jednym globalnym silnikiem, więc steruje nim dokładnie jedna zamontowana instancja naraz: to ona renderuje wykres, pozostałe renderują nieaktywny znacznik i pozostają w pełni czytelne oraz zapisywalne przez swoje API sesji. Po odmontowaniu aktywnej instancji przejmuje ją oczekująca.
 
 ---
 

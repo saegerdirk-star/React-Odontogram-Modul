@@ -128,7 +128,7 @@ Vagy töltsd be egy kizárólag kliensoldali dinamikus importtal: `dynamic(() =>
 - **A stíluslap külön van** — kötelező egyszer importálnod a `react-advanced-odontogram/style.css` fájlt; ez nem töltődik be automatikusan. A stílus globális CSS, amely a `.odontogram-root` alá van skálázva, és `--odon-*` CSS változók vezérlik.
 - **SSR / kizárólag kliensoldali** — a komponens csatoláskor (mount) olvassa a DOM-ot (`document`), ezért a böngészőben kell futnia. SSR keretrendszerekben egy Client Component-ben (`"use client"`) vagy kizárólag kliensoldali dinamikus importon keresztül kell renderelni.
 - **Az eszközök (assets) önállóak** — a fog- és ikon-SVG-k build időben be vannak ágyazva a JavaScript bundle-be; **nincs futásidejű asset lekérés**, amit be kellene állítani, és semmi extrát nem kell átmásolni a public mappádba.
-- **Oldalanként egy példány** — a motor állapota jelenleg modul-szintű singleton, ezért ha ugyanazon az oldalon két `<OdontogramShell>` példányt renderelsz, azok egyetlen diagram állapotát osztanák meg egymással. A több példány támogatása egy jövőbeli kiadásban tervezett.
+- **Több példány, egy élő szerkesztő** — minden beillesztett `<OdontogramShell>` saját klinikai állapotot tarthat egy elszigetelt munkameneten keresztül (`createOdontogramSession()`), és két munkamenet soha nem oszt meg adatot. Az interaktív DOM-szerkesztő továbbra is egyetlen globális motor, ezért egyszerre pontosan egy beillesztett példány vezérli: az rendereli a diagramot, a többi inaktív helyőrzőt rendel, és a munkamenet API-ján át továbbra is teljesen olvasható és írható. Az aktív példány leszerelésekor egy várakozó veszi át.
 
 ---
 
