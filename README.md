@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
-[![Version](https://img.shields.io/badge/version-2.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
+[![Version](https://img.shields.io/badge/version-2.4.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](https://raw.githubusercontent.com/ZoliQua/React-Odontogram-Modul/main/src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
 
@@ -138,7 +138,55 @@ converts, it does not talk to a server.
 
 ![Full-mouth periodontal chart](https://raw.githubusercontent.com/ZoliQua/React-Odontogram-Modul/main/lang/screenshot_en_perio.png)
 
-Per-site probing depth, gingival margin, bleeding on probing (+ suppuration) at the six standard sites, with derived CAL, recession and whole-mouth %BOP; a graphical full-mouth perio chart (CEJ line, mm guide grid, pocket/margin curve, anatomical diamond index tiles), 2017 staging/grading, and per-site FHIR export (LOINC periodontal panel `74029-0`). Available as an `Odontogram | Periodontal Status` view toggle and as a separately-invocable `PerioChart` component.
+Per-site probing depth, gingival margin, bleeding **and suppuration** on probing at the six standard sites, with derived CAL, recession and whole-mouth %BOP; a graphical full-mouth perio chart (CEJ line, mm guide grid, pocket/margin curve, anatomical diamond index tiles), 2017 staging/grading, and per-site FHIR export (LOINC periodontal panel `74029-0`). Available as an `Odontogram | Periodontal Status` view toggle and as a separately-invocable `PerioChart` component.
+
+An implant column supports the **peri-implant examination**: six-site probing depth, bleeding, suppuration, implant mobility and keratinized-tissue width, alongside the Mombelli mPI/mBI indices. Only the axes that need a CEJ — the gingival margin and the CAL derived from it — and the natural-tooth plaque indices stay inactive there.
+
+### 🗓️ Dated examinations
+
+A periodontal case is re-examined over years, so a document carries the examination's own
+identity and an archive of earlier examinations:
+
+```ts
+setExaminationContext({
+  id: "exam-2026-06-30", subject: "Patient/123", effectiveDateTime: "2026-06-30",
+  performer: "Practitioner/dr-mueller", encounter: "Encounter/9912",
+});
+
+captureExamination({ effectiveDateTime: "2026-06-30" }); // archive today's findings
+listExaminations();                                      // identities, oldest first
+getExamination(id);                                      // one archived examination, detached
+loadExamination(id);                                     // review it; the archive keeps it
+startExamination({ effectiveDateTime: "2027-01-15" });   // links to the previous one
+```
+
+Each archived examination is an **independent snapshot** of the whole-mouth findings and case
+context at capture time: later edits never reach into it, and capturing again files a follow-up
+instead of overwriting the baseline a trend depends on. Status and plan keep meaning **current
+versus proposed within one examination** — the plan chart is never history and is never part of
+a snapshot. Every identity field is an opaque, host-owned string the component stores and
+round-trips but never interprets; documents written before payload 2.21 carry none of this and
+hydrate unchanged.
+
+### 🔎 Assessed, not assessed, unmeasurable, not applicable
+
+Periodontal charting stores findings, not the act of looking, so "probed, did not bleed" and
+"nobody probed" used to look identical. Every axis in scope (PD, GM, BOP, suppuration, mobility,
+furcation, plaque, PI, GI, mPI, mBI, KG) can say which it is:
+
+```ts
+setAssessmentStatus(16, "bop", "MB", "assessed");    // assessed-normal
+setAssessmentStatus(16, "pd", "DB", "unmeasurable"); // the point exists, it could not be read
+getAssessmentStatus(16, "mpi", "buccal");            // "not-applicable" on a natural tooth
+perioAxisApplies(16, "gm");                          // true  — a natural tooth has a CEJ
+perioAxisApplies(11, "gm");                          // false — once tooth 11 is an implant
+```
+
+Not-applicable is derived from what the tooth actually is, and a real measurement always wins
+over a recorded gap. The same matrix, `perioAxisApplies()`, also governs the periodontal
+setters, so a measurement the chart shows as inapplicable cannot be written through the API
+either. On export an unavailable value becomes FHIR's own `dataAbsentReason` — never a
+renderer-invented clinical code — and assessed-normal becomes an explicit `false` or grade `0`.
 
 ## ✨ Highlights
 

@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.4.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -538,6 +538,55 @@ potichu. Samotná hodnota vždy zostáva v dokumente domény rozhrania a prežij
 
 `parseFhirBundle` číta **oba** dialekty vrátane zmiešaného balíka, takže už exportované
 balíky sa importujú nezmenene.
+**Datované vyšetrenia, stav posúdenia a peri-implantátový záznam (od 2.4.0):**
+
+Parodontálny prípad sa vyšetruje opakovane počas rokov, preto dokument teraz nesie vlastnú
+identitu vyšetrenia a archív skorších vyšetrení:
+
+```ts
+setExaminationContext({
+  id: "exam-2026-06-30", subject: "Patient/123", effectiveDateTime: "2026-06-30",
+  performer: "Practitioner/dr-mueller", encounter: "Encounter/9912",
+});
+
+captureExamination({ effectiveDateTime: "2026-06-30" });
+listExaminations();
+getExamination(id);
+loadExamination(id);
+startExamination({ effectiveDateTime: "2027-01-15" });
+```
+
+- Každé archivované vyšetrenie je **nezávislá snímka** nálezov celých úst a kontextu prípadu v
+  čase záznamu; neskoršie úpravy sa doň už nikdy nedostanú a opätovný záznam založí kontrolné
+  vyšetrenie namiesto prepísania východiskového stavu, od ktorého závisí vývoj.
+- Status a plán naďalej znamenajú **aktuálne oproti navrhovanému v rámci jedného vyšetrenia** —
+  plán nikdy nie je história a nikdy nie je súčasťou snímky.
+- Každé identifikačné pole je nepriehľadný reťazec vo vlastníctve hostiteľskej aplikácie, ktorý
+  komponent uloží a vráti, ale nikdy neinterpretuje. Dokumenty spred verzie payloadu 2.21 ich
+  neobsahujú a načítajú sa nezmenené.
+
+Parodontálna karta ukladá nálezy, nie samotný akt vyšetrenia, takže "sondované, bez krvácania"
+a "nikto nesondoval" vyzerali rovnako. Každá dotknutá os (PD, GM, BOP, hnisanie, pohyblivosť,
+furkácia, plak, PI, GI, mPI, mBI, KG) to teraz dokáže povedať:
+
+```ts
+setAssessmentStatus(16, "bop", "MB", "assessed");
+setAssessmentStatus(16, "pd", "DB", "unmeasurable");
+getAssessmentStatus(16, "mpi", "buccal");
+perioAxisApplies(16, "gm");
+perioAxisApplies(11, "gm");
+```
+
+"Neaplikovateľné" sa odvodzuje z toho, čím zub skutočne je, a skutočné meranie vždy preváži
+zaznamenanú medzeru. Pri exporte sa nedostupná hodnota stane vlastným `dataAbsentReason` FHIR —
+nikdy vymysleným klinickým kódom — a normálny nález explicitným `false` alebo stupňom `0`.
+
+Celoústna parodontálna karta teraz zaznamenáva aj **hnisanie** pre každé miesto a stĺpec
+implantátu podporuje peri-implantátové vyšetrenie: hĺbku sondovania v šiestich miestach,
+krvácanie, hnisanie, pohyblivosť implantátu a šírku keratinizovanej sliznice. Neaktívne tam
+ostávajú len osi, ktoré potrebujú sklovinno-cementovú hranicu (gingiválny okraj a z neho
+odvodený CAL) a plakové indexy prirodzeného zuba — mPI a mBI sú ich peri-implantátové
+ekvivalenty.
 ### 🧪 Testovanie
 ```bash
 npm run test           # Spustiť všetkých 1704 testov (1 ďalší test preskočený)

@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.4.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -539,6 +539,57 @@ felületi tartomány dokumentumában marad, és túléli a JSON oda-vissza utat.
 
 A `parseFhirBundle` **mindkét** nyelvjárást olvassa, a vegyes köteget is, így a korábban
 exportált kötegek változatlanul importálhatók.
+**Dátumozott vizsgálatok, felmérési státusz és peri-implantáris rögzítés (2.4.0-tól):**
+
+Egy parodontális esetet éveken át újravizsgálnak, ezért a dokumentum mostantól hordozza a
+vizsgálat saját azonosítóját és a korábbi vizsgálatok archívumát:
+
+```ts
+setExaminationContext({
+  id: "exam-2026-06-30", subject: "Patient/123", effectiveDateTime: "2026-06-30",
+  performer: "Practitioner/dr-mueller", encounter: "Encounter/9912",
+});
+
+captureExamination({ effectiveDateTime: "2026-06-30" });
+listExaminations();
+getExamination(id);
+loadExamination(id);
+startExamination({ effectiveDateTime: "2027-01-15" });
+```
+
+- Minden archivált vizsgálat a teljes fogazat leleteinek és az eset kontextusának **önálló
+  pillanatfelvétele** a rögzítés pillanatában; a későbbi módosítások soha nem nyúlnak vissza
+  bele, az ismételt rögzítés pedig utóvizsgálatot hoz létre ahelyett, hogy felülírná azt a
+  kiindulási állapotot, amelyre a trend épül.
+- A Státusz és a Terv továbbra is **a jelenlegit és a javasoltat jelenti egyetlen vizsgálaton
+  belül** — a tervlap soha nem előzmény, és soha nem része egy pillanatfelvételnek.
+- Minden azonosító mező átlátszatlan, a gazdaalkalmazás tulajdonában lévő szöveg, amelyet a
+  komponens tárol és visszaad, de soha nem értelmez. A 2.21-es payload előtti dokumentumok
+  nem tartalmaznak ilyet, és változatlanul betöltődnek.
+
+A parodontális lap leleteket tárol, nem a vizsgálat tényét, így a "szondáztuk, nem vérzett"
+és a "senki nem szondázta" eddig egyformán nézett ki. Az érintett tengelyek (PD, GM, BOP,
+gennyedés, mozgathatóság, furkáció, plakk, PI, GI, mPI, mBI, KG) most már meg tudják mondani:
+
+```ts
+setAssessmentStatus(16, "bop", "MB", "assessed");
+setAssessmentStatus(16, "pd", "DB", "unmeasurable");
+getAssessmentStatus(16, "mpi", "buccal");
+perioAxisApplies(16, "gm");
+perioAxisApplies(11, "gm");
+```
+
+A "nem értelmezhető" abból vezetődik le, hogy a fog valójában mi, és a valódi mérés mindig
+felülírja a rögzített hiányt. Exportáláskor a nem elérhető érték a FHIR saját
+`dataAbsentReason` mezőjébe kerül — soha nem kitalált klinikai kódba —, a negatív lelet pedig
+kifejezett `false` értékké vagy `0` fokozattá válik.
+
+A teljes fogazatra kiterjedő parodontális lap mostantól helyenként rögzíti a **gennyedést**
+is, az implantátumoszlop pedig támogatja a peri-implantáris vizsgálatot: hat ponton mért
+szondázási mélység, vérzés, gennyedés, implantátum-mozgathatóság és keratinizált nyálkahártya
+szélessége. Ott csak azok a tengelyek maradnak inaktívak, amelyekhez zománc-cement határ kell
+(íny-szél és az abból számított CAL), valamint a természetes fog plakkindexei — ezek
+peri-implantáris megfelelője az mPI és az mBI.
 ### 🧪 Tesztelés
 ```bash
 npm run test           # Összes 1704 teszt futtatása (1 további teszt kihagyva)

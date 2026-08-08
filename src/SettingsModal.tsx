@@ -151,7 +151,7 @@ const PERIO_INDEX_NAME_MODE_OPTIONS: { value: PerioIndexNameMode; labelKey: stri
  * bound to `s.perioRowVisibility[id]` / `s.onPerioRowVisibility(id, v)`.
  */
 const PERIO_ROW_GROUPS: { titleKey: string; ids: PerioRowId[] }[] = [
-  { titleKey: "settings.perio.group.pocket", ids: ["pd", "gm", "cal", "bop"] },
+  { titleKey: "settings.perio.group.pocket", ids: ["pd", "gm", "cal", "bop", "sup"] },
   { titleKey: "settings.perio.group.hygiene", ids: ["plaque", "pi", "gi"] },
   { titleKey: "settings.perio.group.mucogingival", ids: ["cej", "rootConcavity", "kg", "gt"] },
   { titleKey: "settings.perio.group.support", ids: ["furcation", "mobility", "miller"] },

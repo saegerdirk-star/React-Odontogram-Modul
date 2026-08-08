@@ -31,6 +31,7 @@ export const CANONICAL_INDEX_NAMES: Record<PerioRowId, string> = {
   gm: "GM",
   cal: "CAL",
   bop: "BOP",
+  sup: "Suppuration",
   plaque: "Plaque (O'Leary)",
   furcation: "Furcation",
   mobility: "Mobility",
@@ -52,6 +53,7 @@ export const CANONICAL_INDEX_NAMES: Record<PerioRowId, string> = {
 const TRANSLATED_INDEX_KEYS: Record<PerioRowId, string> = {
   plaque: "plaque.label",
   bop: "perio.bop",
+  sup: "perio.sup.row",
   cal: "perio.cal",
   gm: "perio.gm",
   pd: "perio.pd",

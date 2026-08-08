@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.4.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -541,6 +541,57 @@ documento de dominio de interfaz y sobrevive al viaje de ida y vuelta por JSON.
 
 `parseFhirBundle` lee **ambos** dialectos, incluido un paquete que los mezcle, por lo que
 los paquetes ya exportados se siguen importando sin cambios.
+**Exámenes fechados, estado de valoración y registro periimplantario (desde 2.4.0):**
+
+Un caso periodontal se reexamina durante años, por lo que un documento puede llevar ahora la
+identidad propia del examen y un archivo de exámenes anteriores:
+
+```ts
+setExaminationContext({
+  id: "exam-2026-06-30", subject: "Patient/123", effectiveDateTime: "2026-06-30",
+  performer: "Practitioner/dr-mueller", encounter: "Encounter/9912",
+});
+
+captureExamination({ effectiveDateTime: "2026-06-30" });
+listExaminations();
+getExamination(id);
+loadExamination(id);
+startExamination({ effectiveDateTime: "2027-01-15" });
+```
+
+- Cada examen archivado es una **instantánea independiente** de los hallazgos de boca completa
+  y del contexto del caso en el momento de capturarlo; las ediciones posteriores nunca vuelven
+  a entrar en él, y capturar de nuevo registra un examen de seguimiento en lugar de sobrescribir
+  la línea base de la que depende la evolución.
+- Estado y plan siguen significando **actual frente a propuesto dentro de un mismo examen**: el
+  plan nunca es historia ni forma parte de una instantánea.
+- Cada campo de identidad es una cadena opaca, propiedad de la aplicación anfitriona, que el
+  componente guarda y devuelve pero nunca interpreta. Los documentos anteriores a la versión de
+  payload 2.21 no llevan nada de esto y se cargan sin cambios.
+
+El registro periodontal guarda hallazgos, no el acto de mirar, así que "sondado, sin sangrado"
+y "nadie lo sondó" resultaban idénticos. Cada eje afectado (PD, GM, BOP, supuración,
+movilidad, furcación, placa, PI, GI, mPI, mBI, KG) ya puede decir cuál de los dos es:
+
+```ts
+setAssessmentStatus(16, "bop", "MB", "assessed");
+setAssessmentStatus(16, "pd", "DB", "unmeasurable");
+getAssessmentStatus(16, "mpi", "buccal");
+perioAxisApplies(16, "gm");
+perioAxisApplies(11, "gm");
+```
+
+"No aplicable" se deriva de lo que el diente realmente es, y una medición real siempre gana a
+un vacío registrado. Al exportar, un valor no disponible se convierte en el propio
+`dataAbsentReason` de FHIR —nunca en un código clínico inventado— y un hallazgo normal se
+convierte en un `false` explícito o en el grado `0`.
+
+La carta periodontal de boca completa registra ahora también la **supuración** por punto, y una
+columna de implante admite el examen periimplantario: profundidad de sondaje en seis puntos,
+sangrado, supuración, movilidad del implante y anchura de mucosa queratinizada. Allí solo
+quedan inactivos los ejes que necesitan la unión amelocementaria (margen gingival y el CAL
+derivado de él) y los índices de placa del diente natural: mPI y mBI son sus equivalentes
+periimplantarios.
 ### 🧪 Pruebas
 ```bash
 npm run test           # Ejecutar las 1704 pruebas (1 prueba adicional omitida)

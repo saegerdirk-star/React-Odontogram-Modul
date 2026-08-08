@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.4.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -540,6 +540,56 @@ const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
 
 `parseFhirBundle` читает **оба** диалекта, включая смешанный набор, поэтому ранее
 экспортированные наборы импортируются без изменений.
+**Датированные обследования, статус оценки и периимплантатная фиксация (с 2.4.0):**
+
+Пародонтологический случай обследуют повторно годами, поэтому документ теперь может нести
+собственную идентичность обследования и архив прежних обследований:
+
+```ts
+setExaminationContext({
+  id: "exam-2026-06-30", subject: "Patient/123", effectiveDateTime: "2026-06-30",
+  performer: "Practitioner/dr-mueller", encounter: "Encounter/9912",
+});
+
+captureExamination({ effectiveDateTime: "2026-06-30" });
+listExaminations();
+getExamination(id);
+loadExamination(id);
+startExamination({ effectiveDateTime: "2027-01-15" });
+```
+
+- Каждое архивное обследование — **независимый снимок** находок всей полости рта и контекста
+  случая на момент фиксации; последующие правки в него уже не попадают, а повторная фиксация
+  создаёт контрольное обследование, а не перезаписывает исходное, на котором строится динамика.
+- Статус и план по-прежнему означают **текущее против предлагаемого в рамках одного
+  обследования** — план никогда не является историей и никогда не входит в снимок.
+- Каждое поле идентичности — непрозрачная строка, принадлежащая приложению-хосту: компонент
+  хранит и возвращает её, но никогда не интерпретирует. Документы до версии payload 2.21 ничего
+  этого не содержат и загружаются без изменений.
+
+Пародонтальная карта хранит находки, а не сам факт осмотра, поэтому «зондировали, кровоточивости
+нет» и «никто не зондировал» выглядели одинаково. Каждая затронутая ось (PD, GM, BOP,
+гноетечение, подвижность, фуркация, налёт, PI, GI, mPI, mBI, KG) теперь способна это указать:
+
+```ts
+setAssessmentStatus(16, "bop", "MB", "assessed");
+setAssessmentStatus(16, "pd", "DB", "unmeasurable");
+getAssessmentStatus(16, "mpi", "buccal");
+perioAxisApplies(16, "gm");
+perioAxisApplies(11, "gm");
+```
+
+«Неприменимо» выводится из того, чем зуб является на самом деле, а реальное измерение всегда
+перевешивает зафиксированный пробел. При экспорте недоступное значение становится собственным
+`dataAbsentReason` FHIR — никогда придуманным клиническим кодом, — а нормальная находка
+становится явным `false` или степенью `0`.
+
+Пародонтальная карта всей полости рта теперь фиксирует также **гноетечение** по каждой точке, а
+столбец имплантата поддерживает периимплантатное обследование: глубину зондирования в шести
+точках, кровоточивость, гноетечение, подвижность имплантата и ширину кератинизированной
+слизистой. Неактивными там остаются только оси, которым нужна эмалево-цементная граница (край
+десны и вычисляемый из него CAL) и индексы налёта естественного зуба — mPI и mBI являются их
+периимплантатными эквивалентами.
 ### 🧪 Тестирование
 ```bash
 npm run test           # Запустить все 1704 тестов (1 дополнительный тест пропущен)

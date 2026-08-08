@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.4.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -533,6 +533,47 @@ const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
 完整往返。
 
 `parseFhirBundle` 可读取**两种**方言，包括混合的 Bundle，因此此前导出的 Bundle 仍可原样导入。
+**带日期的检查、评估状态与种植体周围记录（自 2.4.0 起）：**
+
+牙周病例会在数年间反复复查，因此文档现在可以携带这次检查自身的标识，以及既往检查的存档：
+
+```ts
+setExaminationContext({
+  id: "exam-2026-06-30", subject: "Patient/123", effectiveDateTime: "2026-06-30",
+  performer: "Practitioner/dr-mueller", encounter: "Encounter/9912",
+});
+
+captureExamination({ effectiveDateTime: "2026-06-30" });
+listExaminations();
+getExamination(id);
+loadExamination(id);
+startExamination({ effectiveDateTime: "2027-01-15" });
+```
+
+- 每一份存档检查都是记录当时全口检查结果与病例背景的**独立快照**；此后的编辑永远不会回写其中，
+  再次记录会归档为一次复查，而不会覆盖趋势所依赖的基线。
+- 现状与计划仍然表示**同一次检查内的现状与建议**——计划图从来不是病史，也永远不属于快照。
+- 每个标识字段都是宿主应用拥有的不透明字符串：组件只存储与回传，从不解释。2.21 之前的载荷文档
+  不含这些内容，仍按原样载入。
+
+牙周记录保存的是检查结果而非“看过”这件事，因此“探诊过、未出血”与“无人探诊”过去看起来完全相同。
+本次涉及的每个轴（PD、GM、BOP、溢脓、松动度、根分叉、菌斑、PI、GI、mPI、mBI、KG）现在都能表明属于哪一种：
+
+```ts
+setAssessmentStatus(16, "bop", "MB", "assessed");
+setAssessmentStatus(16, "pd", "DB", "unmeasurable");
+getAssessmentStatus(16, "mpi", "buccal");
+perioAxisApplies(16, "gm");
+perioAxisApplies(11, "gm");
+```
+
+“不适用”由这颗牙实际是什么推导得出，而真实测量值始终优先于已记录的缺口。导出时，不可得的值会写成
+FHIR 自带的 `dataAbsentReason`——绝不使用自造的临床编码——而“已评估且正常”则写成明确的 `false`
+或等级 `0`。
+
+全口牙周图现在也按位点记录**溢脓**，种植体列支持种植体周围检查：六位点探诊深度、出血、溢脓、种植体
+松动度与角化黏膜宽度。那里只有需要釉牙骨质界的轴（龈缘及由其推导的 CAL）以及天然牙的菌斑指数保持
+停用——mPI 与 mBI 即为它们的种植体周围对应指标。
 ### 🧪 测试
 ```bash
 npm run test           # 运行全部 1704 个测试（另有 1 个测试被跳过）

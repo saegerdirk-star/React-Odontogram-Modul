@@ -28,7 +28,7 @@ import {
 } from "../odontogram";
 
 const ALL_ROW_IDS: PerioRowId[] = [
-  "plaque", "bop", "cal", "gm", "pd", "furcation", "mobility", "cej",
+  "plaque", "bop", "sup", "cal", "gm", "pd", "furcation", "mobility", "cej",
   "rootConcavity", "pi", "gi", "mpi", "mbi", "kg", "gt", "miller",
 ];
 
@@ -156,7 +156,7 @@ describe("UI-2 Task 2: hiding a two-block row (pd — buccal + palatal)", () => 
 });
 
 describe("UI-2 Task 2: hiding every row still leaves the header + graphic", () => {
-  it("hiding all 16 ids empties every row label but keeps the header + graphic placeholder", () => {
+  it("hiding all 17 ids empties every row label but keeps the header + graphic placeholder", () => {
     openGrid();
     act(() => {
       for (const id of ALL_ROW_IDS) setPerioRowVisibility(id, false);

@@ -521,7 +521,13 @@ export function buildDentalDeBundle(
     ? payload.teeth
     : {};
   const subjectRef = options.subject ?? PLACEHOLDER_PATIENT_FULLURL;
-  const effective = options.effectiveDateTime ?? payload?.case?.examDate;
+  // Bead odontogram-2vd: the examination's own effective time is the most
+  // specific answer to "when was this observed", so it outranks the report
+  // header's `case.examDate` — which predates it and stays the fallback, so
+  // every existing document keeps exporting exactly the date it did before.
+  const effective = options.effectiveDateTime
+    ?? payload?.examination?.effectiveDateTime
+    ?? payload?.case?.examDate;
   const ctx: BuildContext = { subjectRef, effective, report };
 
   const entries: Bundle["entry"] = [];
@@ -532,7 +538,7 @@ export function buildDentalDeBundle(
   if (!effective) {
     reportUnmapped(ctx, {
       tooth: "*", field: "effectiveDateTime", value: "",
-      reason: "DentalFindingDE requires Observation.effective[x]; supply FhirExportOptions.effectiveDateTime or case.examDate to make the bundle profile-conformant.",
+      reason: "DentalFindingDE requires Observation.effective[x]; supply FhirExportOptions.effectiveDateTime, examination.effectiveDateTime or case.examDate to make the bundle profile-conformant.",
     });
   }
 

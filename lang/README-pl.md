@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.4.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -539,6 +539,55 @@ dokumencie domeny interfejsu i przechodzi pełny obieg przez JSON.
 
 `parseFhirBundle` czyta **oba** dialekty, również pakiet mieszany, więc wcześniej
 wyeksportowane pakiety importują się bez zmian.
+**Datowane badania, status oceny i zapis okołowszczepowy (od 2.4.0):**
+
+Przypadek periodontologiczny bada się ponownie przez lata, dlatego dokument może teraz nieść
+własną tożsamość badania oraz archiwum wcześniejszych badań:
+
+```ts
+setExaminationContext({
+  id: "exam-2026-06-30", subject: "Patient/123", effectiveDateTime: "2026-06-30",
+  performer: "Practitioner/dr-mueller", encounter: "Encounter/9912",
+});
+
+captureExamination({ effectiveDateTime: "2026-06-30" });
+listExaminations();
+getExamination(id);
+loadExamination(id);
+startExamination({ effectiveDateTime: "2027-01-15" });
+```
+
+- Każde zarchiwizowane badanie jest **niezależną migawką** wyników całej jamy ustnej i kontekstu
+  przypadku z chwili zapisu; późniejsze zmiany nigdy do niego nie wracają, a ponowny zapis
+  zakłada badanie kontrolne zamiast nadpisywać stan wyjściowy, na którym opiera się trend.
+- Status i plan nadal znaczą **obecny wobec proponowanego w obrębie jednego badania** — plan
+  nigdy nie jest historią i nigdy nie wchodzi w skład migawki.
+- Każde pole tożsamości to nieprzejrzysty ciąg znaków należący do aplikacji hosta, który
+  komponent przechowuje i zwraca, lecz nigdy nie interpretuje. Dokumenty sprzed wersji ładunku
+  2.21 nie zawierają tego i wczytują się bez zmian.
+
+Karta periodontologiczna zapisuje wyniki, a nie sam fakt badania, więc "zgłębnikowano, bez
+krwawienia" i "nikt nie zgłębnikował" wyglądały identycznie. Każda objęta oś (PD, GM, BOP,
+wysięk ropny, ruchomość, furkacja, płytka, PI, GI, mPI, mBI, KG) potrafi to teraz powiedzieć:
+
+```ts
+setAssessmentStatus(16, "bop", "MB", "assessed");
+setAssessmentStatus(16, "pd", "DB", "unmeasurable");
+getAssessmentStatus(16, "mpi", "buccal");
+perioAxisApplies(16, "gm");
+perioAxisApplies(11, "gm");
+```
+
+"Nie dotyczy" wynika z tego, czym ząb faktycznie jest, a rzeczywisty pomiar zawsze wygrywa z
+zapisaną luką. Przy eksporcie niedostępna wartość staje się własnym `dataAbsentReason` FHIR —
+nigdy wymyślonym kodem klinicznym — a wynik prawidłowy jawnym `false` lub stopniem `0`.
+
+Karta periodontologiczna całej jamy ustnej rejestruje teraz również **wysięk ropny** dla
+każdego miejsca, a kolumna wszczepu obsługuje badanie okołowszczepowe: głębokość zgłębnikowania
+w sześciu miejscach, krwawienie, wysięk ropny, ruchomość wszczepu i szerokość dziąsła
+zrogowaciałego. Nieaktywne pozostają tam wyłącznie osie wymagające granicy szkliwno-cementowej
+(brzeg dziąsła i wyliczany z niego CAL) oraz wskaźniki płytki zęba naturalnego — mPI i mBI są
+ich okołowszczepowymi odpowiednikami.
 ### 🧪 Testowanie
 ```bash
 npm run test           # Uruchom wszystkie 1704 testy (1 dodatkowy test pominięty)
