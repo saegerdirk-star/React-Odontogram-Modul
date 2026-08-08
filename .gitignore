@@ -35,6 +35,7 @@ coverage/
 
 # === Misc ===
 *.log
+.intake/
 
 # === Adobe Illustrator files ===
 graphics/
@@ -47,4 +48,3 @@ snomed/
 *.db
 .beads-credential-key
 .beads/proxieddb/
-
