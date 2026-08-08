@@ -5,6 +5,20 @@ import { useEffect, useRef, useState } from "react";
 import { destroyOdontogram, initOdontogram, setNumberingSystem, clearSelection, setOcclusalVisible, setWisdomVisible, setShowBase, setHealthyPulpVisible, registerPlugins, setPluginState, getPluginState, getToothStateSummary, getOdontogramSummary, formatToothLabel, onStateChange, setReadOnly, getReadOnly, setNotesEnabled, getNotesEnabled, setIcdasEnabled, getIcdasEnabled, setPulpDetailLevel, getPulpDetailLevel, setSecondaryCariesMode, getSecondaryCariesMode, setRootCariesMode, getRootCariesMode, setRadiographicDepthMode, getRadiographicDepthMode, setCariesDepthEnabled, getCariesDepthEnabled, setWearDetailLevel, getWearDetailLevel, setDiscolorationDetailLevel, getDiscolorationDetailLevel, setSurfaceNotation, getSurfaceNotation, exportFhir, exportImage, exportSvg, setImportFormat, openPerioOverlay, closePerioOverlay, isPerioOverlayOpen, getPerioViewMode, setPerioViewMode, getPerioRowVisibility, setPerioRowVisibility, getPerioIndexNameMode, setPerioIndexNameMode, isDualStateConfirmPending, acceptDualStateConfirm, cancelDualStateConfirm, hasAnyPerioData, getChartMode, setChartMode, getStatusChart, getPlanChart, setPlanChart, getPlanChanges, exportStatus, importStatus, exportPdf, exportPerioImage, exportPerioSvg } from "./odontogram";
 export { clearSelection, setOcclusalVisible, setWisdomVisible, setShowBase, setHealthyPulpVisible, registerPlugins, setPluginState, getPluginState, getToothStateSummary, getOdontogramSummary, formatToothLabel, onStateChange, setReadOnly, getReadOnly, setNotesEnabled, getNotesEnabled, setIcdasEnabled, getIcdasEnabled, setPulpDetailLevel, getPulpDetailLevel, setSecondaryCariesMode, getSecondaryCariesMode, setRootCariesMode, getRootCariesMode, setRadiographicDepthMode, getRadiographicDepthMode, setCariesDepthEnabled, getCariesDepthEnabled, setWearDetailLevel, getWearDetailLevel, setDiscolorationDetailLevel, getDiscolorationDetailLevel, setSurfaceNotation, getSurfaceNotation, exportFhir, exportImage, exportSvg, setImportFormat, getPerioViewMode, setPerioViewMode, getPerioRowVisibility, setPerioRowVisibility, getPerioIndexNameMode, setPerioIndexNameMode, isDualStateConfirmPending, acceptDualStateConfirm, cancelDualStateConfirm, initOdontogram, destroyOdontogram, setNumberingSystem, getChartMode, setChartMode, getStatusChart, getPlanChart, setPlanChart, getPlanChanges, openPerioOverlay, closePerioOverlay, isPerioOverlayOpen, hasAnyPerioData, exportStatus, importStatus, exportPdf, exportPerioImage, exportPerioSvg };
 export { default as PerioChart } from "./PerioChart";
+// Bead odontogram-3l1: the controlled-integration surface (UI-domain document
+// + instance-isolated clinical sessions) and the canonical fhir-dental-de codec.
+import { createOdontogramSession, getDefaultOdontogramSession } from "./odontogram";
+export {
+  createOdontogramSession, getDefaultOdontogramSession, getActiveOdontogramSession,
+} from "./odontogram";
+export type { OdontogramSession, OdontogramDocument } from "./odontogram";
+export { buildFhirBundle } from "./fhir/toFhir";
+export { parseFhirBundle } from "./fhir/fromFhir";
+export { buildDentalDeBundle } from "./fhir/toFhirDentalDe";
+export type {
+  FhirDialect, DentalDeConversionEntry, DentalDeConversionReport,
+} from "./fhir/types";
+import type { OdontogramSession, OdontogramDocument } from "./odontogram";
 import type { OdontogramSummary, PulpDetailLevel, SecondaryCariesMode, RootCariesMode, RadiographicDepthMode, ToothDetailLevel, SurfaceNotation, PerioViewMode, PerioRowId, PerioIndexNameMode } from "./odontogram";
 export type { PulpDetailLevel, SecondaryCariesMode, RootCariesMode, RadiographicDepthMode, ToothDetailLevel, SurfaceNotation, PerioViewMode, PerioRowId, PerioIndexNameMode } from "./odontogram";
 export type { OdontogramSummary, OdontogramSummarySection } from "./odontogram";
@@ -155,6 +169,33 @@ type AppProps = {
    * the panel to render.
    */
   showOrthoCard?: boolean;
+  /**
+   * Bind this instance to an isolated clinical session created with
+   * `createOdontogramSession()`. This is the instance-isolation contract: two
+   * mounted odontograms holding two different sessions never share clinical
+   * state.
+   *
+   * Omit BOTH `session` and `document` to keep the historical standalone
+   * behaviour, where the component runs on the process-wide default session and
+   * every module-level entry point (`exportStatus`, `importStatus`, ...) applies
+   * to it unchanged.
+   */
+  session?: OdontogramSession;
+  /**
+   * Initialize this instance from a UI-domain document — the same versioned
+   * JSON `exportStatus()` produces. Supplying it (without `session`) makes the
+   * component create and own a private session seeded with the document;
+   * replacing the prop loads the new document into that session.
+   *
+   * Ignored when `session` is given: the session is then the source of truth.
+   */
+  document?: OdontogramDocument;
+  /**
+   * Observe this instance's document. Called whenever its clinical state
+   * changes, with the current document. Purely observational — the component
+   * never asks the host to store or transport it.
+   */
+  onDocumentChange?: (doc: OdontogramDocument) => void;
 };
 
 const LANGUAGE_OPTIONS: { value: Language; labelKey: string }[] = [
@@ -217,6 +258,9 @@ export default function App({
   surfaceNotation,
   showStatusCard: showStatusCardProp,
   showOrthoCard: showOrthoCardProp,
+  session: sessionProp,
+  document: documentProp,
+  onDocumentChange,
 }: AppProps){
   const { lang, setLang, t } = useI18n({ language, onLanguageChange });
   const [internalNumbering, setInternalNumbering] = useState<NumberingSystem>(numberingSystem ?? "FDI");
@@ -316,6 +360,52 @@ export default function App({
     setInternalNumbering(next);
     onNumberingChange?.(next);
   };
+
+  // ---- Bead odontogram-3l1: per-instance clinical session ----------------
+  // Resolved once per instance and never swapped afterwards: an explicit
+  // `session` prop wins; a `document` prop makes this instance own a private
+  // session seeded from it; supplying neither keeps the historical standalone
+  // behaviour on the process-wide default session (`ownedSession` stays null,
+  // so nothing is activated or released and existing consumers see no change).
+  const ownedSessionRef = useRef<OdontogramSession | null | undefined>(undefined);
+  if (ownedSessionRef.current === undefined) {
+    ownedSessionRef.current = sessionProp
+      ?? (documentProp !== undefined ? createOdontogramSession(documentProp) : null);
+  }
+  const instanceSession = sessionProp ?? ownedSessionRef.current;
+  // The session this instance OBSERVES. An instance with no session of its own
+  // observes the default session, but ONLY when the host actually asked for
+  // change notifications — an unconfigured standalone mount must not reach into
+  // the session API at all, so nothing about the historical behaviour changes.
+  const observedSession = instanceSession
+    ?? (onDocumentChange ? getDefaultOdontogramSession() : null);
+
+  // Claim the engine for this instance's session while mounted, and hand it
+  // back on unmount. Only one session can be live at a time because the DOM
+  // editor is a single global engine; every other session keeps its own
+  // document and stays independently readable through its own API.
+  useEffect(() => {
+    if (!instanceSession) return;
+    instanceSession.activate();
+    return () => { instanceSession.release(); };
+  }, [instanceSession]);
+
+  const onDocumentChangeRef = useRef(onDocumentChange);
+  onDocumentChangeRef.current = onDocumentChange;
+  useEffect(() => {
+    if (!observedSession) return;
+    return observedSession.subscribe((doc) => { onDocumentChangeRef.current?.(doc); });
+  }, [observedSession]);
+
+  // A replaced `document` prop loads a new document into the owned session.
+  // Skipped when the host drives the instance through an explicit session.
+  const lastDocumentRef = useRef<OdontogramDocument | undefined>(documentProp);
+  useEffect(() => {
+    if (sessionProp || !instanceSession) return;
+    if (documentProp === undefined || documentProp === lastDocumentRef.current) return;
+    lastDocumentRef.current = documentProp;
+    instanceSession.setDocument(documentProp);
+  }, [documentProp, sessionProp, instanceSession]);
 
   useEffect(() => {
     initOdontogram();

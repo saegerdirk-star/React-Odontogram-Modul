@@ -7,7 +7,8 @@ import { toLabel, type NumberingSystem } from "./utils/numbering";
 import { type OdontogramPlugin, getQuadrant, LAYER_Z } from "./plugin";
 import { buildFhirBundle } from "./fhir/toFhir";
 import { parseFhirBundle } from "./fhir/fromFhir";
-import type { FhirExportOptions } from "./fhir/types";
+import type { FhirExportOptions, OdontogramDocument } from "./fhir/types";
+export type { OdontogramDocument } from "./fhir/types";
 import { allClearLayers } from "./registry/svgLayers";
 import { applyFlagLayers, buildFlagCtx } from "./registry/svgActivate";
 import { validValues, validSurfaces } from "./registry/validate";
@@ -1022,6 +1023,10 @@ function notifyStateChange(){
     try{ cb(); }
     catch(e){ console.error("odontogram state-change listener failed", e); }
   }
+  // Bead odontogram-3l1: the live edit belongs to exactly one case, so only the
+  // session that owns the engine right now hears about it. A detached session
+  // is notified by its own setDocument() instead.
+  notifyActiveSession();
   // Redraw the multi-tooth bridge overlay after per-tooth renders settle.
   // notifyStateChange() is synchronous and is always invoked at the END of a
   // mutation batch (single edit :~1570, edentulous :~2298, import :~2850, init
@@ -2877,6 +2882,10 @@ export function __resetChartStateForTest(): void {
   chartMode = "status";
   toothState = charts.status;
   resetCaseMeta();
+  // Bead odontogram-3l1: hand the engine back to the default session and drop
+  // any restore stack, so one test's sessions cannot leak into the next.
+  activeSession = defaultSession;
+  sessionStack.length = 0;
 }
 
 /** TEST-ONLY (DS-1 Task 2 seam): set the active tooth (and lazily vivify its
@@ -9565,3 +9574,202 @@ export function getNotesEnabled(): boolean{
 }
 
 export { setOcclusalVisible, setWisdomVisible, setShowBase, setHealthyPulpVisible };
+
+// ---------------------------------------------------------------------------
+// Bead odontogram-3l1: instance-scoped clinical sessions
+// ---------------------------------------------------------------------------
+//
+// THE PROBLEM. Every clinical variable above (`charts`, `chartMode`,
+// `caseMeta`, `planInitialized`, `planEditedTeeth`) is module-level, so two
+// mounted odontograms used to share one case. That is fine for the standalone
+// demo and fatal for a host such as Mira that renders more than one chart.
+//
+// THE CONTRACT. A host owns an {@link OdontogramDocument} — the same versioned
+// JSON `exportStatus()` writes — and hands it to a session. A session is the
+// unit of clinical-state isolation: each one owns its own document, and no
+// edit made through one session can be observed through another.
+//
+// HOW IT WORKS. Exactly one session is LIVE in the engine at a time, because
+// the DOM editor itself is a single global engine bound to `#toothGrid`.
+// Activating a session serializes the outgoing session's state back into its
+// own document and hydrates the incoming one, reusing the SAME
+// `collectExportPayload()` / `hydrateImportedCharts()` data path that
+// `exportStatus()` and `importStatus()` already use — no second serialization
+// format, no parallel state machine, no change to how a chart renders. A
+// session that is not live simply holds its document; it stays fully readable
+// and writable through `getDocument()`/`setDocument()`.
+//
+// The pre-existing module-level entry points (`exportStatus`, `importStatus`,
+// `getStatusChart`, ...) are unchanged: they operate on whichever session is
+// live, which for a standalone consumer is always the default session. No
+// migration is required to keep using them.
+
+/**
+ * A host's handle on ONE odontogram's clinical state.
+ *
+ * Obtain one with {@link createOdontogramSession} and pass it to
+ * `<OdontogramShell session={...} />`, or read the process-wide standalone
+ * state with {@link getDefaultOdontogramSession}.
+ */
+export interface OdontogramSession {
+  /** Stable identity, useful for logging and React keys. */
+  readonly id: string;
+  /** The current UI-domain document. Always a detached copy. */
+  getDocument(): OdontogramDocument;
+  /** Replace the whole document. `null`/`undefined` resets to a blank chart. */
+  setDocument(doc: OdontogramDocument | null | undefined): void;
+  /** Observe document changes. Returns an unsubscribe function. */
+  subscribe(listener: (doc: OdontogramDocument) => void): () => void;
+  /** Whether this session is the one currently live in the engine. */
+  isActive(): boolean;
+  /** Make this session live, saving the outgoing session's state first. */
+  activate(): void;
+  /** Give the engine back to the session that was live before `activate()`. */
+  release(): void;
+}
+
+function blankDocument(): OdontogramDocument {
+  return { version: "2.20", globals: {}, teeth: {} };
+}
+
+function cloneDocument(doc: OdontogramDocument): OdontogramDocument {
+  return JSON.parse(JSON.stringify(doc)) as OdontogramDocument;
+}
+
+/** Serialize the engine's live clinical state into a document. */
+function snapshotLiveDocument(): OdontogramDocument {
+  return collectExportPayload() as OdontogramDocument;
+}
+
+/**
+ * Load a document into the engine's live clinical state. Reuses the exact
+ * import data path, then repaints only when a grid is actually mounted — a
+ * headless host (or a test) can drive sessions with no DOM at all.
+ */
+function loadLiveDocument(doc: OdontogramDocument): void {
+  hydrateImportedCharts(doc);
+  resetActiveChartToStatusAfterImport();
+  if(initialized){
+    for(const toothNo of ALL_TEETH){
+      applyStateToSvg(toothNo);
+      updateToothTileNumber(toothNo);
+      updateToothLabelNoteIcon(toothNo);
+    }
+    updateSelectionFilterButtons();
+    updateSelectionUI();
+    syncChartModeUi();
+  }
+}
+
+let sessionCounter = 0;
+
+class ClinicalSession implements OdontogramSession {
+  readonly id: string;
+  /** The document while this session is NOT live. Ignored while live, where
+   *  the engine's own state is the single source of truth.
+   *  @internal — module-private; not part of the public session contract. */
+  stored: OdontogramDocument;
+  private readonly listeners = new Set<(doc: OdontogramDocument) => void>();
+
+  constructor(initial?: OdontogramDocument | null, id?: string){
+    this.id = id ?? `odontogram-session-${++sessionCounter}`;
+    this.stored = initial ? cloneDocument(initial) : blankDocument();
+  }
+
+  getDocument(): OdontogramDocument {
+    return this.isActive() ? snapshotLiveDocument() : cloneDocument(this.stored);
+  }
+
+  setDocument(doc: OdontogramDocument | null | undefined): void {
+    const next = doc && typeof doc === "object" ? cloneDocument(doc) : blankDocument();
+    if(this.isActive()){
+      loadLiveDocument(next);
+      // The live path fans out through notifyStateChange(), which already
+      // notifies this session's subscribers — do not notify twice.
+      notifyStateChange();
+      return;
+    }
+    this.stored = next;
+    this.notify();
+  }
+
+  subscribe(listener: (doc: OdontogramDocument) => void): () => void {
+    this.listeners.add(listener);
+    return () => { this.listeners.delete(listener); };
+  }
+
+  isActive(): boolean { return activeSession === this; }
+
+  activate(): void { activateSession(this); }
+
+  release(): void { releaseSession(this); }
+
+  /** Internal: fan a change out to this session's own subscribers only. */
+  notify(): void {
+    if(this.listeners.size === 0) return;
+    const doc = this.getDocument();
+    for(const listener of this.listeners){
+      try{ listener(doc); }
+      catch(e){ console.error("odontogram session listener failed", e); }
+    }
+  }
+}
+
+/** The process-wide session every pre-existing module-level entry point uses. */
+const defaultSession = new ClinicalSession(null, "odontogram-session-default");
+let activeSession: ClinicalSession = defaultSession;
+/** Sessions to hand the engine back to, innermost last. */
+const sessionStack: ClinicalSession[] = [];
+
+/** Make `next` the live session, saving the outgoing one's state first. */
+function activateSession(next: ClinicalSession): void {
+  if(activeSession === next) return;
+  activeSession.stored = snapshotLiveDocument();
+  sessionStack.push(activeSession);
+  activeSession = next;
+  loadLiveDocument(next.stored);
+  notifyStateChange();
+}
+
+/** Hand the engine back to whichever session was live before `session`. */
+function releaseSession(session: ClinicalSession): void {
+  if(activeSession !== session){
+    // Not live: just drop it from the restore stack so a later release() never
+    // resurrects an unmounted session.
+    const at = sessionStack.lastIndexOf(session);
+    if(at >= 0) sessionStack.splice(at, 1);
+    return;
+  }
+  const previous = sessionStack.pop();
+  if(!previous) return; // the default session is never released
+  session.stored = snapshotLiveDocument();
+  activeSession = previous;
+  loadLiveDocument(previous.stored);
+  notifyStateChange();
+}
+
+/**
+ * Create an isolated clinical session, optionally seeded from a document.
+ *
+ * Two sessions never share clinical state: an edit made through one is
+ * invisible to the other, in both directions.
+ */
+export function createOdontogramSession(initial?: OdontogramDocument | null): OdontogramSession {
+  return new ClinicalSession(initial);
+}
+
+/** The session backing the module-level standalone API. */
+export function getDefaultOdontogramSession(): OdontogramSession {
+  return defaultSession;
+}
+
+/** The session currently live in the engine. */
+export function getActiveOdontogramSession(): OdontogramSession {
+  return activeSession;
+}
+
+/** Internal: called by notifyStateChange() so a live edit reaches the owning
+ *  session's subscribers without every session hearing every case's changes. */
+function notifyActiveSession(): void {
+  activeSession.notify();
+}

@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.2.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -469,6 +469,75 @@ const myPlugin: OdontogramPlugin = {
 setPluginState(11, "implant-brand", "Straumann");
 ```
 
+**Riadená integrácia — dokument domény rozhrania (od 2.3.0):**
+
+Klinický stav komponentu je **dokument domény rozhrania**: ten istý verziovaný JSON, ktorý
+zapisuje `exportStatus()` a číta `importStatus()`. Tento dokument — nie FHIR — drží stav
+Reactu a patrí hostiteľskej aplikácii.
+
+Naviaž inštanciu na izolovanú **reláciu**, aby si ju inicializoval a sledoval a aby dva
+vložené odontogramy zostali nezávislé:
+
+```tsx
+import App, {
+  createOdontogramSession,
+  type OdontogramDocument, type OdontogramSession,
+} from "./App";
+
+const upper: OdontogramSession = createOdontogramSession(savedUpperDocument);
+const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
+
+<App session={upper} onDocumentChange={(doc: OdontogramDocument) => save("upper", doc)} />
+<App session={lower} onDocumentChange={(doc: OdontogramDocument) => save("lower", doc)} />
+```
+
+- `session.getDocument()` / `setDocument(doc)` / `subscribe(listener)` je celá zmluva;
+  `createOdontogramSession(initial?)` reláciu vytvorí.
+- Jednoduchá prop `document` namiesto `session` spôsobí, že si inštancia vytvorí vlastnú
+  reláciu inicializovanú týmto dokumentom.
+- Ak nezadáš **ani jedno**, zostáva pôvodné samostatné správanie: komponent pracuje nad
+  predvolenou reláciou procesu (`getDefaultOdontogramSession()`) a všetky modulové vstupné
+  body na ňu pôsobia presne ako predtým. **Migrácia nie je potrebná.**
+- V DOM engine je naraz *aktívna* len jedna relácia (je jediný globálny engine viazaný na
+  jednu mriežku zubov); ostatné si ponechávajú vlastný dokument a zostávajú plne čitateľné
+  a zapisovateľné cez svoje API relácie.
+
+**Dialekty FHIR — čistá, voliteľná projekcia:**
+
+Konverzia do FHIR je čistý adaptér nad dokumentom: bez DOM, bez siete, bez systémových
+hodín, bez náhodnosti a bez otázok prenosu, autentifikácie či perzistencie vnútri
+komponentu.
+
+```ts
+import { buildFhirBundle, parseFhirBundle, buildDentalDeBundle } from "./App";
+
+const legacy = buildFhirBundle(session.getDocument());
+
+const canonical = buildFhirBundle(session.getDocument(), {
+  dialect: "dental-de", subject: "Patient/123", effectiveDateTime: "2026-08-08",
+});
+
+const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
+  effectiveDateTime: "2026-08-08",
+});
+```
+
+Dialekt `dental-de` vydáva `OdontogramObservationDE`, `CariesObservationDE` a
+`DentalFindingDE` so slice-mi komponentov z `OdontogramComponentCS`, identitou zuba podľa
+FDI (`ToothIdentificationFDICS`), skóre ICDAS (`ICDASCariesScoreCS`) a opakovateľným
+rozšírením `ToothSurfacesExt` nad HL7 `FDI-surface`. Kódovanie plôch závisí od zuba:
+žuvacia plocha je `I` (rezáková) na prednom zube a `O` (okluzálna) na zadnom; pri importe
+sa `I` vracia na kľúč `occlusal` enginu, `V` na `buccal` a kombinované kódy
+`MO`/`DO`/`DI`/`MOD` sa rozdelia na svoje členy.
+
+Tam, kde IG nedefinuje kódovanú hodnotu, adaptér použije `CodeableConcept.text` v rámci
+príslušnej **extensible** väzby — nikdy vymyslený kód — a tam, kde **required** väzba nemá
+zodpovedajúci pojem, nevydá nič. Oba prípady sú uvedené v `report.textFallback` a
+`report.unmapped` so zubom, poľom, zachovanou hodnotou a dôvodom, takže sa nič nestratí
+potichu. Samotná hodnota vždy zostáva v dokumente domény rozhrania a prežije cestu cez JSON.
+
+`parseFhirBundle` číta **oba** dialekty vrátane zmiešaného balíka, takže už exportované
+balíky sa importujú nezmenene.
 ### 🧪 Testovanie
 ```bash
 npm run test           # Spustiť všetkých 1704 testov (1 ďalší test preskočený)

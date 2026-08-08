@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.2.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -471,6 +471,75 @@ const myPlugin: OdontogramPlugin = {
 setPluginState(11, "implant-brand", "Straumann");
 ```
 
+**التكامل المُتحكَّم فيه — مستند نطاق الواجهة (اعتبارًا من 2.3.0):**
+
+الحالة السريرية للمكوّن هي **مستند نطاق الواجهة**: وهو نفس JSON المُرقَّم إصداريًا الذي
+يكتبه `exportStatus()` ويقرأه `importStatus()`. هذا المستند — لا FHIR — هو ما تحتفظ به
+حالة React وما تملكه التطبيقات المُضيفة.
+
+اربط نسخةً بـ**جلسة** معزولة لتهيئتها ومراقبتها، وللإبقاء على استقلال مخططَي أسنان
+مُركَّبين في الوقت نفسه:
+
+```tsx
+import App, {
+  createOdontogramSession,
+  type OdontogramDocument, type OdontogramSession,
+} from "./App";
+
+const upper: OdontogramSession = createOdontogramSession(savedUpperDocument);
+const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
+
+<App session={upper} onDocumentChange={(doc: OdontogramDocument) => save("upper", doc)} />
+<App session={lower} onDocumentChange={(doc: OdontogramDocument) => save("lower", doc)} />
+```
+
+- `session.getDocument()` / `setDocument(doc)` / `subscribe(listener)` هي العقد كاملًا،
+  و`createOdontogramSession(initial?)` تُنشئ جلسة.
+- تمرير خاصية `document` البسيطة بدلًا من `session` يجعل النسخة تُنشئ جلسة خاصة بها
+  مُهيّأة من ذلك المستند.
+- عدم تمرير **أيٍّ منهما** يُبقي السلوك المستقل السابق كما هو: يعمل المكوّن على الجلسة
+  الافتراضية للعملية (`getDefaultOdontogramSession()`)، وتنطبق عليها جميع نقاط الدخول
+  على مستوى الوحدة تمامًا كما في السابق. **لا حاجة إلى أي ترحيل.**
+- جلسة واحدة فقط تكون *نشِطة* في محرك DOM في كل لحظة (فالمحرك عالمي واحد مرتبط بشبكة
+  أسنان واحدة)؛ أما البقية فتحتفظ بمستنداتها وتبقى قابلة للقراءة والكتابة بالكامل عبر
+  واجهة الجلسة الخاصة بها.
+
+**لهجات FHIR — إسقاط نقي واختياري:**
+
+تحويل FHIR محوّل نقي فوق المستند: بلا DOM، وبلا شبكة، وبلا ساعة نظام، وبلا عشوائية،
+وبلا أي شواغل نقل أو مصادقة أو تخزين داخل المكوّن.
+
+```ts
+import { buildFhirBundle, parseFhirBundle, buildDentalDeBundle } from "./App";
+
+const legacy = buildFhirBundle(session.getDocument());
+
+const canonical = buildFhirBundle(session.getDocument(), {
+  dialect: "dental-de", subject: "Patient/123", effectiveDateTime: "2026-08-08",
+});
+
+const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
+  effectiveDateTime: "2026-08-08",
+});
+```
+
+تُصدر لهجة `dental-de` موارد `OdontogramObservationDE` و`CariesObservationDE`
+و`DentalFindingDE` بشرائح المكوّنات من `OdontogramComponentCS`، وهوية السن وفق FDI
+(`ToothIdentificationFDICS`)، ودرجات ICDAS (`ICDASCariesScoreCS`)، والامتداد القابل
+للتكرار `ToothSurfacesExt` فوق `FDI-surface` من HL7. ترميز الأسطح يعتمد على السن: سطح
+الإطباق هو `I` (قاطع) في السن الأمامي و`O` (إطباقي) في السن الخلفي؛ وعند الاستيراد يعود
+`I` إلى مفتاح المحرك `occlusal` و`V` إلى `buccal`، وتُفكَّك الرموز المركّبة
+`MO`/`DO`/`DI`/`MOD` إلى عناصرها.
+
+وحيثما لا يُعرّف الدليل التنفيذي قيمةً مُرمَّزة، يستخدم المحوّل `CodeableConcept.text`
+ضمن الربط **extensible** المعني — ولا يخترع رمزًا أبدًا — وحيثما لا يجد الربط
+**required** مفهومًا مطابقًا فإنه لا يُصدر شيئًا البتة. وتُدرَج الحالتان في
+`report.textFallback` و`report.unmapped` مع السن والحقل والقيمة المحفوظة والسبب، فلا
+يضيع شيء بصمت. أما القيمة نفسها فتبقى دائمًا في مستند نطاق الواجهة وتنجو من رحلة JSON
+ذهابًا وإيابًا.
+
+يقرأ `parseFhirBundle` **كلتا** اللهجتين، بما في ذلك الحزمة المختلطة، فتظل الحزم
+المُصدَّرة سابقًا قابلة للاستيراد دون تغيير.
 ### 🧪 الاختبار
 ```bash
 npm run test           # تشغيل كل الاختبارات الـ1704 (مع تخطي اختبار إضافي واحد)

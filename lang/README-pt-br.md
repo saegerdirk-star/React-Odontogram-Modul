@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.2.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -462,6 +462,78 @@ const myPlugin: OdontogramPlugin = {
 setPluginState(11, "implant-brand", "Straumann");
 ```
 
+**Integração controlada — o documento de domínio da interface (a partir da 2.3.0):**
+
+O estado clínico do componente é um **documento de domínio da interface**: o mesmo JSON
+versionado que `exportStatus()` grava e `importStatus()` lê. Esse documento — e não o FHIR
+— é o que o estado do React guarda e o que a aplicação hospedeira possui.
+
+Vincule uma instância a uma **sessão** isolada para inicializá-la e observá-la, e para
+manter independentes dois odontogramas montados:
+
+```tsx
+import App, {
+  createOdontogramSession,
+  type OdontogramDocument, type OdontogramSession,
+} from "./App";
+
+const upper: OdontogramSession = createOdontogramSession(savedUpperDocument);
+const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
+
+<App session={upper} onDocumentChange={(doc: OdontogramDocument) => save("upper", doc)} />
+<App session={lower} onDocumentChange={(doc: OdontogramDocument) => save("lower", doc)} />
+```
+
+- `session.getDocument()` / `setDocument(doc)` / `subscribe(listener)` é todo o contrato;
+  `createOdontogramSession(initial?)` cria uma sessão.
+- Uma prop `document` simples em vez de `session` faz a instância criar e possuir uma
+  sessão privada inicializada a partir dela.
+- Não passar **nenhuma das duas** preserva o comportamento autônomo histórico: o componente
+  funciona sobre a sessão padrão do processo (`getDefaultOdontogramSession()`) e todos os
+  pontos de entrada do módulo se aplicam a ela exatamente como antes. **Nenhuma migração é
+  necessária.**
+- Apenas uma sessão fica *ativa* no motor DOM por vez (é um único motor global ligado a uma
+  grade dentária); as demais mantêm seu próprio documento e continuam totalmente legíveis e
+  graváveis pela sua API de sessão.
+
+**Dialetos FHIR — uma projeção pura e opcional:**
+
+A conversão FHIR é um adaptador puro sobre o documento: sem DOM, sem rede, sem relógio do
+sistema, sem aleatoriedade e sem preocupações de transporte, autenticação ou persistência
+dentro do componente.
+
+```ts
+import { buildFhirBundle, parseFhirBundle, buildDentalDeBundle } from "./App";
+
+const legacy = buildFhirBundle(session.getDocument());
+
+const canonical = buildFhirBundle(session.getDocument(), {
+  dialect: "dental-de", subject: "Patient/123", effectiveDateTime: "2026-08-08",
+});
+
+const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
+  effectiveDateTime: "2026-08-08",
+});
+```
+
+O dialeto `dental-de` emite `OdontogramObservationDE`, `CariesObservationDE` e
+`DentalFindingDE` com os slices de componente de `OdontogramComponentCS`, identidade
+dentária FDI (`ToothIdentificationFDICS`), escores ICDAS (`ICDASCariesScoreCS`) e a
+extensão repetível `ToothSurfacesExt` sobre o HL7 `FDI-surface`. A codificação de
+superfícies depende do dente: a superfície de mastigação é `I` (incisal) em um dente
+anterior e `O` (oclusal) em um posterior; na importação, `I` volta para a chave `occlusal`
+do motor, `V` para `buccal`, e os códigos combinados `MO`/`DO`/`DI`/`MOD` são divididos em
+seus membros.
+
+Onde a IG não define um valor codificado, o adaptador usa `CodeableConcept.text` sob o
+binding **extensible** correspondente — nunca um código inventado — e onde um binding
+**required** não tem conceito equivalente, nada é emitido. Ambos os casos aparecem em
+`report.textFallback` e `report.unmapped`, com o dente, o campo, o valor preservado e o
+motivo, de modo que nada se degrada em silêncio. O valor em si permanece sempre no
+documento de domínio da interface e sobrevive à ida e volta por JSON.
+
+`parseFhirBundle` lê **ambos** os dialetos, inclusive um bundle misto, de modo que bundles
+já exportados continuam a ser importados sem alteração.
 ### 🧪 Testes
 ```bash
 npm run test           # Executa todos os 864 testes (1 teste adicional ignorado)

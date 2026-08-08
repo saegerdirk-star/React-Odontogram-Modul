@@ -5,6 +5,75 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-08-08
+
+### Added
+
+- **Controlled integration through an explicit UI-domain document.** The
+  clinical state a host owns is now a named contract — `OdontogramDocument`,
+  structurally identical to the versioned JSON `exportStatus()` already wrote,
+  so every stored payload is already a valid document.
+- **Instance-isolated clinical sessions.** `createOdontogramSession(initial?)`
+  returns an `OdontogramSession` with `getDocument()` / `setDocument(doc)` /
+  `subscribe(listener)` / `activate()` / `release()`. Two sessions never share
+  clinical state: an edit through one is invisible through the other, in both
+  directions. `getDefaultOdontogramSession()` and
+  `getActiveOdontogramSession()` expose the process-wide standalone state and
+  the session currently live in the engine.
+  A session swaps state through the SAME `collectExportPayload()` /
+  `hydrateImportedCharts()` data path `exportStatus()`/`importStatus()` already
+  use — no second serialization format and no change to how a chart renders.
+- **`OdontogramShell` props `session`, `document` and `onDocumentChange`.**
+  `session` binds an instance to an isolated session; `document` makes the
+  instance create and own a private session seeded from it; `onDocumentChange`
+  observes that instance's document. Only one session is live in the DOM engine
+  at a time (it is a single global engine bound to one tooth grid); the others
+  keep their own document and stay readable and writable through their API.
+- **Canonical `fhir-dental-de` FHIR dialect.** `buildFhirBundle(payload, {
+  dialect: "dental-de" })` and `buildDentalDeBundle(payload, options)` emit
+  `OdontogramObservationDE`, `CariesObservationDE` and `DentalFindingDE` against
+  the published `de.cognovis.fhir.dental` IG: `OdontogramComponentCS` component
+  slices, `DentalAssessmentTypeCS` codes, `DentalCategoryCS` category, FDI tooth
+  identity (`ToothIdentificationFDICS`), ICDAS scores (`ICDASCariesScoreCS`),
+  `RestorationTypeCS` / `DentalMaterialCS` values, and the repeatable
+  `ToothSurfacesExt` over HL7 `FDI-surface`.
+  Surface coding is tooth-aware — the biting surface is `I` (incisal) on an
+  anterior tooth and `O` (occlusal) on a posterior one; on import `I` folds back
+  to the engine's `occlusal` key, `V` to `buccal`, and the combo codes
+  `MO`/`DO`/`DI`/`MOD` split into their members.
+- **Conversion report.** `buildDentalDeBundle` returns `{ bundle, report }`
+  where `report.textFallback` lists every value emitted as
+  `CodeableConcept.text` under an extensible binding and `report.unmapped` every
+  value not emitted at all (required binding with no matching concept, or an axis
+  the IG routes to a resource this adapter does not build), each with the tooth,
+  the field, the preserved value and the reason. No renderer-local code is ever
+  presented as canonical Dental-DE terminology and no SNOMED identifier is
+  guessed: only the five concepts whose meaning is provable from the IG's own
+  published examples and contract assertions are emitted as codes.
+- **`FhirExportOptions.effectiveDateTime`** — the canonical dialect's
+  `Observation.effective[x]`, falling back to the document's `case.examDate`.
+  Explicit rather than derived, so the FHIR adapter stays pure and deterministic.
+- New public exports: `createOdontogramSession`, `getDefaultOdontogramSession`,
+  `getActiveOdontogramSession`, `buildFhirBundle`, `parseFhirBundle`,
+  `buildDentalDeBundle`, and the types `OdontogramSession`, `OdontogramDocument`,
+  `FhirDialect`, `DentalDeConversionEntry`, `DentalDeConversionReport`.
+
+### Changed
+
+- `parseFhirBundle` now reads BOTH representations — the previously supported
+  legacy bundle and canonical `fhir-dental-de` resources — including a bundle
+  that mixes them. Canonical resources are detected by their canonical
+  identifiers only, so a legacy bundle is never misparsed.
+
+### Compatibility
+
+- `buildFhirBundle`'s default dialect stays `"legacy"`; its output and the
+  frozen SVG-fingerprint, FHIR-golden and roundtrip-golden fixtures are
+  byte-identical. No existing public export was removed or renamed.
+- Omitting both `session` and `document` keeps the historical standalone
+  behaviour on the process-wide default session, so no consumer has to migrate.
+- Payload version is unchanged at **2.20**; no stored JSON needs rewriting.
+
 ## [2.2.1] - 2026-08-06
 
 ### Added
