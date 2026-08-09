@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.1] - 2026-08-09
+
+### Fixed
+
+- **Switching a mounted periodontal chart to read-only now really locks it.**
+  Turning read-only mode on while the periodontal chart was open only dimmed it:
+  the controls kept the enabled state they were built with, so a host or script
+  clicking one could still write a probing depth, bleeding point, plaque
+  surface, index grade or assessment status into a chart the user was no longer
+  allowed to edit. Read-only mode now refreshes the open chart, so every control
+  it shows — probing depth, gingival margin, bleeding, suppuration, mobility,
+  furcation, plaque, PI, GI, keratinized width, gingival thickness, Miller
+  class, mPI, mBI, CEJ visibility, root concavity and the assessment rows —
+  becomes genuinely inert the moment the flag is set, and becomes editable again
+  exactly where it was editable before when the flag is released. Nothing is
+  unlocked that the tooth itself does not support: a tooth with no periodontium
+  and an uncharted site stay disabled either way. The odontogram side of
+  read-only mode is unchanged.
+
 ## [2.7.0] - 2026-08-09
 
 ### Added

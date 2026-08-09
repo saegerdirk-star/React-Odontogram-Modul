@@ -10288,6 +10288,22 @@ export function setReadOnly(value: boolean){
   $$(".tooth-tile[role='option']").forEach(tile => {
     tile.setAttribute("tabindex", readOnly ? "-1" : "0");
   });
+  // Bead odontogram-v90: the `.read-only` classes above are the COSMETIC half
+  // of the lock. The functional half lives in the mounted perio chart, which
+  // decides every control's `disabled` attribute in `syncToothCells()` from
+  // `getReadOnly()` — and that runs only on grid build and on a `fullResync()`
+  // driven by the `onStateChange` subscription. Without this notify, a flip
+  // taken while the chart is open left every perio control (PD/GM/BOP/SUP/
+  // mobility/furcation/plaque/PI/GI/KG/GT/Miller/mPI/mBI/CEJ/root concavity/
+  // assessment) dimmed by CSS but still `enabled`, so a programmatic click
+  // reached the handler and wrote. Notifying here is the same one-line house
+  // pattern every other app-level session flag already uses (setPerioViewMode,
+  // setPerioRowVisibility, setPerioIndexNameMode, setPerioOverlayLayer,
+  // setPulpDetailLevel, setSurfaceNotation) — `setReadOnly` was the outlier.
+  // No tooth state changes here: the listeners re-read unchanged state and the
+  // resync re-derives each cell from its own gates, so nothing is
+  // blanket-enabled when the flag is released.
+  notifyStateChange();
 }
 
 /**
