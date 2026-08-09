@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2026-08-09
+
+### Added
+
+- **The periodontal assessment status is now authorable.** Version 2.4.0 gave
+  every periodontal and peri-implant axis an explicit assessment status —
+  assessed (normal), not assessed, unmeasurable, not applicable — as public API
+  and FHIR emission, but nothing in the UI could set it: only a host driving the
+  API could. The periodontal chart now carries the missing control. A new
+  **Assessment status** toggle in the chart header adds one companion row under
+  every visible index row (probing depth, gingival margin, bleeding,
+  suppuration, furcation, plaque, PI, GI, mPI, mBI, mobility, keratinized
+  width), with one cycle button per measurement point — site, surface, furcation
+  entrance, or the tooth as a whole — cycling not assessed → assessed →
+  unmeasurable → not applicable → not assessed. The rows are **off by default**:
+  recording that an axis was examined is a deliberate second pass over a chart,
+  not something done while probing, so the chart is unchanged until the toggle
+  is on.
+- **The status is readable where the axes already are.** The per-tooth tooltip
+  gains one line per recorded status, naming the index and measurement point it
+  was recorded at ("Assessment – unmeasurable: PD (Mesio-buccal), Furcation
+  (Buccal)"), and the whole-mouth periodontal summary gains a per-status count.
+  Both are silent on a chart that never used the axis.
+- Localized for every supported UI language (HU, EN, DE, ES, IT, SK, PL, RU,
+  PT-BR, AR, ZH, FR), including the row's own "i" info popover explaining what
+  each status means.
+
+### Changed
+
+- `isAssessmentCharted(toothNo, axis, qualifier)` is a new read-only export:
+  whether an axis already holds a measurement at that point. A point that does
+  is **locked** in the UI, because `getAssessmentStatus` resolves a measurement
+  ahead of any recorded status — the value is its own evidence of examination,
+  and offering a click the domain would discard reads as a broken control.
+- The authoring path writes only through the existing `setAssessmentStatus`
+  setter, so the capability matrix (`perioAxisApplies`), the read-only lock and
+  the dual-state status/plan gate apply exactly as they do to every other
+  periodontal edit — an inapplicable position is disabled, never merely ignored.
+  Storage semantics are untouched: the payload version stays **2.21**,
+  hydration/import stays as tolerant as before, and the odontogram's SVG
+  rendering and FHIR golden output are byte-identical.
+
 ## [2.6.0] - 2026-08-09
 
 ### Added

@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.6.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.7.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -610,6 +610,13 @@ perioAxisApplies(11, "gm");
 Messwert schlaegt immer eine vermerkte Luecke. Beim Export wird ein nicht verfuegbarer Wert
 zum FHIR-eigenen `dataAbsentReason` — nie zu einem erfundenen klinischen Code — und ein
 unauffaelliger Befund zu einem expliziten `false` bzw. Grad `0`.
+
+**Erfassung (ab 2.7.0):** ein Schalter **Befundungsstatus** im Kopf der Parodontalkarte fuegt
+unter jeder sichtbaren Indexzeile eine Begleitzeile ein, mit einem Umschaltknopf je Messpunkt —
+Messstelle, Flaeche, Furkationseingang oder der ganze Zahn. Die Zeilen sind standardmaessig
+ausgeschaltet. Wo bereits ein Messwert vorliegt, ist das Bedienelement gesperrt (der Wert selbst
+belegt die Untersuchung), und eine nicht zutreffende Position ist deaktiviert statt still
+ignoriert. Erfasste Status erscheinen auch im Zahn-Tooltip und in der Parodontal-Zusammenfassung.
 
 Die Ganzkiefer-Parodontalkarte erfasst jetzt zusaetzlich **Pusaustritt** je Messstelle, und
 eine Implantatspalte unterstuetzt die periimplantaere Untersuchung: Sondierungstiefe an sechs

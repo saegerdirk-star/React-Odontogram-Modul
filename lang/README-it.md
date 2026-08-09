@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.6.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.7.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -608,6 +608,14 @@ perioAxisApplies(11, "gm");
 lacuna registrata. In esportazione un valore non disponibile diventa il `dataAbsentReason`
 proprio di FHIR — mai un codice clinico inventato — e un rilievo normale diventa un `false`
 esplicito o il grado `0`.
+
+**Registrazione (dalla 2.7.0):** un interruttore **Stato di valutazione** nell'intestazione della
+cartella parodontale aggiunge una riga di accompagnamento sotto ogni riga di indice visibile, con
+un pulsante ciclico per punto di misurazione: sito, superficie, ingresso di forcazione o l'intero
+dente. Le righe sono disattivate per impostazione predefinita. Un punto che contiene già una
+misurazione è bloccato (il valore stesso prova l'esame) e una posizione non applicabile è
+disabilitata anziché ignorata in silenzio. Gli stati registrati compaiono anche nel tooltip del
+dente e nel riepilogo parodontale di tutta la bocca.
 
 La cartella parodontale a bocca intera registra ora anche la **suppurazione** per sito, e una
 colonna implantare supporta l'esame perimplantare: profondità di sondaggio in sei siti,

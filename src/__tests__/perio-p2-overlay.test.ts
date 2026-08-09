@@ -112,6 +112,14 @@ vi.mock("../odontogram", async () => {
     }),
     setPerioRowVisibility: vi.fn(),
     getPerioIndexNameMode: vi.fn().mockReturnValue("translated"),
+    // Bead odontogram-vnt: <PerioChart/> reads the assessment-row session flag
+    // and the odontogram-2vd assessment API. Forwarded from the real module —
+    // the flag defaults to off, so these files' grids build exactly as before.
+    getPerioAssessmentMode: actual.getPerioAssessmentMode,
+    setPerioAssessmentMode: actual.setPerioAssessmentMode,
+    getAssessmentStatus: actual.getAssessmentStatus,
+    setAssessmentStatus: actual.setAssessmentStatus,
+    isAssessmentCharted: actual.isAssessmentCharted,
     setPerioIndexNameMode: vi.fn(),
     // PG-B Task 2: PerioChart now reads/sets the overlay-layer flag — forward
     // the real implementations so its switcher/overlay effects work here.

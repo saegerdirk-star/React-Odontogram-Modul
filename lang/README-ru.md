@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.6.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.7.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -607,6 +607,13 @@ perioAxisApplies(11, "gm");
 перевешивает зафиксированный пробел. При экспорте недоступное значение становится собственным
 `dataAbsentReason` FHIR — никогда придуманным клиническим кодом, — а нормальная находка
 становится явным `false` или степенью `0`.
+
+**Запись (с 2.7.0):** переключатель **Статус обследования** в заголовке пародонтальной карты
+добавляет под каждой видимой строкой индекса сопутствующую строку с одной циклической кнопкой на
+точку измерения — точка, поверхность, вход фуркации или зуб целиком. Строки по умолчанию
+выключены. Точка, где уже есть измерение, заблокирована (само значение подтверждает
+обследование), а неприменимая позиция отключена, а не молча проигнорирована. Записанные статусы
+также видны во всплывающей подсказке зуба и в пародонтальной сводке по всей полости рта.
 
 Пародонтальная карта всей полости рта теперь фиксирует также **гноетечение** по каждой точке, а
 столбец имплантата поддерживает периимплантатное обследование: глубину зондирования в шести

@@ -3455,6 +3455,10 @@ function getStateSummary(toothNo: number): string[]{
   // periodontal-presence grouping as PI/GI/KG/GT/Miller above.
   { const mpi = periImplantPlaqueSummaryLine(toothNo); if(mpi) summary.push(mpi); }
   { const mbi = periImplantBleedingSummaryLine(toothNo); if(mbi) summary.push(mbi); }
+  // Bead odontogram-vnt: what the periodontal VALUES above cannot say —
+  // examined and normal, could not be measured, no such measurement point.
+  // Last in the periodontal grouping, since it qualifies the lines above it.
+  for(const line of assessmentSummaryLines(toothNo)) summary.push(line);
   // SP17 Task 1 Fix #2 (gate-parity follow-up): gate on the SAME FULL predicate
   // the #crownLeakageRow control uses (crownLeakageAllowed, ~line 2974) —
   // !restorationRowHidden(state) AND crown/bridge. Checking crown/bridge alone
@@ -7142,12 +7146,121 @@ export function setAssessmentStatus(
   });
 }
 
+/**
+ * Bead odontogram-vnt: whether the axis already holds a charted value at that
+ * measurement point — the one case where recording a status would contradict
+ * the record itself, since {@link getAssessmentStatus} resolves a measurement
+ * ahead of any stored status. The authoring UI reads this to LOCK the control
+ * there rather than offer a click whose result the domain would discard.
+ *
+ * Read-only and derived: it adds no storage and no new value; it is the same
+ * `assessmentValuePresent` rule the resolver uses, exposed instead of
+ * re-derived per axis in the view. `false` for an axis the tooth does not have
+ * or a measurement point it does not own — there is no value there to protect.
+ */
+export function isAssessmentCharted(toothNo: number, axis: string, qualifier: string | null = null): boolean {
+  if(!isPerioAssessmentAxis(axis)) return false;
+  if(!perioAxisApplies(toothNo, axis)) return false;
+  if(!assessmentQualifierValid(toothNo, axis, qualifier)) return false;
+  return assessmentValuePresent(toothState.get(toothNo), axis, qualifier);
+}
+
 /** Every explicitly recorded assessment status on this tooth, keyed `axis` or
  *  `axis:qualifier`. A plain detached object; `{}` when nothing was recorded. */
 export function getToothAssessments(toothNo: number): Record<string, AssessmentStatus> {
   const map = toothState.get(toothNo)?.assessment as Map<string, AssessmentStatus> | undefined;
   if(!map || map.size === 0) return {};
   return Object.fromEntries(map);
+}
+
+/** Bead odontogram-vnt: the localized name of ONE measurement point — the
+ *  index plus, for every axis that is not per-tooth, the site / surface /
+ *  furcation entrance it was measured at. Reuses the exact same `t(...)` keys
+ *  the perio chart labels its own rows and cells with. */
+function assessmentPointLabel(axis: PerioAssessmentAxis, qualifier: string | null): string {
+  const index = t(PERIO_INDEX_LABEL_KEYS[axis]);
+  switch(ASSESSMENT_AXIS_KIND[axis]){
+    case "site": return `${index} (${t(`perio.site.${qualifier}`)})`;
+    case "surface": return `${index} (${t(`surface.${qualifier}`)})`;
+    case "entrance": return `${index} (${t(`furcation.entrance.${qualifier}`)})`;
+    default: return index;
+  }
+}
+
+/** The order recorded statuses are reported in. `"not-assessed"` is the
+ *  default and is never stored, so it is never reported. */
+const REPORTED_ASSESSMENT_STATUSES: readonly AssessmentStatus[] = ["assessed", "unmeasurable", "not-applicable"];
+
+/**
+ * Bead odontogram-vnt: every measurement point on one tooth whose assessment
+ * status is worth SAYING — a recorded status on a point that holds no value.
+ *
+ * A point that holds a measurement is deliberately excluded: the value is
+ * already shown, {@link getAssessmentStatus} resolves it to `"assessed"`
+ * regardless of what was recorded, and repeating that in prose would only
+ * restate the number next to it. What is left is exactly what the values
+ * cannot express — examined and normal, could not be measured, no such
+ * measurement point.
+ *
+ * Reads through {@link getAssessmentStatus}, so the capability matrix gates
+ * this exactly as it gates the control: a tooth whose axis the UI refuses to
+ * author can never surface a status here either, however tolerant the import
+ * that carried it was.
+ */
+function assessmentSummaryEntries(toothNo: number): { status: AssessmentStatus; label: string }[] {
+  const recorded = toothState.get(toothNo)?.assessment as Map<string, AssessmentStatus> | undefined;
+  if(!recorded || recorded.size === 0) return [];
+  const entries: { status: AssessmentStatus; label: string }[] = [];
+  for(const axis of PERIO_ASSESSMENT_AXES){
+    const qualifiers: (string | null)[] =
+      ASSESSMENT_AXIS_KIND[axis] === "site" ? [...PERIO_SITES] :
+      ASSESSMENT_AXIS_KIND[axis] === "surface" ? [...VALID_PLAQUE_SURFACE] :
+      ASSESSMENT_AXIS_KIND[axis] === "entrance" ? furcationEntrances(toothNo) :
+      [null];
+    for(const qualifier of qualifiers){
+      if(!recorded.has(assessmentKey(axis, qualifier))) continue;
+      if(isAssessmentCharted(toothNo, axis, qualifier)) continue;
+      const status = getAssessmentStatus(toothNo, axis, qualifier);
+      if(status === "not-assessed") continue;
+      entries.push({ status, label: assessmentPointLabel(axis, qualifier) });
+    }
+  }
+  return entries;
+}
+
+/** Bead odontogram-vnt: the tooltip lines for one tooth — one line per
+ *  recorded status, listing the measurement points it was recorded at
+ *  ("Assessment – unmeasurable: PD (Mesio-buccal), Furcation (Buccal)").
+ *  Grouped by status rather than one line per point, so a full-mouth review
+ *  pass does not bury the rest of the tooltip. */
+function assessmentSummaryLines(toothNo: number): string[] {
+  const entries = assessmentSummaryEntries(toothNo);
+  if(entries.length === 0) return [];
+  const lines: string[] = [];
+  for(const status of REPORTED_ASSESSMENT_STATUSES){
+    const points = entries.filter((entry) => entry.status === status).map((entry) => entry.label);
+    if(points.length === 0) continue;
+    lines.push(t("assessment.line", { status: t(`assessment.status.${status}`), points: points.join(", ") }));
+  }
+  return lines;
+}
+
+/** Bead odontogram-vnt: the whole-mouth fragment appended to
+ *  {@link getOdontogramSummary}'s `periodontalText` — a per-status count over
+ *  the active chart ("Assessment: assessed (normal) 2 · unmeasurable 1").
+ *  `""` (nothing appended) when no tooth carries a reportable status, so a
+ *  chart that never used this axis reads byte-identical to before. */
+function assessmentSummaryFragment(): string {
+  const counts = new Map<AssessmentStatus, number>();
+  for(const toothNo of ALL_TEETH){
+    for(const entry of assessmentSummaryEntries(toothNo)){
+      counts.set(entry.status, (counts.get(entry.status) ?? 0) + 1);
+    }
+  }
+  const parts = REPORTED_ASSESSMENT_STATUSES
+    .filter((status) => (counts.get(status) ?? 0) > 0)
+    .map((status) => `${t(`assessment.status.${status}`)} ${counts.get(status)}`);
+  return parts.length === 0 ? "" : `${t("assessment.label")}: ${parts.join(" · ")}`;
 }
 
 // ---- SP-perio PG-C Task 2: cejVisibility + rootConcavity public API.
@@ -7933,6 +8046,39 @@ const PERIO_ROW_IDS: readonly PerioRowId[] = [
   "rootConcavity", "pi", "gi", "mpi", "mbi", "kg", "gt", "miller",
 ];
 
+/**
+ * The localized `t(...)` key naming each periodontal index — NOT a uniform
+ * `perio.<id>.row` template, since several rows use a differently-shaped key
+ * (plaque/furcation use `<x>.label`, pd/gm/cal/bop use the bare `perio.<x>`
+ * abbreviation key, the rest use `perio.<x>.row`).
+ *
+ * Lives here, next to {@link PerioRowId} itself, because two consumers need
+ * the same naming: `perioIndexNames.ts`'s `indexName()` (the chart's row
+ * labels, in translated mode) and the assessment-status summary lines below
+ * (bead odontogram-vnt), which name the same indices in the tooltip and the
+ * whole-mouth summary. One table, so a renamed index can never read one way on
+ * the chart and another way in the summary.
+ */
+export const PERIO_INDEX_LABEL_KEYS: Record<PerioRowId, string> = {
+  plaque: "plaque.label",
+  bop: "perio.bop",
+  sup: "perio.sup.row",
+  cal: "perio.cal",
+  gm: "perio.gm",
+  pd: "perio.pd",
+  furcation: "furcation.label",
+  mobility: "perio.mobility",
+  cej: "perio.cej.label",
+  rootConcavity: "perio.rootConcavity.label",
+  pi: "perio.pi.row",
+  gi: "perio.gi.row",
+  mpi: "perio.mpi.row",
+  mbi: "perio.mbi.row",
+  kg: "perio.kg.row",
+  gt: "perio.gt.row",
+  miller: "perio.miller.row",
+};
+
 function defaultPerioRowVisibility(): Record<PerioRowId, boolean> {
   const record = {} as Record<PerioRowId, boolean>;
   for (const id of PERIO_ROW_IDS) record[id] = true;
@@ -7964,6 +8110,32 @@ export function getPerioIndexNameMode(): PerioIndexNameMode {
 /** Switch the perio index-name display mode. No-op (still notifies) if unchanged. */
 export function setPerioIndexNameMode(mode: PerioIndexNameMode): void {
   perioIndexNameMode = mode;
+  notifyStateChange();
+}
+
+// ---- Bead odontogram-vnt: assessment-status authoring rows ---------------
+// A third session-level perio-chart UI preference, mirroring
+// `perioRowVisibility`/`perioIndexNameMode` above exactly: a module `let` +
+// getter + setter that calls `notifyStateChange()`, never part of the tooth
+// state and therefore never serialized.
+//
+// Recording that an axis WAS examined is a deliberate second pass over a
+// chart, not something a clinician does while probing — so the assessment
+// rows are OPT-IN. Off by default, the perio chart renders exactly as it did
+// before this bead; on, every visible index row for an axis in
+// `PERIO_ASSESSMENT_AXES` gains a companion row of status cycle controls.
+
+let perioAssessmentMode = false;
+
+/** Whether the perio chart shows the per-axis assessment-status rows. */
+export function getPerioAssessmentMode(): boolean {
+  return perioAssessmentMode;
+}
+
+/** Show/hide the perio chart's assessment-status rows. No-op (still notifies)
+ *  if unchanged. */
+export function setPerioAssessmentMode(on: boolean): void {
+  perioAssessmentMode = on;
   notifyStateChange();
 }
 
@@ -10056,6 +10228,14 @@ export function getOdontogramSummary(): OdontogramSummary {
   {
     const classificationFragment = classificationSummaryFragment(getPerioClassification());
     if(classificationFragment) periodontalText = `${periodontalText} – ${classificationFragment}`;
+  }
+  // Bead odontogram-vnt: how much of the periodontal examination was recorded
+  // as examined-but-normal / unmeasurable / not applicable. Empty (nothing
+  // appended) on a chart that never used the axis, so every existing fixture
+  // reads unchanged.
+  {
+    const assessmentFragment = assessmentSummaryFragment();
+    if(assessmentFragment) periodontalText = `${periodontalText} – ${assessmentFragment}`;
   }
 
   const implantInfo = implants.length

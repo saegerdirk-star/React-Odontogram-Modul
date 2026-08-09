@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.6.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.7.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -601,6 +601,12 @@ perioAxisApplies(11, "gm");
 تُشتق حالة "غير منطبق" مما هو عليه السنّ فعلاً، والقياس الحقيقي يتقدّم دائماً على فجوة مسجَّلة.
 وعند التصدير تصبح القيمة غير المتاحة `dataAbsentReason` الخاص بـ FHIR — لا رمزاً سريرياً مخترعاً —
 ويصبح التقييم الطبيعي قيمة `false` صريحة أو الدرجة `0`.
+
+**الإدخال (اعتبارًا من 2.7.0):** مفتاح **حالة التقييم** في ترويسة المخطط اللثوي يضيف صفًا مرافقًا
+أسفل كل صف مؤشر ظاهر، بزر تدوير واحد لكل موضع قياس — موضع سبر أو سطح أو مدخل تشعب أو السن كاملة.
+هذه الصفوف معطّلة افتراضيًا. الموضع الذي يحمل قيمة مقيسة بالفعل يكون مقفلًا (القيمة نفسها دليل
+الفحص)، والموضع غير المنطبق يكون معطّلًا لا متجاهَلًا بصمت. تظهر الحالات المسجّلة أيضًا في تلميح
+السن وفي ملخص اللثة للفم بأكمله.
 
 صار مخطط الفم الكامل يسجّل أيضاً **التقيّح** لكل نقطة، ويدعم عمود الزرعة فحص ما حول الزرعة: عمق
 السبر في ست نقاط، والنزف، والتقيّح، وقلقلة الزرعة، وعرض النسيج المتقرن. ولا يبقى معطّلاً هناك سوى

@@ -51,6 +51,12 @@ import {
   setPeriImplantBleeding,
   getPerioRowVisibility,
   getPerioIndexNameMode,
+  getAssessmentStatus,
+  setAssessmentStatus,
+  isAssessmentCharted,
+  getPerioAssessmentMode,
+  setPerioAssessmentMode,
+  type AssessmentStatus,
   type PerioCellCoord,
   type PerioOverlayLayer,
   type PerioRowId,
@@ -189,6 +195,56 @@ const MILLER_CLASS_FACE: Record<string, string> = { none: "–", i: "I", ii: "II
 // em-dash placeholder, mirroring FURCATION_ROMAN's role for a graded axis.
 const GRADE_FACE: readonly string[] = ["–", "1", "2", "3"];
 
+// Bead odontogram-vnt: the assessment-status cycle-button value order +
+// compact face glyphs, mirroring CEJ_VISIBILITY_CYCLE/GRADE_FACE above.
+// Literal (not imported from "./odontogram") for the same module-eval-safety
+// reason as those — order matches the `AssessmentStatus` union, starting at
+// the default `"not-assessed"` (which is never stored, hence the em-dash
+// placeholder every other cycle control uses for its own "absence" value).
+// The faces are deliberately short and language-neutral, like "ND"/"Tk"/"IV"
+// above; the FULL localized status name rides on each button's title +
+// aria-label, refreshed on every sync.
+const ASSESSMENT_CYCLE: readonly AssessmentStatus[] = [
+  "not-assessed", "assessed", "unmeasurable", "not-applicable",
+];
+const ASSESSMENT_FACE: Record<AssessmentStatus, string> = {
+  "not-assessed": "–", assessed: "A", unmeasurable: "U", "not-applicable": "NA",
+};
+
+/** Bead odontogram-vnt: which measurement points one assessment axis is
+ *  charted at, in the order the perio chart already lays them out. Per-tooth
+ *  axes (mobility/KG) take no qualifier and get exactly one control; the
+ *  furcation entrances are position-dependent, so an unfurcated position
+ *  yields none at all (an empty cell, mirroring `buildFurcationCell`). */
+function assessmentQualifiers(
+  toothNo: number,
+  axis: string,
+  sites: readonly PerioSite[],
+): readonly (string | null)[] {
+  if (axis === "pd" || axis === "gm" || axis === "bop" || axis === "sup") return sites;
+  if (axis === "furcation") return furcationEntrances(toothNo);
+  if (axis === "plaque" || axis === "pi" || axis === "gi" || axis === "mpi" || axis === "mbi") {
+    return PLAQUE_SURFACES;
+  }
+  return [null];
+}
+
+/** The localized name of ONE measurement point, for a control's title/
+ *  aria-label: the site / surface / furcation entrance it is charted at.
+ *  Empty for a per-tooth axis, which has no sub-point to name. */
+function assessmentQualifierLabel(axis: string, qualifier: string | null): string {
+  if (qualifier === null) return "";
+  if (axis === "pd" || axis === "gm" || axis === "bop" || axis === "sup") return t(`perio.site.${qualifier}`);
+  if (axis === "furcation") return t(`furcation.entrance.${qualifier}`);
+  return t(`surface.${qualifier}`);
+}
+
+/** The registry key one assessment control is stored under — the same
+ *  `axis` / `axis:qualifier` shape the domain records a status under. */
+function assessmentCellKey(axis: string, qualifier: string | null): string {
+  return qualifier === null ? axis : `${axis}:${qualifier}`;
+}
+
 type PerioSiteData = ReturnType<typeof getToothPerio>;
 type PerioSummaryData = ReturnType<typeof getPerioSummary>;
 
@@ -256,6 +312,13 @@ type ToothCellRefs = {
   // only on an implant tooth, inert everywhere else.
   mpi: Partial<Record<string, HTMLButtonElement>>;
   mbi: Partial<Record<string, HTMLButtonElement>>;
+  // Bead odontogram-vnt: the assessment-status cycle buttons of EVERY axis in
+  // one flat map, keyed `axis` / `axis:qualifier` (see `assessmentCellKey`) —
+  // one map rather than a per-axis field, because the axes differ only in
+  // WHICH measurement points they have, and the control is otherwise
+  // identical. Empty unless the assessment rows are switched on
+  // (`getPerioAssessmentMode`).
+  assessment: Partial<Record<string, HTMLButtonElement>>;
 };
 
 type GridHandlers = {
@@ -275,6 +338,7 @@ type GridHandlers = {
   onMillerClass: (toothNo: number) => void;
   onMpiSurface: (toothNo: number, surface: string) => void;
   onMbiSurface: (toothNo: number, surface: string) => void;
+  onAssessment: (toothNo: number, axis: string, qualifier: string | null) => void;
 };
 
 // T3 curve overlay: gather the ordered per-site {pd,gm} readings for one row
@@ -881,6 +945,37 @@ function syncToothCells(
     btn.setAttribute("aria-pressed", value !== "none" ? "true" : "false");
     btn.disabled = readOnly || hidden;
   }
+  // Bead odontogram-vnt: the assessment-status cycle buttons. Two gates, both
+  // the domain's own, never a view-local guess:
+  //
+  //   `perioAxisApplies` — the SAME capability matrix `setAssessmentStatus`
+  //   enforces, so a control is inert exactly where the setter would no-op
+  //   (the UI reflects the matrix rather than fighting it);
+  //
+  //   `isAssessmentCharted` — a point that already holds a measurement is
+  //   LOCKED, because `getAssessmentStatus` resolves a measurement ahead of
+  //   any recorded status. Leaving it clickable would offer a click whose
+  //   result the domain discards, which reads as a broken control.
+  //
+  // ...on top of the global readOnly lock every other control here honours.
+  for (const key of Object.keys(cells.assessment)) {
+    const btn = cells.assessment[key];
+    if (!btn) continue;
+    const axis = btn.dataset.assessmentAxis!;
+    const qualifier = btn.dataset.assessmentQualifier ?? null;
+    const status = getAssessmentStatus(toothNo, axis, qualifier);
+    const charted = isAssessmentCharted(toothNo, axis, qualifier);
+    btn.textContent = ASSESSMENT_FACE[status] ?? "–";
+    btn.dataset.assessmentStatus = status;
+    btn.setAttribute("aria-pressed", status !== "not-assessed" ? "true" : "false");
+    btn.disabled = readOnly || !applies(axis) || charted;
+    const point = assessmentQualifierLabel(axis, qualifier);
+    const index = indexName(axis as PerioRowId);
+    const label = point ? `${index} (${point})` : index;
+    const title = `${label} – ${t(`assessment.status.${status}`)}`;
+    btn.title = title;
+    btn.setAttribute("aria-label", title);
+  }
 }
 
 /** One arch band's built grid plus the two placeholder cells the buccal/
@@ -1180,6 +1275,44 @@ function buildMillerClassCell(
   return cell;
 }
 
+/** Bead odontogram-vnt: build ONE tooth's ASSESSMENT cell for one axis — a
+ *  compact cycle button per measurement point the axis is charted at
+ *  (`assessmentQualifiers`), cycling not-assessed -> assessed -> unmeasurable
+ *  -> not-applicable -> not-assessed via `setAssessmentStatus`. Mirrors
+ *  {@link buildFurcationCell}'s per-entrance group shape.
+ *
+ *  A position with no measurement point for this axis (an unfurcated tooth's
+ *  furcation) gets an EMPTY cell — no control at all, exactly like the
+ *  furcation row itself — rather than a disabled one, since there is nothing
+ *  there to assess. Everything else is built for every tooth and disabled by
+ *  `syncToothCells` on the same capability matrix the axis's own row uses. */
+function buildAssessmentCell(
+  toothNo: number,
+  axis: string,
+  sites: readonly PerioSite[],
+  cells: ToothCellRefs,
+  handlers: GridHandlers,
+): HTMLDivElement {
+  const cell = mkEl("div", "perio-fullgrid-cell perio-fullgrid-cell-assessment");
+  cell.dataset.perioField = "assessment";
+  cell.dataset.assessmentAxis = axis;
+  const qualifiers = assessmentQualifiers(toothNo, axis, sites);
+  if (qualifiers.length === 0) return cell; // empty placeholder
+  const group = mkEl("div", "perio-fullgrid-sitegroup");
+  for (const qualifier of qualifiers) {
+    const btn = mkEl("button", "perio-fullgrid-assess") as HTMLButtonElement;
+    btn.type = "button";
+    btn.id = `perio-fg-assess-${toothNo}-${axis}-${qualifier ?? "tooth"}`;
+    btn.dataset.assessmentAxis = axis;
+    if (qualifier !== null) btn.dataset.assessmentQualifier = qualifier;
+    btn.addEventListener("click", () => handlers.onAssessment(toothNo, axis, qualifier));
+    group.appendChild(btn);
+    cells.assessment[assessmentCellKey(axis, qualifier)] = btn;
+  }
+  cell.appendChild(group);
+  return cell;
+}
+
 /**
  * Build ONE arch band, laid out buccal-graphic-top → central perio index
  * band → palatal-graphic-bottom (UI-3a Task 2): the tooth-number header and
@@ -1228,9 +1361,26 @@ function buildArch(teeth: readonly number[], registry: Map<number, ToothCellRefs
       pd: {}, gm: {}, bop: {}, sup: {}, cal: {}, mobility: null, furcation: {}, plaque: {},
       cejVisibility: null, rootConcavity: null,
       pi: {}, gi: {}, kg: null, gingivalThickness: null, millerClass: null,
-      mpi: {}, mbi: {},
+      mpi: {}, mbi: {}, assessment: {},
     });
   }
+
+  // Bead odontogram-vnt: whether this build renders the companion
+  // assessment-status rows. Read ONCE per build, exactly like `visible` above
+  // — a flip is part of the same rebuild trigger (`visibilitySig`).
+  const assessmentMode = getPerioAssessmentMode();
+
+  /** Append the assessment row belonging to one index row, directly beneath
+   *  it, so a status always reads next to the values it qualifies. Skipped
+   *  entirely when the assessment rows are off — the default — leaving the
+   *  grid exactly as it was before this bead. */
+  const appendAssessmentRow = (axis: string, label: string, sites: readonly PerioSite[] = PERIO_SITES) => {
+    if (!assessmentMode) return;
+    arch.appendChild(mkRowLabelCell(`${label} · ${t("perio.assessment.row")}`, "perio.info.assessment"));
+    for (const toothNo of teeth) {
+      arch.appendChild(buildAssessmentCell(toothNo, axis, sites, registry.get(toothNo)!, handlers));
+    }
+  };
 
   const buccalLabel = t("perio.buccal");
   const lingualLabel = isUpper ? t("perio.palatal") : t("perio.lingual");
@@ -1249,6 +1399,9 @@ function buildArch(teeth: readonly number[], registry: Map<number, ToothCellRefs
     for (const toothNo of teeth) {
       arch.appendChild(buildFieldCell(toothNo, field, sites, aspect, registry.get(toothNo)!, handlers));
     }
+    // CAL is derived from GM and PD, never charted — there is no act of
+    // examining it to record, so it is not one of the assessment axes.
+    if (field !== "cal") appendAssessmentRow(field, label, sites);
   };
 
   // --- Tooth-number header row, at the very top of the arch ---
@@ -1286,6 +1439,7 @@ function buildArch(teeth: readonly number[], registry: Map<number, ToothCellRefs
     for (const toothNo of teeth) {
       arch.appendChild(buildFurcationCell(toothNo, registry.get(toothNo)!, handlers));
     }
+    appendAssessmentRow("furcation", indexName("furcation"));
   }
 
   // --- BUCCAL tooth-row graphic cell: spans all tooth columns, crown-DOWN,
@@ -1322,6 +1476,7 @@ function buildArch(teeth: readonly number[], registry: Map<number, ToothCellRefs
     for (const toothNo of teeth) {
       arch.appendChild(buildPlaqueCell(toothNo, registry.get(toothNo)!, handlers));
     }
+    appendAssessmentRow("plaque", indexName("plaque"));
   }
 
   // --- PI row (Silness-Löe Plaque Index, per-surface graded 0-3) — mirrors
@@ -1331,6 +1486,7 @@ function buildArch(teeth: readonly number[], registry: Map<number, ToothCellRefs
     for (const toothNo of teeth) {
       arch.appendChild(buildGradeCell(toothNo, "pi", registry.get(toothNo)!, handlers));
     }
+    appendAssessmentRow("pi", indexName("pi"));
   }
 
   // --- GI row (Löe-Silness Gingival Index, per-surface graded 0-3). ---
@@ -1339,6 +1495,7 @@ function buildArch(teeth: readonly number[], registry: Map<number, ToothCellRefs
     for (const toothNo of teeth) {
       arch.appendChild(buildGradeCell(toothNo, "gi", registry.get(toothNo)!, handlers));
     }
+    appendAssessmentRow("gi", indexName("gi"));
   }
 
   // --- mPI row (Mombelli modified Plaque Index, implant-only, per-surface
@@ -1349,6 +1506,7 @@ function buildArch(teeth: readonly number[], registry: Map<number, ToothCellRefs
     for (const toothNo of teeth) {
       arch.appendChild(buildGradeCell(toothNo, "mpi", registry.get(toothNo)!, handlers));
     }
+    appendAssessmentRow("mpi", indexName("mpi"));
   }
 
   // --- mBI row (Mombelli modified sulcus Bleeding Index, implant-only). ---
@@ -1357,6 +1515,7 @@ function buildArch(teeth: readonly number[], registry: Map<number, ToothCellRefs
     for (const toothNo of teeth) {
       arch.appendChild(buildGradeCell(toothNo, "mbi", registry.get(toothNo)!, handlers));
     }
+    appendAssessmentRow("mbi", indexName("mbi"));
   }
 
   // --- Band-orientation legend (bottom): the lingual/palatal edge of the
@@ -1407,6 +1566,7 @@ function buildArch(teeth: readonly number[], registry: Map<number, ToothCellRefs
       arch.appendChild(cell);
       registry.get(toothNo)!.mobility = select;
     }
+    appendAssessmentRow("mobility", indexName("mobility"));
   }
 
   // --- CEJ-visibility row: single per-tooth cycle button, no site
@@ -1432,6 +1592,7 @@ function buildArch(teeth: readonly number[], registry: Map<number, ToothCellRefs
     for (const toothNo of teeth) {
       arch.appendChild(buildKgCell(toothNo, registry.get(toothNo)!, handlers));
     }
+    appendAssessmentRow("kg", indexName("kg"));
   }
 
   // --- GT row (gingival thickness, single per-tooth cycle button). ---
@@ -1583,6 +1744,11 @@ export default function PerioChart({
   // the real value is read in the `active`-gated effect below (never at module
   // eval), keeping the partial-mock tests unaffected.
   const [overlayLayer, setOverlayLayer] = useState<PerioOverlayLayer>("none");
+  // Bead odontogram-vnt: the assessment-row toggle's checked state, mirrored
+  // from the module-level flag for the same reason as `overlayLayer` above —
+  // static default, real value read only in the `active`-gated effect below,
+  // so a closed/unmounted chart never touches "./odontogram" at module eval.
+  const [assessmentMode, setAssessmentModeState] = useState(false);
 
   const fullResync = useCallback(() => {
     const registry = registryRef.current;
@@ -1967,6 +2133,23 @@ export default function PerioChart({
         suppressResyncRef.current = false;
         syncOneTooth(toothNo);
       },
+      // Bead odontogram-vnt: cycle one measurement point's assessment status
+      // not-assessed -> assessed -> unmeasurable -> not-applicable ->
+      // not-assessed, mirroring onCejVisibility/onMillerClass above. The
+      // current status is read from the ACTIVE chart (getAssessmentStatus) so
+      // a dual-state switch cycles the right chart, and the write always goes
+      // through `setAssessmentStatus` — the odontogram-2vd setter, which owns
+      // the capability matrix and the DS-1 status/plan gate — so this adds no
+      // second mutation path and no new storage semantics.
+      onAssessment: (toothNo, axis, qualifier) => {
+        const cur = getAssessmentStatus(toothNo, axis, qualifier);
+        const idx = ASSESSMENT_CYCLE.indexOf(cur);
+        const next = ASSESSMENT_CYCLE[(idx + 1) % ASSESSMENT_CYCLE.length];
+        suppressResyncRef.current = true;
+        setAssessmentStatus(toothNo, axis, qualifier, next);
+        suppressResyncRef.current = false;
+        syncOneTooth(toothNo);
+      },
     };
 
     // UI-2 Task 2/3 + UI-3b Task 3: current Settings -> Periodontal-tab
@@ -1982,6 +2165,11 @@ export default function PerioChart({
     const visibilitySig = () => JSON.stringify([
       getPerioRowVisibility(),
       getPerioIndexNameMode(),
+      // Bead odontogram-vnt: the assessment rows are built inside `buildArch`
+      // from a once-per-build `getPerioAssessmentMode()` read, exactly like
+      // row visibility above — so flipping the toggle has to rebuild, not
+      // just resync.
+      getPerioAssessmentMode(),
       // UI-3b Task 3: the mPI/mBI rows are gated per-arch on whether that arch
       // contains an implant (see `archHasImplant` in `buildArch`) — the
       // implant SET affects row presence, so a rebuild must also fire when it
@@ -2226,7 +2414,11 @@ export default function PerioChart({
   useEffect(() => {
     if (!active) return;
     setOverlayLayer(getPerioOverlayLayer());
-    const unsubscribe = onStateChange(() => setOverlayLayer(getPerioOverlayLayer()));
+    setAssessmentModeState(getPerioAssessmentMode());
+    const unsubscribe = onStateChange(() => {
+      setOverlayLayer(getPerioOverlayLayer());
+      setAssessmentModeState(getPerioAssessmentMode());
+    });
     return unsubscribe;
   }, [active]);
 
@@ -2312,6 +2504,24 @@ export default function PerioChart({
     </div>
   );
 
+  // Bead odontogram-vnt: the assessment-row toggle. Recording that an axis was
+  // examined is a deliberate second pass over a chart, not something done
+  // while probing, so the rows are opt-in and off by default — the chart is
+  // otherwise exactly what it was before this bead. Rendered in the same
+  // header as the overlay switcher, in BOTH chromes (inline panel + modal
+  // overlay), since the flag is one session-level preference either way.
+  const assessmentToggle = (
+    <label className="perio-assessment-toggle" htmlFor="perioAssessmentToggle">
+      <input
+        id="perioAssessmentToggle"
+        type="checkbox"
+        checked={assessmentMode}
+        onChange={(e) => setPerioAssessmentMode(e.target.checked)}
+      />
+      <span>{t("perio.assessment.toggle")}</span>
+    </label>
+  );
+
   // UI-1 Task 1: the whole-mouth summary bar + the case-metadata/2017
   // classification panel ("Páciens adatok") moved out into a standalone
   // `<PerioSidebar/>` component (`src/PerioSidebar.tsx`) — the shared right
@@ -2342,6 +2552,7 @@ export default function PerioChart({
         <div className="chart-header perio-chart-header">
           <div className="chart-title">{t("perio.chart.title")}</div>
           {overlaySwitch}
+          {assessmentToggle}
         </div>
         {gridBody}
       </section>
@@ -2368,6 +2579,7 @@ export default function PerioChart({
             {t("perio.chart.title")}
           </h2>
           {overlaySwitch}
+          {assessmentToggle}
           <button
             type="button"
             className="perio-overlay-close"

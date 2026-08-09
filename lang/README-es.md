@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.6.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.7.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -609,6 +609,14 @@ perioAxisApplies(11, "gm");
 un vacío registrado. Al exportar, un valor no disponible se convierte en el propio
 `dataAbsentReason` de FHIR —nunca en un código clínico inventado— y un hallazgo normal se
 convierte en un `false` explícito o en el grado `0`.
+
+**Registro (desde 2.7.0):** un conmutador **Estado de evaluación** en la cabecera de la carta
+periodontal añade una fila acompañante bajo cada fila de índice visible, con un botón cíclico por
+punto de medición: sitio, superficie, entrada de furcación o el diente entero. Las filas están
+desactivadas por defecto. Un punto que ya tiene una medición queda bloqueado (el propio valor es
+la prueba del examen), y una posición no aplicable se deshabilita en vez de ignorarse en
+silencio. Los estados registrados aparecen también en el tooltip del diente y en el resumen
+periodontal de boca completa.
 
 La carta periodontal de boca completa registra ahora también la **supuración** por punto, y una
 columna de implante admite el examen periimplantario: profundidad de sondaje en seis puntos,

@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.6.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.7.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -607,6 +607,14 @@ A "nem értelmezhető" abból vezetődik le, hogy a fog valójában mi, és a va
 felülírja a rögzített hiányt. Exportáláskor a nem elérhető érték a FHIR saját
 `dataAbsentReason` mezőjébe kerül — soha nem kitalált klinikai kódba —, a negatív lelet pedig
 kifejezett `false` értékké vagy `0` fokozattá válik.
+
+**Rögzítés (2.7.0-tól):** a parodontális karton fejlécében a **Vizsgálati állapot** kapcsoló
+minden látható index-sor alá egy kísérősort tesz, mérési pontonként egy léptető gombbal —
+mérőpont, felszín, furkációs bemenet vagy maga a fog. A sorok alapértelmezés szerint
+kikapcsolva vannak. Ahol már van mért érték, a vezérlő zárolt (maga az érték a vizsgálat
+bizonyítéka), a nem értelmezhető pozíció pedig letiltott, nem pedig némán figyelmen kívül
+hagyott. A rögzített állapotok a fog tooltipjében és a teljes fogazati parodontális
+összefoglalóban is megjelennek.
 
 A teljes fogazatra kiterjedő parodontális lap mostantól helyenként rögzíti a **gennyedést**
 is, az implantátumoszlop pedig támogatja a peri-implantáris vizsgálatot: hat ponton mért
