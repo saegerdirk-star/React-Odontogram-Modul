@@ -20,6 +20,12 @@ const LEGACY_CROWN_MATERIAL_VALUES = [
 ];
 const LEGACY_BRIDGE_UNIT_VALUES = ["none", "removable", "zircon", "metal", "temporary", "bar", "bar-prosthesis"];
 
+// One entry per shape template. The five anatomy templates added with the
+// nine-template set (12/15/17/31/46) are appended AFTER the original six so the
+// pre-existing cases keep their golden indices — the new cases simply extend
+// the list. Their `toothNo` is a tooth that actually uses that template
+// (TOOTH_TEMPLATE in odontogram.ts), since some render gates are tooth-number
+// dependent (milk teeth, fissure sealing, wisdom teeth).
 const TEMPLATES: { toothNo: number; template: string; view: "front"|"occlusal" }[] = [
   { toothNo: 11, template: "11", view: "front" },
   { toothNo: 13, template: "13", view: "front" },
@@ -27,6 +33,11 @@ const TEMPLATES: { toothNo: number; template: string; view: "front"|"occlusal" }
   { toothNo: 16, template: "16", view: "front" },
   { toothNo: 14, template: "14_occl", view: "occlusal" },
   { toothNo: 16, template: "16_occl", view: "occlusal" },
+  { toothNo: 12, template: "12", view: "front" },
+  { toothNo: 15, template: "15", view: "front" },
+  { toothNo: 17, template: "17", view: "front" },
+  { toothNo: 31, template: "31", view: "front" },
+  { toothNo: 46, template: "46", view: "front" },
 ];
 
 // `rootResorption` and `pulpInflam` (retired booleans, SP4 Task 2 / Task 3)

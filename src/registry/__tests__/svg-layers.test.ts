@@ -11,7 +11,7 @@ import { allClearLayers, FIXED_CLEAR_LAYERS } from "../svgLayers";
 // relative `file:` URLs against `window.location` under the jsdom test
 // environment) so this always resolves relative to this test file on disk.
 // (Same workaround as src/__tests__/svg-assets.test.ts and render-seam.test.ts.)
-const FILES = ["11", "13", "14", "16", "14_occl", "16_occl"] as const;
+const FILES = ["11", "13", "14", "15", "16", "46", "14_occl", "16_occl"] as const;
 const svg = (n: string) => readFileSync(fileURLToPath(new NodeURL(`../../assets/teeth-svgs/${n}.svg`, import.meta.url)), "utf8");
 const ALL = FILES.map(svg).join("\n");
 

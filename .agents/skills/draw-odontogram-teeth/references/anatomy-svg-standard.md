@@ -22,6 +22,6 @@ Keep paint servers, clip paths, masks, filters, markers, and referenced IDs inst
 
 ## Generator and verification discipline
 
-Check whether `tools/toothgen` exists before relying on it. This checkout has no `tools/toothgen`; do not claim that it does. In a checkout that supplies it, treat its specification and deterministic build/verification steps as the owner of generated output: change the declared source inputs, regenerate, and do not hand-edit the generated SVG.
+This checkout supplies `tools/toothgen`, and it owns every permanent side-view template under `src/assets/teeth-svgs`. Treat its specification and deterministic build/verification steps as the owner of that generated output: change the declared source inputs in `tools/toothgen/spec.py` or `tools/toothgen/source/`, regenerate with `npm run toothgen:build`, and do not hand-edit a generated SVG. `npm run toothgen:verify` re-measures root topology, root fractions, clinical id/tag parity, the shared occlusal plane, and frozen geometry digests, then independently round-trips every path; a hand edit to generated output is erased by the next build and reported by the digest check.
 
 For any authored or regenerated template, verify the focused asset and layer checks, inspect the rendered orientation and hidden defaults, and compare deterministic fingerprints or round-trip output when repository tooling provides them. Add or update focused tests for a changed contract. Keep renderer graphical layers separate from the semantic mapping decision in the next reference.

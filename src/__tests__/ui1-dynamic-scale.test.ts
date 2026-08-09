@@ -26,7 +26,7 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { render, cleanup, waitFor } from "@testing-library/react";
 import PerioChart from "../PerioChart";
-import { __resetChartStateForTest, setNumberingSystem, setReadOnly } from "../odontogram";
+import { __resetChartStateForTest, setNumberingSystem, setReadOnly, TEMPLATES } from "../odontogram";
 import {
   archToothLayout,
   computeFillScale,
@@ -50,7 +50,12 @@ function svgFor(name: string): string {
   return readFileSync(fileURLToPath(new URL(`../assets/teeth-svgs/${name}`, testFileUrl)), "utf8");
 }
 
-const TEMPLATE_NOS: readonly TemplateNo[] = [11, 13, 14, 16];
+// Derived from TEMPLATES instead of hard-wired: the tooth-template set has
+// grown (9 instead of 4, see TOOTH_TEMPLATE in odontogram.ts). A fixed list
+// would silently make these tests cover fewer templates than actually exist.
+const TEMPLATE_NOS: readonly TemplateNo[] = (
+  Object.keys(TEMPLATES).map(Number) as TemplateNo[]
+).sort((a, b) => a - b);
 function buildRefCache(): TemplateDocCache {
   const cache: TemplateDocCache = new Map();
   for (const tplNo of TEMPLATE_NOS) {

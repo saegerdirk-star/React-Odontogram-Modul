@@ -4,9 +4,11 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath, URL as NodeURL } from "node:url";
+import { namespacePaintServers, OCCLUSAL_TEMPLATE, TOOTH_TEMPLATE } from "../odontogram";
 
-const FRONT = ["11", "13", "14", "16"] as const;
-const ALL = ["11", "13", "14", "16", "14_occl", "16_occl"] as const;
+const SIDE = ["11", "12", "13", "14", "15", "16", "17", "31", "46"] as const;
+const POSTERIOR_SIDE = ["14", "15", "16", "17", "46"] as const;
+const ALL = [...SIDE, "14_occl", "16_occl"] as const;
 
 function readSvg(name: string): string {
   // Use Node's own URL (not the jsdom-provided global URL, which mis-resolves
@@ -25,6 +27,18 @@ const NEW_LEAVES_ALL = [
   "crown-leakage",
 ];
 const NEW_LEAVES_FRONT = ["caries-root", "fracture-horizontal-1", "fracture-vertical-1", "ortho-ring", "ortho-bracket", "arrow-up", "arrow-down"];
+
+function clinicalElementIds(svg: string): string[] {
+  const root = new DOMParser().parseFromString(svg, "image/svg+xml").documentElement;
+  return Array.from(root.querySelectorAll(":scope > g [id]"), (element) => element.id);
+}
+
+function transformedX(x: number, width: number, placement: { rot: number; mirror: boolean }): number {
+  let result = x;
+  if (placement.rot === 180) result = width - result;
+  if (placement.mirror) result = width - result;
+  return result;
+}
 
 describe("installed tooth SVG assets", () => {
   it("every file carries SVG Version 2.5.0", () => {
@@ -46,7 +60,7 @@ describe("installed tooth SVG assets", () => {
   });
 
   it("front teeth use the corrected 'incisal' broken-crown ids (no 'inicisal')", () => {
-    for (const n of FRONT) {
+    for (const n of SIDE) {
       const s = readSvg(n);
       expect(s, n).not.toContain("inicisal");
       expect(s, n).toContain('id="tooth-broken-incisal"');
@@ -59,7 +73,7 @@ describe("installed tooth SVG assets", () => {
       "tooth-broken-mesial-distal", "tooth-broken-mesial-incisal",
       "tooth-broken-distal-incisal", "tooth-broken-mesial-distal-incisal",
     ];
-    for (const n of FRONT) {
+    for (const n of SIDE) {
       const s = readSvg(n);
       for (const v of variants) expect(s, `${n}:${v}`).toContain(`id="${v}"`);
     }
@@ -84,7 +98,7 @@ describe("installed tooth SVG assets", () => {
         if (s.includes(`id="${id}"`)) expect(isHiddenByDefault(s, id), `${n}:${id}`).toBe(true);
       }
     }
-    for (const n of FRONT) {
+    for (const n of SIDE) {
       const s = readSvg(n);
       for (const id of NEW_LEAVES_FRONT) {
         if (s.includes(`id="${id}"`)) expect(isHiddenByDefault(s, id), `${n}:${id}`).toBe(true);
@@ -108,9 +122,105 @@ describe("installed tooth SVG assets", () => {
   });
 
   it("base anatomy layers are present", () => {
-    for (const n of ["11", "13", "14", "16"]) {
+    for (const n of SIDE) {
       const s = readSvg(n);
       for (const id of ["tooth-base", "bone-base", "gum-base"]) expect(s, `${n}:${id}`).toContain(`id="${id}"`);
+    }
+  });
+
+  it("posterior side templates declare the generated anatomy and dimensions", () => {
+    const expected = {
+      "14": { roots: "2", viewBox: "0.0 0.0 39.8 79.7" },
+      "15": { roots: "1", viewBox: "0.0 0.0 39.8 79.1" },
+      "16": { roots: "3", viewBox: "0.0 0.0 42.9 72.6" },
+      "17": { roots: "3", viewBox: "0.0 0.0 42.9 70.9" },
+      "46": { roots: "2", viewBox: "0.0 0.0 42.9 77.1" },
+    } as const;
+
+    for (const template of POSTERIOR_SIDE) {
+      const root = new DOMParser().parseFromString(readSvg(template), "image/svg+xml").documentElement;
+      expect(root.getAttribute("data-root-count"), template).toBe(expected[template].roots);
+      expect(root.getAttribute("viewBox"), template).toBe(expected[template].viewBox);
+    }
+  });
+
+  it("maps each admitted posterior tooth class to its anatomy template", () => {
+    for (const toothNo of [14, 24]) expect(TOOTH_TEMPLATE.get(toothNo)?.tpl).toBe(14);
+    for (const toothNo of [15, 25, 34, 35, 44, 45]) expect(TOOTH_TEMPLATE.get(toothNo)?.tpl).toBe(15);
+    for (const toothNo of [16, 26]) expect(TOOTH_TEMPLATE.get(toothNo)?.tpl).toBe(16);
+    for (const toothNo of [17, 18, 27, 28]) expect(TOOTH_TEMPLATE.get(toothNo)?.tpl).toBe(17);
+    for (const toothNo of [36, 37, 38, 46, 47, 48]) expect(TOOTH_TEMPLATE.get(toothNo)?.tpl).toBe(46);
+  });
+
+  // Pinned independently of OCCLUSAL_TEMPLATE. Iterating the map alone would
+  // silently skip a tooth that fell out of it, which is exactly the regression
+  // this suite has to catch: every posterior tooth that renders an occlusal
+  // tile must still get one after the side-view mapping was split out.
+  it("renders an occlusal tile for exactly the posterior teeth", () => {
+    expect([...OCCLUSAL_TEMPLATE.keys()].sort((a, b) => a - b)).toEqual([
+      14, 15, 16, 17, 18,
+      24, 25, 26, 27, 28,
+      34, 35, 36, 37, 38,
+      44, 45, 46, 47, 48,
+    ]);
+    // Only the two occlusal templates exist as assets.
+    for (const placement of OCCLUSAL_TEMPLATE.values()) {
+      expect([14, 16]).toContain(placement.tpl);
+    }
+  });
+
+  it("keeps mesial occlusal geometry toward the arch midline in every quadrant", () => {
+    expect(OCCLUSAL_TEMPLATE.size).toBe(20);
+    for (const [toothNo, placement] of OCCLUSAL_TEMPLATE) {
+      const svg = readSvg(`${placement.tpl}_occl`);
+      const root = new DOMParser().parseFromString(svg, "image/svg+xml").documentElement;
+      const width = Number(root.getAttribute("viewBox")?.split(/\s+/)[2]);
+      const mesialX = Number(root.querySelector("#mesial-shape")?.getAttribute("d")?.match(/^M([\d.]+)/)?.[1]);
+      const distalX = Number(root.querySelector("#distal-shape")?.getAttribute("d")?.match(/^M([\d.]+)/)?.[1]);
+      const transformedMesial = transformedX(mesialX, width, placement);
+      const transformedDistal = transformedX(distalX, width, placement);
+      const viewerLeft = Math.floor(toothNo / 10) === 1 || Math.floor(toothNo / 10) === 4;
+      expect(transformedMesial > transformedDistal, String(toothNo)).toBe(viewerLeft);
+    }
+  });
+
+  it("preserves the complete clinical layer sequence for split posterior templates", () => {
+    expect(clinicalElementIds(readSvg("12"))).toEqual(clinicalElementIds(readSvg("11")));
+    expect(clinicalElementIds(readSvg("31"))).toEqual(clinicalElementIds(readSvg("11")));
+    expect(clinicalElementIds(readSvg("15"))).toEqual(clinicalElementIds(readSvg("14")));
+    expect(clinicalElementIds(readSvg("17"))).toEqual(clinicalElementIds(readSvg("16")));
+    expect(clinicalElementIds(readSvg("46"))).toEqual(clinicalElementIds(readSvg("16")));
+  });
+
+  it("keeps paint-server ids unique across side-view templates", () => {
+    const paintServerIds: string[] = [];
+    for (const template of SIDE) {
+      const root = new DOMParser().parseFromString(readSvg(template), "image/svg+xml").documentElement;
+      paintServerIds.push(...Array.from(root.querySelectorAll("defs [id]"), (element) => element.id));
+    }
+    expect(new Set(paintServerIds).size).toBe(paintServerIds.length);
+  });
+
+  it("namespaces paint servers per rendered tooth without changing clinical ids", () => {
+    const parser = new DOMParser();
+    const first = parser.parseFromString(readSvg("15"), "image/svg+xml").documentElement;
+    const second = first.cloneNode(true) as Element;
+    const clinicalId = first.querySelector(":scope > g [id]")?.id;
+
+    namespacePaintServers(first, "tooth-15-side-");
+    namespacePaintServers(second, "tooth-25-side-");
+
+    expect(first.querySelector(":scope > g [id]")?.id).toBe(clinicalId);
+    expect(second.querySelector(":scope > g [id]")?.id).toBe(clinicalId);
+    const ids = [...first.querySelectorAll("defs [id]"), ...second.querySelectorAll("defs [id]")].map((element) => element.id);
+    expect(new Set(ids).size).toBe(ids.length);
+
+    for (const root of [first, second]) {
+      const defined = new Set(Array.from(root.querySelectorAll("defs [id]"), (element) => element.id));
+      const references = Array.from(root.querySelectorAll("*"))
+        .flatMap((element) => Array.from(element.attributes, (attribute) => attribute.value))
+        .flatMap((value) => Array.from(value.matchAll(/url\(#([^)]+)\)/g), (match) => match[1]));
+      expect(references.every((id) => defined.has(id))).toBe(true);
     }
   });
 });

@@ -35,6 +35,7 @@ import {
   setPeriImplantBleeding,
   getPerioOverlayLayer,
   setPerioOverlayLayer,
+  TEMPLATES,
 } from "../odontogram";
 import { buildBuccalArchSvg, buildPalatalArchSvg, type TemplateDocCache, type TemplateNo } from "../perioGraphic";
 import { setI18nLanguage, t } from "../i18n/useI18n";
@@ -42,7 +43,12 @@ import { setI18nLanguage, t } from "../i18n/useI18n";
 const testFileUrl = import.meta.url;
 const svgText = (tplNo: TemplateNo) =>
   readFileSync(fileURLToPath(new URL(`../assets/teeth-svgs/${tplNo}.svg`, testFileUrl)), "utf8");
-const TEMPLATE_NOS: readonly TemplateNo[] = [11, 13, 14, 16];
+// Derived from TEMPLATES instead of hard-wired: the tooth-template set has
+// grown (9 instead of 4, see TOOTH_TEMPLATE in odontogram.ts). A fixed list
+// would silently make these tests cover fewer templates than actually exist.
+const TEMPLATE_NOS: readonly TemplateNo[] = (
+  Object.keys(TEMPLATES).map(Number) as TemplateNo[]
+).sort((a, b) => a - b);
 function buildCache(): TemplateDocCache {
   const cache: TemplateDocCache = new Map();
   for (const tplNo of TEMPLATE_NOS) {

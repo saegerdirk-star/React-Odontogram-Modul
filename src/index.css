@@ -300,7 +300,10 @@ select:focus{
   padding:2px;
   cursor:pointer;
   transition: transform .05s ease, border-color .12s ease, background .12s ease;
-  min-height:100px;
+  /* Tracks the .tooth-svg height (the tallest template) plus border/padding.
+     Keeping the old value while the teeth change height would preserve the
+     old row height and defeat the template-specific sizing. */
+  min-height:153px;
 }
 .tooth-tile.occl-view{
   min-height:78px;
@@ -406,19 +409,39 @@ select:focus{
     filter: drop-shadow(0 0 4px rgba(59,123,255,.35));
   }
 }
+/* Tooth tiles.
+   Template heights differ because the canine has the longest root and the
+   lower incisor the shortest. Every pixel dimension below is derived from its
+   viewBox with the same PX_PER_UNIT factor from tools/toothgen/build.py, so all
+   teeth retain one common scale. Upper teeth align to the bottom: every
+   template has the same distance from its occlusal edge to the viewBox bottom,
+   which keeps the occlusal plane continuous across the arch. The displayed
+   roots use spec.ROOT_DISPLAY_SCALE, so this container follows the tallest
+   generated template and must change with that factor. */
 .tooth-svg{
   width:100%;
-  height:120px;
+  height:143px;
   display:flex;
-  align-items:center;
+  align-items:flex-end;
   justify-content:center;
 }
 .tooth-svg svg{width:72px;height:122px; pointer-events:none}
-.tooth-tile.occl-view .tooth-svg{height:80px}
+/* Lower teeth are rendered after a 180-degree rotation. Their occlusal edge
+   therefore has the fixed margin at the viewBox top. Top alignment keeps that
+   plane continuous; bottom alignment would align root tips instead and offset
+   the lower incisor and canine by their 36 px height difference. */
+.tooth-tile.lower-row.side-view .tooth-svg{align-items:flex-start}
+.tooth-tile.occl-view .tooth-svg{height:80px; align-items:center}
 .tooth-tile.occl-view .tooth-svg svg{width:64px;height:64px}
-.tooth-tile.tpl-14 .tooth-svg svg{width:68px;height:116px}
-.tooth-tile.tpl-11 .tooth-svg svg,
-.tooth-tile.tpl-13 .tooth-svg svg{width:60px;height:102px}
+.tooth-tile.tpl-11 .tooth-svg svg{width:64px;height:121px}
+.tooth-tile.tpl-12 .tooth-svg svg{width:64px;height:113px}
+.tooth-tile.tpl-31 .tooth-svg svg{width:64px;height:105px}
+.tooth-tile.tpl-13 .tooth-svg svg{width:65px;height:141px}
+.tooth-tile.tpl-14 .tooth-svg svg{width:64px;height:129px}
+.tooth-tile.tpl-15 .tooth-svg svg{width:64px;height:128px}
+.tooth-tile.tpl-16 .tooth-svg svg{width:69px;height:118px}
+.tooth-tile.tpl-17 .tooth-svg svg{width:69px;height:115px}
+.tooth-tile.tpl-46 .tooth-svg svg{width:69px;height:125px}
 .tooth-tile.wisdom-hidden{opacity:.45; pointer-events:none}
 .tooth-tile.wisdom-hidden .tooth-svg svg{opacity:0}
 .tooth-tile.occl-hidden{display:none !important}

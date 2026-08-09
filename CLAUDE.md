@@ -20,7 +20,8 @@
 - `src/theme.ts` — theme configuration and CSS variable mapping
 - `src/i18n/translations.ts` — multilingual labels (HU, EN, DE, ES)
 - `src/utils/numbering.ts` — tooth numbering systems (FDI, Universal, Palmer)
-- `src/assets/teeth-svgs/` — SVG templates for individual teeth (11-48)
+- `src/assets/teeth-svgs/` — nine permanent side-view shape templates (11, 12, 13, 14, 15, 16, 17, 31, 46) plus two occlusal templates (14_occl, 16_occl), reused across all 32 teeth via `TOOTH_TEMPLATE`/`OCCLUSAL_TEMPLATE` in `src/odontogram.ts`. The side-view templates are GENERATED — `tools/toothgen` owns them; never hand-edit one
+- `tools/toothgen/` — tooth-template generator and its verification contracts (`npm run toothgen:build`, `npm run toothgen:verify`). `spec.py` records the per-class anatomy (root count, root fraction, crown ratio, furcation), `verify.py` re-measures the generated assets against it and against frozen geometry digests, `check_roundtrip.py` proves path serialization is lossless
 - `src/assets/icon-svgs/` — UI icons
 
 ## Tooth State Model

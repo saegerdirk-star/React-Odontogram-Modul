@@ -5,6 +5,63 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.0] - 2026-08-09
+
+### Fixed
+
+- **Posterior teeth are drawn with the root anatomy of their own tooth class.**
+  The permanent chart reused four stylized templates, so every premolar and
+  every molar borrowed a contour from another tooth class and rendered the wrong
+  number of roots. A chart that shows a three-rooted upper molar as a
+  single-rooted shape is not a cosmetic issue: root count and root separation
+  are what a clinician reads a furcation, an apical finding, or a planned
+  extraction against. Nine templates now cover the classes the four could not
+  express — the upper central incisor (11), the upper lateral incisor (12), the
+  lower incisors (31), the canines (13), the two-rooted upper first premolar
+  (14), the single-rooted premolars (15, covering 15/25 and every lower
+  premolar), the three-rooted upper first molar (16), the more convergent upper
+  second and third molars (17), and the two-rooted lower molars (46).
+- **Occlusal artwork keeps mesial toward the arch midline in every quadrant.**
+  The occlusal view had been deriving its rotation and mirroring from the
+  side-view mapping, which only held while both views happened to share one
+  template set. Occlusal placement is now its own mapping (`OCCLUSAL_TEMPLATE`),
+  so contralateral teeth stay correctly mirrored independently of which
+  side-view template a tooth uses.
+- **Tooth artwork no longer bleeds between teeth in one rendered chart.** SVG
+  resolves `url(#...)` document-wide, so 32 tooth instances cloned from the same
+  template all pointed their gradients and clip paths at whichever definition
+  the document happened to hold last. Every rendered instance now gets its own
+  paint-server namespace. Clinical layer ids are deliberately left untouched,
+  because state activation addresses them by name.
+- **The periodontal chart measures against a full-length root again.** The
+  odontogram deliberately draws roots shortened, since there the tooth is an
+  icon. On the periodontal chart the tooth is the scale a probing depth is read
+  against, and a shortened molar root ended at roughly 8 mm — putting exactly
+  the pockets that matter into blank space above the drawn apex. The perio chart
+  now restores the measured root length, and the canine's old elongation factor
+  was removed because the canine is drawn from its own measured contour and no
+  longer needs stretching to read as a canine.
+
+### Added
+
+- **`tools/toothgen` generates the tooth templates and verifies them.** The
+  checked-in SVG assets are reproducible: `build.py` derives all nine templates
+  from four canonical source drawings, `verify.py` re-measures root counts,
+  root fractions, clinical id/tag parity and the shared occlusal plane against
+  the recorded specification, and `check_roundtrip.py` independently confirms
+  that parsing and serialization preserve every path. Frozen SHA-256 digests of
+  every geometry-bearing attribute guard the authored anatomy, so technical
+  maintenance cannot silently change a contour or a proportion. Available as
+  `npm run toothgen:build` and `npm run toothgen:verify`.
+
+### Notes
+
+- The SVG rendering fingerprints were regenerated deliberately: new anatomy is
+  the point of this release. The FHIR export golden and the JSON round-trip
+  golden are byte-identical, because this release changes what a tooth looks
+  like and nothing about what it means. The serialized payload version is
+  unchanged, and no state field, enum value, or public prop changed.
+
 ## [2.8.0] - 2026-08-09
 
 ### Changed

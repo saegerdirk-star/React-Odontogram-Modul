@@ -12,7 +12,7 @@ const testFileUrl = import.meta.url;
 const read = (f: string) => readFileSync(fileURLToPath(new URL(`../assets/teeth-svgs/${f}`, testFileUrl)), "utf8");
 
 describe("SP8 Task 2: peri-implant-bone-loss layer", () => {
-  for (const f of ["11.svg","13.svg","14.svg","16.svg"]) {
+  for (const f of ["11.svg","13.svg","14.svg","15.svg","16.svg","46.svg"]) {
     it(`${f} has a dormant peri-implant-bone-loss layer inside the implant group`, () => {
       const svg = read(f);
       expect(svg).toContain('id="peri-implant-bone-loss"');
@@ -23,7 +23,7 @@ describe("SP8 Task 2: peri-implant-bone-loss layer", () => {
     });
   }
   // NOTE: this repo has no per-FDI-number SVG file (e.g. no literal "21.svg") —
-  // all 32 teeth map onto 4 shape templates (11/13/14/16, see TOOTH_TEMPLATE in
+  // all 32 teeth map onto shared shape templates (see TOOTH_TEMPLATE in
   // odontogram.ts). "21.svg" from the brief doesn't exist, so we assert
   // absence against the occlusal template variants instead: they DO carry an
   // `implant`/`implant-base` group (14_occl.svg, 16_occl.svg) but must NOT
