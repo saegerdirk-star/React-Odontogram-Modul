@@ -139,6 +139,15 @@ describe("installed tooth SVG assets", () => {
       const root = new DOMParser().parseFromString(readSvg(template), "image/svg+xml").documentElement;
       expect(root.getAttribute("data-root-count"), template).toBe(expected[template].roots);
       expect(root.getAttribute("viewBox"), template).toBe(expected[template].viewBox);
+
+      const normalizeY = root.getAttribute("data-normalize-y");
+      if (normalizeY) {
+        const drawableGroups = Array.from(root.children).filter((child) => child.localName === "g");
+        expect(drawableGroups.length, `${template}:drawable groups`).toBeGreaterThan(0);
+        for (const group of drawableGroups) {
+          expect(group.getAttribute("transform"), `${template}:${group.id}`).toBe(`scale(1 ${normalizeY})`);
+        }
+      }
     }
   });
 
@@ -151,7 +160,7 @@ describe("installed tooth SVG assets", () => {
 
   it("keeps mesial occlusal geometry toward the arch midline in every quadrant", () => {
     for (const [toothNo, placement] of OCCLUSAL_TEMPLATE) {
-      const svg = readSvg(String(placement.tpl));
+      const svg = readSvg(`${placement.tpl}_occl`);
       const root = new DOMParser().parseFromString(svg, "image/svg+xml").documentElement;
       const width = Number(root.getAttribute("viewBox")?.split(/\s+/)[2]);
       const mesialX = Number(root.querySelector("#mesial-shape")?.getAttribute("d")?.match(/^M([\d.]+)/)?.[1]);

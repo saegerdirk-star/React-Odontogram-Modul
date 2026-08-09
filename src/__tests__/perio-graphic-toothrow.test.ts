@@ -23,6 +23,7 @@ import {
   buildBuccalArchSvg,
   buildPalatalArchSvg,
   CEJ_Y,
+  IMPLANT_CEJ_Y,
   EXCLUDED_TOOTH_BASE_IDS,
   type TemplateDocCache,
   type TemplateNo,
@@ -135,6 +136,12 @@ describe("CEJ_Y anchors", () => {
     for (const tpl of TEMPLATE_NOS) {
       expect(typeof CEJ_Y[tpl], String(tpl)).toBe("number");
       expect(CEJ_Y[tpl], String(tpl)).toBeGreaterThan(0);
+    }
+  });
+
+  it("keeps every implant platform apical to its natural CEJ anchor", () => {
+    for (const tpl of TEMPLATE_NOS) {
+      expect(IMPLANT_CEJ_Y[tpl], String(tpl)).toBeGreaterThan(CEJ_Y[tpl]);
     }
   });
 });

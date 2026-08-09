@@ -416,7 +416,8 @@ select:focus{
 .tooth-svg svg{width:72px;height:122px; pointer-events:none}
 .tooth-tile.occl-view .tooth-svg{height:80px}
 .tooth-tile.occl-view .tooth-svg svg{width:64px;height:64px}
-.tooth-tile.tpl-14 .tooth-svg svg{width:68px;height:116px}
+.tooth-tile.tpl-14 .tooth-svg svg,
+.tooth-tile.tpl-15 .tooth-svg svg{width:68px;height:116px}
 .tooth-tile.tpl-11 .tooth-svg svg,
 .tooth-tile.tpl-13 .tooth-svg svg{width:60px;height:102px}
 .tooth-tile.wisdom-hidden{opacity:.45; pointer-events:none}
