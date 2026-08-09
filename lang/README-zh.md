@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.4.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.5.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -531,6 +531,13 @@ const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
 输出。两种情况都会连同牙位、字段、保留的原值与原因列入 `report.textFallback` 与
 `report.unmapped`，因此不会有任何内容被悄悄丢失。原值始终留在界面域文档中，并可经 JSON
 完整往返。
+
+**已核实的 SNOMED 覆盖范围（自 2.5.0 起）：** 只有当 IG 自身的 ValueSet 允许该概念
+且其含义已被核实时，临床值才会被编码；`dentalDeCodesystems.ts` 中的
+`SCT_PROVENANCE` 为每个发出的编码记录了允许它的 ValueSet 以及核实来源。根面龋、
+内吸收与外部颈部牙根吸收、根尖周炎以及修复体完整性所见均据此编码。确切的原始评估
+始终保留在 `CodeableConcept.text` 中，并且不会杜撰任何 `Coding.display`，因为 IG
+并未公布显示名称。
 
 `parseFhirBundle` 可读取**两种**方言，包括混合的 Bundle，因此此前导出的 Bundle 仍可原样导入。
 **带日期的检查、评估状态与种植体周围记录（自 2.4.0 起）：**

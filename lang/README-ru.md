@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.4.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.5.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -537,6 +537,15 @@ const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
 ничего. Оба случая попадают в `report.textFallback` и `report.unmapped` с указанием зуба,
 поля, сохранённого значения и причины, так что ничто не теряется незаметно. Само значение
 всегда остаётся в документе домена интерфейса и переживает круговой обход через JSON.
+
+**Проверенное покрытие SNOMED (начиная с 2.5.0):** клиническое значение кодируется
+только тогда, когда ValueSet'ы самого IG допускают понятие И его значение
+проверено; `SCT_PROVENANCE` в `dentalDeCodesystems.ts` для каждого выдаваемого
+кода фиксирует допускающий ValueSet и источник проверки. Кариес корня, внутренняя
+и внешняя пришеечная резорбция корня, апикальный периодонтит и находки о
+целостности реставрации кодируются на этом основании. Точная исходная оценка
+всегда остаётся в `CodeableConcept.text`, и ни один `Coding.display` не
+придумывается, так как IG их не публикует.
 
 `parseFhirBundle` читает **оба** диалекта, включая смешанный набор, поэтому ранее
 экспортированные наборы импортируются без изменений.

@@ -32,6 +32,7 @@ import {
   TOOTH_SURFACES_EXT_URL, FDI_SURFACE_SYSTEM, SNOMED_SYSTEM,
   ODONTO_COMPONENT, VERIFIED_SCT, FINDING_TEXT,
   toFdiSurface, restorationTypeCode, restorationMaterialCode,
+  rootCariesSct, resorptionSct, apicalDxSct, restorationStatusSct,
 } from "./dentalDeCodesystems";
 
 // The `fhir/r4` component/extension types do not model the R4 `component.extension`
@@ -181,33 +182,54 @@ function rootEndodonticComponents(ctx: BuildContext, fdi: string, rec: ToothReco
     }
   }
 
+  // Bead odontogram-chz: root caries, resorption and apical periodontitis are
+  // admitted by RootEndodonticStateVS and their meanings are verified in
+  // `SCT_PROVENANCE`, so they carry a coding. The graded/subtyped source value
+  // always stays in `.text`, which keeps the read-back exact.
   const rootCaries = rec.rootCaries ?? "none";
   if (rootCaries && rootCaries !== "none") {
-    reportText(ctx, {
-      tooth: fdi, field: "rootCaries", value: rootCaries,
-      reason: "RootEndodonticStateVS admits a root-caries concept, but the IG publishes SCTIDs without displays; the graded source value is retained as text.",
-    });
-    push(textOnly(display("rootCaries", rootCaries)));
+    const code = rootCariesSct(rootCaries);
+    if (code) {
+      push(sct(code, display("rootCaries", rootCaries)));
+    } else {
+      reportText(ctx, {
+        tooth: fdi, field: "rootCaries", value: rootCaries,
+        reason: "This root-caries value is not one this build verified against RootEndodonticStateVS; the source value is retained as text.",
+      });
+      push(textOnly(display("rootCaries", rootCaries)));
+    }
   }
 
   const resorption = rec.resorptionType ?? "none";
   if (resorption && resorption !== "none") {
-    reportText(ctx, {
-      tooth: fdi, field: "resorptionType", value: resorption,
-      reason: "RootEndodonticStateVS admits resorption concepts, but the IG publishes SCTIDs without displays; the source value is retained as text.",
-    });
-    push(textOnly(display("resorptionType", resorption)));
+    const code = resorptionSct(resorption);
+    if (code) {
+      push(sct(code, display("resorptionType", resorption)));
+    } else {
+      reportText(ctx, {
+        tooth: fdi, field: "resorptionType", value: resorption,
+        reason: "RootEndodonticStateVS admits no concept this resorption value entails; the source value is retained as text.",
+      });
+      push(textOnly(display("resorptionType", resorption)));
+    }
   }
 
   const apical = rec.apicalDx ?? "normal";
   if (apical && apical !== "normal") {
-    // The IG's own contract check forbids coding a raw radiographic finding as
-    // a diagnosed apical periodontitis; a diagnosis belongs on DentalConditionDE.
-    reportText(ctx, {
-      tooth: fdi, field: "apicalDx", value: apical,
-      reason: "A diagnosed apical disorder is a DentalConditionDE in the IG; the observed chart value is retained as text and never coded as a diagnosis.",
-    });
-    push(textOnly(display("apicalDx", apical)));
+    const code = apicalDxSct(apical);
+    if (code) {
+      // The IG's contract check forbids coding a raw radiographic finding as a
+      // diagnosed apical periodontitis. `apicalDx` IS the chart's apical
+      // diagnosis, so coding it upgrades nothing; only the two values SNOMED
+      // places under the admitted concept are coded.
+      push(sct(code, display("apicalDx", apical)));
+    } else {
+      reportText(ctx, {
+        tooth: fdi, field: "apicalDx", value: apical,
+        reason: "An apical abscess or condensing osteitis is not subsumed by the admitted apical-periodontitis concept; the observed chart value is retained as text.",
+      });
+      push(textOnly(display("apicalDx", apical)));
+    }
   }
 
   const periapical = rec.periapicalType ?? "none";
@@ -280,14 +302,14 @@ function restorationStatusComponents(ctx: BuildContext, fdi: string, rec: ToothR
   const out: Any[] = [];
   const restorationType = rec.restorationType ?? "none";
 
+  // Bead odontogram-chz: every integrity finding below is a defective dental
+  // restoration, the concept `RestorationStatusVS` admits as the common
+  // ancestor of leakage, overhang/deficient margin, fracture and wear. The
+  // exact finding stays in `.text` — see `restorationStatusSct`.
   if (rec.crownLeakage === true && (restorationType === "crown" || restorationType === "bridge")) {
-    reportText(ctx, {
-      tooth: fdi, field: "crownLeakage", value: "true",
-      reason: "Marginal leakage is a restoration integrity finding; no exact admitted concept is identifiable, so the assessment is retained as text.",
-    });
     out.push({
       code: componentCode(ODONTO_COMPONENT.restorationStatus),
-      valueCodeableConcept: textOnly(FINDING_TEXT.marginalLeakage),
+      valueCodeableConcept: sct(restorationStatusSct(), FINDING_TEXT.marginalLeakage),
     });
   }
 
@@ -296,13 +318,9 @@ function restorationStatusComponents(ctx: BuildContext, fdi: string, rec: ToothR
     for (const [surface, value] of Object.entries(defects)) {
       if (typeof value !== "string" || !value || value === "none") continue;
       const ext = surfaceExtensions([surface], fdi);
-      reportText(ctx, {
-        tooth: fdi, field: "fillingDefect", value: `${surface}:${value}`,
-        reason: "Restoration defect findings are standard reuse in the IG, but the exact concept is not identifiable from its published artifacts; retained as text.",
-      });
       const comp: Any = {
         code: componentCode(ODONTO_COMPONENT.restorationStatus),
-        valueCodeableConcept: textOnly(display("fillingDefect", value)),
+        valueCodeableConcept: sct(restorationStatusSct(), display("fillingDefect", value)),
       };
       if (ext.length) comp.extension = ext;
       out.push(comp);

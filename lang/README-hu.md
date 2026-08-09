@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.4.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.5.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -536,6 +536,16 @@ kötéshez nincs megfelelő fogalom, ott semmit sem ad ki. Mindkét eset szerepe
 `report.textFallback`, illetve `report.unmapped` listában a foggal, a mezővel, a megőrzött
 értékkel és az indoklással, így semmi nem vész el észrevétlenül. Maga az érték mindig a
 felületi tartomány dokumentumában marad, és túléli a JSON oda-vissza utat.
+
+**Ellenőrzött SNOMED-lefedettség (2.5.0-tól):** egy klinikai érték csak akkor kap
+kódot, ha az IG saját ValueSetjei engedélyezik a fogalmat ÉS a jelentése
+ellenőrzött; a `dentalDeCodesystems.ts` `SCT_PROVENANCE` táblája minden kiadott
+kódnál rögzíti az engedélyező ValueSetet és az ellenőrzés forrását. A
+gyökérszuvasodás, a belső és a külső cervikális gyökérreszorpció, az apikális
+parodontitis, valamint a restaurátum épségére vonatkozó leletek ezen az alapon
+kapnak kódot. A pontos forrásértékelés mindig a `CodeableConcept.text` mezőben
+marad, és `Coding.display` sosem kerül kitalálásra, mert az IG nem közöl
+megjelenítési neveket.
 
 A `parseFhirBundle` **mindkét** nyelvjárást olvassa, a vegyes köteget is, így a korábban
 exportált kötegek változatlanul importálhatók.

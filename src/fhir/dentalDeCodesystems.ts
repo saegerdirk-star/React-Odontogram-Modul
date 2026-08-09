@@ -98,19 +98,10 @@ export const FINDING_TEXT = {
 } as const;
 
 /**
- * SNOMED CT concepts whose meaning is PROVABLE from the IG's own published
- * artifacts. Each entry names the artifact that fixes its meaning.
- *
- * - `278661005` — present tooth. `CompleteChartPermanentTooth46`,
- *   `CompleteChartDeciduousTooth75`, `CompleteChartIncompleteRootFilling11`.
- * - `234948008` — absent tooth position. `CompleteChartProvisionalProsthesis15`
- *   and `CompleteChartProstheticPosition14` (positions carrying a prosthesis).
- * - `66569006` — root remnant. `CompleteChartRootRemnant18` plus the contract
- *   assertion "root-remnant state must use the admitted SNOMED CT concept".
- * - `718392007` — completed root-canal filling. `CompleteChartPermanentTooth46`
- *   plus the contract assertion on "Root canal filling assessed as complete".
- * - `109728009` — defective restoration. `CompleteChartPermanentTooth46`
- *   ("defective surface-qualified lithium-disilicate onlay").
+ * SNOMED CT concepts this adapter is allowed to emit. Every entry is admitted
+ * by one of the IG's four clinical ValueSets AND has a meaning verified from an
+ * authoritative source — see {@link SCT_PROVENANCE}, which records both facts
+ * per code and is asserted by the dialect tests.
  */
 export const VERIFIED_SCT = {
   toothPresent: "278661005",
@@ -118,7 +109,220 @@ export const VERIFIED_SCT = {
   rootRemnant: "66569006",
   rootCanalFillingComplete: "718392007",
   restorationDefective: "109728009",
+  // Bead odontogram-chz — widened coverage.
+  rootCaries: "234975001",
+  internalResorption: "52994003",
+  externalResorption: "41918006",
+  apicalPeriodontitis: "39273001",
 } as const;
+
+/** Verification record for one admitted SNOMED CT concept. */
+export interface SctProvenance {
+  /** The SCTID, identical to its {@link VERIFIED_SCT} entry. */
+  readonly code: string;
+  /**
+   * The concept's meaning as published by `verifiedBy`. Documentation only —
+   * it is deliberately NOT emitted as `Coding.display`, because the IG omits
+   * displays (they are licensed) and this adapter never puts a string on the
+   * wire that the IG itself did not publish.
+   */
+  readonly meaning: string;
+  /** The IG ValueSet (`input/fsh/valuesets/<name>.fsh`) that admits the code. */
+  readonly valueSet:
+    | "ToothPresenceStateVS"
+    | "RootEndodonticStateVS"
+    | "RestorationStatusVS"
+    | "ProstheticStateVS";
+  /** Where the meaning was verified, in the order the sourcing rule requires. */
+  readonly verifiedBy: string;
+}
+
+/**
+ * WHERE EACH ADMITTED MEANING COMES FROM (bead odontogram-chz).
+ *
+ * The IG publishes its clinical SCTIDs without displays, so a code may only be
+ * emitted once its meaning is established. Sources, in the order they were
+ * consulted:
+ *
+ *   (a) the IG's own FSH, examples and `scripts/check-odontogram-contract.mjs`;
+ *   (b) an authoritative read-only terminology lookup.
+ *
+ * For (b) the SNOMED International browser API (`browser.ihtsdotools.org`) is
+ * behind a human-verification wall and could not be queried, so HL7's own
+ * public FHIR terminology server `tx.fhir.org/r4` was used instead — serving
+ * the SNOMED CT International edition, version `20250201`. Both the display
+ * (`CodeSystem/$lookup`) and the hierarchy claims (`CodeSystem/$subsumes`,
+ * `ValueSet/$expand` over `?fhir_vs=isa/<code>`) below come from that server.
+ * A `$lookup` display is quoted verbatim; an `$expand` is cited by the members
+ * that carry the argument, not reproduced in full — note that `$expand` over
+ * `isa/<code>` is inclusive, so the queried concept itself is always among the
+ * members it returns.
+ *
+ * GENERALIZATION RULE. Where an engine value's exact concept is NOT admitted by
+ * the IG ValueSet, this adapter emits the nearest ADMITTED ancestor the engine
+ * value provably entails, never a sibling and never a more specific concept.
+ * Where an engine value spans two disjoint admitted concepts, their nearest
+ * admitted common ancestor is used. The exact source assessment always stays in
+ * `CodeableConcept.text`, so no precision is lost on the wire.
+ */
+export const SCT_PROVENANCE: Record<keyof typeof VERIFIED_SCT, SctProvenance> = {
+  toothPresent: {
+    code: "278661005",
+    meaning: "Tooth present",
+    valueSet: "ToothPresenceStateVS",
+    verifiedBy:
+      "IG examples CompleteChartPermanentTooth46 / CompleteChartDeciduousTooth75 / "
+      + "CompleteChartIncompleteRootFilling11; tx.fhir.org $lookup 'Tooth present'.",
+  },
+  toothAbsent: {
+    code: "234948008",
+    meaning: "Tooth absent",
+    valueSet: "ToothPresenceStateVS",
+    verifiedBy:
+      "IG examples CompleteChartProvisionalProsthesis15 / CompleteChartProstheticPosition14; "
+      + "tx.fhir.org $lookup 'Tooth absent'.",
+  },
+  rootRemnant: {
+    code: "66569006",
+    meaning: "Retained dental root",
+    valueSet: "ToothPresenceStateVS",
+    verifiedBy:
+      "IG example CompleteChartRootRemnant18 plus the contract assertion "
+      + "'root-remnant state must use the admitted SNOMED CT concept'; "
+      + "tx.fhir.org $lookup 'Retained dental root'.",
+  },
+  rootCanalFillingComplete: {
+    code: "718392007",
+    meaning: "Previously initiated endodontic therapy completed",
+    valueSet: "RootEndodonticStateVS",
+    verifiedBy:
+      "IG example CompleteChartPermanentTooth46 plus the contract assertion on "
+      + "'Root canal filling assessed as complete'; tx.fhir.org $lookup "
+      + "'Previously initiated endodontic therapy completed'.",
+  },
+  restorationDefective: {
+    code: "109728009",
+    meaning: "Defective dental restoration",
+    valueSet: "RestorationStatusVS",
+    verifiedBy:
+      "IG example CompleteChartPermanentTooth46 ('defective surface-qualified onlay'); "
+      + "tx.fhir.org $lookup 'Defective dental restoration'. $expand isa/109728009 lists "
+      + "278549007 'Leaking dental restoration', 109741008 'Fractured dental restoration', "
+      + "109729001 'Overhang on tooth restoration' and 109735001 'Dental restoration failure "
+      + "of marginal integrity' as descendants, and $subsumes shows 109735001 does NOT subsume "
+      + "278549007 and 702645001 does NOT subsume 109741008 — so this parent, not one of the "
+      + "specific admitted siblings, is the concept every engine defect value entails.",
+  },
+  rootCaries: {
+    code: "234975001",
+    meaning: "Root caries",
+    valueSet: "RootEndodonticStateVS",
+    verifiedBy:
+      "Admitted by RootEndodonticStateVS; tx.fhir.org $lookup 'Root caries'. Exact for every "
+      + "graded engine value (active / arrested / active-cavitated); the grade stays in text.",
+  },
+  internalResorption: {
+    code: "52994003",
+    meaning: "Internal resorption of tooth",
+    valueSet: "RootEndodonticStateVS",
+    verifiedBy:
+      "Admitted by RootEndodonticStateVS; tx.fhir.org $lookup 'Internal resorption of tooth'. "
+      + "Exact for the engine's `internal` value.",
+  },
+  externalResorption: {
+    code: "41918006",
+    meaning: "External resorption of tooth",
+    valueSet: "RootEndodonticStateVS",
+    verifiedBy:
+      "Admitted by RootEndodonticStateVS; tx.fhir.org $lookup 'External resorption of tooth'. "
+      + "$expand isa/41918006 lists 708463003 'Cervical root resorption' and 698192005 "
+      + "'Invasive cervical resorption' as descendants, so the engine's `external-cervical` "
+      + "value entails this admitted parent; the specific children are not admitted.",
+  },
+  apicalPeriodontitis: {
+    code: "39273001",
+    meaning: "Apical periodontitis",
+    valueSet: "RootEndodonticStateVS",
+    verifiedBy:
+      "Admitted by RootEndodonticStateVS; tx.fhir.org $lookup 'Apical periodontitis'. "
+      + "$expand isa/39273001 returns four members — 39273001 itself, 718052004 'Asymptomatic "
+      + "periapical periodontitis', 718053009 'Symptomatic periapical periodontitis' and "
+      + "1230140003 'Inflammatory lesion of periapical tissue surrounding dental implant' — so "
+      + "the two AAE engine values entail this admitted parent while the abscess and condensing-"
+      + "osteitis values do NOT and stay on text. The IG contract forbids coding an observed "
+      + "radiolucency as a diagnosis; the engine's `apicalDx` IS the apical diagnosis, so no "
+      + "such upgrade happens here.",
+  },
+};
+
+/**
+ * Engine `rootCaries` -> admitted SNOMED concept. Each of the three graded
+ * values IS root caries, so all three code to the same concept and the grade
+ * itself — which has no admitted concept — stays in `.text`.
+ *
+ * This is a WHITELIST, not a not-`"none"` test, exactly like `resorptionSct`
+ * and `apicalDxSct`. A value this build has never verified (a newer payload
+ * version, or a malformed document) must fall back to text rather than acquire
+ * a canonical SNOMED assertion nobody checked.
+ */
+export function rootCariesSct(value: string): string | undefined {
+  switch (value) {
+    case "active":
+    case "arrested":
+    case "active-cavitated":
+      return VERIFIED_SCT.rootCaries;
+    default: return undefined;
+  }
+}
+
+/** Engine `resorptionType` -> admitted SNOMED concept. */
+export function resorptionSct(value: string): string | undefined {
+  switch (value) {
+    case "internal": return VERIFIED_SCT.internalResorption;
+    // External cervical resorption is a verified descendant of the admitted
+    // parent; the exact subtype stays in `.text`.
+    case "external-cervical": return VERIFIED_SCT.externalResorption;
+    default: return undefined;
+  }
+}
+
+/**
+ * Engine `apicalDx` -> admitted SNOMED concept. Only the two values SNOMED
+ * places under `39273001` are coded. An apical abscess and condensing osteitis
+ * are NOT apical periodontitis and keep the text fallback.
+ */
+export function apicalDxSct(value: string): string | undefined {
+  switch (value) {
+    case "symptomatic-apical-periodontitis":
+    case "asymptomatic-apical-periodontitis":
+      return VERIFIED_SCT.apicalPeriodontitis;
+    default: return undefined;
+  }
+}
+
+/**
+ * Engine restoration-integrity findings -> admitted SNOMED concept.
+ *
+ * `RestorationStatusVS` admits four concepts: `109728009` and three of its
+ * children (`109729001` overhang, `109735001` marginal-integrity failure,
+ * `702645001` cohesive failure). None of the engine's findings entails one of
+ * those children:
+ *
+ *   - `crownLeakage` is a leaking restoration (`278549007`), which $subsumes
+ *     reports is NOT under `109735001`;
+ *   - `fillingDefect: "marginal"` reads "overhang / deficient margin" and so
+ *     spans the disjoint `109729001` and `109735001`;
+ *   - `fillingDefect: "fracture"` is a fractured restoration (`109741008`),
+ *     which $subsumes reports is NOT under `702645001` (cohesive failure names
+ *     a specific failure mode the engine value never states);
+ *   - `fillingDefect: "wear"` has no admitted specific concept at all.
+ *
+ * All four therefore emit the admitted common ancestor, with the exact finding
+ * preserved in `.text`.
+ */
+export function restorationStatusSct(): string {
+  return VERIFIED_SCT.restorationDefective;
+}
 
 /**
  * HL7 FDI-surface codes. `I` (incisal) and `O` (occlusal) are POSITION

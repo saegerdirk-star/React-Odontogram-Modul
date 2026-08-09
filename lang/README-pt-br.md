@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.4.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.5.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -531,6 +531,15 @@ binding **extensible** correspondente — nunca um código inventado — e onde 
 `report.textFallback` e `report.unmapped`, com o dente, o campo, o valor preservado e o
 motivo, de modo que nada se degrada em silêncio. O valor em si permanece sempre no
 documento de domínio da interface e sobrevive à ida e volta por JSON.
+
+**Cobertura SNOMED verificada (a partir da 2.5.0):** um valor clínico só é
+codificado quando os ValueSets do próprio GI admitem o conceito E o seu
+significado foi verificado; `SCT_PROVENANCE` em `dentalDeCodesystems.ts` registra,
+para cada código emitido, o ValueSet que o admite e a fonte da verificação. Cárie
+radicular, reabsorção radicular interna e cervical externa, periodontite apical e
+os achados de integridade da restauração são codificados nessa base. A avaliação
+de origem exata permanece sempre em `CodeableConcept.text`, e nenhum
+`Coding.display` é inventado, porque o GI não os publica.
 
 `parseFhirBundle` lê **ambos** os dialetos, inclusive um bundle misto, de modo que bundles
 já exportados continuam a ser importados sem alteração.

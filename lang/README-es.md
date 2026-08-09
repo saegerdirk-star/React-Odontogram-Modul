@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.4.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.5.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -538,6 +538,16 @@ enlace **extensible** correspondiente — nunca un código inventado —, y dond
 `report.textFallback` y `report.unmapped`, con el diente, el campo, el valor preservado y
 el motivo, de modo que nada se degrada en silencio. El valor permanece siempre en el
 documento de dominio de interfaz y sobrevive al viaje de ida y vuelta por JSON.
+
+**Cobertura SNOMED verificada (desde 2.5.0):** un valor clínico solo se codifica
+cuando los ValueSets de la propia GI admiten el concepto Y su significado ha
+sido verificado; `SCT_PROVENANCE` en `dentalDeCodesystems.ts` registra, por cada
+código emitido, el ValueSet que lo admite y la fuente de verificación. La caries
+radicular, la reabsorción radicular interna y cervical externa, la periodontitis
+apical y los hallazgos de integridad de la restauración se codifican sobre esa
+base. La valoración de origen exacta permanece siempre en
+`CodeableConcept.text`, y no se inventa ningún `Coding.display`, porque la GI no
+publica displays.
 
 `parseFhirBundle` lee **ambos** dialectos, incluido un paquete que los mezcle, por lo que
 los paquetes ya exportados se siguen importando sin cambios.

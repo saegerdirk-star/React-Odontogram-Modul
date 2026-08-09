@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.4.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.5.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -536,6 +536,16 @@ wiązanie **required** nie ma pasującego pojęcia, nie emituje nic. Oba przypad
 `report.textFallback` i `report.unmapped` wraz z zębem, polem, zachowaną wartością i
 uzasadnieniem, więc nic nie degraduje się po cichu. Sama wartość zawsze pozostaje w
 dokumencie domeny interfejsu i przechodzi pełny obieg przez JSON.
+
+**Zweryfikowane pokrycie SNOMED (od 2.5.0):** wartość kliniczna jest kodowana
+tylko wtedy, gdy ValueSety samego IG dopuszczają dane pojęcie ORAZ jego znaczenie
+zostało zweryfikowane; `SCT_PROVENANCE` w `dentalDeCodesystems.ts` zapisuje dla
+każdego emitowanego kodu dopuszczający ValueSet i źródło weryfikacji. Próchnica
+korzenia, wewnętrzna i zewnętrzna przyszyjkowa resorpcja korzenia, zapalenie
+tkanek okołowierzchołkowych oraz ustalenia dotyczące integralności wypełnienia są
+kodowane na tej podstawie. Dokładna ocena źródłowa zawsze pozostaje w
+`CodeableConcept.text`, a żaden `Coding.display` nie jest wymyślany, ponieważ IG
+ich nie publikuje.
 
 `parseFhirBundle` czyta **oba** dialekty, również pakiet mieszany, więc wcześniej
 wyeksportowane pakiety importują się bez zmian.

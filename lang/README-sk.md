@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.4.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.5.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -535,6 +535,15 @@ príslušnej **extensible** väzby — nikdy vymyslený kód — a tam, kde **re
 zodpovedajúci pojem, nevydá nič. Oba prípady sú uvedené v `report.textFallback` a
 `report.unmapped` so zubom, poľom, zachovanou hodnotou a dôvodom, takže sa nič nestratí
 potichu. Samotná hodnota vždy zostáva v dokumente domény rozhrania a prežije cestu cez JSON.
+
+**Overené pokrytie SNOMED (od 2.5.0):** klinická hodnota sa kóduje iba vtedy, keď
+ValueSety samotného IG daný koncept pripúšťajú A jeho význam bol overený;
+`SCT_PROVENANCE` v `dentalDeCodesystems.ts` pre každý vydaný kód zaznamenáva
+pripúšťajúci ValueSet a zdroj overenia. Koreňový kaz, vnútorná a vonkajšia
+cervikálna resorpcia koreňa, apikálna parodontitída a nálezy o celistvosti výplne
+sa kódujú na tomto základe. Presné zdrojové hodnotenie zostáva vždy v
+`CodeableConcept.text` a žiadny `Coding.display` sa nevymýšľa, pretože IG ich
+nezverejňuje.
 
 `parseFhirBundle` číta **oba** dialekty vrátane zmiešaného balíka, takže už exportované
 balíky sa importujú nezmenene.

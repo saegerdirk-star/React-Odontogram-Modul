@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.4.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.5.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -185,6 +185,16 @@ la liaison **extensible** correspondante — jamais un code inventé — et là 
 `report.textFallback` et `report.unmapped`, avec la dent, le champ, la valeur préservée et
 la raison, de sorte que rien ne se dégrade en silence. La valeur elle-même reste toujours
 dans le document du domaine de l'interface et survit à l'aller-retour JSON.
+
+**Couverture SNOMED vérifiée (à partir de 2.5.0) :** une valeur clinique n'est
+codée que si les ValueSets du GI admettent le concept ET que sa signification a
+été vérifiée ; `SCT_PROVENANCE` dans `dentalDeCodesystems.ts` consigne, pour
+chaque code émis, le ValueSet qui l'admet et la source de vérification. La carie
+radiculaire, la résorption radiculaire interne et cervicale externe, la
+parodontite apicale et les constats d'intégrité de la restauration sont codés sur
+cette base. L'évaluation source exacte reste toujours dans
+`CodeableConcept.text`, et aucun `Coding.display` n'est inventé, car le GI n'en
+publie pas.
 
 `parseFhirBundle` lit **les deux** dialectes, y compris un bundle qui les mélange, si bien
 que les bundles déjà exportés continuent de s'importer sans changement.
