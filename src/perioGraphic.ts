@@ -57,8 +57,8 @@ export const EXCLUDED_TOOTH_BASE_IDS: readonly string[] = [
  * ready to paste. Values below are in the flipped frame the perio row renders
  * in (`finalY = viewBoxHeight - rawY`).
  *
- * Re-generate with:  python3 tools/toothgen/build.py
- * Re-check with:     python3 tools/toothgen/verify.py
+ * Re-generate with:  npm run toothgen:build
+ * Re-check with:     npm run toothgen:verify
  *
  * The spread across templates is genuine anatomy, not measurement noise: the
  * canine sits highest (longest root), the lower incisor lowest.

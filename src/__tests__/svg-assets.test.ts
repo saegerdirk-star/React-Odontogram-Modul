@@ -152,7 +152,25 @@ describe("installed tooth SVG assets", () => {
     for (const toothNo of [36, 37, 38, 46, 47, 48]) expect(TOOTH_TEMPLATE.get(toothNo)?.tpl).toBe(46);
   });
 
+  // Pinned independently of OCCLUSAL_TEMPLATE. Iterating the map alone would
+  // silently skip a tooth that fell out of it, which is exactly the regression
+  // this suite has to catch: every posterior tooth that renders an occlusal
+  // tile must still get one after the side-view mapping was split out.
+  it("renders an occlusal tile for exactly the posterior teeth", () => {
+    expect([...OCCLUSAL_TEMPLATE.keys()].sort((a, b) => a - b)).toEqual([
+      14, 15, 16, 17, 18,
+      24, 25, 26, 27, 28,
+      34, 35, 36, 37, 38,
+      44, 45, 46, 47, 48,
+    ]);
+    // Only the two occlusal templates exist as assets.
+    for (const placement of OCCLUSAL_TEMPLATE.values()) {
+      expect([14, 16]).toContain(placement.tpl);
+    }
+  });
+
   it("keeps mesial occlusal geometry toward the arch midline in every quadrant", () => {
+    expect(OCCLUSAL_TEMPLATE.size).toBe(20);
     for (const [toothNo, placement] of OCCLUSAL_TEMPLATE) {
       const svg = readSvg(`${placement.tpl}_occl`);
       const root = new DOMParser().parseFromString(svg, "image/svg+xml").documentElement;

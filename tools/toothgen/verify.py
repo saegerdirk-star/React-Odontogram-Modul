@@ -52,6 +52,28 @@ GEOMETRY_ATTRIBUTES = (
     "transform",
 )
 
+# Geometry is not only expressible as an XML attribute. SVG 2 / CSS also accept
+# several of these as CSS properties, so `style="transform: scale(2)"` moves a
+# contour just as `transform="scale(2)"` does. Hashing attributes alone would
+# leave that route unguarded and let authored anatomy drift while the frozen
+# digest still matched. Only the geometry-bearing declarations are taken from
+# `style`: the rest of it is paint, and paint is not what these digests freeze.
+GEOMETRY_STYLE_PROPERTIES = frozenset(GEOMETRY_ATTRIBUTES)
+
+
+def geometry_style(value: str) -> str:
+    """The geometry-bearing declarations of a `style` attribute, normalized."""
+
+    kept = []
+    for declaration in value.split(";"):
+        name, separator, setting = declaration.partition(":")
+        if not separator:
+            continue
+        name = name.strip().lower()
+        if name in GEOMETRY_STYLE_PROPERTIES:
+            kept.append(f"{name}:{' '.join(setting.split())}")
+    return ";".join(kept)
+
 
 def clinical_ids(txt: str) -> list[str]:
 
@@ -73,6 +95,9 @@ def geometry_digest(txt: str) -> str:
                 for name in GEOMETRY_ATTRIBUTES
                 if name in node.attrib
             )
+            styled = geometry_style(node.attrib.get("style", ""))
+            if styled:
+                values = f"{values}|style[{styled}]" if values else f"style[{styled}]"
             parts.append(f"{local_name}|{values}")
         for child in node:
             walk(child, blocked)
