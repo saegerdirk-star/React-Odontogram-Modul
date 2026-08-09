@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.5.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.6.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -544,6 +544,19 @@ cervikálna resorpcia koreňa, apikálna parodontitída a nálezy o celistvosti 
 sa kódujú na tomto základe. Presné zdrojové hodnotenie zostáva vždy v
 `CodeableConcept.text` a žiadny `Coding.display` sa nevymýšľa, pretože IG ich
 nezverejňuje.
+
+**Kanonický parodontálny export (od 2.6.0):** vyšetrený prirodzený zub sa exportuje
+ako `PeriodontalObservationDE` a pozícia implantátu ako `PeriImplantObservationDE`
+spolu so zariadením `DentalImplantDE`, na ktoré sa odkazuje — hĺbka sondáže v
+šiestich bodoch, znamienková úroveň gingiválneho okraja voči sklovinovo-cementovej
+hranici, odvodená úroveň attachmentu, krvácanie a hnisanie pri sondáži, Glickmanov
+stupeň furkácie so vstupom, prítomnosť plaku, indexy Silness-Löe a Löe-Silness,
+šírka keratinizovanej gingívy a periimplantátové Mombelliho indexy, každý
+kvalifikovaný rozšírením `PeriodontalMeasurementSiteExt` alebo `ToothSurfacesExt` z
+IG. Vyšetrený normálny nález je explicitné `false`/`0` a zaznamenaná medzera
+štandardný `dataAbsentReason`. Komponent recesie sa zámerne nevydáva: SCTID, ktoré
+preň IG fixuje, v skutočnosti znamená „Accretion on teeth", takže nález nesie
+znamienkový gingiválny okraj (`REJECTED_SCT` zaznamenáva dôkaz).
 
 `parseFhirBundle` číta **oba** dialekty vrátane zmiešaného balíka, takže už exportované
 balíky sa importujú nezmenene.

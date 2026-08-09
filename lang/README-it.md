@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.5.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.6.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -547,6 +547,20 @@ radicolare, riassorbimento radicolare interno e cervicale esterno, parodontite
 apicale e i riscontri di integrità del restauro sono codificati su questa base.
 La valutazione di origine esatta resta sempre in `CodeableConcept.text` e nessun
 `Coding.display` viene inventato, perché la IG non ne pubblica.
+
+**Export parodontale canonico (dalla 2.6.0):** un dente naturale rilevato viene
+esportato come `PeriodontalObservationDE` e una posizione implantare come
+`PeriImplantObservationDE` insieme al dispositivo `DentalImplantDE` a cui punta —
+profondità di sondaggio in sei punti, livello con segno del margine gengivale
+rispetto alla giunzione amelo-cementizia, livello di attacco derivato, sanguinamento
+e suppurazione al sondaggio, il grado di forcazione di Glickman con il suo ingresso,
+presenza di placca, gli indici di Silness-Löe e Löe-Silness, l'ampiezza di gengiva
+cheratinizzata e gli indici peri-implantari di Mombelli, ciascuno qualificato da
+`PeriodontalMeasurementSiteExt` o `ToothSurfacesExt` dell'IG. Un reperto valutato
+come normale è un `false`/`0` esplicito e una lacuna registrata è un
+`dataAbsentReason` standard. Il componente di recessione è deliberatamente omesso:
+lo SCTID che l'IG vi fissa significa in realtà "Accretion on teeth", quindi è il
+margine con segno a portare il reperto (`REJECTED_SCT` ne registra le prove).
 
 `parseFhirBundle` legge **entrambi** i dialetti, anche un bundle misto, così i bundle già
 esportati continuano a essere importati senza modifiche.

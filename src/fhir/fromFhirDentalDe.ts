@@ -14,11 +14,15 @@ import type { ToothRecord } from "./types";
 import { LOCAL_VALUE_MAPS } from "./codesystems";
 import {
   DENTAL_DE_ODONTOGRAM_PROFILE, DENTAL_DE_CARIES_PROFILE, DENTAL_DE_FINDING_PROFILE,
+  DENTAL_DE_PERIODONTAL_PROFILE, DENTAL_DE_PERI_IMPLANT_PROFILE,
   FINDING_TEXT,
   DENTAL_DE_COMPONENT_SYSTEM, DENTAL_DE_ASSESSMENT_SYSTEM,
   DENTAL_DE_FDI_SYSTEM, DENTAL_DE_ICDAS_SYSTEM,
   DENTAL_DE_RESTORATION_TYPE_SYSTEM, DENTAL_DE_MATERIAL_SYSTEM,
   TOOTH_SURFACES_EXT_URL, FDI_SURFACE_SYSTEM, SNOMED_SYSTEM,
+  PERIODONTAL_SITE_SYSTEM, PERIODONTAL_SITE_EXT_URL, PERIODONTAL_INDEX_SYSTEM,
+  GLICKMAN_FURCATION_SYSTEM, LOINC_SYSTEM, PA_BEFUND_TYPE_SYSTEM,
+  PERIO_LOINC, PERIODONTAL_INDEX, PA_BEFUND, perioSiteFromCode, glickmanGradeFromCode,
   ODONTO_COMPONENT, VERIFIED_SCT, fromFdiSurface,
 } from "./dentalDeCodesystems";
 
@@ -66,6 +70,8 @@ export function isDentalDeResource(res: unknown): boolean {
     profiles.includes(DENTAL_DE_ODONTOGRAM_PROFILE)
     || profiles.includes(DENTAL_DE_CARIES_PROFILE)
     || profiles.includes(DENTAL_DE_FINDING_PROFILE)
+    || profiles.includes(DENTAL_DE_PERIODONTAL_PROFILE)
+    || profiles.includes(DENTAL_DE_PERI_IMPLANT_PROFILE)
   ) return true;
   const assessment = codeIn(r.code, DENTAL_DE_ASSESSMENT_SYSTEM);
   if (assessment === "odontogram-assessment" || assessment === "icdas-caries-assessment") return true;
@@ -162,18 +168,135 @@ function applyPresence(rec: ToothRecord, value: unknown): void {
   if (text === FINDING_TEXT.toothUnderGum) { rec.toothSelection = "tooth-under-gum"; return; }
 }
 
+// ---------------------------------------------------------------------------
+// Bead odontogram-5cz: canonical periodontal read-back
+// ---------------------------------------------------------------------------
+
+/** The probing site one component applies to, as the engine's own site key. */
+function perioSiteOf(comp: unknown): string | undefined {
+  const ext = (comp as { extension?: Any[] } | undefined)?.extension;
+  if (!Array.isArray(ext)) return undefined;
+  for (const e of ext) {
+    if (e?.url !== PERIODONTAL_SITE_EXT_URL) continue;
+    const code = codeIn(e?.valueCodeableConcept, PERIODONTAL_SITE_SYSTEM);
+    if (code) return perioSiteFromCode(code);
+  }
+  return undefined;
+}
+
+/** The single index surface one component applies to. */
+function indexSurfaceOf(comp: unknown): string | undefined {
+  return surfacesOf(comp)[0];
+}
+
+function numericValue(comp: Any): number | undefined {
+  const value = comp?.valueQuantity?.value;
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function integerValue(comp: Any): number | undefined {
+  const value = comp?.valueInteger;
+  return typeof value === "number" && Number.isInteger(value) ? value : undefined;
+}
+
+function perioRecord(rec: ToothRecord): NonNullable<ToothRecord["perio"]> {
+  return (rec.perio ??= { pd: {}, gm: {}, bop: [], sup: [] });
+}
+
+function pushOnce(list: string[], value: string): void {
+  if (!list.includes(value)) list.push(value);
+}
+
+/** Read one `PeriodontalObservationDE` / `PeriImplantObservationDE` back into
+ *  the tooth record. Absent results (`dataAbsentReason`) and the derived
+ *  attachment-loss components carry no engine state and are skipped; the
+ *  engine's assessment-status map is not restored here, exactly as the legacy
+ *  dialect does not restore it either. */
+function applyPeriodontalResource(rec: ToothRecord, components: Any[]): void {
+  for (const comp of components) {
+    const site = perioSiteOf(comp);
+    const surface = indexSurfaceOf(comp);
+
+    if (codeIn(comp?.code, LOINC_SYSTEM) === PERIO_LOINC.probingDepth) {
+      const value = numericValue(comp);
+      if (site && value !== undefined) perioRecord(rec).pd[site] = value;
+      continue;
+    }
+    if (codeIn(comp?.code, LOINC_SYSTEM) === PERIO_LOINC.gingivalMarginToCej) {
+      const value = numericValue(comp);
+      if (site && value !== undefined) perioRecord(rec).gm[site] = value;
+      continue;
+    }
+    if (codeIn(comp?.code, LOINC_SYSTEM) === PERIO_LOINC.plaquePresence) {
+      if (surface && comp?.valueBoolean === true) pushOnce((rec.plaque ??= []), surface);
+      continue;
+    }
+    if (codeIn(comp?.code, SNOMED_SYSTEM) === VERIFIED_SCT.bleedingOnProbing) {
+      if (site && comp?.valueBoolean === true) pushOnce(perioRecord(rec).bop, site);
+      continue;
+    }
+    if (codeIn(comp?.code, SNOMED_SYSTEM) === VERIFIED_SCT.plaqueIndexSilnessLoe) {
+      const grade = integerValue(comp);
+      if (surface && grade !== undefined && grade > 0) (rec.pi ??= {})[surface] = grade;
+      continue;
+    }
+    if (codeIn(comp?.code, SNOMED_SYSTEM) === VERIFIED_SCT.furcationInvolvementIndex) {
+      const code = codeIn(comp?.valueCodeableConcept, GLICKMAN_FURCATION_SYSTEM);
+      const grade = code === undefined ? undefined : glickmanGradeFromCode(code);
+      // Glickman Grade 0 is "assessed, no involvement" — a result, never a
+      // stored engine grade, so it must not resurrect a furcation entry.
+      if (surface && grade !== undefined && grade > 0) (rec.furcation ??= {})[surface] = grade;
+      continue;
+    }
+    const index = codeIn(comp?.code, PERIODONTAL_INDEX_SYSTEM);
+    if (index === PERIODONTAL_INDEX.gingivalIndex) {
+      const grade = integerValue(comp);
+      if (surface && grade !== undefined && grade > 0) (rec.gi ??= {})[surface] = grade;
+      continue;
+    }
+    if (index === PERIODONTAL_INDEX.modifiedPlaqueIndex) {
+      const grade = integerValue(comp);
+      if (surface && grade !== undefined && grade > 0) (rec.mpi ??= {})[surface] = grade;
+      continue;
+    }
+    if (index === PERIODONTAL_INDEX.modifiedSulcusBleedingIndex) {
+      const grade = integerValue(comp);
+      if (surface && grade !== undefined && grade > 0) (rec.mbi ??= {})[surface] = grade;
+      continue;
+    }
+    if (index === PERIODONTAL_INDEX.keratinizedGingivaWidth) {
+      const value = numericValue(comp);
+      if (value !== undefined) rec.kg = value;
+      continue;
+    }
+    if (codeIn(comp?.code, PA_BEFUND_TYPE_SYSTEM) === PA_BEFUND.suppuration) {
+      if (site && comp?.valueBoolean === true) pushOnce(perioRecord(rec).sup, site);
+    }
+  }
+}
+
 /** Apply one canonical resource to the accumulating tooth records. */
 export function applyDentalDeResource(
   teeth: Record<string, ToothRecord>,
   res: unknown,
 ): void {
   const r = res as {
+    meta?: { profile?: unknown };
     code?: unknown; bodySite?: unknown; valueCodeableConcept?: unknown;
     component?: Any[]; note?: Array<{ text?: unknown }>;
   };
   const fdi = codeIn(r.bodySite, DENTAL_DE_FDI_SYSTEM);
   if (!fdi) return;
   const rec = (teeth[fdi] ??= {});
+
+  const profiles = Array.isArray(r.meta?.profile) ? (r.meta!.profile as string[]) : [];
+  if (
+    profiles.includes(DENTAL_DE_PERIODONTAL_PROFILE)
+    || profiles.includes(DENTAL_DE_PERI_IMPLANT_PROFILE)
+  ) {
+    applyPeriodontalResource(rec, r.component ?? []);
+    return;
+  }
 
   const assessment = codeIn(r.code, DENTAL_DE_ASSESSMENT_SYSTEM);
 

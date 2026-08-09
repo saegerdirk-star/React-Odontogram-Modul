@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.5.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.6.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -546,6 +546,21 @@ const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
 целостности реставрации кодируются на этом основании. Точная исходная оценка
 всегда остаётся в `CodeableConcept.text`, и ни один `Coding.display` не
 придумывается, так как IG их не публикует.
+
+**Каноничный пародонтологический экспорт (начиная с 2.6.0):** обследованный
+естественный зуб экспортируется как `PeriodontalObservationDE`, а позиция
+имплантата — как `PeriImplantObservationDE` вместе с устройством
+`DentalImplantDE`, на которое она ссылается: глубина зондирования в шести точках,
+знаковый уровень десневого края относительно эмалево-цементной границы,
+производный уровень прикрепления, кровоточивость и нагноение при зондировании,
+степень фуркации по Гликману с указанием входа, наличие налёта, индексы
+Силнесса-Лоэ и Лоэ-Силнесса, ширина кератинизированной десны и периимплантатные
+индексы Момбелли — каждый уточняется расширением `PeriodontalMeasurementSiteExt`
+или `ToothSurfacesExt` из IG. Обследованная норма — это явные `false`/`0`, а
+зафиксированный пробел — стандартный `dataAbsentReason`. Компонент рецессии
+намеренно не выводится: закреплённый в IG SCTID на самом деле означает
+«Accretion on teeth», поэтому находку несёт знаковый десневой край
+(`REJECTED_SCT` фиксирует доказательства).
 
 `parseFhirBundle` читает **оба** диалекта, включая смешанный набор, поэтому ранее
 экспортированные наборы импортируются без изменений.

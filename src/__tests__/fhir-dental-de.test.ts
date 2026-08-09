@@ -556,6 +556,13 @@ const ADMITTED_VALUE_SET_MEMBERS: Record<string, string[]> = {
     "278630001", "278631002", "699710002", "699828007", "699856002", "699857006",
     "702529006", "702530001", "710783007", "710784001", "711285008",
   ],
+  // Bead odontogram-5cz: the periodontal profiles do not bind a ValueSet on
+  // these positions — they FIX the SCTID on the component slice, which admits
+  // nothing else there. The lists below are the fixed codes of each profile.
+  "PeriodontalObservationDE (fixed component code)": [
+    "6288001", "86276007", "771311009", "109728009", "251307008",
+  ],
+  "PeriodontalObservationDE / PeriImplantObservationDE (fixed component code)": ["86276007"],
 };
 
 /** Every SNOMED coding anywhere in a bundle (components and values alike). */
@@ -597,7 +604,7 @@ function restorationStates(obs: Observation): Array<{ code?: string; text?: stri
 }
 
 describe("odontogram-chz: verified SNOMED coverage", () => {
-  it("every widened SCTID is admitted by an IG ValueSet and carries no invented display", () => {
+  it("every widened SCTID is admitted by the IG artifact its provenance names and carries no invented display", () => {
     // Nothing is emitted that the provenance table does not account for.
     for (const [key, code] of Object.entries(VERIFIED_SCT)) {
       const entry = SCT_PROVENANCE[key as keyof typeof VERIFIED_SCT];
