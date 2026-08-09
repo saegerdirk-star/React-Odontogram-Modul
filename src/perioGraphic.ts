@@ -56,23 +56,22 @@ export const EXCLUDED_TOOTH_BASE_IDS: readonly string[] = [
  * CEJ/gumline) via a one-off control-point bounding-box script over the
  * path's `d` attribute (a close superset of the true curve bbox — gentle
  * curves here, so this is a good anchor, NOT pixel-exact anatomy). Then
- * converted into the flipped frame via
- * `finalY = viewBoxHeight - normalizeY * rawY` (`normalizeY` defaults to 1):
+ * converted into the flipped frame via `finalY = viewBoxHeight - rawY`:
  *   11: raw 38.6, viewBox h 70.8 -> 32.2
  *   13: raw 38.6, viewBox h 71.0 -> 32.4
  *   14: raw 39.1, viewBox h 71.2 -> 32.1
- *   15: raw 76.47, normalize 0.6667, viewBox h 71.2 -> 20.2
- *   16: raw 67.74, normalize 0.7362, viewBox h 70.9 -> 21.0
- *   46: raw 74.42, normalize 0.6850, viewBox h 70.9 -> 19.9
+ *   15: shares the established tpl-14 frame -> 32.1
+ *   16: raw 39.9, viewBox h 70.9 -> 31.0
+ *   46: shares the established tpl-16 frame -> 31.0
  * Each template is aligned to the shared row baseline through its own anchor.
  */
 export const CEJ_Y: Record<TemplateNo, number> = {
   11: 32.2,
   13: 32.4,
   14: 32.1,
-  15: 20.2,
-  16: 21.0,
-  46: 19.9,
+  15: 32.1,
+  16: 31.0,
+  46: 31.0,
 };
 
 /**
@@ -88,14 +87,14 @@ export const CEJ_Y: Record<TemplateNo, number> = {
  * template's RAW/un-flipped coordinate system — the same one-off control-point
  * bounding-box technique CEJ_Y above was measured with; a close superset of the
  * true platform edge), then converted into the final crown-up flipped frame via
- * `finalY = viewBoxHeight - normalizeY * rawY` (same frame
+ * `finalY = viewBoxHeight - rawY` (same frame
  * `getToothBaseGroupFromCache` renders in — see that function's flip comment):
  *   11: platform raw 37.8, viewBox h 70.8 -> 33.0
  *   13: platform raw 35.6, viewBox h 71.0 -> 35.4
  *   14: platform raw 36.6, viewBox h 71.2 -> 34.6
- *   15: platform raw 74.3, normalize 0.6667, viewBox h 71.2 -> 21.7
- *   16: platform raw 65.0, normalize 0.7362, viewBox h 70.9 -> 23.0
- *   46: platform raw 71.6, normalize 0.6850, viewBox h 70.9 -> 21.8
+ *   15: shares the established tpl-14 frame -> 34.6
+ *   16: platform raw 36.6, viewBox h 70.9 -> 34.3
+ *   46: shares the established tpl-16 frame -> 34.3
  * As with CEJ_Y, row-baseline alignment only needs these mutually consistent
  * (they place every implant platform on ROW_BASELINE_Y); exact anatomical
  * placement should still be confirmed in a browser (see task-3-implant-report.md).
@@ -104,9 +103,9 @@ export const IMPLANT_CEJ_Y: Record<TemplateNo, number> = {
   11: 33.0,
   13: 35.4,
   14: 34.6,
-  15: 21.7,
-  16: 23.0,
-  46: 21.8,
+  15: 34.6,
+  16: 34.3,
+  46: 34.3,
 };
 
 /** Predicate telling the arch builders whether a given tooth is an implant on
