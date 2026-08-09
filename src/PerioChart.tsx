@@ -2141,7 +2141,19 @@ export default function PerioChart({
       // through `setAssessmentStatus` — the odontogram-2vd setter, which owns
       // the capability matrix and the DS-1 status/plan gate — so this adds no
       // second mutation path and no new storage semantics.
+      //
+      // Review fix (odontogram-vnt, finding B1): `getReadOnly()` is checked
+      // explicitly here, not left to the button's own `disabled` attribute.
+      // That attribute is decided per build/resync, and `setReadOnly` does not
+      // notify — so a host that locks the chart WHILE it is open leaves every
+      // mounted control's `disabled` stale, with only the `.read-only` CSS
+      // class standing between a programmatic click and a write. A recorded
+      // assessment status is a clinical statement about an examination, so it
+      // must not depend on CSS to stay unwritable. Mirrors the delegated
+      // keyboard handler's own up-front `getReadOnly()` guard
+      // (`handleGridKeyDown`), which exists for exactly this reason.
       onAssessment: (toothNo, axis, qualifier) => {
+        if (getReadOnly()) return;
         const cur = getAssessmentStatus(toothNo, axis, qualifier);
         const idx = ASSESSMENT_CYCLE.indexOf(cur);
         const next = ASSESSMENT_CYCLE[(idx + 1) % ASSESSMENT_CYCLE.length];

@@ -80,12 +80,19 @@ describe("odontogram-vnt AC2: readOnly", () => {
     expect(getAssessmentStatus(16, "pd", "MB")).toBe("assessed");
   });
 
-  it("locks the whole mounted perio container the moment readOnly is set", () => {
+  it("refuses a write from an ALREADY-MOUNTED control the moment readOnly is set", () => {
+    // Review fix (finding B1/A1): `setReadOnly` does not notify, so a mounted
+    // control's `disabled` attribute is stale after a live flip — the domain
+    // gate, not CSS, has to be what stops the write.
     openGrid();
+    const btn = assessBtn(16, "pd", "MB")!;
     act(() => {
       setReadOnly(true);
     });
     expect(document.getElementById("perioOverlay")!.classList.contains("read-only")).toBe(true);
+    click(btn);
+    expect(getAssessmentStatus(16, "pd", "MB")).toBe("not-assessed");
+    expect(getToothAssessments(16)).toEqual({});
   });
 });
 
