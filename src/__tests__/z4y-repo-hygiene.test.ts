@@ -35,6 +35,12 @@ const BUILD_CACHE = "tsconfig.tsbuildinfo";
 /** Every export a partial mock forwards by hand, e.g. `getCaseMeta: actual.getCaseMeta,`. */
 const PASS_THROUGH_LINE = /^\s*[A-Za-z_$][\w$]*\s*:\s*actual\.[\w$]+\s*,?\s*$/;
 
+/** An override entry in the returned object, e.g. `initOdontogram: vi.fn(),`. */
+const OVERRIDE_LINE = /^\s*[A-Za-z_$][\w$]*\s*:/;
+
+/** The spread that makes the mock partial. */
+const SPREAD_LINE = /^\s*\.\.\.actual,\s*$/;
+
 /** The `vi.mock("../odontogram"` / `vi.mock('../odontogram'` call opener. */
 const MOCK_OPENER = /vi\.mock\(\s*(['"])\.\.\/odontogram\1/;
 
@@ -103,9 +109,21 @@ describe("odontogram-z4y: ../odontogram is partial-mocked, never hand-enumerated
   });
 
   it("every factory spreads the original module before its overrides", () => {
-    const offenders = suites
-      .filter(({ factories }) => factories.some((lines) => !lines.some((line) => line.includes("...actual"))))
-      .map(({ name }) => name);
+    // Order is the whole point: a spread placed after the overrides would let
+    // the real exports overwrite the suite's stubs, which is worse than the
+    // hand enumeration it replaced.
+    const offenders: string[] = [];
+    for (const { name, factories } of suites) {
+      for (const lines of factories) {
+        const spread = lines.findIndex((line) => SPREAD_LINE.test(line));
+        const firstOverride = lines.findIndex((line) => OVERRIDE_LINE.test(line));
+        if (spread === -1) {
+          offenders.push(`${name}: no \`...actual,\` spread`);
+        } else if (firstOverride !== -1 && firstOverride < spread) {
+          offenders.push(`${name}: spread comes after the override \`${lines[firstOverride].trim()}\``);
+        }
+      }
+    }
     expect(offenders).toEqual([]);
   });
 
