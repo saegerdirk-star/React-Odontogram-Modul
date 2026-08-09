@@ -36,6 +36,11 @@ Thumbs.db
 # === Testing / coverage ===
 coverage/
 
+# === Python bytecode cache ===
+# Written by tools/toothgen on every generator or verification run.
+__pycache__/
+*.py[cod]
+
 # === Misc ===
 *.log
 .intake/

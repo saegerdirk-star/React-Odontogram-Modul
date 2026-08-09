@@ -30,9 +30,9 @@ const testFileUrl = import.meta.url;
 const svgText = (tplNo: TemplateNo) =>
   readFileSync(fileURLToPath(new URL(`../assets/teeth-svgs/${tplNo}.svg`, testFileUrl)), "utf8");
 
-// Aus TEMPLATES abgeleitet statt fest verdrahtet: der Satz der Zahn-Templates
-// ist gewachsen (9 statt 4, siehe TOOTH_TEMPLATE in odontogram.ts). Eine feste
-// Liste laesst die Tests sonst still weniger pruefen, als es Templates gibt.
+// Derived from TEMPLATES instead of hard-wired: the tooth-template set has
+// grown (9 instead of 4, see TOOTH_TEMPLATE in odontogram.ts). A fixed list
+// would silently make these tests cover fewer templates than actually exist.
 const TEMPLATE_NOS: readonly TemplateNo[] = (
   Object.keys(TEMPLATES).map(Number) as TemplateNo[]
 ).sort((a, b) => a - b);
@@ -48,11 +48,10 @@ function buildCache(): TemplateDocCache {
 const UPPER_ARCH = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
 const LOWER_ARCH = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
 
-// tooth -> its template number. Aus TOOTH_TEMPLATE abgeleitet statt fest
-// verdrahtet: die Zuordnung hat sich mit dem 9er-Templatesatz geaendert (15
-// hat jetzt ein eigenes einwurzeliges Template, die unteren Molaren ihr
-// zweiwurzeliges), und eine handgepflegte Kopie laeuft dabei still aus dem
-// Tritt.
+// tooth -> its template number. Derived from TOOTH_TEMPLATE instead of
+// hard-wired: the mapping changed with the nine-template set (15 now has its
+// own single-rooted template and the lower molars their two-rooted one), so a
+// hand-maintained copy would silently drift out of step.
 const tplOf = (toothNo: number): TemplateNo =>
   TOOTH_TEMPLATE.get(toothNo)!.tpl as TemplateNo;
 

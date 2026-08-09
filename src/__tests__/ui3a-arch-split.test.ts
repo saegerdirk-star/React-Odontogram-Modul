@@ -29,9 +29,9 @@ const testFileUrl = import.meta.url;
 const svgText = (tplNo: TemplateNo) =>
   readFileSync(fileURLToPath(new URL(`../assets/teeth-svgs/${tplNo}.svg`, testFileUrl)), "utf8");
 
-// Aus TEMPLATES abgeleitet statt fest verdrahtet: der Satz der Zahn-Templates
-// ist gewachsen (9 statt 4, siehe TOOTH_TEMPLATE in odontogram.ts). Eine feste
-// Liste laesst die Tests sonst still weniger pruefen, als es Templates gibt.
+// Derived from TEMPLATES instead of hard-wired: the tooth-template set has
+// grown (9 instead of 4, see TOOTH_TEMPLATE in odontogram.ts). A fixed list
+// would silently make these tests cover fewer templates than actually exist.
 const TEMPLATE_NOS: readonly TemplateNo[] = (
   Object.keys(TEMPLATES).map(Number) as TemplateNo[]
 ).sort((a, b) => a - b);
