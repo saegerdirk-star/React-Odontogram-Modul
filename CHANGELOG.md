@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **The periodontal chart no longer draws one row of every jaw upside down.**
+  Each arch is shown twice, once from the facial and once from the palatal or
+  lingual side, and the two rows were oriented by ASPECT: the buccal row flipped,
+  the palatal row left as drawn. That made them mirror images of one another, so
+  in each jaw exactly one of the two contradicted the anatomy — an upper palatal
+  row with its roots hanging downward, a lower buccal row with its roots rising
+  upward. Orientation follows the JAW now: maxillary roots point cranially and
+  mandibular roots caudally in both aspects alike, which is also how a paper
+  periodontal chart is laid out. Both builders share one `buildArchAspectSvg`,
+  so the two aspects cannot drift apart again, and the mm grid's label
+  counter-flip follows the same condition.
+
+  Two consequences worth knowing. The two rows of a jaw are no longer mirror
+  images, so they are drawn alike and told apart by their labels and number rows
+  rather than by orientation — the central index band no longer sits between two
+  rows of crowns. And this deliberately reverses the arch-independent
+  orientation introduced with the central-index-band redesign; the assertions
+  that pinned it are rewritten to the jaw rule rather than deleted, so the
+  reversal is visible in the test suite instead of silent.
+
+  Found by measuring the running chart rather than by reading the code: for each
+  band, the order of the mm-grid labels tells which way the root points, and
+  that was checked against the band's jaw.
+
 ## [2.9.0] - 2026-08-09
 
 ### Fixed
