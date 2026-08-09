@@ -52,32 +52,49 @@ const LOWER_ARCH = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 
 // crown-down, palatal always crown-up). Migrated to assert the new uniform
 // contract instead of the retired per-arch one; full coverage of the split
 // builders lives in `ui3a-arch-split.test.ts`.
-describe("Task 1 (superseded by UI-3a): occlusal-to-occlusal orientation is now UNIFORM across arches", () => {
+// Orientation follows the JAW, not the aspect: maxillary roots point cranially
+// and mandibular roots caudally, in the facial and the palatal/lingual view
+// alike. UI-3a had flipped per aspect and deliberately asserted that the
+// transform was arch-INDEPENDENT, which left exactly one row of every jaw
+// upside down (an upper palatal row with caudal roots, a lower buccal row with
+// cranial roots). These assertions are the reverse of those.
+describe("orientation is per JAW, in both aspects alike", () => {
   const cache = buildCache();
 
-  it("the buccal row renders crown-DOWN (flipped about the CEJ baseline) for BOTH arches", () => {
-    for (const arch of [UPPER_ARCH, LOWER_ARCH]) {
-      const svg = buildBuccalArchSvg(cache, arch);
-      const buccal = svg.querySelector(".perio-tooth-row-buccal")!;
-      // matrix(1 0 0 -1 0 80) == scale(1,-1) about y = ROW_BASELINE_Y (40): the
-      // buccal row flips crown-down while the CEJ baseline stays put, so both
-      // arches' occlusal edges face the mid-line between them.
-      expect(buccal.getAttribute("transform") || "").toMatch(/matrix\(1 0 0 -1 0 80\)/);
+  // matrix(1 0 0 -1 0 80) == scale(1,-1) about y = ROW_BASELINE_Y (40): flips
+  // the row while the CEJ baseline, the transform's fixed point, stays put.
+  const FLIP = /matrix\(1 0 0 -1 0 80\)/;
+
+  it("both UPPER rows are flipped, so maxillary roots point cranially", () => {
+    for (const build of [buildBuccalArchSvg, buildPalatalArchSvg]) {
+      const svg = build(cache, UPPER_ARCH);
+      const row = svg.querySelector(".perio-tooth-row-buccal, .perio-tooth-row-palatal-inner")!;
+      expect(row.getAttribute("transform") || "").toMatch(FLIP);
     }
   });
 
-  it("the palatal row renders crown-UP (no orientation flip) for BOTH arches", () => {
-    for (const arch of [UPPER_ARCH, LOWER_ARCH]) {
-      const svg = buildPalatalArchSvg(cache, arch);
-      const palatal = svg.querySelector(".perio-tooth-row-palatal-inner")!;
-      expect(palatal.getAttribute("transform")).toBeNull();
+  it("neither LOWER row is flipped, so mandibular roots point caudally", () => {
+    for (const build of [buildBuccalArchSvg, buildPalatalArchSvg]) {
+      const svg = build(cache, LOWER_ARCH);
+      const row = svg.querySelector(".perio-tooth-row-buccal, .perio-tooth-row-palatal-inner")!;
+      expect(row.getAttribute("transform")).toBeNull();
     }
   });
 
-  it("the two arches carry the SAME buccal-row orientation transform (uniform, not arch-aware)", () => {
-    const upper = buildBuccalArchSvg(cache, UPPER_ARCH).querySelector(".perio-tooth-row-buccal")!;
-    const lower = buildBuccalArchSvg(cache, LOWER_ARCH).querySelector(".perio-tooth-row-buccal")!;
-    expect(upper.getAttribute("transform")).toBe(lower.getAttribute("transform"));
+  it("the two arches carry OPPOSITE orientation — the point of the rule", () => {
+    for (const build of [buildBuccalArchSvg, buildPalatalArchSvg]) {
+      const upper = build(cache, UPPER_ARCH).querySelector(".perio-tooth-row-buccal, .perio-tooth-row-palatal-inner")!;
+      const lower = build(cache, LOWER_ARCH).querySelector(".perio-tooth-row-buccal, .perio-tooth-row-palatal-inner")!;
+      expect(upper.getAttribute("transform")).not.toBe(lower.getAttribute("transform"));
+    }
+  });
+
+  it("within ONE jaw both aspects agree — neither row can drift upside down again", () => {
+    for (const arch of [UPPER_ARCH, LOWER_ARCH]) {
+      const buccal = buildBuccalArchSvg(cache, arch).querySelector(".perio-tooth-row-buccal")!;
+      const palatal = buildPalatalArchSvg(cache, arch).querySelector(".perio-tooth-row-palatal-inner")!;
+      expect(buccal.getAttribute("transform")).toBe(palatal.getAttribute("transform"));
+    }
   });
 });
 

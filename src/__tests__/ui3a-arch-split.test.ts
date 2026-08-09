@@ -83,16 +83,17 @@ describe("buildBuccalArchSvg", () => {
     }
   });
 
-  it("KEY #1 FIX: the orientation transform is IDENTICAL for an upper-arch teeth array and a lower-arch teeth array", () => {
+  // Reverses UI-3a's "KEY #1 FIX", which made the orientation arch-INDEPENDENT.
+  // That is what left one row of every jaw upside down; orientation follows the
+  // JAW, because maxillary roots point cranially and mandibular roots caudally.
+  it("orients by JAW: the upper arch is flipped, the lower arch is not", () => {
     const upperRow = buildBuccalArchSvg(cache, UPPER_ARCH).querySelector(".perio-tooth-row-buccal")!;
     const lowerRow = buildBuccalArchSvg(cache, LOWER_ARCH).querySelector(".perio-tooth-row-buccal")!;
-    const upperTransform = upperRow.getAttribute("transform") || "";
-    const lowerTransform = lowerRow.getAttribute("transform") || "";
-    expect(upperTransform).toBeTruthy();
-    expect(upperTransform).toBe(lowerTransform);
+    expect(upperRow.getAttribute("transform") || "").toMatch(/matrix\(1 0 0 -1 0 80\)/);
+    expect(lowerRow.getAttribute("transform")).toBeNull();
   });
 
-  it("orients crown-DOWN: a vertical flip about the CEJ baseline (matrix(1 0 0 -1 0 80))", () => {
+  it("the upper flip is about the CEJ baseline (matrix(1 0 0 -1 0 80)), so the baseline stays put", () => {
     const row = buildBuccalArchSvg(cache, UPPER_ARCH).querySelector(".perio-tooth-row-buccal")!;
     expect(row.getAttribute("transform") || "").toMatch(/matrix\(1 0 0 -1 0 80\)/);
   });
@@ -144,15 +145,11 @@ describe("buildPalatalArchSvg", () => {
     }
   });
 
-  it("KEY #1 FIX (ditto palatal): the orientation is IDENTICAL for an upper-arch teeth array and a lower-arch teeth array", () => {
+  it("orients by JAW too — the palatal aspect is no longer the buccal row's mirror", () => {
     const upperRow = buildPalatalArchSvg(cache, UPPER_ARCH).querySelector(".perio-tooth-row-palatal-inner")!;
     const lowerRow = buildPalatalArchSvg(cache, LOWER_ARCH).querySelector(".perio-tooth-row-palatal-inner")!;
-    expect(upperRow.getAttribute("transform")).toBe(lowerRow.getAttribute("transform"));
-  });
-
-  it("orients crown-UP: NO orientation transform (the mirror of buccal's flip about the same axis cancels to identity)", () => {
-    const row = buildPalatalArchSvg(cache, UPPER_ARCH).querySelector(".perio-tooth-row-palatal-inner")!;
-    expect(row.getAttribute("transform")).toBeNull();
+    expect(upperRow.getAttribute("transform") || "").toMatch(/matrix\(1 0 0 -1 0 80\)/);
+    expect(lowerRow.getAttribute("transform")).toBeNull();
   });
 
   it("is marked aria-hidden — purely decorative", () => {
@@ -167,12 +164,16 @@ describe("buildPalatalArchSvg", () => {
     expect(svg.getAttribute("viewBox")).toBeTruthy();
   });
 
-  it("carries its own mm-grid, NOT counter-flipped (this row is never net-flipped)", () => {
-    const row = buildPalatalArchSvg(cache, UPPER_ARCH).querySelector(".perio-tooth-row-palatal-inner")!;
-    const grid = row.querySelector(":scope > .perio-mm-grid");
-    expect(grid).toBeTruthy();
-    expect(row.firstElementChild).toBe(grid);
-    expect(grid!.querySelector("text.perio-mm-label[transform]")).toBeNull();
+  it("carries its own mm-grid, counter-flipped for the upper arch and not for the lower", () => {
+    for (const [arch, flipped] of [[UPPER_ARCH, true], [LOWER_ARCH, false]] as const) {
+      const row = buildPalatalArchSvg(cache, arch).querySelector(".perio-tooth-row-palatal-inner")!;
+      const grid = row.querySelector(":scope > .perio-mm-grid");
+      expect(grid).toBeTruthy();
+      expect(row.firstElementChild).toBe(grid);
+      const label = grid!.querySelector("text.perio-mm-label[transform]");
+      if (flipped) expect(label).toBeTruthy();
+      else expect(label).toBeNull();
+    }
   });
 });
 
