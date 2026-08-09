@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.7.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.8.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -559,10 +559,10 @@ suppuration on probing, the Glickman furcation grade with its entrance, plaque
 presence, the Silness-Loe and Loe-Silness indices, keratinized-gingiva width and
 the Mombelli peri-implant indices, each qualified by the IG's
 `PeriodontalMeasurementSiteExt` or `ToothSurfacesExt`. An assessed-normal finding
-is an explicit `false`/`0`; a recorded gap is a standard `dataAbsentReason`. The
-recession component is deliberately omitted: the SCTID the IG fixes for it
-resolves to "Accretion on teeth", so the signed margin carries the finding
-instead (`REJECTED_SCT` records the evidence).
+is an explicit `false`/`0`; a recorded gap is a standard `dataAbsentReason`. Gingival
+recession (from 2.8.0) is emitted per site, but only where the signed margin
+is an actual recession; the margin remains the source of truth, so an imported
+recession component is never read back into it.
 
 `parseFhirBundle` reads **both** dialects, including a bundle that mixes them, so
 previously exported bundles keep importing unchanged.

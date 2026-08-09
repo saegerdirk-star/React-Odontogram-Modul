@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.7.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.8.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -559,10 +559,10 @@ die Indizes nach Silness-Löe und Löe-Silness, die Breite der keratinisierten
 Gingiva sowie die periimplantären Mombelli-Indizes, jeweils qualifiziert durch
 `PeriodontalMeasurementSiteExt` oder `ToothSurfacesExt` der IG. Ein untersuchter
 Normalbefund ist ein explizites `false`/`0`, eine dokumentierte Lücke ein
-standardisierter `dataAbsentReason`. Die Rezessions-Komponente wird bewusst
-weggelassen: die von der IG dafür festgelegte SCTID bedeutet tatsächlich
-„Accretion on teeth", daher trägt der vorzeichenbehaftete Gingivarand den Befund
-(`REJECTED_SCT` dokumentiert den Nachweis).
+standardisierter `dataAbsentReason`. Die Gingivarezession wird (ab 2.8.0)
+je Messstelle ausgegeben, aber nur dort, wo der vorzeichenbehaftete Gingivarand
+tatsächlich eine Rezession ist; maßgeblich bleibt der Gingivarand, eine
+importierte Rezessions-Komponente wird nie in ihn zurückgelesen.
 
 `parseFhirBundle` liest **beide** Dialekte, auch ein gemischtes Bundle, sodass bereits
 exportierte Bundles unveraendert importierbar bleiben.

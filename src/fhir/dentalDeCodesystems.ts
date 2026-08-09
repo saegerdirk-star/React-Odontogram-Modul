@@ -89,7 +89,9 @@ export const PERIO_LOINC = {
   /** `PeriodontalObservationDE.code` in the IG's own published example. */
   panel: "8704-9",
   probingDepth: "32910-2",
-  /** Signed free-gingival-margin-to-CEJ distance; see {@link REJECTED_SCT}. */
+  /** Signed free-gingival-margin-to-CEJ distance. The SOLE source of truth for
+   *  the engine's `perio.gm`; the SNOMED-coded recession component is derived
+   *  from it as `max(margin, 0)` and never read back into it. */
   gingivalMarginToCej: "64043-3",
   plaquePresence: "34016-6",
 } as const;
@@ -223,64 +225,44 @@ export const VERIFIED_SCT = {
   internalResorption: "52994003",
   externalResorption: "41918006",
   apicalPeriodontitis: "39273001",
-  // Bead odontogram-5cz — the periodontal surface. These three are not
-  // ValueSet members chosen by this adapter: `PeriodontalObservationDE` and
+  // Bead odontogram-5cz — the periodontal surface. These are not ValueSet
+  // members chosen by this adapter: `PeriodontalObservationDE` and
   // `PeriImplantObservationDE` FIX them on their component slices, which is a
   // stronger admission than an extensible binding. Their meanings were still
-  // verified before use — see SCT_PROVENANCE, and REJECTED_SCT for the one
-  // fixed concept whose verification failed.
-  bleedingOnProbing: "86276007",
+  // verified before use — see SCT_PROVENANCE.
+  //
+  // Bead odontogram-18h — the IG corrected two of those fixed SCTIDs
+  // (fhir-dental-de PRs #94-96, main at 27e0b7f), so both entries below moved.
+  bleedingOnProbing: "249420004",
+  gingivalRecession: "4356008",
   furcationInvolvementIndex: "771311009",
   plaqueIndexSilnessLoe: "251307008",
 } as const;
 
 /**
- * An SCTID the IG FIXES on a component slice that this adapter nevertheless
- * refuses to emit, because an authoritative lookup contradicts the meaning the
- * IG's label claims for it. Recorded rather than silently skipped so the
- * refusal is reviewable and a corrected IG release is a one-line change.
- */
-export interface RejectedSct {
-  readonly code: string;
-  /** The meaning the IG's own artifacts attach to the code. */
-  readonly igLabel: string;
-  /** The meaning the terminology server actually publishes for it. */
-  readonly verifiedMeaning: string;
-  readonly verifiedBy: string;
-  /** What this adapter does instead, and why nothing is lost. */
-  readonly consequence: string;
-}
-
-/**
- * BEAD odontogram-5cz. `PeriodontalObservationDE` fixes
- * `component[recession].code` to SNOMED CT `6288001` and
- * `PeriodontalFindingCodesVS` publishes that member with the display
- * "Gingival recession". SNOMED CT International publishes `6288001` as
- * "Accretion on teeth" — a dental deposit, not a recession — and publishes
- * gingival recession as `4356008` instead, which the IG does not admit.
+ * HISTORICAL NOTE (bead odontogram-5cz, closed by bead odontogram-18h).
  *
- * Emitting a recession measurement under `6288001` would therefore assert a
- * deposit finding the source never made, so no recession component is emitted
- * at all. Nothing is lost: the engine stores the SIGNED gingival margin, and
- * LOINC `64043-3` ("Distance from the free gingival margin, FGM, to the
- * cement-enamel junction, CEJ Tooth [PhenX]") is an EXACT contract for it,
- * with recession recoverable as `max(margin, 0)` by any consumer.
+ * `PeriodontalObservationDE` used to fix `component[recession].code` to SNOMED
+ * CT `6288001`, which `PeriodontalFindingCodesVS` published with the display
+ * "Gingival recession". SNOMED CT International publishes `6288001` as
+ * "Accretion on teeth" — a dental deposit, not a recession. Emitting a
+ * recession measurement under it would have asserted a deposit finding the
+ * source never made, so this adapter emitted no recession component at all and
+ * recorded the refusal in a `REJECTED_SCT` table.
+ *
+ * The defect was reported to the IG (fdde-gu8k) and fixed in fhir-dental-de PR
+ * #94: the slice now fixes `4356008` "Gingival recession", which is what SNOMED
+ * actually publishes for the concept. The refusal is therefore obsolete, the
+ * table is gone, and `VERIFIED_SCT.gingivalRecession` is emitted normally. The
+ * verification trail lives on in {@link SCT_PROVENANCE}.
+ *
+ * The recession value itself stays DERIVED, not stored: the engine records the
+ * SIGNED gingival margin, which rides LOINC `64043-3` ("Distance from the free
+ * gingival margin, FGM, to the cement-enamel junction, CEJ Tooth [PhenX]"), and
+ * recession is `max(margin, 0)`. That direction is one-way — the reader
+ * restores the margin from `64043-3` alone and never from the recession
+ * component, exactly as it ignores the derived attachment-loss component.
  */
-export const REJECTED_SCT: Record<"gingivalRecession", RejectedSct> = {
-  gingivalRecession: {
-    code: "6288001",
-    igLabel: "Gingival recession",
-    verifiedMeaning: "Accretion on teeth",
-    verifiedBy:
-      "tx.fhir.org/r4 CodeSystem/$lookup over SNOMED CT International edition version 20250201 "
-      + "returns display 'Accretion on teeth' for 6288001; the same server's $expand over a "
-      + "'gingival recession' filter returns 4356008 'Gingival recession', which is not admitted "
-      + "by PeriodontalFindingCodesVS.",
-    consequence:
-      "No recession component is emitted. The engine's signed gingival margin rides LOINC "
-      + `${PERIO_LOINC.gingivalMarginToCej} instead, which is exact, and the omission is reported.`,
-  },
-};
 
 /** Verification record for one admitted SNOMED CT concept. */
 export interface SctProvenance {
@@ -427,15 +409,28 @@ export const SCT_PROVENANCE: Record<keyof typeof VERIFIED_SCT, SctProvenance> = 
       + "such upgrade happens here.",
   },
   bleedingOnProbing: {
-    code: "86276007",
-    meaning: "Bleeding gums",
+    code: "249420004",
+    meaning: "Bleeding on probing of gingivae",
     valueSet: "PeriodontalObservationDE / PeriImplantObservationDE (fixed component code)",
     verifiedBy:
       "Fixed by both profiles on `component[bop]` and additionally listed in PeriodontalFindingCodesVS; "
-      + "tx.fhir.org $lookup returns 'Bleeding gums', not the IG's 'Bleeding on probing' label. Site-level "
-      + "bleeding after probing ENTAILS bleeding of the gingiva, so this is the generalization rule already "
-      + "used elsewhere in this adapter rather than a different finding — and it is the only code the fixed "
-      + "slice admits. No display is emitted, so the IG's inaccurate label never reaches the wire.",
+      + "tx.fhir.org $lookup returns 'Bleeding on probing of gingivae' (FSN 'Bleeding on probing of "
+      + "gingivae (finding)'), which is EXACT for the engine's per-site BOP axis. Bead odontogram-18h: "
+      + "fhir-dental-de PR #94 moved this slice from 86276007 ('Bleeding gums', a generalization this "
+      + "adapter emitted in v2.6.0-2.7.1) to 249420004, so the emitter now writes the exact concept and "
+      + "the reader still accepts 86276007 from bundles those releases wrote.",
+  },
+  gingivalRecession: {
+    code: "4356008",
+    meaning: "Gingival recession",
+    valueSet: "PeriodontalObservationDE (fixed component code)",
+    verifiedBy:
+      "Fixed by PeriodontalObservationDE on `component[recession]` and listed in "
+      + "PeriodontalFindingCodesVS; tx.fhir.org $lookup over SNOMED CT International edition version "
+      + "20250201 returns 'Gingival recession' (FSN 'Gingival recession (disorder)'). Bead "
+      + "odontogram-5cz refused the SCTID this slice used to fix, 6288001, because the same server "
+      + "returns 'Accretion on teeth' for it; fhir-dental-de PR #94 corrected the slice (fdde-gu8k), "
+      + "so the refusal is retired and the recession derived from the signed margin is emitted.",
   },
   furcationInvolvementIndex: {
     code: "771311009",

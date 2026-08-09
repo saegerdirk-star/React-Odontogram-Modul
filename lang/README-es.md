@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.7.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.8.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -559,9 +559,10 @@ de placa, los índices de Silness-Löe y Löe-Silness, la anchura de encía
 queratinizada y los índices periimplantarios de Mombelli, cada uno cualificado por
 `PeriodontalMeasurementSiteExt` o `ToothSurfacesExt` de la IG. Un hallazgo evaluado
 como normal es un `false`/`0` explícito y una laguna registrada es un
-`dataAbsentReason` estándar. El componente de recesión se omite deliberadamente: el
-SCTID que la IG fija para él significa realmente "Accretion on teeth", así que el
-margen con signo lleva el hallazgo (`REJECTED_SCT` registra la evidencia).
+`dataAbsentReason` estándar. La recesión gingival (desde 2.8.0) se emite
+por sitio, pero solo donde el margen con signo es una recesión real; el margen
+sigue siendo la fuente de verdad, así que un componente de recesión importado
+nunca se vuelca en él.
 
 `parseFhirBundle` lee **ambos** dialectos, incluido un paquete que los mezcle, por lo que
 los paquetes ya exportados se siguen importando sin cambios.

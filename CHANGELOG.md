@@ -5,6 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.0] - 2026-08-09
+
+### Changed
+
+- **The canonical `dental-de` FHIR export follows the implementation guide's
+  SNOMED CT cleanup.** The guide corrected two of the concepts it fixes on its
+  periodontal component slices, and the export now writes both of them. Bleeding
+  on probing moved from `86276007` ("Bleeding gums", a generalization) to
+  `249420004` ("Bleeding on probing of gingivae"), which is exact for the
+  per-site bleeding this editor records, on the periodontal and the peri-implant
+  observation alike. Import stayed deliberately tolerant: a bundle written by
+  versions 2.6.0 to 2.7.1 carries the retired code and still reads back with
+  every bleeding site intact — only emission changed. Both meanings were
+  re-verified against a public terminology server before use, and no display
+  string is ever put on the wire, because the guide publishes these concepts
+  without one.
+
+### Added
+
+- **Gingival recession is exported again.** Version 2.4.0 had to refuse the
+  concept the guide fixed on its recession component, because that code
+  published as "Accretion on teeth" — a dental deposit, not a recession — so
+  emitting a measurement under it would have asserted a finding no clinician
+  made. The defect was reported and has been fixed in the guide, so the export
+  now carries one recession component per probed site whose gingival margin is
+  an actual recession, in millimetres, qualified by the measurement site. A
+  margin at or below the gum-line reference, and a site with no recorded margin,
+  produce no component: "no recession" and "not recorded" stay distinguishable.
+  The peri-implant observation is unaffected — an implant has no
+  cement-enamel junction to reference.
+- Recession stays a DERIVED value, and the direction is one-way. The signed
+  gingival margin remains the sole source of truth on import: a recession
+  component is recognized and deliberately discarded, exactly like the derived
+  attachment-loss component, so a round-trip can never chart a margin the source
+  never recorded or let two components write one field.
+
+### Fixed
+
+- **A probing depth outside the clinical range no longer charts a site in the
+  canonical export.** The editor treats a depth below 1 mm as "not probed" and
+  un-charts the site, but the canonical exporter accepted any finite number, so
+  a malformed imported document could put a probing depth, gingival margin,
+  attachment level, bleeding point — and now a recession — on a site nobody ever
+  probed. Such a site is now skipped entirely. Charts written by this editor are
+  unaffected, because it never stores such a value.
+
+Stored data, the export payload version (`2.21`), the legacy FHIR dialect and
+every rendered chart are unchanged.
+
 ## [2.7.1] - 2026-08-09
 
 ### Fixed

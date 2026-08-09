@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.7.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.8.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -206,9 +206,10 @@ indices de Silness-Löe et Löe-Silness, la largeur de gencive kératinisée et 
 indices péri-implantaires de Mombelli, chacun qualifié par
 `PeriodontalMeasurementSiteExt` ou `ToothSurfacesExt` de l'IG. Un constat évalué
 comme normal est un `false`/`0` explicite et une lacune enregistrée un
-`dataAbsentReason` standard. Le composant de récession est délibérément omis : le
-SCTID que l'IG y fixe signifie en réalité « Accretion on teeth », c'est donc le bord
-gingival signé qui porte le constat (`REJECTED_SCT` en consigne la preuve).
+`dataAbsentReason` standard. La récession gingivale (depuis 2.8.0) est
+émise par site, mais uniquement là où le bord gingival signé constitue une
+véritable récession ; le bord reste la source de vérité, un composant de
+récession importé n'y est donc jamais relu.
 
 `parseFhirBundle` lit **les deux** dialectes, y compris un bundle qui les mélange, si bien
 que les bundles déjà exportés continuent de s'importer sans changement.
