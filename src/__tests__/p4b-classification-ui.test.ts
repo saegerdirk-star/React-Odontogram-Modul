@@ -30,9 +30,13 @@ import {
   setPerioViewMode,
 } from "../odontogram";
 
-vi.mock("../odontogram", async () => {
-  const actual = await vi.importActual<typeof import("../odontogram")>("../odontogram");
+vi.mock("../odontogram", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../odontogram")>();
   return {
+    // Partial mock: every export not overridden below resolves to the real
+    // module, so an export added to odontogram.ts never resolves to
+    // `undefined` here (bead odontogram-z4y).
+    ...actual,
     // Bead odontogram-3l1: engine-ownership helpers the shell calls on every
     // mount. A single mocked instance is always the sole owner.
     createEngineClaim: vi.fn(() => ({ id: 1 })),
@@ -83,8 +87,6 @@ vi.mock("../odontogram", async () => {
     setSurfaceNotation: vi.fn(),
     getSurfaceNotation: vi.fn().mockReturnValue("full"),
     hasAnyPerioData: vi.fn().mockReturnValue(false),
-    setPatientName: actual.setPatientName,
-    setExamDate: actual.setExamDate,
     exportPdf: vi.fn().mockResolvedValue(undefined),
     getOdontogramSummary: vi.fn().mockReturnValue({
       overview: "", permanentList: null, missingList: null,
@@ -94,94 +96,6 @@ vi.mock("../odontogram", async () => {
     exportImage: vi.fn(),
     exportSvg: vi.fn(),
     setImportFormat: vi.fn(),
-    // Real exports under test — not part of the imperative DOM/SVG wiring.
-    onStateChange: actual.onStateChange,
-    openPerioOverlay: actual.openPerioOverlay,
-    closePerioOverlay: actual.closePerioOverlay,
-    isPerioOverlayOpen: actual.isPerioOverlayOpen,
-    getPerioViewMode: actual.getPerioViewMode,
-    setPerioViewMode: actual.setPerioViewMode,
-    getPerioRowVisibility: actual.getPerioRowVisibility,
-    setPerioRowVisibility: actual.setPerioRowVisibility,
-    getPerioIndexNameMode: actual.getPerioIndexNameMode,
-    // Bead odontogram-vnt: <PerioChart/> reads the assessment-row session flag
-    // and the odontogram-2vd assessment API. Forwarded from the real module —
-    // the flag defaults to off, so these files' grids build exactly as before.
-    getPerioAssessmentMode: actual.getPerioAssessmentMode,
-    setPerioAssessmentMode: actual.setPerioAssessmentMode,
-    getAssessmentStatus: actual.getAssessmentStatus,
-    setAssessmentStatus: actual.setAssessmentStatus,
-    isAssessmentCharted: actual.isAssessmentCharted,
-    setPerioIndexNameMode: actual.setPerioIndexNameMode,
-    getPerioOverlayLayer: actual.getPerioOverlayLayer,
-    setPerioOverlayLayer: actual.setPerioOverlayLayer,
-    isDualStateConfirmPending: actual.isDualStateConfirmPending,
-    acceptDualStateConfirm: actual.acceptDualStateConfirm,
-    cancelDualStateConfirm: actual.cancelDualStateConfirm,
-    // The full P1/P2 perio data-core surface <PerioChart/> needs to build its
-    // grid + summary bar (same list as perio-graphical-presentation.test.ts).
-    PERIO_SITES: actual.PERIO_SITES,
-    isUpperTooth: actual.isUpperTooth,
-    formatToothLabel: actual.formatToothLabel,
-    getPerioChart: actual.getPerioChart,
-    getToothPerio: actual.getToothPerio,
-    getToothCal: actual.getToothCal,
-    getPerioSummary: actual.getPerioSummary,
-    setPerioSite: actual.setPerioSite,
-    getToothMobility: actual.getToothMobility,
-    setToothMobility: actual.setToothMobility,
-    furcationEntrances: actual.furcationEntrances,
-    getToothFurcation: actual.getToothFurcation,
-    setFurcation: actual.setFurcation,
-    getToothPlaque: actual.getToothPlaque,
-    setPlaque: actual.setPlaque,
-    isPerioRowHidden: actual.isPerioRowHidden,
-    perioAxisApplies: actual.perioAxisApplies,
-    getToothRecessionType: actual.getToothRecessionType,
-    getCejVisibility: actual.getCejVisibility,
-    setCejVisibility: actual.setCejVisibility,
-    getRootConcavity: actual.getRootConcavity,
-    setRootConcavity: actual.setRootConcavity,
-    nextPerioCell: actual.nextPerioCell,
-    prevPerioCell: actual.prevPerioCell,
-    getPlaqueIndex: actual.getPlaqueIndex,
-    setPlaqueIndex: actual.setPlaqueIndex,
-    getGingivalIndex: actual.getGingivalIndex,
-    setGingivalIndex: actual.setGingivalIndex,
-    getKeratinizedWidth: actual.getKeratinizedWidth,
-    setKeratinizedWidth: actual.setKeratinizedWidth,
-    getGingivalThickness: actual.getGingivalThickness,
-    setGingivalThickness: actual.setGingivalThickness,
-    getMillerClass: actual.getMillerClass,
-    setMillerClass: actual.setMillerClass,
-    isToothImplant: actual.isToothImplant,
-    getPeriImplantPlaque: actual.getPeriImplantPlaque,
-    setPeriImplantPlaque: actual.setPeriImplantPlaque,
-    getPeriImplantBleeding: actual.getPeriImplantBleeding,
-    setPeriImplantBleeding: actual.setPeriImplantBleeding,
-    // P4a Task 2: case-metadata panel — real getters/setters so mounting +
-    // driving the panel exercises the actual production wiring.
-    getCaseMeta: actual.getCaseMeta,
-    setCaseAge: actual.setCaseAge,
-    setSmokingStatus: actual.setSmokingStatus,
-    setCigarettesPerDay: actual.setCigarettesPerDay,
-    setDiabetesStatus: actual.setDiabetesStatus,
-    setHba1c: actual.setHba1c,
-    setToothLossPerio: actual.setToothLossPerio,
-    setMaxRblPercent: actual.setMaxRblPercent,
-    resetCaseMeta: actual.resetCaseMeta,
-    // P4b Task 4: classification panel — real getter + the 4 override setters
-    // so mounting + driving the panel exercises actual production wiring.
-    getPerioClassification: actual.getPerioClassification,
-    setDiagnosisOverride: actual.setDiagnosisOverride,
-    setStageOverride: actual.setStageOverride,
-    setGradeOverride: actual.setGradeOverride,
-    setExtentOverride: actual.setExtentOverride,
-    // Test-only reset seam (already used by other App-mount test files) —
-    // this file additionally charts real perio data (setPerioSite) in one
-    // test, so it needs a full state reset between tests, not just
-    // resetCaseMeta().
-    __resetChartStateForTest: actual.__resetChartStateForTest,
   };
 });
 

@@ -40,9 +40,13 @@ import {
   __resetChartStateForTest,
 } from "../odontogram";
 
-vi.mock("../odontogram", async () => {
-  const actual = await vi.importActual<typeof import("../odontogram")>("../odontogram");
+vi.mock("../odontogram", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../odontogram")>();
   return {
+    // Partial mock: every export not overridden below resolves to the real
+    // module, so an export added to odontogram.ts never resolves to
+    // `undefined` here (bead odontogram-z4y).
+    ...actual,
     // Bead odontogram-3l1: engine-ownership helpers the shell calls on every
     // mount. A single mocked instance is always the sole owner.
     createEngineClaim: vi.fn(() => ({ id: 1 })),
@@ -85,9 +89,6 @@ vi.mock("../odontogram", async () => {
     setSurfaceNotation: vi.fn(),
     getSurfaceNotation: vi.fn().mockReturnValue("full"),
     hasAnyPerioData: vi.fn().mockReturnValue(false),
-    getCaseMeta: actual.getCaseMeta,
-    setPatientName: actual.setPatientName,
-    setExamDate: actual.setExamDate,
     exportPdf: vi.fn().mockResolvedValue(undefined),
     getOdontogramSummary: vi.fn().mockReturnValue({
       overview: "", permanentList: null, missingList: null,
@@ -114,29 +115,6 @@ vi.mock("../odontogram", async () => {
     exportImage: vi.fn(),
     exportSvg: vi.fn(),
     setImportFormat: vi.fn(),
-    // Real exports under test — not part of the imperative DOM/SVG wiring.
-    PERIO_SITES: actual.PERIO_SITES,
-    setPerioSite: actual.setPerioSite,
-    getToothPerio: actual.getToothPerio,
-    getToothCal: actual.getToothCal,
-    // P2 Task 2: <PerioChart/> (mounted unconditionally inside <App/>, just
-    // hidden while closed) now imports these too — needed even though this
-    // file never opens the overlay, since PERIO_SITES is read at PerioChart
-    // module-eval time and getPerioSummary() is called on every mount's
-    // initial useState (both happen regardless of `open`).
-    isUpperTooth: actual.isUpperTooth,
-    formatToothLabel: actual.formatToothLabel,
-    getPerioChart: actual.getPerioChart,
-    getPerioSummary: actual.getPerioSummary,
-    getToothMobility: actual.getToothMobility,
-    setToothMobility: actual.setToothMobility,
-    isPerioRowHidden: actual.isPerioRowHidden,
-    perioAxisApplies: actual.perioAxisApplies,
-    __syncPerioRowForTest: actual.__syncPerioRowForTest,
-    __perioRowHiddenForTest: actual.__perioRowHiddenForTest,
-    __buildPerioGridForTest: actual.__buildPerioGridForTest,
-    __setToothStateForTest: actual.__setToothStateForTest,
-    __resetChartStateForTest: actual.__resetChartStateForTest,
   };
 });
 

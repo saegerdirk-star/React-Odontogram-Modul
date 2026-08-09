@@ -25,9 +25,13 @@ import {
   __setActiveToothForTest,
 } from "../odontogram";
 
-vi.mock("../odontogram", async () => {
-  const actual = await vi.importActual<typeof import("../odontogram")>("../odontogram");
+vi.mock("../odontogram", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../odontogram")>();
   return {
+    // Partial mock: every export not overridden below resolves to the real
+    // module, so an export added to odontogram.ts never resolves to
+    // `undefined` here (bead odontogram-z4y).
+    ...actual,
     // Heavy imperative DOM/SVG lifecycle — stubbed (no real SVG assets in jsdom).
     // Bead odontogram-3l1: engine-ownership helpers the shell calls on every
     // mount. A single mocked instance is always the sole owner.
@@ -71,9 +75,6 @@ vi.mock("../odontogram", async () => {
     setSurfaceNotation: vi.fn(),
     getSurfaceNotation: vi.fn().mockReturnValue("full"),
     hasAnyPerioData: vi.fn().mockReturnValue(false),
-    getCaseMeta: actual.getCaseMeta,
-    setPatientName: actual.setPatientName,
-    setExamDate: actual.setExamDate,
     exportPdf: vi.fn().mockResolvedValue(undefined),
     getOdontogramSummary: vi.fn().mockReturnValue({
       overview: "", permanentList: null, missingList: null,
@@ -96,17 +97,6 @@ vi.mock("../odontogram", async () => {
     exportImage: vi.fn(),
     exportSvg: vi.fn(),
     setImportFormat: vi.fn(),
-    // REAL functions under test — the gate, confirm resolution, mode switch,
-    // single-tooth mobility mutator, state-change bus, and the DS-1 seams.
-    onStateChange: actual.onStateChange,
-    setChartMode: actual.setChartMode,
-    getChartMode: actual.getChartMode,
-    setToothMobility: actual.setToothMobility,
-    isDualStateConfirmPending: actual.isDualStateConfirmPending,
-    acceptDualStateConfirm: actual.acceptDualStateConfirm,
-    cancelDualStateConfirm: actual.cancelDualStateConfirm,
-    __resetChartStateForTest: actual.__resetChartStateForTest,
-    __setActiveToothForTest: actual.__setActiveToothForTest,
   };
 });
 

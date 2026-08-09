@@ -12,6 +12,9 @@ build/
 dist/
 out/
 
+# Derived `tsc -b` incremental cache — rewritten by every build, never committed.
+tsconfig.tsbuildinfo
+
 # === Env files ===
 .env
 .env.local

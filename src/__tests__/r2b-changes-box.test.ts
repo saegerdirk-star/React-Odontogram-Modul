@@ -30,9 +30,13 @@ import {
 } from "../odontogram";
 import { setI18nLanguage, t } from "../i18n/useI18n";
 
-vi.mock("../odontogram", async () => {
-  const actual = await vi.importActual<typeof import("../odontogram")>("../odontogram");
+vi.mock("../odontogram", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../odontogram")>();
   return {
+    // Partial mock: every export not overridden below resolves to the real
+    // module, so an export added to odontogram.ts never resolves to
+    // `undefined` here (bead odontogram-z4y).
+    ...actual,
     // Bead odontogram-3l1: engine-ownership helpers the shell calls on every
     // mount. A single mocked instance is always the sole owner.
     createEngineClaim: vi.fn(() => ({ id: 1 })),
@@ -79,18 +83,7 @@ vi.mock("../odontogram", async () => {
     exportSvg: vi.fn(),
     setImportFormat: vi.fn(),
     // Real exports under test — not part of the imperative DOM/SVG wiring.
-    getOdontogramSummary: actual.getOdontogramSummary,
-    getPlanChanges: actual.getPlanChanges,
-    hasAnyPerioData: actual.hasAnyPerioData,
-    getCaseMeta: actual.getCaseMeta,
-    setPatientName: actual.setPatientName,
-    setExamDate: actual.setExamDate,
     exportPdf: vi.fn().mockResolvedValue(undefined),
-    formatToothLabel: actual.formatToothLabel,
-    onStateChange: actual.onStateChange,
-    openPerioOverlay: actual.openPerioOverlay,
-    closePerioOverlay: actual.closePerioOverlay,
-    isPerioOverlayOpen: actual.isPerioOverlayOpen,
     getPerioViewMode: vi.fn().mockReturnValue("toggle"),
     setPerioViewMode: vi.fn(),
     getPerioRowVisibility: vi.fn().mockReturnValue({
@@ -104,9 +97,6 @@ vi.mock("../odontogram", async () => {
     isDualStateConfirmPending: vi.fn().mockReturnValue(false),
     acceptDualStateConfirm: vi.fn(),
     cancelDualStateConfirm: vi.fn(),
-    setChartMode: actual.setChartMode,
-    __setToothStateForTest: actual.__setToothStateForTest,
-    __resetChartStateForTest: actual.__resetChartStateForTest,
   };
 });
 
