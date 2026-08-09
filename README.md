@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
-[![Version](https://img.shields.io/badge/version-2.6.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
+[![Version](https://img.shields.io/badge/version-2.7.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](https://raw.githubusercontent.com/ZoliQua/React-Odontogram-Modul/main/src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
 
@@ -209,6 +209,13 @@ over a recorded gap. The same matrix, `perioAxisApplies()`, also governs the per
 setters, so a measurement the chart shows as inapplicable cannot be written through the API
 either. On export an unavailable value becomes FHIR's own `dataAbsentReason` — never a
 renderer-invented clinical code — and assessed-normal becomes an explicit `false` or grade `0`.
+
+**Authoring (from 2.7.0):** an **Assessment status** toggle in the periodontal chart header
+adds a companion row under every visible index row, with one cycle button per measurement point
+— site, surface, furcation entrance, or the whole tooth. The rows are off by default. A point
+that already holds a measurement is locked (the value is its own evidence of examination), and an
+inapplicable position is disabled rather than silently ignored. Recorded statuses also appear in
+the tooth tooltip and the whole-mouth periodontal summary.
 
 ## ✨ Highlights
 

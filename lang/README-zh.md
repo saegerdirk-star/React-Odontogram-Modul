@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.6.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.7.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -586,6 +586,11 @@ perioAxisApplies(11, "gm");
 “不适用”由这颗牙实际是什么推导得出，而真实测量值始终优先于已记录的缺口。导出时，不可得的值会写成
 FHIR 自带的 `dataAbsentReason`——绝不使用自造的临床编码——而“已评估且正常”则写成明确的 `false`
 或等级 `0`。
+
+**录入（自 2.7.0 起）：** 牙周图表头部新增 **检查状态** 开关，在每个可见指标行下方添加一条配套行，
+每个测量位点一个循环按钮——位点、牙面、根分叉入口或整颗牙。这些行默认关闭。已有测量值的位点会被
+锁定（数值本身即为检查证据），不适用的位点则被禁用，而不是被静默忽略。已记录的状态也会出现在牙齿
+提示框和全口牙周摘要中。
 
 全口牙周图现在也按位点记录**溢脓**，种植体列支持种植体周围检查：六位点探诊深度、出血、溢脓、种植体
 松动度与角化黏膜宽度。那里只有需要釉牙骨质界的轴（龈缘及由其推导的 CAL）以及天然牙的菌斑指数保持

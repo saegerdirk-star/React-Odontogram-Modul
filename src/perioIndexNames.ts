@@ -2,7 +2,7 @@
 // Created by Zoltan Dul (https://github.com/ZoliQua) 2025-2026
 
 import { t } from "./i18n/useI18n";
-import { getPerioIndexNameMode, type PerioRowId } from "./odontogram";
+import { getPerioIndexNameMode, PERIO_INDEX_LABEL_KEYS, type PerioRowId } from "./odontogram";
 
 /**
  * UI-2 Task 3: translated-vs-canonical periodontal index NAMES.
@@ -46,30 +46,6 @@ export const CANONICAL_INDEX_NAMES: Record<PerioRowId, string> = {
   miller: "Miller Class",
 };
 
-/** The translated-mode `t(...)` key for each row — NOT a uniform
- *  `perio.<id>.row` template, since several rows use a differently-shaped
- *  key (plaque/furcation use `<x>.label`, pd/gm/cal/bop use the bare
- *  `perio.<x>` abbreviation key, the rest use `perio.<x>.row`). */
-const TRANSLATED_INDEX_KEYS: Record<PerioRowId, string> = {
-  plaque: "plaque.label",
-  bop: "perio.bop",
-  sup: "perio.sup.row",
-  cal: "perio.cal",
-  gm: "perio.gm",
-  pd: "perio.pd",
-  furcation: "furcation.label",
-  mobility: "perio.mobility",
-  cej: "perio.cej.label",
-  rootConcavity: "perio.rootConcavity.label",
-  pi: "perio.pi.row",
-  gi: "perio.gi.row",
-  mpi: "perio.mpi.row",
-  mbi: "perio.mbi.row",
-  kg: "perio.kg.row",
-  gt: "perio.gt.row",
-  miller: "perio.miller.row",
-};
-
 /** The display name for a perio-chart index row, honoring the current
  *  `getPerioIndexNameMode()`. NEVER use this for tooltip/info-popover text —
  *  those must keep calling `t("perio.info.<field>")` directly regardless of
@@ -77,5 +53,5 @@ const TRANSLATED_INDEX_KEYS: Record<PerioRowId, string> = {
 export function indexName(rowKey: PerioRowId): string {
   return getPerioIndexNameMode() === "canonical"
     ? CANONICAL_INDEX_NAMES[rowKey]
-    : t(TRANSLATED_INDEX_KEYS[rowKey]);
+    : t(PERIO_INDEX_LABEL_KEYS[rowKey]);
 }

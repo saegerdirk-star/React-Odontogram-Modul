@@ -1730,6 +1730,20 @@ select:focus{
 .dark .perio-overlay-switch-btn{ background: rgba(255,255,255,.04); }
 .dark .perio-overlay-switch-btn.is-active{ color: #0b1220; }
 
+/* Bead odontogram-vnt: the assessment-row toggle, sitting beside the overlay
+   switcher in both chart chromes (inline panel + modal overlay). */
+.perio-assessment-toggle{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.perio-assessment-toggle input{ cursor: pointer; }
+
 /* Overlay marks drawn over the arch, in the oriented row groups. */
 .perio-overlay-mark{ vector-effect: non-scaling-stroke; }
 .perio-overlay-bop{ fill: #e11d48; opacity: 0.9; stroke: #fff; stroke-width: 0.4; }
@@ -1981,6 +1995,27 @@ select:focus{
   background: var(--accent, #c0392b); color: #fff;
 }
 .perio-fullgrid-furc:disabled{ opacity: .45; cursor: not-allowed; }
+
+/* Bead odontogram-vnt: assessment-status cycle control — one per measurement
+   point, same square-button shape as the furcation control above (the face is
+   "–" / "A" / "U" / "NA"; the full localized status rides on title +
+   aria-label). Deliberately NOT the accent colour a charted finding uses: a
+   recorded assessment status is metadata ABOUT the examination, not a
+   clinical finding, so it reads as a neutral outline until it is set. */
+.perio-fullgrid-assess{
+  width: 20px; height: 20px; padding: 0;
+  font-size: 9px; font-weight: 700; line-height: 1;
+  text-align: center; cursor: pointer;
+  border: 1px dashed var(--line); border-radius: 4px;
+  background: var(--card); color: var(--muted);
+}
+.perio-fullgrid-assess[data-assessment-status]:not([data-assessment-status="not-assessed"]){
+  border-style: solid;
+  border-color: var(--muted);
+  color: var(--text);
+  font-weight: 800;
+}
+.perio-fullgrid-assess:disabled{ opacity: .45; cursor: not-allowed; }
 
 /* SP-perio P2b Task 4: plaque control — an anatomical DIAMOND of toggle
    buttons (mesial/distal/buccal/lingual). An active surface

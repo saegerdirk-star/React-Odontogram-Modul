@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.6.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.7.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -602,6 +602,13 @@ perioAxisApplies(11, "gm");
 "Neaplikovateľné" sa odvodzuje z toho, čím zub skutočne je, a skutočné meranie vždy preváži
 zaznamenanú medzeru. Pri exporte sa nedostupná hodnota stane vlastným `dataAbsentReason` FHIR —
 nikdy vymysleným klinickým kódom — a normálny nález explicitným `false` alebo stupňom `0`.
+
+**Zaznamenávanie (od 2.7.0):** prepínač **Stav vyšetrenia** v hlavičke parodontálnej karty
+pridá pod každý viditeľný riadok indexu sprievodný riadok s jedným cyklickým tlačidlom na každý
+merací bod — meracie miesto, plocha, vstup furkácie alebo celý zub. Riadky sú predvolene vypnuté.
+Bod, ktorý už obsahuje nameranú hodnotu, je uzamknutý (hodnota sama je dôkazom vyšetrenia) a
+neaplikovateľná pozícia je zakázaná, nie ticho ignorovaná. Zaznamenané stavy sa objavia aj v
+tooltipe zuba a v celoústnom parodontálnom súhrne.
 
 Celoústna parodontálna karta teraz zaznamenáva aj **hnisanie** pre každé miesto a stĺpec
 implantátu podporuje peri-implantátové vyšetrenie: hĺbku sondovania v šiestich miestach,
