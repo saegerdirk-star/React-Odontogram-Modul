@@ -1324,11 +1324,20 @@ let i18nUnsubscribe: (() => void) | null = null;
 // ---- State-change subscription ----
 // Listeners are notified after any change to tooth state (edits, edentulous
 // toggle, import), so consumers like the "tooth information" panel can refresh.
+// They are ALSO notified when an app-level session flag changes what a mounted
+// view must show or allow — the detail levels, the surface notation, the perio
+// view/row/index-name preferences, the perio overlay layer, and readOnly. None
+// of those change the document; they change how it is presented or whether it
+// is editable, and the views re-derive from the flag rather than caching it.
 const stateChangeListeners = new Set<() => void>();
 
 /**
  * Subscribe to odontogram state changes. The callback runs after any tooth
- * state edit, the edentulous toggle, or an import.
+ * state edit, the edentulous toggle, or an import, and after an app-level
+ * session flag that a mounted view has to re-derive from — the pulp/tooth
+ * detail levels, the surface notation, the periodontal view mode, row
+ * visibility, index-name mode and overlay layer, and read-only mode. A flag
+ * change leaves the document itself untouched.
  *
  * @param cb - Callback invoked on each change.
  * @returns An unsubscribe function.
@@ -10263,6 +10272,13 @@ export function getOdontogramSummary(): OdontogramSummary {
  * Enable or disable read-only mode. When read-only, all click, touch, and
  * keyboard interactions are disabled. The control panel is dimmed and
  * non-interactive. Useful for print/report views.
+ *
+ * Fires {@link onStateChange} listeners so a chart that is ALREADY mounted —
+ * in particular the periodontal chart, which derives every control's `disabled`
+ * attribute from {@link getReadOnly} — re-derives its interactivity from the new
+ * value instead of keeping the one it was built with. The document itself is
+ * unchanged; a listener that treats the notification as a document edit will see
+ * an identical document.
  *
  * @param value - `true` to enable read-only mode, `false` to disable.
  */
