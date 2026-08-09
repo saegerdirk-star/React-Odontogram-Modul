@@ -24,12 +24,18 @@ import {
   type TemplateDocCache,
   type TemplateNo,
 } from "../perioGraphic";
+import { TEMPLATES, TOOTH_TEMPLATE } from "../odontogram";
 
 const testFileUrl = import.meta.url;
 const svgText = (tplNo: TemplateNo) =>
   readFileSync(fileURLToPath(new URL(`../assets/teeth-svgs/${tplNo}.svg`, testFileUrl)), "utf8");
 
-const TEMPLATE_NOS: readonly TemplateNo[] = [11, 13, 14, 15, 16, 46];
+// Aus TEMPLATES abgeleitet statt fest verdrahtet: der Satz der Zahn-Templates
+// ist gewachsen (9 statt 4, siehe TOOTH_TEMPLATE in odontogram.ts). Eine feste
+// Liste laesst die Tests sonst still weniger pruefen, als es Templates gibt.
+const TEMPLATE_NOS: readonly TemplateNo[] = (
+  Object.keys(TEMPLATES).map(Number) as TemplateNo[]
+).sort((a, b) => a - b);
 
 function buildCache(): TemplateDocCache {
   const cache: TemplateDocCache = new Map();
@@ -42,8 +48,13 @@ function buildCache(): TemplateDocCache {
 const UPPER_ARCH = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
 const LOWER_ARCH = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
 
-// tooth -> its FDI template number, for the sample teeth exercised below.
-const TPL_OF: Record<number, TemplateNo> = { 11: 11, 13: 13, 14: 14, 15: 15, 16: 16, 21: 11, 23: 13, 26: 16, 45: 15, 46: 46 };
+// tooth -> its template number. Aus TOOTH_TEMPLATE abgeleitet statt fest
+// verdrahtet: die Zuordnung hat sich mit dem 9er-Templatesatz geaendert (15
+// hat jetzt ein eigenes einwurzeliges Template, die unteren Molaren ihr
+// zweiwurzeliges), und eine handgepflegte Kopie laeuft dabei still aus dem
+// Tritt.
+const tplOf = (toothNo: number): TemplateNo =>
+  TOOTH_TEMPLATE.get(toothNo)!.tpl as TemplateNo;
 
 function ids(group: Element): (string | null)[] {
   return Array.from(group.querySelectorAll("[id]")).map((el) => el.getAttribute("id"));
@@ -99,16 +110,20 @@ describe("getToothBaseGroupFromCache — implant tooth", () => {
     }
   });
 
-  it("a position-3 implant (13) anchors its size transform at the IMPLANT platform anchor, not the natural CEJ", () => {
+  it("an implant (13) anchors its root-restore transform at the IMPLANT platform anchor, not the natural CEJ", () => {
+    // The generator's root-zone compression shortened the fixture body along
+    // with every natural root, so the periodontal chart's restore applies here
+    // too — anchored at the platform, which is where an implant's probing
+    // depths are measured from.
     const group = getToothBaseGroupFromCache(cache, 13, { implant: true });
-    const sizeNode = group.querySelector('[data-perio-size^="position-3"]');
+    const sizeNode = group.querySelector('[data-perio-size^="root-"]');
     expect(sizeNode).toBeTruthy();
     const m = (sizeNode!.getAttribute("transform") || "").match(/matrix\(1 0 0 ([0-9.]+) 0 (-?[0-9.]+)\)/);
     expect(m).toBeTruthy();
     const k = Number(m![1]);
     const f = Number(m![2]);
     // Fixed point of the anchored scale is the implant platform anchor.
-    expect(f).toBeCloseTo(IMPLANT_CEJ_Y[13] * (1 - k), 5);
+    expect(f).toBeCloseTo(IMPLANT_CEJ_Y[13] * (1 - k), 2);
   });
 });
 
@@ -160,14 +175,14 @@ describe("buildBuccalArchSvg / buildPalatalArchSvg — implant teeth align on th
       const implantY = translateOf(implantGroup).y;
       // translateY moves the local anchor onto ROW_BASELINE_Y, so translateY +
       // anchor === ROW_BASELINE_Y for the implant (anchor = IMPLANT_CEJ_Y).
-      expect(implantY + IMPLANT_CEJ_Y[TPL_OF[implantTooth]], `implant ${implantTooth}`).toBeCloseTo(
+      expect(implantY + IMPLANT_CEJ_Y[tplOf(implantTooth)], `implant ${implantTooth}`).toBeCloseTo(
         ROW_BASELINE_Y,
         5,
       );
 
       const naturalGroup = buccal.querySelector(`[data-tooth="${naturalTooth}"]`)!;
       const naturalY = translateOf(naturalGroup).y;
-      expect(naturalY + CEJ_Y[TPL_OF[naturalTooth]], `natural ${naturalTooth}`).toBeCloseTo(
+      expect(naturalY + CEJ_Y[tplOf(naturalTooth)], `natural ${naturalTooth}`).toBeCloseTo(
         ROW_BASELINE_Y,
         5,
       );

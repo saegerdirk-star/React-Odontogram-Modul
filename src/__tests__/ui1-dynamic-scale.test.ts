@@ -26,7 +26,7 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { render, cleanup, waitFor } from "@testing-library/react";
 import PerioChart from "../PerioChart";
-import { __resetChartStateForTest, setNumberingSystem, setReadOnly } from "../odontogram";
+import { __resetChartStateForTest, setNumberingSystem, setReadOnly, TEMPLATES } from "../odontogram";
 import {
   archToothLayout,
   computeFillScale,
@@ -50,7 +50,12 @@ function svgFor(name: string): string {
   return readFileSync(fileURLToPath(new URL(`../assets/teeth-svgs/${name}`, testFileUrl)), "utf8");
 }
 
-const TEMPLATE_NOS: readonly TemplateNo[] = [11, 13, 14, 15, 16, 46];
+// Aus TEMPLATES abgeleitet statt fest verdrahtet: der Satz der Zahn-Templates
+// ist gewachsen (9 statt 4, siehe TOOTH_TEMPLATE in odontogram.ts). Eine feste
+// Liste laesst die Tests sonst still weniger pruefen, als es Templates gibt.
+const TEMPLATE_NOS: readonly TemplateNo[] = (
+  Object.keys(TEMPLATES).map(Number) as TemplateNo[]
+).sort((a, b) => a - b);
 function buildRefCache(): TemplateDocCache {
   const cache: TemplateDocCache = new Map();
   for (const tplNo of TEMPLATE_NOS) {

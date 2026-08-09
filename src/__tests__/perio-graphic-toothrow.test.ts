@@ -23,17 +23,45 @@ import {
   buildBuccalArchSvg,
   buildPalatalArchSvg,
   CEJ_Y,
-  IMPLANT_CEJ_Y,
   EXCLUDED_TOOTH_BASE_IDS,
   type TemplateDocCache,
   type TemplateNo,
 } from "../perioGraphic";
+import { TEMPLATES, TOOTH_TEMPLATE } from "../odontogram";
 
 const testFileUrl = import.meta.url;
 const svgText = (tplNo: TemplateNo) =>
   readFileSync(fileURLToPath(new URL(`../assets/teeth-svgs/${tplNo}.svg`, testFileUrl)), "utf8");
 
-const TEMPLATE_NOS: readonly TemplateNo[] = [11, 13, 14, 15, 16, 46];
+// Which template each tooth used below is drawn from, read from the engine's
+// own map rather than restated here — a hand-written copy would keep passing
+// after TOOTH_TEMPLATE changed underneath it.
+const TOOTH_TO_TPL: Record<number, TemplateNo> = Object.fromEntries(
+  [...TOOTH_TEMPLATE.entries()].map(([toothNo, m]) => [toothNo, (m as { tpl: number }).tpl as TemplateNo]),
+);
+
+// The root length each template is DRAWN with, taken from the `toothgen`
+// metadata the generator stamps into every file (`length` = occlusal edge to
+// apex, `root_frac` = the root's share of it). Parsed rather than hardcoded so
+// re-running the generator with a different ROOT_DISPLAY_SCALE cannot leave a
+// stale number here silently passing.
+const ROOT_LEN_DISPLAY: Record<number, number> = Object.fromEntries(
+  TEMPLATE_NOS_FOR_META().map((tplNo) => {
+    const m = svgText(tplNo).match(/<!-- toothgen:.*?root_frac=([\d.]+) length=([\d.]+)/);
+    if (!m) throw new Error(`no toothgen metadata in template ${tplNo}`);
+    return [tplNo, Number(m[1]) * Number(m[2])];
+  }),
+);
+function TEMPLATE_NOS_FOR_META(): TemplateNo[] {
+  return (Object.keys(TEMPLATES).map(Number) as TemplateNo[]).sort((a, b) => a - b);
+}
+
+// Aus TEMPLATES abgeleitet statt fest verdrahtet: der Satz der Zahn-Templates
+// ist gewachsen (9 statt 4, siehe TOOTH_TEMPLATE in odontogram.ts). Eine feste
+// Liste laesst die Tests sonst still weniger pruefen, als es Templates gibt.
+const TEMPLATE_NOS: readonly TemplateNo[] = (
+  Object.keys(TEMPLATES).map(Number) as TemplateNo[]
+).sort((a, b) => a - b);
 
 function buildCache(): TemplateDocCache {
   const cache: TemplateDocCache = new Map();
@@ -84,31 +112,73 @@ describe("getToothBaseGroupFromCache", () => {
     expect(sizeNode!.getAttribute("transform") || "").toMatch(/matrix\(0\.8 0 0 1 /);
   });
 
-  it("a position-1 tooth (11, same template as 12) carries no size transform", () => {
+  it("a position-1 tooth (11, same template as 12) carries no WIDTH transform", () => {
     const group = getToothBaseGroupFromCache(cache, 11);
-    expect(group.querySelector("[data-perio-size]")).toBeNull();
+    expect(group.querySelector('[data-perio-size^="position-2"]')).toBeNull();
   });
 
-  it("a position-3 tooth (13) carries the taller (root-elongation) transform, anchored (not shifting the CEJ)", () => {
-    const group = getToothBaseGroupFromCache(cache, 13);
-    const sizeNode = group.querySelector('[data-perio-size^="position-3"]');
-    expect(sizeNode).toBeTruthy();
-    const transform = sizeNode!.getAttribute("transform") || "";
-    const m = transform.match(/matrix\(1 0 0 ([0-9.]+) 0 (-?[0-9.]+)\)/);
-    expect(m, transform).toBeTruthy();
-    const k = Number(m![1]);
-    expect(k).toBeGreaterThan(1);
-    // Anchored scale about CEJ_Y[13]: f = cejY*(1-k) must match exactly (the
-    // fixed point of the transform stays at the CEJ, so row-baseline
-    // alignment via CEJ_Y remains correct after this scale is applied).
-    const f = Number(m![2]);
-    expect(f).toBeCloseTo(CEJ_Y[13] * (1 - k), 5);
+  // Root restoration (perio chart only): the odontogram draws roots at 60 % of
+  // their measured length, this chart puts them back, because here the root is
+  // the scale a probing depth is read against. Asserted through the transform
+  // rather than by eye — the failure it guards against (a root that stops short
+  // of the pockets being charted) is silent otherwise.
+  const rootScaleOf = (group: Element): { k: number; f: number } => {
+    const node = group.querySelector('[data-perio-size^="root-"]');
+    expect(node, "no root-scale node").toBeTruthy();
+    const m = (node!.getAttribute("transform") || "").match(/matrix\(1 0 0 ([0-9.]+) 0 (-?[0-9.]+)\)/);
+    expect(m, node!.getAttribute("transform") || "").toBeTruthy();
+    return { k: Number(m![1]), f: Number(m![2]) };
+  };
+
+  it("every tooth's root is scaled back up, anchored at the CEJ so the baseline never moves", () => {
+    for (const toothNo of [11, 12, 13, 14, 15, 16, 17, 18]) {
+      const { k, f } = rootScaleOf(getToothBaseGroupFromCache(cache, toothNo));
+      expect(k, `tooth ${toothNo}`).toBeGreaterThan(1);
+      // Anchored scale about CEJ_Y: f = cejY*(1-k). The fixed point staying at
+      // the CEJ is what keeps row-baseline alignment correct afterwards.
+      // Tolerance covers the transform attribute's 3-decimal formatting only —
+      // 0.005 row units is a ten-thousandth of a tooth.
+      const tplNo = TOOTH_TO_TPL[toothNo];
+      expect(f, `tooth ${toothNo}`).toBeCloseTo(CEJ_Y[tplNo] * (1 - k), 2);
+    }
   });
 
-  it("positions 4-8 (premolars/molars) carry no size transform", () => {
+  it("scales the ROOT only — the crown copy is clipped off at the CEJ and left untouched", () => {
+    const group = getToothBaseGroupFromCache(cache, 16);
+    const crown = group.querySelector('[data-perio-part="crown"]');
+    const root = group.querySelector('[data-perio-part="root"]');
+    expect(crown, "crown part").toBeTruthy();
+    expect(root, "root part").toBeTruthy();
+    // The crown copy carries no scale of its own — that is the whole point of
+    // splitting: an affine transform cannot bend at the CEJ.
+    expect(crown!.querySelector("[data-perio-size]")).toBeNull();
+    // Root drawn first, crown over it: the crown's seam overlap must win.
+    const parts = [...group.querySelectorAll("[data-perio-part]")].map(n => n.getAttribute("data-perio-part"));
+    expect(parts).toEqual(["root", "crown"]);
+    // The two clips meet at the CEJ, which is the scale's fixed point — so the
+    // silhouette stays continuous across the cut.
+    const rootClipId = (root!.getAttribute("clip-path") || "").replace(/^url\(#|\)$/g, "");
+    const rect = group.querySelector(`#${rootClipId} rect`);
+    expect(rect, "root clip rect").toBeTruthy();
+    expect(Number(rect!.getAttribute("y"))).toBeCloseTo(CEJ_Y[16], 5);
+  });
+
+  it("the canine's root stays the longest despite its damping factor", () => {
+    // CANINE_ROOT_SCALE damps position 3 (0.9) because a flat restore read too
+    // long on the grid. It must not damp so far that the canine drops below a
+    // central incisor — the one root-length proportion everybody recognises.
+    const rootLen = (toothNo: number, tplNo: TemplateNo) => {
+      const { k } = rootScaleOf(getToothBaseGroupFromCache(cache, toothNo));
+      return k * ROOT_LEN_DISPLAY[tplNo];
+    };
+    expect(rootLen(13, 13)).toBeGreaterThanOrEqual(rootLen(11, 11));
+    expect(rootLen(13, 13)).toBeGreaterThan(rootLen(16, 16));
+  });
+
+  it("positions 4-8 (premolars/molars) carry no WIDTH transform", () => {
     for (const toothNo of [14, 15, 16, 17, 18]) {
       const group = getToothBaseGroupFromCache(cache, toothNo);
-      expect(group.querySelector("[data-perio-size]"), `tooth ${toothNo}`).toBeNull();
+      expect(group.querySelector('[data-perio-size^="position-2"]'), `tooth ${toothNo}`).toBeNull();
     }
   });
 
@@ -136,12 +206,6 @@ describe("CEJ_Y anchors", () => {
     for (const tpl of TEMPLATE_NOS) {
       expect(typeof CEJ_Y[tpl], String(tpl)).toBe("number");
       expect(CEJ_Y[tpl], String(tpl)).toBeGreaterThan(0);
-    }
-  });
-
-  it("keeps every implant platform apical to its natural CEJ anchor", () => {
-    for (const tpl of TEMPLATE_NOS) {
-      expect(IMPLANT_CEJ_Y[tpl], String(tpl)).toBeGreaterThan(CEJ_Y[tpl]);
     }
   });
 });

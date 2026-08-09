@@ -23,12 +23,18 @@ import {
   type TemplateDocCache,
   type TemplateNo,
 } from "../perioGraphic";
+import { TEMPLATES } from "../odontogram";
 
 const testFileUrl = import.meta.url;
 const svgText = (tplNo: TemplateNo) =>
   readFileSync(fileURLToPath(new URL(`../assets/teeth-svgs/${tplNo}.svg`, testFileUrl)), "utf8");
 
-const TEMPLATE_NOS: readonly TemplateNo[] = [11, 13, 14, 15, 16, 46];
+// Aus TEMPLATES abgeleitet statt fest verdrahtet: der Satz der Zahn-Templates
+// ist gewachsen (9 statt 4, siehe TOOTH_TEMPLATE in odontogram.ts). Eine feste
+// Liste laesst die Tests sonst still weniger pruefen, als es Templates gibt.
+const TEMPLATE_NOS: readonly TemplateNo[] = (
+  Object.keys(TEMPLATES).map(Number) as TemplateNo[]
+).sort((a, b) => a - b);
 
 function buildCache(): TemplateDocCache {
   const cache: TemplateDocCache = new Map();

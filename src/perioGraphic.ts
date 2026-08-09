@@ -27,7 +27,7 @@
 // interactive odontogram tiles remain the only clickable tooth surfaces).
 import { TEMPLATES, TOOTH_TEMPLATE } from "./odontogram";
 
-export type TemplateNo = 11 | 13 | 14 | 15 | 16 | 46;
+export type TemplateNo = 11 | 12 | 13 | 14 | 15 | 16 | 17 | 31 | 46;
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -50,28 +50,29 @@ export const EXCLUDED_TOOTH_BASE_IDS: readonly string[] = [
  * renders each tooth group in (i.e. AFTER the internal vertical flip below —
  * see that function's comment for why the flip is needed at all).
  *
- * Measured from each template's `gum-base` geometry (the visible gingival
- * tissue drawn over the cervical/root region — its coronal-most edge, i.e.
- * max-Y in the template's RAW/un-flipped coordinate system, approximates the
- * CEJ/gumline) via a one-off control-point bounding-box script over the
- * path's `d` attribute (a close superset of the true curve bbox — gentle
- * curves here, so this is a good anchor, NOT pixel-exact anatomy). Then
- * converted into the flipped frame via `finalY = viewBoxHeight - rawY`:
- *   11: raw 38.6, viewBox h 70.8 -> 32.2
- *   13: raw 38.6, viewBox h 71.0 -> 32.4
- *   14: raw 39.1, viewBox h 71.2 -> 32.1
- *   15: shares the established tpl-14 frame -> 32.1
- *   16: raw 39.9, viewBox h 70.9 -> 31.0
- *   46: shares the established tpl-16 frame -> 31.0
- * Each template is aligned to the shared row baseline through its own anchor.
+ * NOT hand-measured any more. `tools/toothgen` builds every template from the
+ * Schumacher line-grid contours and knows each tooth's CEJ exactly (it is the
+ * boundary the crown/root warp is anchored on), so it writes the value into
+ * the generated file as `<!-- toothgen: ... cej=... -->` and prints this table
+ * ready to paste. Values below are in the flipped frame the perio row renders
+ * in (`finalY = viewBoxHeight - rawY`).
+ *
+ * Re-generate with:  python3 tools/toothgen/build.py
+ * Re-check with:     python3 tools/toothgen/verify.py
+ *
+ * The spread across templates is genuine anatomy, not measurement noise: the
+ * canine sits highest (longest root), the lower incisor lowest.
  */
 export const CEJ_Y: Record<TemplateNo, number> = {
-  11: 32.2,
-  13: 32.4,
-  14: 32.1,
-  15: 32.1,
-  16: 31.0,
-  46: 31.0,
+  11: 39.2,
+  12: 34.9,
+  13: 45.9,
+  14: 37.9,
+  15: 36.4,
+  16: 36.0,
+  17: 35.2,
+  31: 30.8,
+  46: 36.5,
 };
 
 /**
@@ -83,29 +84,25 @@ export const CEJ_Y: Record<TemplateNo, number> = {
  * platform sits at a slightly different y than the natural CEJ, so it needs its
  * OWN anchor to line up.
  *
- * Measured from `#implant-base`'s coronal-most control point (max-Y in the
- * template's RAW/un-flipped coordinate system — the same one-off control-point
- * bounding-box technique CEJ_Y above was measured with; a close superset of the
- * true platform edge), then converted into the final crown-up flipped frame via
- * `finalY = viewBoxHeight - rawY` (same frame
- * `getToothBaseGroupFromCache` renders in — see that function's flip comment):
- *   11: platform raw 37.8, viewBox h 70.8 -> 33.0
- *   13: platform raw 35.6, viewBox h 71.0 -> 35.4
- *   14: platform raw 36.6, viewBox h 71.2 -> 34.6
- *   15: shares the established tpl-14 frame -> 34.6
- *   16: platform raw 36.6, viewBox h 70.9 -> 34.3
- *   46: shares the established tpl-16 frame -> 34.3
- * As with CEJ_Y, row-baseline alignment only needs these mutually consistent
- * (they place every implant platform on ROW_BASELINE_Y); exact anatomical
- * placement should still be confirmed in a browser (see task-3-implant-report.md).
+ * Like CEJ_Y, emitted by `tools/toothgen/build.py` rather than hand-measured:
+ * it re-measures `#implant-base`'s coronal-most drawn point in each GENERATED
+ * template (true curve extent, not control points) and prints this table.
+ * Same flipped frame as CEJ_Y (`finalY = viewBoxHeight - rawY`).
+ *
+ * The fixture artwork itself is unchanged — it moves only because the crown/root
+ * warp shifts the whole template, so these values must be regenerated whenever
+ * the templates are.
  */
 export const IMPLANT_CEJ_Y: Record<TemplateNo, number> = {
-  11: 33.0,
-  13: 35.4,
-  14: 34.6,
-  15: 34.6,
-  16: 34.3,
-  46: 34.3,
+  11: 33.6,
+  12: 30.0,
+  13: 42.2,
+  14: 33.8,
+  15: 32.6,
+  16: 31.3,
+  17: 30.7,
+  31: 26.7,
+  46: 31.8,
 };
 
 /** Predicate telling the arch builders whether a given tooth is an implant on
@@ -123,13 +120,49 @@ function anchorFor(tplNo: TemplateNo, implant: boolean): number {
   return implant ? IMPLANT_CEJ_Y[tplNo] : CEJ_Y[tplNo];
 }
 
-/** Canine (FDI position 3) root-elongation factor — position 3 renders
- *  `scale(1, CANINE_ROOT_SCALE)` anchored at `CEJ_Y`, so the CEJ itself
- *  (the transform's fixed point) never moves — only the crown/root
- *  proportions around it change. `K > 1` per the task brief; the exact
- *  value is a first-pass aesthetic choice (canines have a visibly longer
- *  root than incisors) — confirm/tune in a browser. */
-const CANINE_ROOT_SCALE = 1.3;
+/**
+ * Root-length restoration, for THIS chart only.
+ *
+ * The odontogram draws roots shortened — `ROOT_DISPLAY_SCALE` in
+ * `tools/toothgen/spec.py` compresses them to 60 % of their measured length,
+ * because there the tooth is an icon and the apical third carries almost no
+ * information. The periodontal chart is the one place where the tooth is not
+ * an icon but the SCALE a probing depth is read against: the mm grid puts n mm
+ * at `n * PERIO_MM_PX` units below the CEJ, so a shortened root ends where the
+ * measurement is still going. Molar roots came out at 8.4 mm, which puts every
+ * pocket past ~8 mm — the ones that matter — above the drawn apex, in blank
+ * space.
+ *
+ * This factor undoes the shortening here and must stay the RECIPROCAL of the
+ * generator's `ROOT_DISPLAY_SCALE`. It is applied to the root ONLY (see
+ * `getToothBaseGroupFromCache`): scaling the whole tooth about the CEJ would
+ * drag the crown along and blow the central index band open, and the crown is
+ * not what a pocket is measured against. Restored lengths run 13.9 mm (upper
+ * 2nd molar) to 19.2 mm (canine).
+ */
+const ROOT_RESTORE_SCALE = 1 / 0.6;
+
+/**
+ * Canine (FDI position 3) root factor — was an elongation, is now a slight
+ * SHORTENING.
+ *
+ * The 1.3 it used to carry came from the four-template era, when canines
+ * borrowed the incisor template and had to be stretched to read as canines at
+ * all. The nine-template set draws the canine from its own measured contour,
+ * where the longest root of the dentition is already part of the shape, so
+ * keeping 1.3 on top of `ROOT_RESTORE_SCALE` would count that length twice and
+ * put the canine at 25 mm on the grid.
+ *
+ * At a flat restore the canine reads 19.2 mm, which is more than the chart
+ * wants; 0.9 brings it to 17.3 mm. That is as far as this can go: the templates
+ * make the canine root only 11 % longer than a central incisor's (57.6 against
+ * 51.8 units) where the real difference is nearer 30 %, so anything below ~0.9
+ * pushes the canine BELOW the incisors and inverts the one proportion everybody
+ * recognises. Wanting the whole set to read shorter is a `PERIO_MM_PX` question
+ * (the grid claims 3 units/mm where the artwork is drawn at about 3.7), not a
+ * canine question.
+ */
+const CANINE_ROOT_SCALE = 0.9;
 
 /** Lateral incisor (FDI position 2) width factor — narrower than the
  *  central incisor sharing the same tpl-11 template, per the task brief's
@@ -294,7 +327,6 @@ export function getToothBaseGroupFromCache(
 
   const { w, h } = viewBoxOf(doc);
   const cejY = anchorFor(tplNo, implant);
-  const normalizeY = Number(doc.documentElement.getAttribute("data-normalize-y") || "1");
 
   const outer = document.createElementNS(SVG_NS, "g") as unknown as SVGGElement;
   outer.setAttribute("data-tooth", String(toothNo));
@@ -308,15 +340,7 @@ export function getToothBaseGroupFromCache(
   //    matrix(1 0 0 -1 0 h): y' = -y + h = h - y; x unchanged.
   const flipGroup = document.createElementNS(SVG_NS, "g") as unknown as SVGGElement;
   flipGroup.setAttribute("transform", `matrix(1 0 0 -1 0 ${fmt(h)})`);
-  if (normalizeY === 1) {
-    flipGroup.appendChild(baseClone);
-  } else {
-    const normalizeGroup = document.createElementNS(SVG_NS, "g") as unknown as SVGGElement;
-    normalizeGroup.setAttribute("data-template-normalize-y", String(normalizeY));
-    normalizeGroup.setAttribute("transform", `matrix(1 0 0 ${fmt(normalizeY)} 0 0)`);
-    normalizeGroup.appendChild(baseClone);
-    flipGroup.appendChild(normalizeGroup);
-  }
+  flipGroup.appendChild(baseClone);
 
   // 2) Horizontal mirror for left/right mesial-distal correctness.
   //    matrix(-1 0 0 1 w 0): x' = -x + w = w - x; y unchanged.
@@ -337,16 +361,92 @@ export function getToothBaseGroupFromCache(
     // x' = 0.8*(x-cx)+cx = 0.8x + cx*0.2 = 0.8x + w*0.1
     sizeGroup.setAttribute("data-perio-size", `position-2-width-${LATERAL_INCISOR_WIDTH_SCALE}`);
     sizeGroup.setAttribute("transform", `matrix(${LATERAL_INCISOR_WIDTH_SCALE} 0 0 1 ${fmt(w * (1 - LATERAL_INCISOR_WIDTH_SCALE) / 2)} 0)`);
-  } else if (pos === 3) {
-    // scale(1,K) anchored at CEJ_Y: y' = K*(y-cejY)+cejY = K*y + cejY*(1-K)
-    const f = cejY * (1 - CANINE_ROOT_SCALE);
-    sizeGroup.setAttribute("data-perio-size", `position-3-root-${CANINE_ROOT_SCALE}`);
-    sizeGroup.setAttribute("transform", `matrix(1 0 0 ${CANINE_ROOT_SCALE} 0 ${fmt(f)})`);
   }
-  sizeGroup.appendChild(mirrorGroup);
+
+  // 4) Root-only vertical stretch back to the measured length — see
+  //    ROOT_RESTORE_SCALE. Root-ONLY is the whole point, and an SVG transform
+  //    is affine, so it cannot bend at the CEJ on its own: the tooth is drawn
+  //    TWICE, each copy clipped to one side of the CEJ, and only the root copy
+  //    carries the scale.
+  //
+  //    The clip sits on an OUTER group and the scale on an INNER one, never
+  //    both on the same element: `clip-path` resolves in the user space that
+  //    the referencing element's own transform establishes, so putting them
+  //    together would express the clip rect in already-stretched coordinates.
+  //    Nested like this, the rects stay in the unscaled tooth frame and read
+  //    exactly as written.
+  //
+  //    Since the scale is anchored at the CEJ, every point at y >= cejY maps
+  //    to y >= cejY: the cut line is the transform's fixed point, so the two
+  //    copies still meet there and the silhouette stays continuous.
+  const rootScale = ROOT_RESTORE_SCALE * (pos === 3 ? CANINE_ROOT_SCALE : 1);
+  if (rootScale !== 1) {
+    // Ids repeat across teeth sharing a template and across the two arch
+    // bands. That is deliberate and harmless: every copy defines the SAME
+    // rect for the same tooth, so a `url(#...)` resolving to the first one in
+    // the document resolves to an identical clip. `cloneReferencedDefs` above
+    // already carries gradient ids around on exactly these terms.
+    const crownClipId = `perio-clip-crown-${toothNo}-${tplNo}${implant ? "-i" : ""}`;
+    const rootClipId = `perio-clip-root-${toothNo}-${tplNo}${implant ? "-i" : ""}`;
+    // Generous horizontal reach: the clip must never be what bounds the tooth
+    // sideways, only vertically.
+    const x0 = -w;
+    const xw = 3 * w;
+    const defs = document.createElementNS(SVG_NS, "defs") as unknown as SVGDefsElement;
+    // A hair of overlap on the crown side, so the seam cannot show as a
+    // background-coloured hairline between two anti-aliased edges. Inside the
+    // overlap the unscaled copy paints over the stretched one; a third of a
+    // unit from the fixed point the two outlines differ by well under a pixel.
+    defs.appendChild(clipRect(crownClipId, x0, -4 * h, xw, 4 * h + cejY + SEAM_OVERLAP));
+    defs.appendChild(clipRect(rootClipId, x0, cejY, xw, 8 * h));
+    outer.appendChild(defs);
+
+    const crownPart = document.createElementNS(SVG_NS, "g") as unknown as SVGGElement;
+    crownPart.setAttribute("data-perio-part", "crown");
+    crownPart.setAttribute("clip-path", `url(#${crownClipId})`);
+    crownPart.appendChild(mirrorGroup);
+
+    const rootPart = document.createElementNS(SVG_NS, "g") as unknown as SVGGElement;
+    rootPart.setAttribute("data-perio-part", "root");
+    rootPart.setAttribute("clip-path", `url(#${rootClipId})`);
+    const rootScaleGroup = document.createElementNS(SVG_NS, "g") as unknown as SVGGElement;
+    // scale(1,K) anchored at cejY: y' = K*(y-cejY)+cejY = K*y + cejY*(1-K).
+    // K is rounded FIRST and the offset derived from the rounded value — deriving
+    // it from the unrounded one would leave the written matrix a hair off an
+    // anchored scale, nudging the CEJ off the row baseline it is aligned on.
+    const k = Number(rootScale.toFixed(3));
+    rootScaleGroup.setAttribute("data-perio-size", `root-${k}`);
+    rootScaleGroup.setAttribute("transform", `matrix(1 0 0 ${k} 0 ${fmt(cejY * (1 - k))})`);
+    rootScaleGroup.appendChild(mirrorGroup.cloneNode(true));
+    rootPart.appendChild(rootScaleGroup);
+
+    // Root first, crown over it — the crown's overlap band must win.
+    sizeGroup.appendChild(rootPart);
+    sizeGroup.appendChild(crownPart);
+  } else {
+    sizeGroup.appendChild(mirrorGroup);
+  }
 
   outer.appendChild(sizeGroup);
   return outer;
+}
+
+/** Overlap (row units) the crown clip reaches past the CEJ, hiding the seam
+ *  between the two clipped copies. */
+const SEAM_OVERLAP = 0.35;
+
+/** A `<clipPath>` holding one `userSpaceOnUse` rect. */
+function clipRect(id: string, x: number, y: number, width: number, height: number): SVGElement {
+  const clip = document.createElementNS(SVG_NS, "clipPath") as unknown as SVGElement;
+  clip.setAttribute("id", id);
+  clip.setAttribute("clipPathUnits", "userSpaceOnUse");
+  const rect = document.createElementNS(SVG_NS, "rect");
+  rect.setAttribute("x", fmt(x));
+  rect.setAttribute("y", fmt(y));
+  rect.setAttribute("width", fmt(width));
+  rect.setAttribute("height", fmt(height));
+  clip.appendChild(rect);
+  return clip;
 }
 
 /** Trim trailing float noise for readable transform strings (purely
@@ -554,16 +654,16 @@ const ARCH_VIEWBOX_PAD = 14;
  * COMBINED two-band SVG needed to keep its stacked buccal + palatal rows from
  * overlapping — a concern that no longer applies now that each band renders in
  * its OWN grid cell/SVG (T2). The real
- * worst-case single-band content span is the position-3 canine's
- * `CANINE_ROOT_SCALE`-elongated root: `CANINE_ROOT_SCALE * (tpl-13 root
- * length)` = `1.3 * (71.0 - CEJ_Y[13])` = `1.3 * 38.6` ≈ 50.2 — comfortably
- * bigger than the tallest crown (`max(CEJ_Y)` ≈ 32.4) and the mm-grid's
- * 15-line reach (`PERIO_MM_GRID_MAX * PERIO_MM_PX` = 45), so a single
+ * worst-case single-band content span is the longest ROOT_RESTORE_SCALE-restored
+ * root. Restored lengths run from 41.6 units (tpl-17) to 51.8 (tpl-11, and
+ * tpl-13's 57.6 taken down to 51.8 by `CANINE_ROOT_SCALE`) — bigger than the
+ * tallest crown (`max(CEJ_Y)` minus the occlusal margin ≈ 38.4) and than the
+ * mm-grid's 15-line reach (`PERIO_MM_GRID_MAX * PERIO_MM_PX` = 45), so a single
  * symmetric half-span safely bounds either band (buccal-flipped or palatal
  * raw — the two are mirror images of one another about `ROW_BASELINE_Y`)
- * without clipping. Rounded up slightly for a small margin of safety.
+ * without clipping. Rounded up for a margin of safety.
  */
-const BAND_CONTENT_HALF_SPAN = 51;
+const BAND_CONTENT_HALF_SPAN = 56;
 
 /** Shared viewBox math for either single-band arch SVG: `y` spans
  *  `[ROW_BASELINE_Y - BAND_CONTENT_HALF_SPAN - ARCH_VIEWBOX_PAD, ROW_BASELINE_Y +

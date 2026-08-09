@@ -4,10 +4,10 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath, URL as NodeURL } from "node:url";
-import { OCCLUSAL_TEMPLATE, TOOTH_TEMPLATE } from "../odontogram";
+import { namespacePaintServers, OCCLUSAL_TEMPLATE, TOOTH_TEMPLATE } from "../odontogram";
 
-const SIDE = ["11", "13", "14", "15", "16", "46"] as const;
-const POSTERIOR_SIDE = ["14", "15", "16", "46"] as const;
+const SIDE = ["11", "12", "13", "14", "15", "16", "17", "31", "46"] as const;
+const POSTERIOR_SIDE = ["14", "15", "16", "17", "46"] as const;
 const ALL = [...SIDE, "14_occl", "16_occl"] as const;
 
 function readSvg(name: string): string {
@@ -128,26 +128,27 @@ describe("installed tooth SVG assets", () => {
     }
   });
 
-  it("posterior side templates declare the admitted root anatomy and preserve the existing view boxes", () => {
+  it("posterior side templates declare the generated anatomy and dimensions", () => {
     const expected = {
-      "14": { roots: "2", viewBox: "0 0 39.8 71.2" },
-      "15": { roots: "1", viewBox: "0 0 39.8 71.2" },
-      "16": { roots: "3", viewBox: "0 0 42.9 70.9" },
-      "46": { roots: "2", viewBox: "0 0 42.9 70.9" },
+      "14": { roots: "2", viewBox: "0.0 0.0 39.8 79.7" },
+      "15": { roots: "1", viewBox: "0.0 0.0 39.8 79.1" },
+      "16": { roots: "3", viewBox: "0.0 0.0 42.9 72.6" },
+      "17": { roots: "3", viewBox: "0.0 0.0 42.9 70.9" },
+      "46": { roots: "2", viewBox: "0.0 0.0 42.9 77.1" },
     } as const;
 
     for (const template of POSTERIOR_SIDE) {
       const root = new DOMParser().parseFromString(readSvg(template), "image/svg+xml").documentElement;
       expect(root.getAttribute("data-root-count"), template).toBe(expected[template].roots);
       expect(root.getAttribute("viewBox"), template).toBe(expected[template].viewBox);
-
     }
   });
 
   it("maps each admitted posterior tooth class to its anatomy template", () => {
     for (const toothNo of [14, 24]) expect(TOOTH_TEMPLATE.get(toothNo)?.tpl).toBe(14);
     for (const toothNo of [15, 25, 34, 35, 44, 45]) expect(TOOTH_TEMPLATE.get(toothNo)?.tpl).toBe(15);
-    for (const toothNo of [16, 17, 18, 26, 27, 28]) expect(TOOTH_TEMPLATE.get(toothNo)?.tpl).toBe(16);
+    for (const toothNo of [16, 26]) expect(TOOTH_TEMPLATE.get(toothNo)?.tpl).toBe(16);
+    for (const toothNo of [17, 18, 27, 28]) expect(TOOTH_TEMPLATE.get(toothNo)?.tpl).toBe(17);
     for (const toothNo of [36, 37, 38, 46, 47, 48]) expect(TOOTH_TEMPLATE.get(toothNo)?.tpl).toBe(46);
   });
 
@@ -166,7 +167,10 @@ describe("installed tooth SVG assets", () => {
   });
 
   it("preserves the complete clinical layer sequence for split posterior templates", () => {
+    expect(clinicalElementIds(readSvg("12"))).toEqual(clinicalElementIds(readSvg("11")));
+    expect(clinicalElementIds(readSvg("31"))).toEqual(clinicalElementIds(readSvg("11")));
     expect(clinicalElementIds(readSvg("15"))).toEqual(clinicalElementIds(readSvg("14")));
+    expect(clinicalElementIds(readSvg("17"))).toEqual(clinicalElementIds(readSvg("16")));
     expect(clinicalElementIds(readSvg("46"))).toEqual(clinicalElementIds(readSvg("16")));
   });
 
@@ -177,5 +181,28 @@ describe("installed tooth SVG assets", () => {
       paintServerIds.push(...Array.from(root.querySelectorAll("defs [id]"), (element) => element.id));
     }
     expect(new Set(paintServerIds).size).toBe(paintServerIds.length);
+  });
+
+  it("namespaces paint servers per rendered tooth without changing clinical ids", () => {
+    const parser = new DOMParser();
+    const first = parser.parseFromString(readSvg("15"), "image/svg+xml").documentElement;
+    const second = first.cloneNode(true) as Element;
+    const clinicalId = first.querySelector(":scope > g [id]")?.id;
+
+    namespacePaintServers(first, "tooth-15-side-");
+    namespacePaintServers(second, "tooth-25-side-");
+
+    expect(first.querySelector(":scope > g [id]")?.id).toBe(clinicalId);
+    expect(second.querySelector(":scope > g [id]")?.id).toBe(clinicalId);
+    const ids = [...first.querySelectorAll("defs [id]"), ...second.querySelectorAll("defs [id]")].map((element) => element.id);
+    expect(new Set(ids).size).toBe(ids.length);
+
+    for (const root of [first, second]) {
+      const defined = new Set(Array.from(root.querySelectorAll("defs [id]"), (element) => element.id));
+      const references = Array.from(root.querySelectorAll("*"))
+        .flatMap((element) => Array.from(element.attributes, (attribute) => attribute.value))
+        .flatMap((value) => Array.from(value.matchAll(/url\(#([^)]+)\)/g), (match) => match[1]));
+      expect(references.every((id) => defined.has(id))).toBe(true);
+    }
   });
 });

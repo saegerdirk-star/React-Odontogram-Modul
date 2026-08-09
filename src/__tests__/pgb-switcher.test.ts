@@ -30,8 +30,7 @@ import {
   setPlaque,
   getPerioOverlayLayer,
   setPerioOverlayLayer,
-  onStateChange,
-} from "../odontogram";
+  onStateChange, TEMPLATES } from "../odontogram";
 import {
   buildBuccalArchSvg,
   buildPalatalArchSvg,
@@ -46,7 +45,12 @@ import { setI18nLanguage, t } from "../i18n/useI18n";
 const testFileUrl = import.meta.url;
 const svgText = (tplNo: TemplateNo) =>
   readFileSync(fileURLToPath(new URL(`../assets/teeth-svgs/${tplNo}.svg`, testFileUrl)), "utf8");
-const TEMPLATE_NOS: readonly TemplateNo[] = [11, 13, 14, 15, 16, 46];
+// Aus TEMPLATES abgeleitet statt fest verdrahtet: der Satz der Zahn-Templates
+// ist gewachsen (9 statt 4, siehe TOOTH_TEMPLATE in odontogram.ts). Eine feste
+// Liste laesst die Tests sonst still weniger pruefen, als es Templates gibt.
+const TEMPLATE_NOS: readonly TemplateNo[] = (
+  Object.keys(TEMPLATES).map(Number) as TemplateNo[]
+).sort((a, b) => a - b);
 function buildCache(): TemplateDocCache {
   const cache: TemplateDocCache = new Map();
   for (const tplNo of TEMPLATE_NOS) {
