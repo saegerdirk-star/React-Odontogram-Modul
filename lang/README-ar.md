@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.7.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.8.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -554,9 +554,9 @@ const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
 Löe-Silness، وعرض اللثة المتقرنة، ومؤشرات Mombelli حول الزرعة، وكل منها مُقيَّد بامتداد
 `PeriodontalMeasurementSiteExt` أو `ToothSurfacesExt` من الدليل. الموجودة المفحوصة
 الطبيعية تُمثَّل بقيمة `false`/`0` صريحة، والفجوة المسجَّلة تُمثَّل بـ `dataAbsentReason`
-القياسي. أما مكوِّن الانحسار فيُحذَف عمدًا: فالـ SCTID الذي يثبته الدليل له في الواقع معنى
-"Accretion on teeth"، ولذلك تحمل حافة اللثة ذات الإشارة هذه الموجودة (يوثّق
-`REJECTED_SCT` الدليل).
+القياسي. أما انحسار اللثة فيُصدَر (اعتبارًا من 2.8.0) لكل موضع قياس، لكن فقط حيث تكون
+حافة اللثة ذات الإشارة انحسارًا فعليًا؛ وتبقى الحافة مصدر الحقيقة، فلا يُقرأ
+مكوِّن الانحسار المستورد داخلها أبدًا.
 
 يقرأ `parseFhirBundle` **كلتا** اللهجتين، بما في ذلك الحزمة المختلطة، فتظل الحزم
 المُصدَّرة سابقًا قابلة للاستيراد دون تغيير.

@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.7.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.8.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -557,9 +557,10 @@ obecność płytki, wskaźniki Silness-Löe i Löe-Silness, szerokość dziąsł
 zrogowaciałego oraz okołowszczepowe wskaźniki Mombellego, każdy kwalifikowany przez
 `PeriodontalMeasurementSiteExt` lub `ToothSurfacesExt` z IG. Zbadany prawidłowy
 wynik to jawne `false`/`0`, a zapisana luka to standardowy `dataAbsentReason`.
-Komponent recesji jest celowo pomijany: SCTID ustalony przez IG oznacza w
-rzeczywistości „Accretion on teeth", więc wynik niesie znakowany brzeg dziąsła
-(`REJECTED_SCT` dokumentuje dowody).
+Recesja dziąsła (od 2.8.0) jest emitowana
+dla każdego punktu, ale tylko tam, gdzie znakowany brzeg dziąsła jest
+rzeczywistą recesją; źródłem prawdy pozostaje brzeg, więc zaimportowany komponent
+recesji nigdy nie jest do niego wczytywany.
 
 `parseFhirBundle` czyta **oba** dialekty, również pakiet mieszany, więc wcześniej
 wyeksportowane pakiety importują się bez zmian.

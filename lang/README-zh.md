@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.7.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.8.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -545,8 +545,8 @@ const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
 带入口的 Glickman 根分叉度、菌斑存在、Silness-Löe 与 Löe-Silness 指数、角化龈宽度
 以及 Mombelli 种植体周指数，每一项均由 IG 的 `PeriodontalMeasurementSiteExt` 或
 `ToothSurfacesExt` 限定。已检查且正常的结果为显式的 `false`/`0`，已记录的缺失则为
-标准的 `dataAbsentReason`。牙龈退缩组件被有意省略：IG 为其固定的 SCTID 实际含义是
-"Accretion on teeth"，因此该发现由带符号的龈缘承载（`REJECTED_SCT` 记录了证据）。
+标准的 `dataAbsentReason`。牙龈退缩（自 2.8.0 起）按测量位点输出，但仅在带符号的龈缘确为退缩之处输出；
+龈缘仍是唯一可信来源，因此导入的退缩组件绝不会回写到龈缘。
 
 `parseFhirBundle` 可读取**两种**方言，包括混合的 Bundle，因此此前导出的 Bundle 仍可原样导入。
 **带日期的检查、评估状态与种植体周围记录（自 2.4.0 起）：**

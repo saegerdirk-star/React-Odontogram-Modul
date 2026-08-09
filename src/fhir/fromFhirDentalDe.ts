@@ -189,6 +189,20 @@ function indexSurfaceOf(comp: unknown): string | undefined {
   return surfacesOf(comp)[0];
 }
 
+/**
+ * Every SNOMED CT concept that has ever carried bleeding on probing in a bundle
+ * this repository wrote (bead odontogram-18h).
+ *
+ * `PeriodontalObservationDE` and `PeriImplantObservationDE` fixed
+ * `component[bop].code` to `86276007` until fhir-dental-de PR #94 corrected it
+ * to `249420004`; releases v2.6.0-2.7.1 of this library emitted the former.
+ * Reading is deliberately tolerant of both — a bundle written by an installed
+ * older release must not silently lose its bleeding sites, and BOP is a boolean
+ * whose absence reads as "did not bleed" rather than as an error. Emission is
+ * NOT tolerant: only {@link VERIFIED_SCT.bleedingOnProbing} is ever written.
+ */
+const ACCEPTED_BOP_SCT = new Set([VERIFIED_SCT.bleedingOnProbing, "86276007"]);
+
 function numericValue(comp: Any): number | undefined {
   const value = comp?.valueQuantity?.value;
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
@@ -231,16 +245,26 @@ function applyPeriodontalResource(rec: ToothRecord, components: Any[]): void {
       if (surface && comp?.valueBoolean === true) pushOnce((rec.plaque ??= []), surface);
       continue;
     }
-    if (codeIn(comp?.code, SNOMED_SYSTEM) === VERIFIED_SCT.bleedingOnProbing) {
+    const sctCode = codeIn(comp?.code, SNOMED_SYSTEM);
+    if (sctCode !== undefined && ACCEPTED_BOP_SCT.has(sctCode)) {
       if (site && comp?.valueBoolean === true) pushOnce(perioRecord(rec).bop, site);
       continue;
     }
-    if (codeIn(comp?.code, SNOMED_SYSTEM) === VERIFIED_SCT.plaqueIndexSilnessLoe) {
+    // Gingival recession is DERIVED output — `max(gm, 0)` — exactly like the
+    // attachment-loss component below it. The signed margin on LOINC 64043-3 is
+    // the sole source of truth for `perio.gm`, so this component is recognized
+    // and deliberately discarded: reading it back would let two components write
+    // one field (making the result depend on component order), and at a site
+    // with no margin it would chart a measurement the source never recorded,
+    // where the engine's convention is that an absent margin means "not
+    // charted".
+    if (sctCode === VERIFIED_SCT.gingivalRecession) continue;
+    if (sctCode === VERIFIED_SCT.plaqueIndexSilnessLoe) {
       const grade = integerValue(comp);
       if (surface && grade !== undefined && grade > 0) (rec.pi ??= {})[surface] = grade;
       continue;
     }
-    if (codeIn(comp?.code, SNOMED_SYSTEM) === VERIFIED_SCT.furcationInvolvementIndex) {
+    if (sctCode === VERIFIED_SCT.furcationInvolvementIndex) {
       const code = codeIn(comp?.valueCodeableConcept, GLICKMAN_FURCATION_SYSTEM);
       const grade = code === undefined ? undefined : glickmanGradeFromCode(code);
       // Glickman Grade 0 is "assessed, no involvement" — a result, never a

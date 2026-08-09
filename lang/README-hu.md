@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.7.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.8.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -556,10 +556,10 @@ Glickman-furkációfok a bejáratával, plakk jelenléte, a Silness-Löe és Lö
 indexek, a keratinizált íny szélessége, valamint a Mombelli-féle periimplantáris
 indexek, mindegyik az IG `PeriodontalMeasurementSiteExt` vagy `ToothSurfacesExt`
 kiterjesztésével minősítve. A vizsgált, negatív lelet kifejezett `false`/`0`, a
-rögzített hiány pedig szabványos `dataAbsentReason`. A recesszió-komponens
-szándékosan kimarad: az IG által rögzített SCTID valójában „Accretion on teeth"
-jelentésű, ezért az előjeles ínyszél hordozza a leletet (`REJECTED_SCT` rögzíti a
-bizonyítékot).
+rögzített hiány pedig szabványos `dataAbsentReason`. Az ínyrecesszió (2.8.0-tól)
+mérési pontonként kerül kiadásra, de csak ott, ahol az előjeles ínyszél valóban
+recesszió; a mérvadó továbbra is az ínyszél, ezért importált recesszió-komponens
+soha nem íródik vissza bele.
 
 A `parseFhirBundle` **mindkét** nyelvjárást olvassa, a vegyes köteget is, így a korábban
 exportált kötegek változatlanul importálhatók.

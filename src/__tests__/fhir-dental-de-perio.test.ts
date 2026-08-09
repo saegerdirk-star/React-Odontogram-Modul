@@ -42,7 +42,6 @@ import {
   GLICKMAN_GRADE_CODE,
   VERIFIED_SCT,
   SCT_PROVENANCE,
-  REJECTED_SCT,
 } from "../fhir/dentalDeCodesystems";
 import type { Bundle, Observation, OdontogramExportPayload } from "../fhir/types";
 
@@ -253,18 +252,17 @@ describe("bead odontogram-5cz — verified terminology (AC2)", () => {
     }
   });
 
-  it("refuses the IG's recession SCTID and carries the margin on LOINC 64043-3 instead", () => {
-    expect(REJECTED_SCT.gingivalRecession.code).toBe("6288001");
-    expect(REJECTED_SCT.gingivalRecession.verifiedMeaning).toBe("Accretion on teeth");
-    expect(REJECTED_SCT.gingivalRecession.verifiedBy).toMatch(/tx\.fhir\.org/);
-
-    const { bundle, report } = buildDentalDeBundle(payloadOf({ "16": MOLAR_16 }), { effectiveDateTime: EFFECTIVE });
+  // Bead odontogram-18h: the IG corrected `component[recession].code` to
+  // 4356008, so the recession component is emitted now. The SCTID this adapter
+  // refused (`6288001`, verified as "Accretion on teeth") must still never
+  // reach the wire, and the signed margin remains the source of truth.
+  it("never emits the retired recession SCTID and still carries the margin on LOINC 64043-3", () => {
+    const { bundle } = buildDentalDeBundle(payloadOf({ "16": MOLAR_16 }), { effectiveDateTime: EFFECTIVE });
     const codings = byProfile(bundle, DENTAL_DE_PERIODONTAL_PROFILE)
       .flatMap((o) => ((o.component ?? []) as Any[]))
       .flatMap((c) => (c.code?.coding ?? []) as Any[]);
-    expect(codings.some((c) => c.code === REJECTED_SCT.gingivalRecession.code)).toBe(false);
+    expect(codings.some((c) => c.code === "6288001")).toBe(false);
     expect(codings.some((c) => c.system === LOINC_SYSTEM && c.code === PERIO_LOINC.gingivalMarginToCej)).toBe(true);
-    expect(report.unmapped.some((e) => e.field === "perio.recession")).toBe(true);
   });
 
   it("never puts an unverified display string on a periodontal coding", () => {
@@ -279,6 +277,228 @@ describe("bead odontogram-5cz — verified terminology (AC2)", () => {
       .flatMap((c) => [...((c.code?.coding ?? []) as Any[]), ...((c.valueCodeableConcept?.coding ?? []) as Any[])]);
     expect(codings.length).toBeGreaterThan(0);
     for (const coding of codings) expect(coding.display).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bead odontogram-18h: the IG's SNOMED cleanup (fhir-dental-de PRs #94-96,
+// main at 27e0b7f). `component[bop].code` moved 86276007 -> 249420004 on both
+// periodontal profiles, and `component[recession].code` moved 6288001 ->
+// 4356008, which retires the refusal bead odontogram-5cz recorded.
+// ---------------------------------------------------------------------------
+
+/** The SCTID this library emitted for bleeding on probing in v2.6.0-2.7.1. */
+const RETIRED_BOP_SCT = "86276007";
+/** The SCTID the IG fixed on `component[recession]` before PR #94. */
+const RETIRED_RECESSION_SCT = "6288001";
+
+function clone<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+/** Every coding anywhere in a bundle, components and values alike. */
+function allCodings(bundle: Bundle): Array<{ system?: string; code?: string; display?: string }> {
+  const out: Array<{ system?: string; code?: string; display?: string }> = [];
+  const walk = (node: unknown): void => {
+    if (Array.isArray(node)) { for (const item of node) walk(item); return; }
+    if (!node || typeof node !== "object") return;
+    const rec = node as Record<string, unknown>;
+    if (typeof rec.system === "string" && typeof rec.code === "string") {
+      out.push(rec as { system?: string; code?: string; display?: string });
+    }
+    for (const value of Object.values(rec)) walk(value);
+  };
+  walk(bundle.entry ?? []);
+  return out;
+}
+
+/** Rewrite one SNOMED code throughout a bundle, standing in for a bundle an
+ *  older release of this library wrote. */
+function rewriteSct(bundle: Bundle, from: string, to: string): Bundle {
+  const copy = clone(bundle);
+  const walk = (node: unknown): void => {
+    if (Array.isArray(node)) { for (const item of node) walk(item); return; }
+    if (!node || typeof node !== "object") return;
+    const rec = node as Record<string, unknown>;
+    if (rec.system === SNOMED_SYSTEM && rec.code === from) rec.code = to;
+    for (const value of Object.values(rec)) walk(value);
+  };
+  walk(copy.entry ?? []);
+  return copy;
+}
+
+describe("bead odontogram-18h — the IG's corrected BOP concept (AC1, AC2)", () => {
+  it("emits bleeding on probing under 249420004 on both profiles and 86276007 nowhere", () => {
+    const { bundle } = buildDentalDeBundle(payloadOf({ "16": MOLAR_16, "36": IMPLANT_36 }), {
+      effectiveDateTime: EFFECTIVE,
+    });
+    expect(VERIFIED_SCT.bleedingOnProbing).toBe("249420004");
+
+    for (const profile of [DENTAL_DE_PERIODONTAL_PROFILE, DENTAL_DE_PERI_IMPLANT_PROFILE]) {
+      const panel = byProfile(bundle, profile)[0];
+      const bop = comps(panel, SNOMED_SYSTEM, "249420004");
+      expect(bop.length, profile).toBeGreaterThan(0);
+      for (const c of bop) expect(siteOf(c)).toBeTruthy();
+    }
+
+    const codings = allCodings(bundle);
+    expect(codings.some((c) => c.code === RETIRED_BOP_SCT)).toBe(false);
+    for (const coding of codings.filter((c) => c.code === "249420004")) {
+      expect(coding.display).toBeUndefined();
+    }
+  });
+
+  it("still reads bleeding sites from a bundle written with the retired BOP SCTID", () => {
+    const payload = payloadOf({ "16": MOLAR_16, "36": IMPLANT_36 });
+    const current = buildFhirBundle(payload, { dialect: "dental-de", effectiveDateTime: EFFECTIVE });
+    const legacyCoded = rewriteSct(current, "249420004", RETIRED_BOP_SCT);
+
+    const fromCurrent = parseFhirBundle(current);
+    const fromRetired = parseFhirBundle(legacyCoded);
+
+    expect((fromRetired.teeth["16"] as Any).perio.bop.sort())
+      .toEqual((fromCurrent.teeth["16"] as Any).perio.bop.sort());
+    expect((fromRetired.teeth["16"] as Any).perio.bop.sort()).toEqual(["DB", "MB"]);
+    expect((fromRetired.teeth["36"] as Any).perio.bop).toEqual(["MB"]);
+    // Nothing else in the read-back changes.
+    expect(fromRetired.teeth).toEqual(fromCurrent.teeth);
+  });
+});
+
+describe("bead odontogram-18h — gingival recession (AC3)", () => {
+  it("emits one recession component per site whose signed margin is a recession", () => {
+    const { bundle } = buildDentalDeBundle(payloadOf({ "16": MOLAR_16 }), { effectiveDateTime: EFFECTIVE });
+    const panel = byProfile(bundle, DENTAL_DE_PERIODONTAL_PROFILE)[0];
+
+    // MOLAR_16 charts margins MB +2, B -1, DB 0; only MB is a recession.
+    const recession = comps(panel, SNOMED_SYSTEM, "4356008");
+    expect(recession).toHaveLength(1);
+    expect(siteOf(recession[0])).toBe(PERIODONTAL_SITE_CODE.MB);
+    expect(recession[0].valueQuantity).toEqual({ value: 2, unit: "mm", system: UCUM_SYSTEM, code: "mm" });
+    expect((recession[0].code.coding as Any[])[0].display).toBeUndefined();
+  });
+
+  it("emits no recession on an implant and no longer reports perio.recession as unmapped", () => {
+    const { bundle, report } = buildDentalDeBundle(
+      payloadOf({
+        "16": MOLAR_16,
+        "36": { ...IMPLANT_36, perio: { ...IMPLANT_36.perio, gm: { MB: 3 } } },
+      }),
+      { effectiveDateTime: EFFECTIVE },
+    );
+    const implant = byProfile(bundle, DENTAL_DE_PERI_IMPLANT_PROFILE)[0];
+    expect(comps(implant, SNOMED_SYSTEM, "4356008")).toHaveLength(0);
+    expect(report.unmapped.some((e) => e.field === "perio.recession")).toBe(false);
+    // The unresolved implant reference point is still reported, unchanged.
+    expect(report.unmapped.some((e) => e.tooth === "36" && e.field === "perio.gm")).toBe(true);
+  });
+
+  it("treats a probing depth outside the engine's clinical range as uncharted", () => {
+    // The engine clamps `pd` to an integer 1-15 and un-charts a site whose
+    // probing depth falls below that floor — a depth of 0 is "not probed", not
+    // a reading. A malformed payload must therefore chart nothing at such a
+    // site: no recession, and no probing-depth, margin, attachment-loss or
+    // bleeding component either.
+    const { bundle } = buildDentalDeBundle(
+      payloadOf({
+        "16": {
+          toothSelection: "tooth-base",
+          perio: {
+            pd: { MB: 0, B: -2, DB: 2.5, ML: 99, L: 4 },
+            gm: { MB: 2, B: 3, DB: 3, ML: 3, L: 1 },
+            bop: ["MB", "B", "DB", "ML", "L"],
+            sup: [],
+          },
+        },
+      }),
+      { effectiveDateTime: EFFECTIVE },
+    );
+    const panel = byProfile(bundle, DENTAL_DE_PERIODONTAL_PROFILE)[0];
+    const onlyValidSite = (list: Any[]): unknown[] => list.map(siteOf);
+
+    // L (4 mm) is the only clinically valid probing depth in that payload.
+    expect(onlyValidSite(comps(panel, LOINC_SYSTEM, PERIO_LOINC.probingDepth)))
+      .toEqual([PERIODONTAL_SITE_CODE.L]);
+    expect(onlyValidSite(comps(panel, SNOMED_SYSTEM, "4356008")))
+      .toEqual([PERIODONTAL_SITE_CODE.L]);
+    expect(onlyValidSite(comps(panel, LOINC_SYSTEM, PERIO_LOINC.gingivalMarginToCej)))
+      .toEqual([PERIODONTAL_SITE_CODE.L]);
+    expect(onlyValidSite(comps(panel, PA_BEFUND_TYPE_SYSTEM, PA_BEFUND.attachmentLoss)))
+      .toEqual([PERIODONTAL_SITE_CODE.L]);
+    expect(onlyValidSite(comps(panel, SNOMED_SYSTEM, VERIFIED_SCT.bleedingOnProbing)))
+      .toEqual([PERIODONTAL_SITE_CODE.L]);
+  });
+
+  it("emits no recession for an uncharted site or a non-positive margin", () => {
+    const { bundle } = buildDentalDeBundle(
+      payloadOf({
+        "16": {
+          toothSelection: "tooth-base",
+          // ML carries a margin but no probing depth, so it is not charted.
+          perio: { pd: { MB: 3, B: 3 }, gm: { MB: 0, B: -2, ML: 4 }, bop: [], sup: [] },
+        },
+      }),
+      { effectiveDateTime: EFFECTIVE },
+    );
+    const panel = byProfile(bundle, DENTAL_DE_PERIODONTAL_PROFILE)[0];
+    expect(comps(panel, SNOMED_SYSTEM, "4356008")).toHaveLength(0);
+  });
+});
+
+describe("bead odontogram-18h — the recession round-trip rule (AC4)", () => {
+  it("never derives the signed margin back from the recession component", () => {
+    const payload = payloadOf({ "16": MOLAR_16 });
+    const bundle = buildFhirBundle(payload, { dialect: "dental-de", effectiveDateTime: EFFECTIVE });
+
+    // The margin is the sole source of truth, so a contradicting recession is ignored.
+    const contradicting = clone(bundle);
+    for (const entry of contradicting.entry ?? []) {
+      for (const comp of ((entry.resource as Any)?.component ?? []) as Any[]) {
+        if ((comp.code?.coding ?? []).some((c: Any) => c.code === "4356008")) comp.valueQuantity.value = 9;
+      }
+    }
+    expect((parseFhirBundle(contradicting).teeth["16"] as Any).perio.gm).toEqual(MOLAR_16.perio.gm);
+
+    // A recession component alone never charts a margin: an absent margin means
+    // "not recorded", and recession is derived output, like attachment loss.
+    const marginless = clone(bundle);
+    for (const entry of marginless.entry ?? []) {
+      const resource = entry.resource as Any;
+      if (!Array.isArray(resource?.component)) continue;
+      resource.component = (resource.component as Any[]).filter((c) =>
+        !(c.code?.coding ?? []).some((x: Any) => x.code === PERIO_LOINC.gingivalMarginToCej));
+    }
+    const back = parseFhirBundle(marginless).teeth["16"] as Any;
+    expect(back.perio.gm).toEqual({});
+    expect(back.perio.pd).toEqual(MOLAR_16.perio.pd);
+  });
+
+  it("round-trips the full canonical periodontal payload unchanged", () => {
+    const payload = payloadOf({ "16": MOLAR_16, "36": IMPLANT_36 });
+    const bundle = buildFhirBundle(payload, { dialect: "dental-de", effectiveDateTime: EFFECTIVE });
+    const back = parseFhirBundle(bundle);
+    expect((back.teeth["16"] as Any).perio.gm).toEqual(MOLAR_16.perio.gm);
+    expect((back.teeth["16"] as Any).perio.pd).toEqual(MOLAR_16.perio.pd);
+    expect((back.teeth["36"] as Any).perio.pd).toEqual(IMPLANT_36.perio.pd);
+  });
+});
+
+describe("bead odontogram-18h — verified terminology (AC5)", () => {
+  it("records both corrected concepts with their fixing profile and lookup result", () => {
+    const bop = SCT_PROVENANCE.bleedingOnProbing;
+    expect(bop.code).toBe("249420004");
+    expect(bop.meaning).toBe("Bleeding on probing of gingivae");
+    expect(bop.valueSet).toBe("PeriodontalObservationDE / PeriImplantObservationDE (fixed component code)");
+    expect(bop.verifiedBy).toMatch(/tx\.fhir\.org/);
+
+    const recession = SCT_PROVENANCE.gingivalRecession;
+    expect(recession.code).toBe("4356008");
+    expect(VERIFIED_SCT.gingivalRecession).toBe("4356008");
+    expect(recession.meaning).toBe("Gingival recession");
+    expect(recession.valueSet).toBe("PeriodontalObservationDE (fixed component code)");
+    expect(recession.verifiedBy).toMatch(/tx\.fhir\.org/);
+    // The retired rejection survives as a historical note, not as a refusal.
+    expect(recession.verifiedBy).toContain(RETIRED_RECESSION_SCT);
   });
 });
 

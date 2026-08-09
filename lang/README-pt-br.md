@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.7.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.8.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -551,9 +551,10 @@ presença de placa, os índices de Silness-Löe e Löe-Silness, a largura de gen
 queratinizada e os índices peri-implantares de Mombelli, cada um qualificado por
 `PeriodontalMeasurementSiteExt` ou `ToothSurfacesExt` da IG. Um achado avaliado como
 normal é um `false`/`0` explícito e uma lacuna registrada é um `dataAbsentReason`
-padrão. O componente de recessão é deliberadamente omitido: o SCTID que a IG fixa
-para ele significa na verdade "Accretion on teeth", então a margem com sinal carrega
-o achado (`REJECTED_SCT` registra a evidência).
+padrão. A recessão gengival (a partir da 2.8.0) é
+emitida por sítio, mas apenas onde a margem com sinal é uma recessão real; a
+margem continua sendo a fonte da verdade, portanto um componente de recessão
+importado nunca é lido de volta para ela.
 
 `parseFhirBundle` lê **ambos** os dialetos, inclusive um bundle misto, de modo que bundles
 já exportados continuam a ser importados sem alteração.

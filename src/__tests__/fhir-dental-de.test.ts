@@ -541,11 +541,12 @@ describe("odontogram-3l1 AC3: canonical read-back and legacy tolerance", () => {
 // ---------------------------------------------------------------------------
 
 /**
- * The complete membership of the four IG ValueSets this bead may draw codes
- * from, transcribed from `input/fsh/valuesets/<name>.fsh` in
- * `fhir-dental-de` at commit `2a352fc`. Pinning the membership here — rather
- * than only the ValueSet NAMES — is what makes the provenance assertion an
- * external constraint: a code added to `VERIFIED_SCT` that the IG does not
+ * The complete membership of the IG artifacts this adapter may draw codes from,
+ * transcribed from `input/fsh/valuesets/<name>.fsh` and
+ * `input/fsh/profiles/<name>.fsh` in `fhir-dental-de` at commit `27e0b7f`
+ * (bead odontogram-18h; previously `2a352fc`). Pinning the membership here —
+ * rather than only the ValueSet NAMES — is what makes the provenance assertion
+ * an external constraint: a code added to `VERIFIED_SCT` that the IG does not
  * actually admit fails this test instead of passing it.
  */
 const ADMITTED_VALUE_SET_MEMBERS: Record<string, string[]> = {
@@ -559,11 +560,31 @@ const ADMITTED_VALUE_SET_MEMBERS: Record<string, string[]> = {
   // Bead odontogram-5cz: the periodontal profiles do not bind a ValueSet on
   // these positions — they FIX the SCTID on the component slice, which admits
   // nothing else there. The lists below are the fixed codes of each profile.
+  // Bead odontogram-18h: IG PR #94 corrected recession `6288001` -> `4356008`
+  // and bleeding on probing `86276007` -> `249420004` on both profiles.
   "PeriodontalObservationDE (fixed component code)": [
-    "6288001", "86276007", "771311009", "109728009", "251307008",
+    "4356008", "249420004", "771311009", "109728009", "251307008",
   ],
-  "PeriodontalObservationDE / PeriImplantObservationDE (fixed component code)": ["86276007"],
+  "PeriodontalObservationDE / PeriImplantObservationDE (fixed component code)": ["249420004"],
 };
+
+/**
+ * The SNOMED CT membership of `PeriodontalFindingCodesVS`, transcribed from
+ * `input/fsh/valuesets/PeriodontalFindingCodesVS.fsh` at `27e0b7f`.
+ *
+ * This ValueSet is NOT the admission source for the periodontal component
+ * codes — the profiles FIX those on their slices, which is stronger, and the
+ * two sets are deliberately not identical (`251307008`, fixed on
+ * `component[plaqueIndex]`, is not a ValueSet member). It is pinned because IG
+ * PR #94 rewrote it in the same change: it now carries the corrected
+ * `4356008` and `249420004`, publishes no displays at all (SNOMED displays are
+ * licensed), and dropped the localized/generalized alveolar-bone-loss members
+ * `427936003` and `428245007`, because extent is a separate axis
+ * (`ebz-par-ausmass-verteilung`).
+ */
+const PERIODONTAL_FINDING_CODES_VS_SCT = [
+  "109629007", "4356008", "249420004", "771311009", "109728009", "2556008", "109706009",
+];
 
 /** Every SNOMED coding anywhere in a bundle (components and values alike). */
 function snomedCodings(bundle: Bundle): Array<{ system?: string; code?: string; display?: string }> {
@@ -815,5 +836,83 @@ describe("odontogram-chz: verified SNOMED coverage", () => {
     expect(back.toothSelection).toBe("tooth-under-gum");
     expect(back.prosthesis).toBe("removable-full");
     expect(back.apicalDx).toBe("acute-apical-abscess");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// odontogram-18h: the IG's SNOMED cleanup (fhir-dental-de PRs #94-96, 27e0b7f)
+// ---------------------------------------------------------------------------
+
+describe("odontogram-18h: IG ValueSet pins at 27e0b7f", () => {
+  it("draws every periodontal SNOMED code from a slice the IG fixes and carries no display", () => {
+    const payload: OdontogramExportPayload = {
+      version: "2.21",
+      globals: {},
+      teeth: {
+        // A fully charted natural molar and an implant position, so every
+        // SNOMED code either periodontal profile can carry is on the wire.
+        "16": {
+          toothSelection: "tooth-base",
+          perio: {
+            pd: { MB: 5, B: 4, DB: 5, ML: 4, L: 3, DL: 4 },
+            gm: { MB: 2, B: -1, DB: 0 },
+            bop: ["MB"],
+            sup: ["MB"],
+          },
+          furcation: { buccal: 2 },
+          plaque: ["buccal"],
+          pi: { buccal: 2 },
+          gi: { buccal: 1 },
+          kg: 4,
+        },
+        "36": {
+          toothSelection: "implant",
+          perio: { pd: { MB: 4 }, gm: {}, bop: ["MB"], sup: [] },
+          mpi: { buccal: 1 },
+          mbi: { buccal: 2 },
+        },
+      },
+    } as OdontogramExportPayload;
+    const { bundle } = buildDentalDeBundle(payload, { effectiveDateTime: EFFECTIVE });
+
+    const perioProfiles = [
+      "https://fhir.cognovis.de/dental/StructureDefinition/periodontal-observation",
+      "https://fhir.cognovis.de/dental/StructureDefinition/peri-implant-observation",
+    ];
+    const perioCodings = perioProfiles
+      .flatMap((profile) => byProfile(bundle, profile))
+      .flatMap((o) => (o.component ?? []))
+      .flatMap((c) => [...(c.code?.coding ?? []), ...(c.valueCodeableConcept?.coding ?? [])])
+      .filter((c) => c.system === SNOMED_SYSTEM);
+
+    // The fixed component codes of the two periodontal profiles are the
+    // admission source; every SNOMED code on the wire must be one of them.
+    const fixedPerioCodes = [
+      ...ADMITTED_VALUE_SET_MEMBERS["PeriodontalObservationDE (fixed component code)"],
+      ...ADMITTED_VALUE_SET_MEMBERS[
+        "PeriodontalObservationDE / PeriImplantObservationDE (fixed component code)"],
+    ];
+    expect(perioCodings.length).toBeGreaterThan(0);
+    for (const coding of perioCodings) {
+      expect(fixedPerioCodes, `unadmitted periodontal SCTID ${coding.code}`).toContain(coding.code);
+      expect(coding.display).toBeUndefined();
+    }
+
+    // The two concepts this bead adopts are additionally ValueSet members, so a
+    // regression in either artifact is visible here.
+    for (const code of [VERIFIED_SCT.bleedingOnProbing, VERIFIED_SCT.gingivalRecession]) {
+      expect(PERIODONTAL_FINDING_CODES_VS_SCT).toContain(code);
+      expect(perioCodings.map((c) => c.code)).toContain(code);
+    }
+  });
+
+  it("keeps the retired codes out of the pins and out of the wire", () => {
+    for (const retired of ["6288001", "86276007", "427936003", "428245007"]) {
+      expect(PERIODONTAL_FINDING_CODES_VS_SCT).not.toContain(retired);
+      expect(Object.values(VERIFIED_SCT)).not.toContain(retired);
+      for (const members of Object.values(ADMITTED_VALUE_SET_MEMBERS)) {
+        expect(members, retired).not.toContain(retired);
+      }
+    }
   });
 });

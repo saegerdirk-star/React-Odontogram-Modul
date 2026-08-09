@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.7.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.8.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -554,9 +554,10 @@ stupeň furkácie so vstupom, prítomnosť plaku, indexy Silness-Löe a Löe-Sil
 šírka keratinizovanej gingívy a periimplantátové Mombelliho indexy, každý
 kvalifikovaný rozšírením `PeriodontalMeasurementSiteExt` alebo `ToothSurfacesExt` z
 IG. Vyšetrený normálny nález je explicitné `false`/`0` a zaznamenaná medzera
-štandardný `dataAbsentReason`. Komponent recesie sa zámerne nevydáva: SCTID, ktoré
-preň IG fixuje, v skutočnosti znamená „Accretion on teeth", takže nález nesie
-znamienkový gingiválny okraj (`REJECTED_SCT` zaznamenáva dôkaz).
+štandardný `dataAbsentReason`. Gingiválna recesia (od 2.8.0) sa vydáva
+pre každé miesto, ale len tam, kde je znamienkový gingiválny okraj skutočnou
+recesiou; zdrojom pravdy zostáva okraj, takže importovaný komponent recesie sa
+doň nikdy nezapisuje späť.
 
 `parseFhirBundle` číta **oba** dialekty vrátane zmiešaného balíka, takže už exportované
 balíky sa importujú nezmenene.

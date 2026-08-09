@@ -12,9 +12,14 @@
 // renderer inventing terminology.
 //
 // SOURCING RULE (unchanged from dentalDeCodesystems.ts): every identifier is
-// copied from the published IG definition. A concept the IG fixes but whose
-// verified meaning contradicts the IG's own label is NOT emitted — see
-// `REJECTED_SCT`.
+// copied from the published IG definition, and a fixed concept is emitted only
+// once an authoritative lookup confirms the meaning the IG's label claims for
+// it — see `SCT_PROVENANCE`.
+//
+// Bead odontogram-18h tracks the IG's SNOMED cleanup (fhir-dental-de PRs
+// #94-96): bleeding on probing moved to `249420004`, and the corrected
+// recession concept `4356008` retires the refusal bead odontogram-5cz recorded,
+// so the recession derived from the signed margin is now emitted.
 //
 // SPLIT BY POSITION. A natural position yields one `PeriodontalObservationDE`.
 // An implant position yields one `PeriImplantObservationDE` plus the
@@ -36,7 +41,7 @@ import {
   PERIO_LOINC, PA_BEFUND, PERIODONTAL_INDEX, PERI_IMPLANT_FINDING,
   PERIODONTAL_SITE_CODE, GLICKMAN_GRADE_CODE,
   IMPLANT_PLACEHOLDER_IDENTIFIER_SYSTEM, IMPLANT_DEVICE_TYPE_TEXT,
-  VERIFIED_SCT, REJECTED_SCT, toFdiSurface,
+  VERIFIED_SCT, toFdiSurface,
 } from "./dentalDeCodesystems";
 
 // The `fhir/r4` types do not model `Observation.component.extension` (an R4
@@ -59,6 +64,26 @@ type IndexSurface = typeof INDEX_SURFACES[number];
 /** Keratinized gingiva width is a single BUCCAL scalar in the engine, and the
  *  IG's slice qualifies it with a six-site measurement site. */
 const KG_SITE: PerioSite = "B";
+
+/**
+ * The engine's clinical range for a probing depth: an integer 1-15 millimetres.
+ * A value below the floor is the engine's own "un-chart this site" signal — a
+ * probing depth of 0 is "not probed", not a reading — and a non-integer or
+ * out-of-range value cannot have come from the editor at all.
+ *
+ * Mirrored here rather than imported, like `PERIO_SITES`, so this codec stays
+ * independent of the stateful editor module. A site whose depth fails this test
+ * is NOT charted, so it contributes no component at all: emitting a margin,
+ * attachment loss, bleeding or recession there would state a finding about a
+ * site the source never probed.
+ */
+const PD_MIN_MM = 1;
+const PD_MAX_MM = 15;
+
+function isChartedDepth(value: unknown): value is number {
+  return isFiniteNumber(value) && Number.isInteger(value)
+    && value >= PD_MIN_MM && value <= PD_MAX_MM;
+}
 
 /** The peri-implant examination Dental-DE defines. Mirrors `IMPLANT_PERIO_AXES`
  *  in odontogram.ts, minus `mobility`, which this dialect does not project. */
@@ -191,7 +216,7 @@ function readPerioSource(rec: ToothRecord): PerioSource {
     gm,
     bop: strings(perio?.bop),
     sup: strings(perio?.sup),
-    chartedSites: PERIO_SITES.filter((s) => isFiniteNumber(pd[s])),
+    chartedSites: PERIO_SITES.filter((s) => isChartedDepth(pd[s])),
     furcation: gradedSurfaces(rec.furcation, 1, 4),
     plaque: INDEX_SURFACES.filter((s) => plaqueRaw.includes(s)),
     pi: gradedSurfaces(rec.pi, 1, 3),
@@ -299,12 +324,36 @@ function naturalSiteComponents(src: PerioSource, build: PanelBuild): void {
     components.push(component(loinc(PERIO_LOINC.gingivalMarginToCej), { valueQuantity: mm(value) }, siteExtension(site)));
     valued.add(valueKey("gm", site));
   }
+  recessionComponents(src, build);
   for (const site of src.chartedSites) {
     const gmValue = src.gm[site];
     const cal = (src.pd[site] as number) + (isFiniteNumber(gmValue) ? gmValue : 0);
     components.push(component(localCode(PA_BEFUND_TYPE_SYSTEM, PA_BEFUND.attachmentLoss), { valueQuantity: mm(cal) }, siteExtension(site)));
   }
   bleedingAndSuppuration(src, build);
+}
+
+/**
+ * Gingival recession, DERIVED from the signed margin as `max(gm, 0)` and
+ * emitted only where that is an actual recession.
+ *
+ * A margin of zero or a coronal margin (a pseudopocket, `gm < 0`) is not a
+ * recession, and a site with no recorded margin has nothing to derive from, so
+ * neither produces a component — emitting `0 mm` everywhere would turn "not
+ * recorded" and "no recession" into the same statement.
+ *
+ * `PeriImplantObservationDE` has no recession slice (an implant has no CEJ to
+ * reference), so this runs on the natural-tooth panel only. The derivation is
+ * one-way: the reader restores `perio.gm` from LOINC 64043-3 alone.
+ */
+function recessionComponents(src: PerioSource, build: PanelBuild): void {
+  for (const site of src.chartedSites) {
+    const value = src.gm[site];
+    if (!isFiniteNumber(value) || value <= 0) continue;
+    build.components.push(component(
+      sct(VERIFIED_SCT.gingivalRecession), { valueQuantity: mm(value) }, siteExtension(site),
+    ));
+  }
 }
 
 /** Bleeding and suppuration are charted per probing site on BOTH profiles, with
@@ -376,19 +425,6 @@ function assessmentComponents(
 // Boundary reporting
 // ---------------------------------------------------------------------------
 
-function reportRecession(src: PerioSource, fdi: string, ctx: DentalDePerioContext): void {
-  const anyRecession = src.chartedSites.some((s) => {
-    const value = src.gm[s];
-    return isFiniteNumber(value) && value > 0;
-  });
-  if (!anyRecession) return;
-  const rejected = REJECTED_SCT.gingivalRecession;
-  ctx.reportUnmapped({
-    tooth: fdi, field: "perio.recession", value: "positive gingival margin",
-    reason: `PeriodontalObservationDE fixes its recession component to SNOMED CT ${rejected.code}, whose verified meaning is "${rejected.verifiedMeaning}", not "${rejected.igLabel}". ${rejected.consequence}`,
-  });
-}
-
 function reportForeignAxes(
   fdi: string, foreign: Array<[string, number]>, reason: string, ctx: DentalDePerioContext,
 ): void {
@@ -446,7 +482,6 @@ function buildPeriodontal(ctx: DentalDePerioContext, fdi: string, src: PerioSour
 
   assessmentComponents(src, fdi, (axis) => axis !== "mpi" && axis !== "mbi", ctx, build);
 
-  reportRecession(src, fdi, ctx);
   reportForeignAxes(fdi, [["mpi", src.mpi.length], ["mbi", src.mbi.length]],
     "The Mombelli modified indices are peri-implant instruments; PeriodontalObservationDE has no slice for them and this position is not an implant.", ctx);
 
