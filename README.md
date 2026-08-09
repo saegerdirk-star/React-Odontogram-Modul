@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
-[![Version](https://img.shields.io/badge/version-2.4.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
+[![Version](https://img.shields.io/badge/version-2.5.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](https://raw.githubusercontent.com/ZoliQua/React-Odontogram-Modul/main/src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
 
@@ -127,6 +127,15 @@ the biting surface is coded `I` on an anterior tooth and `O` on a posterior one)
 Where the IG defines no coded value it uses `CodeableConcept.text` under the
 relevant extensible binding — never an invented code — and `report.textFallback`
 / `report.unmapped` name every such value so nothing degrades silently.
+
+**Verified SNOMED coverage (from 2.5.0):** a clinical value is coded only when
+the IG's own ValueSets admit the concept AND its meaning has been verified;
+`SCT_PROVENANCE` in `dentalDeCodesystems.ts` records the admitting ValueSet and
+the verification source for every emitted code. Root caries, internal and
+external cervical root resorption, apical periodontitis and the
+restoration-integrity findings are coded on that basis. The exact source
+assessment always stays in `CodeableConcept.text`, and no `Coding.display` is
+invented, because the IG omits displays.
 
 `parseFhirBundle` reads **both** dialects, including a bundle that mixes them, so
 previously exported bundles keep importing unchanged.

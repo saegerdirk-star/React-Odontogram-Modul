@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2026-08-09
+
+### Changed
+
+- **Wider verified SNOMED coverage in the canonical `dental-de` export.** The
+  canonical dialect used to emit only five SNOMED CT concepts and carried every
+  other clinical value as `CodeableConcept.text`. Five more engine axes now
+  export a coded value as well: root caries (`234975001`), internal root
+  resorption (`52994003`), external cervical root resorption (`41918006`),
+  symptomatic and asymptomatic apical periodontitis (`39273001`), and the
+  restoration-integrity findings — crown marginal leakage and every
+  per-surface filling defect (`109728009`). Each code is admitted by the IG's
+  own `RootEndodonticStateVS` / `RestorationStatusVS`, and the exact source
+  assessment still travels in `CodeableConcept.text`, so nothing that used to
+  read back stops reading back and no text value changed.
+- **Recorded verification provenance.** `src/fhir/dentalDeCodesystems.ts` now
+  exports `SCT_PROVENANCE`, a per-code record naming the admitting IG ValueSet
+  and where the concept's meaning was verified (the IG's own examples and
+  contract script, plus read-only `$lookup` / `$subsumes` / `$expand` answers
+  from HL7's public FHIR terminology server). A code with no recorded
+  provenance is not emitted, and no `Coding.display` is invented — the IG omits
+  displays because they are licensed.
+- **Explicit boundary for what stays text.** Values with no concept they
+  provably entail keep the text fallback and keep appearing in
+  `DentalDeConversionReport.textFallback`: the remaining `ToothPresenceStateVS`
+  members are eruption-timing/disturbance concepts no engine value entails; all
+  of `ProstheticStateVS` describes denture failure findings while the engine's
+  `prosthesis` axis names a device type; apical abscess and condensing osteitis
+  are not subsumed by the admitted apical-periodontitis concept; and the
+  incomplete-root-filling, endodontic-post and periapical-subtype values have
+  no admitted counterpart.
+
 ## [2.4.0] - 2026-08-09
 
 ### Added

@@ -29,6 +29,12 @@ import {
   DENTAL_DE_CATEGORY_SYSTEM,
   TOOTH_SURFACES_EXT_URL,
   FDI_SURFACE_SYSTEM,
+  SNOMED_SYSTEM,
+  VERIFIED_SCT,
+  SCT_PROVENANCE,
+  rootCariesSct,
+  resorptionSct,
+  apicalDxSct,
 } from "../fhir/dentalDeCodesystems";
 import type { Bundle, Observation, OdontogramExportPayload } from "../fhir/types";
 import { LOCAL_SYSTEM } from "../fhir/codesystems";
@@ -275,11 +281,13 @@ describe("odontogram-3l1 AC3: canonical fhir-dental-de emission", () => {
       .filter((c) => (c.code?.coding ?? []).some((x) => x.code === "root-endodontic-state"))
       .map((c) => c.valueCodeableConcept?.text ?? "");
     expect(rootStates.some((t) => /root caries/i.test(t))).toBe(true);
+    // Bead odontogram-chz: root caries is an admitted, verified concept, so it
+    // is coded and no longer a text fallback.
+    expect(report.textFallback.map((u) => u.field)).not.toContain("rootCaries");
 
     // Everything emitted as text under an extensible binding is reported, so a
     // consumer can see it is a source assessment and not a coded concept.
     const textFields = report.textFallback.map((u) => u.field);
-    expect(textFields).toContain("rootCaries");
     expect(textFields).toContain("radiographicDepth");
     expect(textFields).toContain("cariesSeverity");
     for (const entry of [...report.textFallback, ...report.unmapped]) {
@@ -474,6 +482,33 @@ describe("odontogram-3l1 AC3: canonical read-back and legacy tolerance", () => {
     expect(back.cariesSeverity).toEqual({ occlusal: 3, subcrown: 2, distal: 5 });
   });
 
+  it("reads back the newly coded root/restoration values unchanged (odontogram-chz)", () => {
+    const payload: OdontogramExportPayload = {
+      version: "2.20",
+      globals: {},
+      teeth: {
+        "46": {
+          toothSelection: "tooth-base",
+          rootCaries: "arrested",
+          resorptionType: "external-cervical",
+          apicalDx: "symptomatic-apical-periodontitis",
+          restorationType: "crown",
+          crownLeakage: true,
+          fillingSurfaceMaterials: { occlusal: "composite", buccal: "composite" },
+          fillingDefect: { occlusal: "fracture", buccal: "wear" },
+        },
+      },
+    };
+    const bundle = buildFhirBundle(payload, { dialect: "dental-de", effectiveDateTime: EFFECTIVE });
+    const back = parseFhirBundle(bundle).teeth["46"];
+
+    expect(back.rootCaries).toBe("arrested");
+    expect(back.resorptionType).toBe("external-cervical");
+    expect(back.apicalDx).toBe("symptomatic-apical-periodontitis");
+    expect(back.crownLeakage).toBe(true);
+    expect(back.fillingDefect).toEqual({ occlusal: "fracture", buccal: "wear" });
+  });
+
   it("still accepts the previously supported legacy bundle representation", () => {
     const legacy = buildFhirBundle(RESTORED_TOOTH);
     const payload = parseFhirBundle(legacy);
@@ -498,5 +533,280 @@ describe("odontogram-3l1 AC3: canonical read-back and legacy tolerance", () => {
     const payload = parseFhirBundle(mixed);
     expect(payload.teeth["36"].toothSelection).toBe("implant");
     expect(payload.teeth["46"].restorationType).toBe("onlay");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// odontogram-chz: widened SNOMED coverage
+// ---------------------------------------------------------------------------
+
+/**
+ * The complete membership of the four IG ValueSets this bead may draw codes
+ * from, transcribed from `input/fsh/valuesets/<name>.fsh` in
+ * `fhir-dental-de` at commit `2a352fc`. Pinning the membership here — rather
+ * than only the ValueSet NAMES — is what makes the provenance assertion an
+ * external constraint: a code added to `VERIFIED_SCT` that the IG does not
+ * actually admit fails this test instead of passing it.
+ */
+const ADMITTED_VALUE_SET_MEMBERS: Record<string, string[]> = {
+  ToothPresenceStateVS: ["278661005", "234948008", "66569006", "110294004", "5639000", "234972003"],
+  RootEndodonticStateVS: ["234975001", "41918006", "52994003", "39273001", "718392007"],
+  RestorationStatusVS: ["109728009", "109729001", "109735001", "702645001"],
+  ProstheticStateVS: [
+    "278630001", "278631002", "699710002", "699828007", "699856002", "699857006",
+    "702529006", "702530001", "710783007", "710784001", "711285008",
+  ],
+};
+
+/** Every SNOMED coding anywhere in a bundle (components and values alike). */
+function snomedCodings(bundle: Bundle): Array<{ system?: string; code?: string; display?: string }> {
+  const out: Array<{ system?: string; code?: string; display?: string }> = [];
+  const walk = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      for (const item of node) walk(item);
+      return;
+    }
+    if (!node || typeof node !== "object") return;
+    const rec = node as Record<string, unknown>;
+    if (rec.system === SNOMED_SYSTEM && typeof rec.code === "string") {
+      out.push(rec as { system?: string; code?: string; display?: string });
+    }
+    for (const value of Object.values(rec)) walk(value);
+  };
+  walk(bundle.entry ?? []);
+  return out;
+}
+
+function rootStates(obs: Observation): Array<{ code?: string; text?: string }> {
+  return (obs.component ?? [])
+    .filter((c) => (c.code?.coding ?? []).some((x) => x.code === "root-endodontic-state"))
+    .map((c) => ({
+      code: c.valueCodeableConcept?.coding?.find((x) => x.system === SNOMED_SYSTEM)?.code,
+      text: c.valueCodeableConcept?.text,
+    }));
+}
+
+function restorationStates(obs: Observation): Array<{ code?: string; text?: string; surfaces: string[] }> {
+  return (obs.component ?? [])
+    .filter((c) => (c.code?.coding ?? []).some((x) => x.code === "restoration-status"))
+    .map((c) => ({
+      code: c.valueCodeableConcept?.coding?.find((x) => x.system === SNOMED_SYSTEM)?.code,
+      text: c.valueCodeableConcept?.text,
+      surfaces: surfacesOf(c),
+    }));
+}
+
+describe("odontogram-chz: verified SNOMED coverage", () => {
+  it("every widened SCTID is admitted by an IG ValueSet and carries no invented display", () => {
+    // Nothing is emitted that the provenance table does not account for.
+    for (const [key, code] of Object.entries(VERIFIED_SCT)) {
+      const entry = SCT_PROVENANCE[key as keyof typeof VERIFIED_SCT];
+      expect(entry, `missing provenance for ${key}`).toBeDefined();
+      expect(entry.code).toBe(code);
+      expect(entry.meaning.length).toBeGreaterThan(0);
+      expect(entry.verifiedBy.length).toBeGreaterThan(0);
+      // The named ValueSet must exist AND actually admit this code.
+      const members = ADMITTED_VALUE_SET_MEMBERS[entry.valueSet];
+      expect(members, `unknown ValueSet ${entry.valueSet} for ${key}`).toBeDefined();
+      expect(members, `${entry.valueSet} does not admit ${code}`).toContain(code);
+    }
+
+    const payload: OdontogramExportPayload = {
+      version: "2.20",
+      globals: {},
+      teeth: {
+        "46": {
+          toothSelection: "tooth-base",
+          endo: "endo-filling",
+          rootCaries: "active",
+          resorptionType: "internal",
+          apicalDx: "asymptomatic-apical-periodontitis",
+          restorationType: "crown",
+          crownLeakage: true,
+        },
+        "18": { toothSelection: "tooth-base", toothSubstrate: "radix" },
+        "25": { toothSelection: "none" },
+      },
+    };
+    const { bundle } = buildDentalDeBundle(payload, { effectiveDateTime: EFFECTIVE });
+    const codings = snomedCodings(bundle);
+    expect(codings.length).toBeGreaterThan(0);
+    const admitted = new Set<string>(Object.values(VERIFIED_SCT));
+    for (const coding of codings) {
+      expect(admitted, `unadmitted SCTID ${coding.code}`).toContain(coding.code);
+      // The IG publishes these SCTIDs without displays because the displays are
+      // licensed; inventing one would put an unverified string on the wire.
+      expect(coding.display).toBeUndefined();
+    }
+  });
+
+  it("codes only whitelisted engine values and leaves an unrecognized one on text", () => {
+    // Every mapper is a whitelist, not a not-"none" test: a value whose meaning
+    // was never verified must never acquire a canonical SNOMED assertion, even
+    // if a later payload version introduces it.
+    expect(rootCariesSct("none")).toBeUndefined();
+    expect(rootCariesSct("")).toBeUndefined();
+    expect(rootCariesSct("rampant")).toBeUndefined();
+    for (const value of ["active", "arrested", "active-cavitated"]) {
+      expect(rootCariesSct(value)).toBe("234975001");
+    }
+    expect(resorptionSct("replacement")).toBeUndefined();
+    expect(apicalDxSct("condensing-osteitis")).toBeUndefined();
+
+    const { bundle, report } = buildDentalDeBundle(
+      {
+        version: "2.20",
+        globals: {},
+        // An unrecognized value stands in for a future payload version the
+        // installed adapter has not verified yet.
+        teeth: { "46": { toothSelection: "tooth-base", rootCaries: "rampant" } },
+      },
+      { effectiveDateTime: EFFECTIVE },
+    );
+    const obs = byProfile(bundle, DENTAL_DE_ODONTOGRAM_PROFILE)[0];
+    expect(rootStates(obs)).toEqual([{ code: undefined, text: "rampant" }]);
+    expect(report.textFallback.map((e) => e.field)).toContain("rootCaries");
+  });
+
+  it("codes root caries, resorption and apical periodontitis on the root-endodontic slice", () => {
+    const { bundle } = buildDentalDeBundle(
+      {
+        version: "2.20",
+        globals: {},
+        teeth: {
+          "46": {
+            toothSelection: "tooth-base",
+            rootCaries: "active-cavitated",
+            resorptionType: "internal",
+            apicalDx: "symptomatic-apical-periodontitis",
+          },
+          "36": {
+            toothSelection: "tooth-base",
+            resorptionType: "external-cervical",
+            apicalDx: "asymptomatic-apical-periodontitis",
+          },
+        },
+      },
+      { effectiveDateTime: EFFECTIVE },
+    );
+    const all = byProfile(bundle, DENTAL_DE_ODONTOGRAM_PROFILE);
+    const upper = rootStates(all.find((o) => toothOf(o) === "46")!);
+    const lower = rootStates(all.find((o) => toothOf(o) === "36")!);
+
+    // Root caries: the admitted concept is exact for every graded engine value,
+    // and the grade itself survives in `.text`.
+    expect(upper).toContainEqual({ code: "234975001", text: "Active cavitated root caries" });
+    // Internal resorption: an exact admitted concept.
+    expect(upper).toContainEqual({ code: "52994003", text: "Internal root resorption" });
+    // Apical periodontitis: the admitted parent of both AAE variants.
+    expect(upper).toContainEqual({ code: "39273001", text: "Symptomatic apical periodontitis" });
+    expect(lower).toContainEqual({ code: "39273001", text: "Asymptomatic apical periodontitis" });
+    // External cervical resorption is a descendant of the admitted parent, so
+    // the parent is emitted and the exact source value stays in `.text`.
+    expect(lower).toContainEqual({ code: "41918006", text: "External cervical root resorption" });
+  });
+
+  it("codes crown leakage and filling defects as defective dental restoration", () => {
+    const { bundle } = buildDentalDeBundle(
+      {
+        version: "2.20",
+        globals: {},
+        teeth: {
+          "46": { toothSelection: "tooth-base", restorationType: "crown", crownLeakage: true },
+          "36": {
+            toothSelection: "tooth-base",
+            fillingSurfaceMaterials: { occlusal: "composite", buccal: "composite", distal: "composite" },
+            fillingDefect: { occlusal: "marginal", buccal: "fracture", distal: "wear" },
+          },
+        },
+      },
+      { effectiveDateTime: EFFECTIVE },
+    );
+    const all = byProfile(bundle, DENTAL_DE_ODONTOGRAM_PROFILE);
+
+    const leakage = restorationStates(all.find((o) => toothOf(o) === "46")!);
+    expect(leakage).toHaveLength(1);
+    expect(leakage[0].code).toBe("109728009");
+    expect(leakage[0].text).toMatch(/leakage/i);
+
+    const defects = restorationStates(all.find((o) => toothOf(o) === "36")!);
+    expect(defects).toHaveLength(3);
+    for (const defect of defects) expect(defect.code).toBe("109728009");
+    // Surface qualification is untouched by the widened coding.
+    expect(defects.map((d) => d.surfaces).sort()).toEqual([["B"], ["D"], ["O"]].sort());
+  });
+
+  it("drops newly coded fields from textFallback and keeps the unverifiable ones", () => {
+    const { report } = buildDentalDeBundle(
+      {
+        version: "2.20",
+        globals: {},
+        teeth: {
+          "46": {
+            toothSelection: "tooth-base",
+            rootCaries: "active",
+            resorptionType: "external-cervical",
+            apicalDx: "symptomatic-apical-periodontitis",
+            restorationType: "crown",
+            crownLeakage: true,
+            fillingSurfaceMaterials: { occlusal: "composite" },
+            fillingDefect: { occlusal: "marginal" },
+          },
+          "36": {
+            toothSelection: "tooth-under-gum",
+            endo: "endo-filling-incomplete",
+            apicalDx: "chronic-apical-abscess",
+            periapicalType: "cyst",
+            prosthesis: "removable-partial",
+          },
+        },
+      },
+      { effectiveDateTime: EFFECTIVE },
+    );
+    const coded = report.textFallback.filter((e) => e.tooth === "46").map((e) => e.field);
+    expect(coded).not.toContain("rootCaries");
+    expect(coded).not.toContain("resorptionType");
+    expect(coded).not.toContain("apicalDx");
+    expect(coded).not.toContain("crownLeakage");
+    expect(coded).not.toContain("fillingDefect");
+
+    const stillText = report.textFallback.filter((e) => e.tooth === "36").map((e) => e.field);
+    expect(stillText).toContain("toothSelection");
+    expect(stillText).toContain("endo");
+    expect(stillText).toContain("apicalDx");
+    expect(stillText).toContain("periapicalType");
+    expect(stillText).toContain("prosthesis");
+    for (const entry of report.textFallback) expect(entry.reason).toBeTruthy();
+  });
+
+  it("read-back is unchanged and prosthetic/eruption values stay text", () => {
+    const payload: OdontogramExportPayload = {
+      version: "2.20",
+      globals: {},
+      teeth: {
+        "46": {
+          toothSelection: "tooth-under-gum",
+          prosthesis: "removable-full",
+          apicalDx: "acute-apical-abscess",
+        },
+      },
+    };
+    const { bundle } = buildDentalDeBundle(payload, { effectiveDateTime: EFFECTIVE });
+    const obs = byProfile(bundle, DENTAL_DE_ODONTOGRAM_PROFILE)[0];
+
+    // ToothPresenceStateVS's remaining members are eruption timing/disturbance
+    // concepts; the engine has no value that entails any of them.
+    expect(component(obs, "tooth-presence")?.valueCodeableConcept?.coding).toBeUndefined();
+    // ProstheticStateVS admits denture failure findings only; the engine's
+    // `prosthesis` axis names a device type, which the IG carries as a Device.
+    expect(component(obs, "prosthetic-state")?.valueCodeableConcept?.coding).toBeUndefined();
+    // An apical abscess is not subsumed by the admitted apical-periodontitis
+    // concept, so it stays text.
+    expect(rootStates(obs)).toContainEqual({ code: undefined, text: "Acute apical abscess" });
+
+    const back = parseFhirBundle(bundle).teeth["46"];
+    expect(back.toothSelection).toBe("tooth-under-gum");
+    expect(back.prosthesis).toBe("removable-full");
+    expect(back.apicalDx).toBe("acute-apical-abscess");
   });
 });
