@@ -8,6 +8,7 @@ import { OCCLUSAL_TEMPLATE, TOOTH_TEMPLATE } from "../odontogram";
 
 const SIDE = ["11", "13", "14", "15", "16", "46"] as const;
 const POSTERIOR_SIDE = ["14", "15", "16", "46"] as const;
+const NORMALIZED_POSTERIOR_SIDE = ["15", "16", "46"] as const;
 const ALL = [...SIDE, "14_occl", "16_occl"] as const;
 
 function readSvg(name: string): string {
@@ -175,5 +176,28 @@ describe("installed tooth SVG assets", () => {
   it("preserves the complete clinical layer sequence for split posterior templates", () => {
     expect(elementIds(readSvg("15"))).toEqual(elementIds(readSvg("14")));
     expect(elementIds(readSvg("46"))).toEqual(elementIds(readSvg("16")));
+  });
+
+  it("fits posterior clinical paint servers to each redrawn layer", () => {
+    for (const template of NORMALIZED_POSTERIOR_SIDE) {
+      const root = new DOMParser().parseFromString(readSvg(template), "image/svg+xml").documentElement;
+      const gradients = Array.from(root.querySelectorAll("linearGradient, radialGradient"));
+      expect(gradients.length, template).toBeGreaterThan(0);
+      for (const gradient of gradients) {
+        expect(gradient.getAttribute("gradientUnits"), `${template}:${gradient.id}`).toBe("objectBoundingBox");
+        expect(gradient.hasAttribute("gradientTransform"), `${template}:${gradient.id}`).toBe(false);
+      }
+    }
+  });
+
+  it("anchors posterior bridge connectors and periapical lesions inside the established tile layout", () => {
+    for (const template of NORMALIZED_POSTERIOR_SIDE) {
+      const root = new DOMParser().parseFromString(readSvg(template), "image/svg+xml").documentElement;
+      const connector = root.querySelector("#prosthesis-connector");
+      expect(connector?.getAttribute("transform"), `${template}:connector`).toMatch(/^translate\(0 -/);
+      for (const id of ["granuloma-outside", "abscess-inside"]) {
+        expect(root.querySelector(`#${id}`)?.getAttribute("transform"), `${template}:${id}`).toContain("scale(");
+      }
+    }
   });
 });

@@ -5,83 +5,83 @@
     [data-active="0"] { display: none; }
   </style>
   <defs>
-    <linearGradient id="linear-gradient-14-0" x1="-2098.8" y1="-10005.9" x2="-2095.5" y2="-10005.9" gradientTransform="translate(-537.8551 -10182.7775) rotate(-15) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <linearGradient id="linear-gradient-14-0" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset=".2" stop-color="#ff422a" stop-opacity=".5" data-active="1" />
       <stop offset="1" stop-color="#000" data-active="1" />
       </linearGradient>
-    <linearGradient id="linear-gradient-14-1" x1="-27724.8" y1="3821.9" x2="-27721.5" y2="3821.9" gradientTransform="translate(-25870.4377 -10617.4467) rotate(-165.5) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <linearGradient id="linear-gradient-14-1" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset=".2" stop-color="#ff422a" stop-opacity=".5" data-active="1" />
       <stop offset="1" stop-color="#000" data-active="1" />
       </linearGradient>
-    <linearGradient id="linear-gradient-14-2" x1="-928" y1="-8584" x2="-924.7" y2="-8584" gradientTransform="translate(-144.8074 -8614.9736) rotate(-7.3) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <linearGradient id="linear-gradient-14-2" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset=".2" stop-color="#ff422a" stop-opacity=".5" data-active="1" />
       <stop offset="1" stop-color="#000" data-active="1" />
       </linearGradient>
-    <linearGradient id="linear-gradient-14-3" x1="-27086.7" y1="5773.7" x2="-27083.4" y2="5773.7" gradientTransform="translate(-26274.9104 -8694.4515) rotate(-173.7) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <linearGradient id="linear-gradient-14-3" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset=".2" stop-color="#ff422a" stop-opacity=".5" data-active="1" />
       <stop offset="1" stop-color="#000" data-active="1" />
       </linearGradient>
-    <linearGradient id="linear-gradient-14-4" x1="-2586.9" y1="-10554.6" x2="-2583.6" y2="-10554.6" gradientTransform="translate(-542.2936 -10833.3481) rotate(-16.7) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <linearGradient id="linear-gradient-14-4" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset=".2" stop-color="#ff422a" stop-opacity=".5" data-active="1" />
       <stop offset="1" stop-color="#000" data-active="1" />
       </linearGradient>
-    <linearGradient id="linear-gradient-14-5" x1="-26854.8" y1="-856.4" x2="-26851.5" y2="-856.4" gradientTransform="translate(-25581.4928 -14735.3847) rotate(-148.4) scale(1.1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <linearGradient id="linear-gradient-14-5" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset=".2" stop-color="#ff422a" stop-opacity=".5" data-active="1" />
       <stop offset="1" stop-color="#000" data-active="1" />
       </linearGradient>
-    <linearGradient id="linear-gradient-14-6" x1="-26857.4" y1="-850.2" x2="-26854" y2="-850.2" gradientTransform="translate(-25581.4928 -14735.3847) rotate(-148.4) scale(1.1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <linearGradient id="linear-gradient-14-6" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset=".2" stop-color="#ff422a" stop-opacity=".5" data-active="1" />
       <stop offset="1" stop-color="#000" data-active="1" />
       </linearGradient>
-    <linearGradient id="linear-gradient-14-7" x1="-9941.2" y1="-14534.4" x2="-9937.7" y2="-14534.4" gradientTransform="translate(-3439.1657 -17844.7224) rotate(-47.9) scale(1.1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <linearGradient id="linear-gradient-14-7" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset=".2" stop-color="#ff422a" stop-opacity=".5" data-active="1" />
       <stop offset="1" stop-color="#000" data-active="1" />
       </linearGradient>
-    <linearGradient id="linear-gradient-14-8" x1="20.3" y1="-4027.9" x2="20.3" y2="-3989.4" gradientTransform="translate(0 -3980.1409) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <linearGradient id="linear-gradient-14-8" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset="0" stop-color="#b70000" data-active="1" />
       <stop offset="1" stop-color="#eba13d" data-active="1" />
       </linearGradient>
-    <linearGradient id="linear-gradient-14-9" x1="-2097.2" y1="-10006.2" x2="-2093.9" y2="-10006.2" gradientTransform="translate(-537.8551 -10182.7775) rotate(-15) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <linearGradient id="linear-gradient-14-9" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset=".2" stop-color="#ff422a" stop-opacity=".5" data-active="1" />
       <stop offset="1" stop-color="#000" data-active="1" />
       </linearGradient>
-    <linearGradient id="linear-gradient-14-10" x1="-27723.6" y1="3821.9" x2="-27720.3" y2="3821.9" gradientTransform="translate(-25870.4377 -10617.4467) rotate(-165.5) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <linearGradient id="linear-gradient-14-10" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset=".2" stop-color="#ff422a" stop-opacity=".5" data-active="1" />
       <stop offset="1" stop-color="#000" data-active="1" />
       </linearGradient>
-    <linearGradient id="linear-gradient-14-11" x1="-926.2" y1="-8583.1" x2="-922.9" y2="-8583.1" gradientTransform="translate(-144.8074 -8614.9736) rotate(-7.3) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <linearGradient id="linear-gradient-14-11" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset=".2" stop-color="#ff422a" stop-opacity=".5" data-active="1" />
       <stop offset="1" stop-color="#000" data-active="1" />
       </linearGradient>
-    <linearGradient id="linear-gradient-14-12" x1="-11693.7" y1="6913.8" x2="-11690.4" y2="6913.8" gradientTransform="translate(249.5197 13596.5612) rotate(58.4) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <linearGradient id="linear-gradient-14-12" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset="0" stop-color="#ff422a" data-active="1" />
       <stop offset="1" stop-color="#bf0030" data-active="1" />
       </linearGradient>
-    <linearGradient id="linear-gradient-14-13" x1="-2587.1" y1="-10555.3" x2="-2583.8" y2="-10555.3" gradientTransform="translate(-542.2936 -10833.3481) rotate(-16.7) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <linearGradient id="linear-gradient-14-13" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset=".2" stop-color="#ff422a" stop-opacity=".5" data-active="1" />
       <stop offset="1" stop-color="#000" data-active="1" />
       </linearGradient>
-    <linearGradient id="linear-gradient-14-14" x1="-26855.5" y1="-857.7" x2="-26852.2" y2="-857.7" gradientTransform="translate(-25581.4928 -14735.3847) rotate(-148.4) scale(1.1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <linearGradient id="linear-gradient-14-14" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset=".2" stop-color="#ff422a" stop-opacity=".5" data-active="1" />
       <stop offset="1" stop-color="#000" data-active="1" />
       </linearGradient>
-    <linearGradient id="linear-gradient-14-15" x1="-26858.7" y1="-850" x2="-26855.3" y2="-850" gradientTransform="translate(-25581.4928 -14735.3847) rotate(-148.4) scale(1.1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <linearGradient id="linear-gradient-14-15" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset=".2" stop-color="#ff422a" stop-opacity=".5" data-active="1" />
       <stop offset="1" stop-color="#000" data-active="1" />
       </linearGradient>
-    <linearGradient id="linear-gradient-14-16" x1="-9940.7" y1="-14534" x2="-9937.2" y2="-14534" gradientTransform="translate(-3439.1657 -17844.7224) rotate(-47.9) scale(1.1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <linearGradient id="linear-gradient-14-16" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset=".2" stop-color="#ff422a" stop-opacity=".5" data-active="1" />
       <stop offset="1" stop-color="#000" data-active="1" />
       </linearGradient>
-    <linearGradient id="linear-gradient-14-17" x1="20.3" y1="-4018.9" x2="20.3" y2="-4028.6" gradientTransform="translate(0 -3980.1409) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <linearGradient id="linear-gradient-14-17" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset=".2" stop-color="#cf0" stop-opacity=".5" data-active="1" />
       <stop offset="1" stop-color="#b4c500" data-active="1" />
       </linearGradient>
-    <linearGradient id="linear-gradient-14-18" x1="20" y1="-4015.1" x2="20" y2="-4022.6" gradientTransform="translate(0 -3980.1409) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <linearGradient id="linear-gradient-14-18" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset="0" stop-color="#c8c9c9" data-active="1" />
       <stop offset="1" stop-color="#828282" data-active="1" />
       </linearGradient>
-    <radialGradient id="radial-gradient-14-0" cx="20" cy="-3016" fx="20" fy="-3016" r="11.5" gradientTransform="matrix(1,0,0,2.16189,0,1.00000) translate(-.4 -2966.1409) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <radialGradient id="radial-gradient-14-0" cx=".5" cy=".5" fx=".5" fy=".5" r=".7" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset="0" stop-color="#fff" data-active="1" />
       <stop offset="0" stop-color="#ececec" data-active="1" />
       <stop offset=".3" stop-color="#cfcfcf" data-active="1" />
@@ -89,7 +89,7 @@
       <stop offset=".8" stop-color="#aeaeae" data-active="1" />
       <stop offset="1" stop-color="#aaa" data-active="1" />
       </radialGradient>
-    <radialGradient id="radial-gradient-14-1" cx="-300.4" cy="-3017.8" fx="-300.4" fy="-3017.8" r="10.2" gradientTransform="matrix(1,0,0,2.16189,0,1.00000) translate(380.4131 -2966.1409) scale(1.2 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <radialGradient id="radial-gradient-14-1" cx=".5" cy=".5" fx=".5" fy=".5" r=".7" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset="0" stop-color="#fff" data-active="1" />
       <stop offset="0" stop-color="#fefefe" data-active="1" />
       <stop offset=".2" stop-color="#f8d6d4" data-active="1" />
@@ -99,12 +99,12 @@
       <stop offset=".8" stop-color="#e97e79" data-active="1" />
       <stop offset="1" stop-color="#e97b76" data-active="1" />
       </radialGradient>
-    <linearGradient id="linear-gradient-14-19" x1="20.1" y1="3083.3" x2="20.1" y2="3073.7" gradientTransform="translate(0 -3026.6338)" gradientUnits="userSpaceOnUse" data-active="1">
+    <linearGradient id="linear-gradient-14-19" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset="0" stop-color="#f9ae94" data-active="1" />
       <stop offset=".5" stop-color="#cd986a" data-active="1" />
       <stop offset="1" stop-color="#f9ae94" data-active="1" />
       </linearGradient>
-    <radialGradient id="radial-gradient-14-2" cx="20.1" cy="18.2" fx="20.1" fy="18.2" r="11.9" gradientTransform="matrix(1,0,0,2.16189,0,1.00000) translate(0 69.9) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <radialGradient id="radial-gradient-14-2" cx=".5" cy=".5" fx=".5" fy=".5" r=".7" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset="0" stop-color="#feff5f" data-active="1" />
       <stop offset="0" stop-color="#f9fc60" data-active="1" />
       <stop offset=".2" stop-color="#edf564" data-active="1" />
@@ -115,7 +115,7 @@
       <stop offset=".9" stop-color="#328da3" data-active="1" />
       <stop offset="1" stop-color="#0071b5" data-active="1" />
       </radialGradient>
-    <radialGradient id="radial-gradient-14-3" cx="19.8" cy="20.1" fx="19.8" fy="20.1" r="14.6" gradientTransform="matrix(1,0,0,2.16189,0,1.00000) translate(0 69.9) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <radialGradient id="radial-gradient-14-3" cx=".5" cy=".5" fx=".5" fy=".5" r=".7" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset="0" stop-color="#feff5f" data-active="1" />
       <stop offset="0" stop-color="#f9fc60" data-active="1" />
       <stop offset=".2" stop-color="#edf564" data-active="1" />
@@ -126,7 +126,7 @@
       <stop offset=".9" stop-color="#328da3" data-active="1" />
       <stop offset="1" stop-color="#0071b5" data-active="1" />
       </radialGradient>
-    <radialGradient id="radial-gradient-14-4" cx="20.1" cy="18.2" fx="20.1" fy="18.2" r="11.9" gradientTransform="matrix(1,0,0,2.16189,0,1.00000) translate(0 69.9) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <radialGradient id="radial-gradient-14-4" cx=".5" cy=".5" fx=".5" fy=".5" r=".7" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset="0" stop-color="#fff" data-active="1" />
       <stop offset="0" stop-color="#fdf3ea" data-active="1" />
       <stop offset=".2" stop-color="#f9d8b9" data-active="1" />
@@ -137,7 +137,7 @@
       <stop offset=".9" stop-color="#ee8f33" data-active="1" />
       <stop offset="1" stop-color="#ee8d30" data-active="1" />
       </radialGradient>
-    <radialGradient id="radial-gradient-14-5" cx="20" cy="20.1" fx="20" fy="20.1" r="14.5" gradientTransform="matrix(1,0,0,2.16189,0,1.00000) translate(-.5 69.9) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <radialGradient id="radial-gradient-14-5" cx=".5" cy=".5" fx=".5" fy=".5" r=".7" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset="0" stop-color="#fff" data-active="1" />
       <stop offset="0" stop-color="#fdf3ea" data-active="1" />
       <stop offset=".2" stop-color="#f9d8b9" data-active="1" />
@@ -148,7 +148,7 @@
       <stop offset=".9" stop-color="#ee8f33" data-active="1" />
       <stop offset="1" stop-color="#ee8d30" data-active="1" />
       </radialGradient>
-    <radialGradient id="radial-gradient-14-6" cx="20.1" cy="-993.7" fx="20.1" fy="-993.7" r="8" gradientTransform="matrix(1,0,0,2.16189,0,1.00000) translate(0 -938.1) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <radialGradient id="radial-gradient-14-6" cx=".5" cy=".5" fx=".5" fy=".5" r=".7" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset="0" stop-color="#fff" data-active="1" />
       <stop offset="0" stop-color="#fdf3ea" data-active="1" />
       <stop offset=".2" stop-color="#f9d8b9" data-active="1" />
@@ -159,7 +159,7 @@
       <stop offset=".9" stop-color="#ee8f33" data-active="1" />
       <stop offset="1" stop-color="#ee8d30" data-active="1" />
       </radialGradient>
-    <radialGradient id="radial-gradient-14-7" cx="19.7" cy="-987.5" fx="19.7" fy="-987.5" r="12.7" gradientTransform="matrix(1,0,0,2.16189,0,1.00000) translate(0 -938.1) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
+    <radialGradient id="radial-gradient-14-7" cx=".5" cy=".5" fx=".5" fy=".5" r=".7" gradientUnits="objectBoundingBox" data-active="1">
       <stop offset="0" stop-color="#fff" data-active="1" />
       <stop offset="0" stop-color="#fdf3ea" data-active="1" />
       <stop offset=".2" stop-color="#f9d8b9" data-active="1" />
@@ -183,11 +183,11 @@
         <path id="cysta-inside" d="M8.41,13.76c-2.95,4.97-1.72,17.94,1.72,21.4,3.44,3.46,5.53,3.46,7.86,3.89,4.67.65,12.78-1.08,14.5-12.76,1.72-15.13-7.13-18.59-13.39-18.16-3.32,0-7.99,1.08-10.57,5.19h0v.43h0Z" data-active="1" style="fill: #feffd5;" />
         </g>
       <g id="granuloma" data-active="1" style="display: none;">
-        <path id="granuloma-outside" d="M7.8,13.76c-3.56,3.89-2.09,14.48,2.09,17.3,4.18,2.81,6.51,3.03,9.22,3.24,5.53.65,15.11-.86,17.08-10.38,2.09-12.11-8.6-14.92-15.97-14.48-3.93,0-9.46.86-12.53,4.32h0Z" data-active="1" style="fill: #ffa46a;" />
+        <path id="granuloma-outside" transform="translate(19.9 0) scale(0.82 1) translate(-19.9 0)" d="M7.8,13.76c-3.56,3.89-2.09,14.48,2.09,17.3,4.18,2.81,6.51,3.03,9.22,3.24,5.53.65,15.11-.86,17.08-10.38,2.09-12.11-8.6-14.92-15.97-14.48-3.93,0-9.46.86-12.53,4.32h0Z" data-active="1" style="fill: #ffa46a;" />
         <path id="granuloma-inside" d="M8.9,15.27c-3.19,3.24-1.84,11.67,1.84,14.05,3.69,2.38,5.9,2.38,8.36,2.59,5.04.43,13.52-.65,15.36-8.22,1.97-9.94-7.5-12.11-14.13-11.89-3.44,0-8.48.65-11.18,3.46,0,0-.25,0-.25,0Z" data-active="1" style="fill: #feffd5;" />
         </g>
       <g id="abscess" data-active="1" style="display: none;">
-        <path id="abscess-inside" d="M9.64,15.92c-1.11,1.51-3.07-3.46-7.13,2.59-4.05,6.05,5.41,4.32,5.9,9.73.49,5.4-2.83,6.05-2.09,6.92.74.86,8.11-3.89,8.72-3.68,1.35.86,2.46.86,3.56,1.08,1.6.22,3.69,0,5.53-.86,1.84-.86,3.19.65,4.05-.86.86-1.51,9.22-1.3,8.97-3.03-.25-1.73-5.28-6.27-5.16-7.35.25-1.95,4.42-7.13,4.18-8.43-.25-1.3-7.86,3.68-8.6,2.59-.74-1.08-.37-3.68-.86-4.11-.86-.65-2.21,0-3.19-.43-.98-.43-2.83-.86-4.05-.86-1.23,0-3.07.43-4.79,1.3-1.72.86-2.21,1.95-2.95,3.24l-1.72-2.16-.37,4.11h0Z" data-active="1" style="fill: #feffd5; stroke: #ffa46a; stroke-miterlimit: 10;" />
+        <path id="abscess-inside" transform="translate(19.9 0) scale(0.82 1) translate(-19.9 0)" d="M9.64,15.92c-1.11,1.51-3.07-3.46-7.13,2.59-4.05,6.05,5.41,4.32,5.9,9.73.49,5.4-2.83,6.05-2.09,6.92.74.86,8.11-3.89,8.72-3.68,1.35.86,2.46.86,3.56,1.08,1.6.22,3.69,0,5.53-.86,1.84-.86,3.19.65,4.05-.86.86-1.51,9.22-1.3,8.97-3.03-.25-1.73-5.28-6.27-5.16-7.35.25-1.95,4.42-7.13,4.18-8.43-.25-1.3-7.86,3.68-8.6,2.59-.74-1.08-.37-3.68-.86-4.11-.86-.65-2.21,0-3.19-.43-.98-.43-2.83-.86-4.05-.86-1.23,0-3.07.43-4.79,1.3-1.72.86-2.21,1.95-2.95,3.24l-1.72-2.16-.37,4.11h0Z" data-active="1" style="fill: #feffd5; stroke: #ffa46a; stroke-miterlimit: 10;" />
         </g>
       </g>
     <g id="mobility" data-active="1" style="display: none;">
@@ -427,50 +427,50 @@
       <path id="prosthesis-implant-crown" d="M24.38,89.12c-2.58-2.25-6.76-1.82-8.36.78-.37,1.21-.98,2.43-1.6,3.55-.61,1.91-1.6,5.89,1.35,6.93,1.97.52,3.93-.87,5.9-.43.86,0,1.6.35,2.33.26,5.16-.95,2.58-5.89,1.47-8.93-.25-.69-.74-1.47-1.11-2.08h0Z" data-active="1" style="display: none; fill: #f9ae94; stroke: #0a1018; stroke-miterlimit: 10;" />
       </g>
     <g id="prosthesis" data-active="1">
-      <path id="prosthesis-connector" d="M37.16,90.42c4.3-1.47,3.32-5.98-1.23-6.76-1.47-.35-3.07-.43-4.67-.43h-23.47c-2.33,0-5.16.61-6.39,1.91-1.47,1.47-1.6,3.73,0,5.11,2.09,1.39,6.14,1.3,9.34,1.3,3.19,0,8.23,0,12.53-.17,4.55-.17,10.44.17,13.52-.95,0,0,.25,0,.25,0Z" data-active="1" style="display: none; fill: url(#linear-gradient-14-19); stroke: #1b3f1c; stroke-miterlimit: 10; stroke-width: .2px;" />
+      <path id="prosthesis-connector" transform="translate(0 -9.41)" d="M37.16,90.42c4.3-1.47,3.32-5.98-1.23-6.76-1.47-.35-3.07-.43-4.67-.43h-23.47c-2.33,0-5.16.61-6.39,1.91-1.47,1.47-1.6,3.73,0,5.11,2.09,1.39,6.14,1.3,9.34,1.3,3.19,0,8.23,0,12.53-.17,4.55-.17,10.44.17,13.52-.95,0,0,.25,0,.25,0Z" data-active="1" style="display: none; fill: url(#linear-gradient-14-19); stroke: #1b3f1c; stroke-miterlimit: 10; stroke-width: .2px;" />
       <path id="prosthesis-crown" d="M28.81,74.64c-1.41-1.24-3.06-2.1-4.8-2.52-1.74-.37-3.56-.52-5.32-.38-.88.06-1.74.18-2.57.35-.83.18-1.62.45-2.36.86-1.48.8-2.74,1.92-3.63,3.33-.86,2.69-2.09,5.37-3.44,7.97-1.47,4.33-3.44,13.26,3.07,15.43,4.3,1.21,8.85-1.91,13.27-.95,1.84.26,3.44.78,5.16.61,11.55-2.08,5.78-13.09,3.32-20.02-.61-1.56-1.6-3.21-2.58-4.59h-.12Z" data-active="1" style="display: none; fill: #f9ae94; stroke: #0a1018; stroke-miterlimit: 10;" />
       </g>
     <g id="telescope" data-active="1">
-      <path id="telescope-bridge-connector" d="M37.16,90.42c4.3-1.47,3.32-5.98-1.23-6.76-1.47-.35-3.07-.43-4.67-.43h-23.47c-2.33,0-5.16.61-6.39,1.91-1.47,1.47-1.6,3.73,0,5.11,2.09,1.39,6.14,1.3,9.34,1.3,3.19,0,8.23,0,12.53-.17,4.55-.17,10.44.17,13.52-.95,0,0,.25,0,.25,0Z" data-active="1" style="display: none; fill: #0051bf; stroke: #1b3f1c; stroke-miterlimit: 10; stroke-width: .2px;" />
+      <path id="telescope-bridge-connector" transform="translate(0 -9.41)" d="M37.16,90.42c4.3-1.47,3.32-5.98-1.23-6.76-1.47-.35-3.07-.43-4.67-.43h-23.47c-2.33,0-5.16.61-6.39,1.91-1.47,1.47-1.6,3.73,0,5.11,2.09,1.39,6.14,1.3,9.34,1.3,3.19,0,8.23,0,12.53-.17,4.55-.17,10.44.17,13.52-.95,0,0,.25,0,.25,0Z" data-active="1" style="display: none; fill: #0051bf; stroke: #1b3f1c; stroke-miterlimit: 10; stroke-width: .2px;" />
       <g id="telescope-crown" data-active="1" style="display: none;">
         <path id="telescope-crown-outside" d="M28.81,74.64c-1.41-1.24-3.06-2.1-4.8-2.52-1.74-.37-3.56-.52-5.32-.38-.88.06-1.74.18-2.57.35-.83.18-1.62.45-2.36.86-1.48.8-2.74,1.92-3.63,3.33-.86,2.69-2.09,5.37-3.44,7.97-1.47,4.33-3.44,13.26,3.07,15.43,4.3,1.21,8.85-1.91,13.27-.95,1.84.26,3.44.78,5.16.61,11.55-2.08,5.78-13.09,3.32-20.02-.61-1.56-1.6-3.21-2.58-4.59h-.12Z" data-active="1" style="fill: #0051bf; stroke: #0a1018; stroke-miterlimit: 10;" />
         <path id="telescope-crown-inside" d="M26.84,77.07c-4.42-3.81-11.8-3.12-14.62,1.3-.61,2.17-1.72,4.25-2.7,6.24-1.23,3.38-2.7,10.31,2.46,12.05,3.32.95,6.88-1.47,10.44-.78,1.47.17,2.7.61,4.05.52,8.97-1.56,4.55-10.23,2.58-15.6-.49-1.21-1.23-2.51-1.97-3.55h0c0,0-.25-.17-.25-.17Z" data-active="1" style="fill: #aaa; stroke: #0a1018; stroke-miterlimit: 10;" />
         </g>
       </g>
     <g id="zircon" data-active="1">
-      <path id="zircon-bridge-connector" d="M37.16,90.42c4.3-1.47,3.32-5.98-1.23-6.76-1.47-.35-3.07-.43-4.67-.43h-23.47c-2.33,0-5.16.61-6.39,1.91-1.47,1.47-1.6,3.73,0,5.11,2.09,1.39,6.14,1.3,9.34,1.3,3.19,0,8.23,0,12.53-.17,4.55-.17,10.44.17,13.52-.95,0,0,.25,0,.25,0Z" data-active="1" style="display: none; fill: #feffbf; stroke: #1b3f1c; stroke-miterlimit: 10; stroke-width: .2px;" />
+      <path id="zircon-bridge-connector" transform="translate(0 -9.41)" d="M37.16,90.42c4.3-1.47,3.32-5.98-1.23-6.76-1.47-.35-3.07-.43-4.67-.43h-23.47c-2.33,0-5.16.61-6.39,1.91-1.47,1.47-1.6,3.73,0,5.11,2.09,1.39,6.14,1.3,9.34,1.3,3.19,0,8.23,0,12.53-.17,4.55-.17,10.44.17,13.52-.95,0,0,.25,0,.25,0Z" data-active="1" style="display: none; fill: #feffbf; stroke: #1b3f1c; stroke-miterlimit: 10; stroke-width: .2px;" />
       <path id="zircon-crown" d="M28.68,74.64c-1.44-1.24-3.13-2.1-4.89-2.52-1.77-.37-3.62-.52-5.41-.38-.89.06-1.77.18-2.62.35-.84.18-1.65.45-2.4.86-1.51.8-2.8,1.92-3.72,3.33-1.6,2.6-2.7,5.11-3.44,7.97-1.47,4.33-3.44,13.26,3.07,15.43,4.42,1.21,8.97-1.91,13.52-.95,1.84.26,3.44.78,5.28.61,11.8-2.08,5.9-13.09,3.32-20.02-.61-1.56-2.7-4.68-2.7-4.68Z" data-active="1" style="display: none; fill: #feffbf; stroke: #0a1018; stroke-miterlimit: 10;" />
       <path id="zircon-inlay" d="M24.87,84.7c-3.07-2.69-8.36-2.17-10.32.95-.86,1.39-1.47,2.86-1.97,4.42-.86,2.43-1.97,7.37,1.72,8.49,2.33.69,4.91-1.04,7.37-.52.98.17,1.97.43,2.83.35,6.39-1.13,3.19-7.19,1.84-11.01-.37-.87-1.47-2.51-1.47-2.51v-.17Z" data-active="1" style="display: none; fill: #feffbf; stroke: #0a1018; stroke-miterlimit: 10;" />
       <path id="zircon-veneer" d="M27.21,75.6c-2.46-2.17-5.78-3.03-8.88-2.74-3.1.29-5.99,1.74-7.59,4.21-1.35,2.25-2.33,4.51-3.07,7.02-1.35,3.81-3.07,11.7,2.7,13.52,3.81,1.04,7.74-1.65,11.67-.87,1.6.26,3.07.69,4.55.52,10.2-1.82,5.04-11.53,2.95-17.59-.49-1.39-2.33-4.07-2.33-4.07Z" data-active="1" style="display: none; fill: #feffbf; stroke: #0a1018; stroke-miterlimit: 10;" />
       </g>
     <g id="metal" data-active="1">
-      <path id="metal-bridge-connector" d="M37.16,90.42c4.3-1.47,3.32-5.98-1.23-6.76-1.47-.35-3.07-.43-4.67-.43h-23.47c-2.33,0-5.16.61-6.39,1.91-1.47,1.47-1.6,3.73,0,5.11,2.09,1.39,6.14,1.3,9.34,1.3,3.19,0,8.23,0,12.53-.17,4.55-.17,10.44.17,13.52-.95,0,0,.25,0,.25,0Z" data-active="1" style="display: none; fill: #0051bf; stroke: #1b3f1c; stroke-miterlimit: 10; stroke-width: .2px;" />
+      <path id="metal-bridge-connector" transform="translate(0 -9.41)" d="M37.16,90.42c4.3-1.47,3.32-5.98-1.23-6.76-1.47-.35-3.07-.43-4.67-.43h-23.47c-2.33,0-5.16.61-6.39,1.91-1.47,1.47-1.6,3.73,0,5.11,2.09,1.39,6.14,1.3,9.34,1.3,3.19,0,8.23,0,12.53-.17,4.55-.17,10.44.17,13.52-.95,0,0,.25,0,.25,0Z" data-active="1" style="display: none; fill: #0051bf; stroke: #1b3f1c; stroke-miterlimit: 10; stroke-width: .2px;" />
       <path id="metal-crown" d="M28.68,74.64c-1.44-1.24-3.13-2.1-4.89-2.52-1.77-.37-3.62-.52-5.41-.38-.89.06-1.77.18-2.62.35-.84.18-1.65.45-2.4.86-1.51.8-2.8,1.92-3.72,3.33-1.72,2.43-2.7,5.29-3.44,7.97-1.47,4.33-3.44,13.26,3.07,15.43,4.42,1.21,8.97-1.91,13.52-.95,1.84.26,3.44.78,5.28.61,11.8-2.08,5.9-13.09,3.32-20.02-.61-1.56-1.6-3.21-2.58-4.59h-.12,0Z" data-active="1" style="display: none; fill: #0051bf; stroke: #0a1018; stroke-miterlimit: 10;" />
       </g>
     <g id="metal-ceramic" data-active="1">
-      <path id="metal-ceramic-bridge-connector" d="M37.16,90.42c4.3-1.47,3.32-5.98-1.23-6.76-1.47-.35-3.07-.43-4.67-.43h-23.47c-2.33,0-5.16.61-6.39,1.91-1.47,1.47-1.6,3.73,0,5.11,2.09,1.39,6.14,1.3,9.34,1.3,3.19,0,8.23,0,12.53-.17,4.55-.17,10.44.17,13.52-.95,0,0,.25,0,.25,0Z" data-active="1" style="display: none; fill: url(#radial-gradient-14-2); stroke: #1b3f1c; stroke-miterlimit: 10; stroke-width: .2px;" />
+      <path id="metal-ceramic-bridge-connector" transform="translate(0 -9.41)" d="M37.16,90.42c4.3-1.47,3.32-5.98-1.23-6.76-1.47-.35-3.07-.43-4.67-.43h-23.47c-2.33,0-5.16.61-6.39,1.91-1.47,1.47-1.6,3.73,0,5.11,2.09,1.39,6.14,1.3,9.34,1.3,3.19,0,8.23,0,12.53-.17,4.55-.17,10.44.17,13.52-.95,0,0,.25,0,.25,0Z" data-active="1" style="display: none; fill: url(#radial-gradient-14-2); stroke: #1b3f1c; stroke-miterlimit: 10; stroke-width: .2px;" />
       <path id="metal-ceramic-crown" d="M28.68,74.64c-1.44-1.24-3.13-2.1-4.89-2.52-1.77-.37-3.62-.52-5.41-.38-.89.06-1.77.18-2.62.35-.84.18-1.65.45-2.4.86-1.51.8-2.8,1.92-3.72,3.33-1.72,2.43-2.7,5.29-3.44,7.97-1.47,4.33-3.44,13.26,3.07,15.43,4.42,1.21,8.97-1.91,13.52-.95,1.84.26,3.44.78,5.28.61,11.8-2.08,5.9-13.09,3.32-20.02-.61-1.56-1.6-3.21-2.58-4.59h-.12,0Z" data-active="1" style="display: none; fill: url(#radial-gradient-14-3); stroke: #0a1018; stroke-miterlimit: 10;" />
       </g>
     <g id="gold" data-active="1">
-      <path id="gold-bridge-connector" d="M37.16,90.42c4.3-1.47,3.32-5.98-1.23-6.76-1.47-.35-3.07-.43-4.67-.43h-23.47c-2.33,0-5.16.61-6.39,1.91-1.47,1.47-1.6,3.73,0,5.11,2.09,1.39,6.14,1.3,9.34,1.3,3.19,0,8.23,0,12.53-.17,4.55-.17,10.44.17,13.52-.95,0,0,.25,0,.25,0Z" data-active="1" style="display: none; fill: #ece614; stroke: #1b3f1c; stroke-miterlimit: 10; stroke-width: .2px;" />
+      <path id="gold-bridge-connector" transform="translate(0 -9.41)" d="M37.16,90.42c4.3-1.47,3.32-5.98-1.23-6.76-1.47-.35-3.07-.43-4.67-.43h-23.47c-2.33,0-5.16.61-6.39,1.91-1.47,1.47-1.6,3.73,0,5.11,2.09,1.39,6.14,1.3,9.34,1.3,3.19,0,8.23,0,12.53-.17,4.55-.17,10.44.17,13.52-.95,0,0,.25,0,.25,0Z" data-active="1" style="display: none; fill: #ece614; stroke: #1b3f1c; stroke-miterlimit: 10; stroke-width: .2px;" />
       <path id="gold-crown" d="M28.68,74.64c-1.44-1.24-3.13-2.1-4.89-2.52-1.77-.37-3.62-.52-5.41-.38-.89.06-1.77.18-2.62.35-.84.18-1.65.45-2.4.86-1.51.8-2.8,1.92-3.72,3.33-.86,2.69-2.09,5.37-3.44,7.97-1.47,4.33-3.44,13.26,3.07,15.43,4.42,1.21,8.97-1.91,13.52-.95,1.84.26,3.44.78,5.28.61,11.8-2.08,5.9-13.09,3.32-20.02-.61-1.56-1.6-3.21-2.58-4.59h-.12,0Z" data-active="1" style="display: none; fill: #ece614; stroke: #0a1018; stroke-miterlimit: 10;" />
       <path id="gold-inlay" d="M24.87,84.7c-3.07-2.69-8.36-2.17-10.32.95-.86,1.39-1.47,2.86-1.97,4.42-.86,2.43-1.97,7.37,1.72,8.49,2.33.69,4.91-1.04,7.37-.52.98.17,1.97.43,2.83.35,6.39-1.13,3.19-7.19,1.84-11.01-.37-.87-1.47-2.51-1.47-2.51v-.17Z" data-active="1" style="display: none; fill: #ece614; stroke: #0a1018; stroke-miterlimit: 10;" />
       <path id="gold-veneer" d="M27.21,75.6c-2.46-2.17-5.78-3.03-8.88-2.74-3.1.29-5.99,1.74-7.59,4.21-1.35,2.25-2.33,4.51-3.07,7.02-1.35,3.81-3.07,11.7,2.7,13.52,3.81,1.04,7.74-1.65,11.67-.87,1.6.26,3.07.69,4.55.52,10.2-1.82,5.04-11.53,2.95-17.59-.49-1.39-2.33-4.07-2.33-4.07Z" data-active="1" style="display: none; fill: #ece614; stroke: #0a1018; stroke-miterlimit: 10;" />
       </g>
     <g id="emax" data-active="1">
-      <path id="emax-bridge-connector" d="M37.16,90.42c4.3-1.47,3.32-5.98-1.23-6.76-1.47-.35-3.07-.43-4.67-.43h-23.47c-2.33,0-5.16.61-6.39,1.91-1.47,1.47-1.6,3.73,0,5.11,2.09,1.39,6.14,1.3,9.34,1.3,3.19,0,8.23,0,12.53-.17,4.55-.17,10.44.17,13.52-.95,0,0,.25,0,.25,0Z" data-active="1" style="display: none; fill: url(#radial-gradient-14-4); stroke: #1b3f1c; stroke-miterlimit: 10; stroke-width: .2px;" />
+      <path id="emax-bridge-connector" transform="translate(0 -9.41)" d="M37.16,90.42c4.3-1.47,3.32-5.98-1.23-6.76-1.47-.35-3.07-.43-4.67-.43h-23.47c-2.33,0-5.16.61-6.39,1.91-1.47,1.47-1.6,3.73,0,5.11,2.09,1.39,6.14,1.3,9.34,1.3,3.19,0,8.23,0,12.53-.17,4.55-.17,10.44.17,13.52-.95,0,0,.25,0,.25,0Z" data-active="1" style="display: none; fill: url(#radial-gradient-14-4); stroke: #1b3f1c; stroke-miterlimit: 10; stroke-width: .2px;" />
       <path id="emax-crown" d="M28.68,74.64c-1.44-1.24-3.13-2.1-4.89-2.52-1.77-.37-3.62-.52-5.41-.38-.89.06-1.77.18-2.62.35-.84.18-1.65.45-2.4.86-1.51.8-2.8,1.92-3.72,3.33-.86,2.69-2.09,5.37-3.44,7.97-1.47,4.33-3.44,13.26,3.07,15.43,4.42,1.21,8.97-1.91,13.52-.95,1.84.26,3.44.78,5.28.61,11.8-2.08,5.9-13.09,3.32-20.02-.61-1.56-1.6-3.21-2.58-4.59h-.12,0Z" data-active="1" style="display: none; fill: url(#radial-gradient-14-5); stroke: #0a1018; stroke-miterlimit: 10;" />
       <path id="emax-inlay" d="M24.87,84.7c-3.07-2.69-8.36-2.17-10.32.95-.86,1.39-1.47,2.86-1.97,4.42-.86,2.43-1.97,7.37,1.72,8.49,2.33.69,4.91-1.04,7.37-.52.98.17,1.97.43,2.83.35,6.39-1.13,3.19-7.19,1.84-11.01-.37-.87-1.47-2.51-1.47-2.51v-.17Z" data-active="1" style="display: none; fill: url(#radial-gradient-14-6); stroke: #0a1018; stroke-miterlimit: 10;" />
       <path id="emax-veneer" d="M27.21,75.6c-2.46-2.17-5.78-3.03-8.88-2.74-3.1.29-5.99,1.74-7.59,4.21-1.35,2.25-2.33,4.51-3.07,7.02-1.35,3.81-3.07,11.7,2.7,13.52,3.81,1.04,7.74-1.65,11.67-.87,1.6.26,3.07.69,4.55.52,10.2-1.82,5.04-11.53,2.95-17.59-.49-1.39-2.33-4.07-2.33-4.07Z" data-active="1" style="display: none; fill: url(#radial-gradient-14-7); stroke: #0a1018; stroke-miterlimit: 10;" />
       </g>
     <g id="gradia" data-active="1">
-      <path id="gradia-bridge-connector" d="M37.16,90.42c4.3-1.47,3.32-5.98-1.23-6.76-1.47-.35-3.07-.43-4.67-.43h-23.47c-2.33,0-5.16.61-6.39,1.91-1.47,1.47-1.6,3.73,0,5.11,2.09,1.39,6.14,1.3,9.34,1.3,3.19,0,8.23,0,12.53-.17,4.55-.17,10.44.17,13.52-.95,0,0,.25,0,.25,0Z" data-active="1" style="display: none; fill: #55ff98; stroke: #1b3f1c; stroke-miterlimit: 10; stroke-width: .2px;" />
+      <path id="gradia-bridge-connector" transform="translate(0 -9.41)" d="M37.16,90.42c4.3-1.47,3.32-5.98-1.23-6.76-1.47-.35-3.07-.43-4.67-.43h-23.47c-2.33,0-5.16.61-6.39,1.91-1.47,1.47-1.6,3.73,0,5.11,2.09,1.39,6.14,1.3,9.34,1.3,3.19,0,8.23,0,12.53-.17,4.55-.17,10.44.17,13.52-.95,0,0,.25,0,.25,0Z" data-active="1" style="display: none; fill: #55ff98; stroke: #1b3f1c; stroke-miterlimit: 10; stroke-width: .2px;" />
       <path id="gradia-crown" d="M28.68,74.64c-1.44-1.24-3.13-2.1-4.89-2.52-1.77-.37-3.62-.52-5.41-.38-.89.06-1.77.18-2.62.35-.84.18-1.65.45-2.4.86-1.51.8-2.8,1.92-3.72,3.33-.86,2.69-2.09,5.37-3.44,7.97-1.47,4.33-3.44,13.26,3.07,15.43,4.42,1.21,8.97-1.91,13.52-.95,1.84.26,3.44.78,5.28.61,11.8-2.08,5.9-13.09,3.32-20.02-.61-1.56-1.6-3.21-2.58-4.59h-.12,0Z" data-active="1" style="display: none; fill: #55ff98; stroke: #0a1018; stroke-miterlimit: 10;" />
       <path id="gradia-inlay" d="M24.87,84.7c-3.07-2.69-8.36-2.17-10.32.95-.86,1.39-1.47,2.86-1.97,4.42-.86,2.43-1.97,7.37,1.72,8.49,2.33.69,4.91-1.04,7.37-.52.98.17,1.97.43,2.83.35,6.39-1.13,3.19-7.19,1.84-11.01-.37-.87-1.47-2.51-1.47-2.51v-.17Z" data-active="1" style="display: none; fill: #55ff98; stroke: #0a1018; stroke-miterlimit: 10;" />
       <path id="gradia-veneer" d="M27.21,75.6c-2.46-2.17-5.78-3.03-8.88-2.74-3.1.29-5.99,1.74-7.59,4.21-1.35,2.25-2.33,4.51-3.07,7.02-1.35,3.81-3.07,11.7,2.7,13.52,3.81,1.04,7.74-1.65,11.67-.87,1.6.26,3.07.69,4.55.52,10.2-1.82,5.04-11.53,2.95-17.59-.49-1.39-2.33-4.07-2.33-4.07Z" data-active="1" style="display: none; fill: #55ff98; stroke: #0a1018; stroke-miterlimit: 10;" />
       </g>
     <g id="temporary-restorations" data-active="1">
-      <path id="temporary-bridge-connector" d="M37.16,90.42c4.3-1.47,3.32-5.98-1.23-6.76-1.47-.35-3.07-.43-4.67-.43h-23.47c-2.33,0-5.16.61-6.39,1.91-1.47,1.47-1.6,3.73,0,5.11,2.09,1.39,6.14,1.3,9.34,1.3,3.19,0,8.23,0,12.53-.17,4.55-.17,10.44.17,13.52-.95,0,0,.25,0,.25,0Z" data-active="1" style="display: none; fill: #fff; stroke: #1b3f1c; stroke-miterlimit: 10; stroke-width: .2px;" />
+      <path id="temporary-bridge-connector" transform="translate(0 -9.41)" d="M37.16,90.42c4.3-1.47,3.32-5.98-1.23-6.76-1.47-.35-3.07-.43-4.67-.43h-23.47c-2.33,0-5.16.61-6.39,1.91-1.47,1.47-1.6,3.73,0,5.11,2.09,1.39,6.14,1.3,9.34,1.3,3.19,0,8.23,0,12.53-.17,4.55-.17,10.44.17,13.52-.95,0,0,.25,0,.25,0Z" data-active="1" style="display: none; fill: #fff; stroke: #1b3f1c; stroke-miterlimit: 10; stroke-width: .2px;" />
       <path id="temporary-crown" d="M28.68,74.64c-1.44-1.24-3.13-2.1-4.89-2.52-1.77-.37-3.62-.52-5.41-.38-.89.06-1.77.18-2.62.35-.84.18-1.65.45-2.4.86-1.51.8-2.8,1.92-3.72,3.33-.86,2.69-2.09,5.37-3.44,7.97-1.47,4.33-3.44,13.26,3.07,15.43,4.42,1.21,8.97-1.91,13.52-.95,1.84.26,3.44.78,5.28.61,11.8-2.08,5.9-13.09,3.32-20.02-.61-1.56-1.6-3.21-2.58-4.59h-.12,0Z" data-active="1" style="display: none; fill: #fff; stroke: #0a1018; stroke-miterlimit: 10;" />
       <path id="temporary-inlay" d="M24.87,84.7c-3.07-2.69-8.36-2.17-10.32.95-.86,1.39-1.47,2.86-1.97,4.42-.86,2.43-1.97,7.37,1.72,8.49,2.33.69,4.91-1.04,7.37-.52.98.17,1.97.43,2.83.35,6.39-1.13,3.19-7.19,1.84-11.01-.37-.87-1.47-2.51-1.47-2.51v-.17Z" data-active="1" style="display: none; fill: #fff; stroke: #0a1018; stroke-miterlimit: 10;" />
       <path id="temporary-veneer" d="M27.21,75.6c-2.46-2.17-5.78-3.03-8.88-2.74-3.1.29-5.99,1.74-7.59,4.21-1.35,2.25-2.33,4.51-3.07,7.02-1.35,3.81-3.07,11.7,2.7,13.52,3.81,1.04,7.74-1.65,11.67-.87,1.6.26,3.07.69,4.55.52,10.2-1.82,5.04-11.53,2.95-17.59-.49-1.39-2.33-4.07-2.33-4.07Z" data-active="1" style="display: none; fill: #fff; stroke: #0a1018; stroke-miterlimit: 10;" />
