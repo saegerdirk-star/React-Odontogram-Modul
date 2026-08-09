@@ -67,8 +67,9 @@ describe("odontogram-vnt AC2: readOnly", () => {
   it("is not a sticky lock — a chart built with readOnly released is authorable", () => {
     // The `disabled` attribute is decided per build/resync from `getReadOnly()`
     // (`syncToothCells`), exactly like every other periodontal control; a flip
-    // while the chart is open is covered by the live `.read-only` class
-    // `setReadOnly` toggles on the mounted perio container.
+    // while the chart is open reaches those same controls because `setReadOnly`
+    // notifies (bead odontogram-v90) on top of toggling the live `.read-only`
+    // class on the mounted perio container.
     setReadOnly(true);
     openGrid();
     cleanup();
@@ -81,15 +82,18 @@ describe("odontogram-vnt AC2: readOnly", () => {
   });
 
   it("refuses a write from an ALREADY-MOUNTED control the moment readOnly is set", () => {
-    // Review fix (finding B1/A1): `setReadOnly` does not notify, so a mounted
-    // control's `disabled` attribute is stale after a live flip — the domain
-    // gate, not CSS, has to be what stops the write.
+    // Review fix (finding B1/A1): the domain gate, not CSS, is what stops the
+    // write, so the handler refuses even if it is reached at all. Bead
+    // odontogram-v90 then made `setReadOnly` notify, so the mounted control's
+    // own `disabled` attribute is no longer stale after a live flip either —
+    // both layers are asserted here.
     openGrid();
     const btn = assessBtn(16, "pd", "MB")!;
     act(() => {
       setReadOnly(true);
     });
     expect(document.getElementById("perioOverlay")!.classList.contains("read-only")).toBe(true);
+    expect(btn.disabled).toBe(true);
     click(btn);
     expect(getAssessmentStatus(16, "pd", "MB")).toBe("not-assessed");
     expect(getToothAssessments(16)).toEqual({});
