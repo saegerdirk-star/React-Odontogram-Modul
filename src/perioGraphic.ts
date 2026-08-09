@@ -692,55 +692,88 @@ function buildBandSvg(className: string, row: SVGGElement, width: number): SVGSV
 }
 
 /**
- * Build the BUCCAL-aspect arch as a standalone `<svg>`, oriented crown-DOWN
- * for BOTH arches (uniform — see the section doc comment above): the row
- * builder's raw output is crown-up (per `getToothBaseGroupFromCache`'s own
- * uniform per-tooth flip), so this applies ONE unconditional vertical flip
- * about the CEJ baseline (`matrix(1 0 0 -1 0 2*ROW_BASELINE_Y)` — the exact
- * transform the retired legacy builder used ONLY for the upper arch, now
- * applied to every arch alike) — the baseline itself is the transform's
- * fixed point, so it never moves. Own mm-grid, counter-flipped (`flip:
- * true`) so its numeric labels read upright inside this net-flipped row.
+ * Which way round a row is drawn is a property of the JAW, not of the aspect:
+ * maxillary roots point cranially and mandibular roots caudally, in the facial
+ * view and the palatal/lingual view alike. That is also how a paper perio chart
+ * is laid out — both rows of an arch share one orientation.
+ *
+ * UI-3a decided the flip per ASPECT instead (buccal flipped, palatal raw), so
+ * the two rows of an arch came out as mirror images of one another and exactly
+ * one of them was upside down in each jaw: an upper palatal row with its roots
+ * hanging caudally, a lower buccal row with its roots rising cranially.
+ *
+ * Consequence of fixing it: the two rows of a jaw are no longer mirror images,
+ * so they are drawn alike and are told apart by their labels and the number
+ * rows attached to them, not by their orientation. The central index band
+ * therefore no longer sits between two rows of crowns.
+ */
+function isUpperArch(teeth: readonly number[]): boolean {
+  for (const toothNo of teeth) {
+    if (Number.isFinite(toothNo)) return Math.floor(toothNo / 10) <= 2;
+  }
+  return true;
+}
+
+/**
+ * Shared builder for either aspect's standalone band `<svg>`. The row builder's
+ * raw output is crown-up (roots caudal, per `getToothBaseGroupFromCache`'s own
+ * uniform per-tooth flip), which is already right for the LOWER jaw; an upper
+ * arch gets ONE vertical flip about the CEJ baseline
+ * (`matrix(1 0 0 -1 0 2*ROW_BASELINE_Y)`), whose fixed point is the baseline
+ * itself, so the baseline never moves. The mm grid is counter-flipped by the
+ * same condition, so its numeric labels read upright in either case.
+ *
+ * Both aspects go through here so their orientation cannot drift apart again.
+ */
+function buildArchAspectSvg(
+  aspectClass: string,
+  rowClass: string,
+  cache: TemplateDocCache,
+  teeth: readonly number[],
+  isImplant: IsImplantFn,
+): SVGSVGElement {
+  const { group: row, width } = buildBuccalRowGroup(cache, teeth, isImplant);
+  row.setAttribute("class", rowClass);
+  const upper = isUpperArch(teeth);
+  if (upper) {
+    row.setAttribute("transform", `matrix(1 0 0 -1 0 ${fmt(2 * ROW_BASELINE_Y)})`);
+  }
+  row.insertBefore(
+    buildMmGridLayer({ cejY: ROW_BASELINE_Y, mmPx: PERIO_MM_PX, width, flip: upper }),
+    row.firstChild,
+  );
+  return buildBandSvg(`perio-tooth-arch ${aspectClass}`, row, width);
+}
+
+/**
+ * Build the BUCCAL-aspect arch as a standalone `<svg>`, oriented by JAW — see
+ * `buildArchAspectSvg` / `isUpperArch`.
  */
 export function buildBuccalArchSvg(
   cache: TemplateDocCache,
   teeth: readonly number[],
   isImplant: IsImplantFn = () => false,
 ): SVGSVGElement {
-  const { group: row, width } = buildBuccalRowGroup(cache, teeth, isImplant);
-  row.setAttribute("class", "perio-tooth-row-buccal");
-  row.setAttribute("transform", `matrix(1 0 0 -1 0 ${fmt(2 * ROW_BASELINE_Y)})`);
-  row.insertBefore(
-    buildMmGridLayer({ cejY: ROW_BASELINE_Y, mmPx: PERIO_MM_PX, width, flip: true }),
-    row.firstChild,
-  );
-  return buildBandSvg("perio-tooth-arch perio-tooth-arch-buccal", row, width);
+  return buildArchAspectSvg("perio-tooth-arch-buccal", "perio-tooth-row-buccal", cache, teeth, isImplant);
 }
 
 /**
- * Build the PALATAL/LINGUAL-aspect arch as a standalone `<svg>`, oriented
- * crown-UP for BOTH arches — the vertical mirror of `buildBuccalArchSvg`'s
- * uniform crown-down flip, about the SAME `ROW_BASELINE_Y` fixed point.
- * Mirroring the SAME axis twice cancels back to the identity transform, so
- * "mirror of buccal" here is exactly the row builder's own un-flipped
- * (crown-up) output — i.e. no orientation transform is applied at all; only
- * the horizontal per-tooth mesial/distal mirror (already baked into each
- * tooth group by `getToothBaseGroupFromCache`) and the uniform per-tooth
- * crown-up flip remain. Own mm-grid, NOT counter-flipped (`flip: false`) —
- * this row is never net-flipped, so its labels already read upright.
+ * Build the PALATAL/LINGUAL-aspect arch as a standalone `<svg>`, oriented by
+ * the SAME jaw rule as the buccal aspect — see `buildArchAspectSvg` /
+ * `isUpperArch`. It used to be the vertical mirror of the buccal row, which is
+ * what put one row of every jaw upside down.
+ *
+ * The horizontal per-tooth mesial/distal mirror is unaffected: it is baked into
+ * each tooth group by `getToothBaseGroupFromCache` from the FDI quadrant, and
+ * both aspects keep the arch in the same left-to-right order, as a paper chart
+ * does.
  */
 export function buildPalatalArchSvg(
   cache: TemplateDocCache,
   teeth: readonly number[],
   isImplant: IsImplantFn = () => false,
 ): SVGSVGElement {
-  const { group: row, width } = buildBuccalRowGroup(cache, teeth, isImplant);
-  row.setAttribute("class", "perio-tooth-row-palatal-inner");
-  row.insertBefore(
-    buildMmGridLayer({ cejY: ROW_BASELINE_Y, mmPx: PERIO_MM_PX, width, flip: false }),
-    row.firstChild,
-  );
-  return buildBandSvg("perio-tooth-arch perio-tooth-arch-palatal", row, width);
+  return buildArchAspectSvg("perio-tooth-arch-palatal", "perio-tooth-row-palatal-inner", cache, teeth, isImplant);
 }
 
 // ---------------------------------------------------------------------------

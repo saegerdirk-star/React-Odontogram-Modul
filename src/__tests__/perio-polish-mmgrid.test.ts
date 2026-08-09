@@ -164,14 +164,23 @@ describe("buildBuccalArchSvg / buildPalatalArchSvg: the mm grid rides the T1 ori
     expect(cejForLine(line5)).toBeCloseTo(ROW_BASELINE_Y + 5 * PERIO_MM_PX, 5);
   });
 
-  it("flips the buccal-row labels for BOTH arches (uniform crown-down); never flips the palatal-row labels (uniform crown-up)", () => {
+  // The labels are counter-flipped exactly when their row is flipped, so they
+  // read upright either way. Since the row flip now follows the JAW rather than
+  // the aspect, so does this: both UPPER rows counter-flip, neither LOWER row
+  // does.
+  it("counter-flips the labels of both UPPER rows, and of neither LOWER row", () => {
     for (const arch of [UPPER_ARCH, LOWER_ARCH]) {
+      const upper = arch === UPPER_ARCH;
       const buccalGrid = buildBuccalArchSvg(cache, arch).querySelector(".perio-tooth-row-buccal > .perio-mm-grid")!;
-      expect(buccalGrid.querySelector("text.perio-mm-label[transform]"), `buccal ${arch === UPPER_ARCH ? "upper" : "lower"}`).toBeTruthy();
       const palatalGrid = buildPalatalArchSvg(cache, arch).querySelector(
         ".perio-tooth-row-palatal-inner > .perio-mm-grid",
       )!;
-      expect(palatalGrid.querySelector("text.perio-mm-label[transform]"), `palatal ${arch === UPPER_ARCH ? "upper" : "lower"}`).toBeNull();
+      for (const [name, grid] of [["buccal", buccalGrid], ["palatal", palatalGrid]] as const) {
+        const label = grid.querySelector("text.perio-mm-label[transform]");
+        const where = `${name} ${upper ? "upper" : "lower"}`;
+        if (upper) expect(label, where).toBeTruthy();
+        else expect(label, where).toBeNull();
+      }
     }
   });
 });
