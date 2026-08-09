@@ -5,6 +5,76 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-08-09
+
+### Added
+
+- **The periodontal examination is now canonical in the `dental-de` export.**
+  Until now the canonical dialect emitted no periodontal data at all — the whole
+  surface was reported once per tooth in `DentalDeConversionReport.unmapped` and
+  only the legacy dialect's engine-local periodontal panel carried it. A charted
+  natural tooth now exports one `PeriodontalObservationDE`, and an implant
+  position exports one `PeriImplantObservationDE` together with the
+  `DentalImplantDE` Device it is required to focus on. Emitted with the IG's own
+  identifiers: six-site probing depth (LOINC `32910-2`, UCUM `mm`), the signed
+  free-gingival-margin-to-CEJ level (LOINC `64043-3`), derived clinical
+  attachment level (`PABefundTypeCS#attachment-loss`), bleeding on probing
+  (SNOMED CT `86276007`), suppuration on probing
+  (`PABefundTypeCS#suppuration-on-probing`), Glickman furcation grade with its
+  FDI entrance (SNOMED CT `771311009` +
+  `GlickmanFurcationGradeCS`), O'Leary plaque presence (LOINC `34016-6`),
+  the Silness-Loe plaque index (SNOMED CT `251307008`), the Loe-Silness
+  gingival index, keratinized-gingiva width and the Mombelli mPI/mBI
+  peri-implant indices (`PeriodontalIndexCS`). Every probing site is qualified by
+  `PeriodontalMeasurementSiteExt`, whose six codes match the engine's own probing
+  sites one-to-one; every surface and furcation entrance is qualified by
+  `ToothSurfacesExt` over HL7 `FDI-surface`.
+- **Recorded assessment status survives the mapping.** An assessed-normal
+  finding exports as an explicit result — `false`, grade `0`, or the Glickman
+  scale's own "Grade 0" — while not-assessed, unmeasurable and not-applicable
+  export as a component with a standard HL7 `dataAbsentReason` and no value. Both
+  profiles require every component to carry a result or a data-absent reason, and
+  the export satisfies that invariant.
+- **Canonical periodontal read-back.** `parseFhirBundle` reads a canonical
+  periodontal bundle back into the same payload fields it was built from —
+  per-site probing depth, gingival margin, bleeding and suppuration, furcation,
+  plaque, PI, GI, keratinized width, mPI and mBI — with the dialect's existing
+  tolerance policy, including a bundle that mixes the canonical and legacy
+  representations.
+
+### Changed
+
+- **The gingival-recession component is deliberately not emitted.**
+  `PeriodontalObservationDE` fixes its recession component to SNOMED CT
+  `6288001` and labels it "Gingival recession", but that SCTID resolves to
+  "Accretion on teeth" in the SNOMED CT International edition (version
+  `20250201`, verified through HL7's public terminology server); gingival
+  recession is `4356008`, which the IG does not admit. Emitting a recession
+  measurement under `6288001` would assert a dental deposit, so no recession
+  component is produced and the omission is reported. Nothing is lost: the
+  engine stores the SIGNED margin and LOINC `64043-3` is an exact contract for
+  it, from which recession is `max(margin, 0)`. The refusal and its evidence are
+  recorded in the new `REJECTED_SCT` export.
+- **A truthful conversion report.** The blanket "periodontal measurements are
+  unmapped" entry is gone. What remains reported, per axis and with a reason, is
+  what the IG's own alignment matrix leaves unresolved: CEJ visibility, root
+  concavity, the gingival-thickness phenotype and the Miller recession class
+  (no automatic renderer migration); the peri-implant margin and attachment
+  level (they need a documented stable implant reference point the editor does
+  not record); tooth mobility (the IG carries only the governed German PAR
+  Lockerungsgrad scale); and any index charted on a position whose profile has
+  no slice for it.
+- **A placeholder implant device identity.** `PeriImplantObservationDE.focus` is
+  mandatory, and the editor knows an implant only by the FDI position it
+  occupies. The export therefore mints a deterministic placeholder
+  `DentalImplantDE` with a clearly adapter-owned identifier system
+  (`urn:odontogram:dental-implant-position`) and a text-only device type; a host
+  that owns a device registry must replace it. Each one is listed in
+  `DentalDeConversionReport.textFallback`.
+
+The legacy dialect is unchanged and byte-identical; the payload version stays
+`2.21` and no rendering changed.
+
 ## [2.5.0] - 2026-08-09
 
 ### Changed

@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
-[![Version](https://img.shields.io/badge/version-2.5.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
+[![Version](https://img.shields.io/badge/version-2.6.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](https://raw.githubusercontent.com/ZoliQua/React-Odontogram-Modul/main/src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
 
@@ -136,6 +136,19 @@ external cervical root resorption, apical periodontitis and the
 restoration-integrity findings are coded on that basis. The exact source
 assessment always stays in `CodeableConcept.text`, and no `Coding.display` is
 invented, because the IG omits displays.
+
+**Canonical periodontal export (from 2.6.0):** a charted natural tooth exports a
+`PeriodontalObservationDE` and an implant position a `PeriImplantObservationDE`
+plus the `DentalImplantDE` device it focuses on — six-site probing depth, the
+signed gingival-margin-to-CEJ level, derived attachment level, bleeding and
+suppuration on probing, the Glickman furcation grade with its entrance, plaque
+presence, the Silness-Loe and Loe-Silness indices, keratinized-gingiva width and
+the Mombelli peri-implant indices, each qualified by the IG's
+`PeriodontalMeasurementSiteExt` or `ToothSurfacesExt`. An assessed-normal finding
+is an explicit `false`/`0`; a recorded gap is a standard `dataAbsentReason`. The
+recession component is deliberately omitted: the SCTID the IG fixes for it
+resolves to "Accretion on teeth", so the signed margin carries the finding
+instead (`REJECTED_SCT` records the evidence).
 
 `parseFhirBundle` reads **both** dialects, including a bundle that mixes them, so
 previously exported bundles keep importing unchanged.

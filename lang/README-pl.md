@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.5.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.6.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -546,6 +546,20 @@ tkanek okołowierzchołkowych oraz ustalenia dotyczące integralności wypełnie
 kodowane na tej podstawie. Dokładna ocena źródłowa zawsze pozostaje w
 `CodeableConcept.text`, a żaden `Coding.display` nie jest wymyślany, ponieważ IG
 ich nie publikuje.
+
+**Kanoniczny eksport periodontologiczny (od 2.6.0):** zbadany ząb naturalny jest
+eksportowany jako `PeriodontalObservationDE`, a pozycja implantu jako
+`PeriImplantObservationDE` wraz z urządzeniem `DentalImplantDE`, do którego się
+odnosi — głębokość sondowania w sześciu punktach, znakowany poziom brzegu dziąsła
+względem granicy szkliwno-cementowej, wyprowadzony poziom przyczepu, krwawienie i
+wysięk ropny przy sondowaniu, stopień furkacji wg Glickmana wraz z wejściem,
+obecność płytki, wskaźniki Silness-Löe i Löe-Silness, szerokość dziąsła
+zrogowaciałego oraz okołowszczepowe wskaźniki Mombellego, każdy kwalifikowany przez
+`PeriodontalMeasurementSiteExt` lub `ToothSurfacesExt` z IG. Zbadany prawidłowy
+wynik to jawne `false`/`0`, a zapisana luka to standardowy `dataAbsentReason`.
+Komponent recesji jest celowo pomijany: SCTID ustalony przez IG oznacza w
+rzeczywistości „Accretion on teeth", więc wynik niesie znakowany brzeg dziąsła
+(`REJECTED_SCT` dokumentuje dowody).
 
 `parseFhirBundle` czyta **oba** dialekty, również pakiet mieszany, więc wcześniej
 wyeksportowane pakiety importują się bez zmian.

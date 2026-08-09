@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.5.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.6.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -538,6 +538,15 @@ const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
 内吸收与外部颈部牙根吸收、根尖周炎以及修复体完整性所见均据此编码。确切的原始评估
 始终保留在 `CodeableConcept.text` 中，并且不会杜撰任何 `Coding.display`，因为 IG
 并未公布显示名称。
+
+**规范化牙周导出（自 2.6.0 起）：** 已记录的天然牙导出为 `PeriodontalObservationDE`，
+种植体位点导出为 `PeriImplantObservationDE` 及其所引用的 `DentalImplantDE` 设备——
+六点探诊深度、龈缘相对釉牙骨质界的带符号水平、派生的附着水平、探诊出血与溢脓、
+带入口的 Glickman 根分叉度、菌斑存在、Silness-Löe 与 Löe-Silness 指数、角化龈宽度
+以及 Mombelli 种植体周指数，每一项均由 IG 的 `PeriodontalMeasurementSiteExt` 或
+`ToothSurfacesExt` 限定。已检查且正常的结果为显式的 `false`/`0`，已记录的缺失则为
+标准的 `dataAbsentReason`。牙龈退缩组件被有意省略：IG 为其固定的 SCTID 实际含义是
+"Accretion on teeth"，因此该发现由带符号的龈缘承载（`REJECTED_SCT` 记录了证据）。
 
 `parseFhirBundle` 可读取**两种**方言，包括混合的 Bundle，因此此前导出的 Bundle 仍可原样导入。
 **带日期的检查、评估状态与种植体周围记录（自 2.4.0 起）：**

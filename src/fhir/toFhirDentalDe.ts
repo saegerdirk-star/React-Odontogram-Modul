@@ -34,6 +34,7 @@ import {
   toFdiSurface, restorationTypeCode, restorationMaterialCode,
   rootCariesSct, resorptionSct, apicalDxSct, restorationStatusSct,
 } from "./dentalDeCodesystems";
+import { buildDentalDePerioEntries, type DentalDePerioContext } from "./toFhirDentalDePerio";
 
 // The `fhir/r4` component/extension types do not model the R4 `component.extension`
 // slot the IG uses, so component nodes are assembled structurally.
@@ -490,7 +491,15 @@ const UNPROJECTED_AXES: Array<[keyof ToothRecord, string, string]> = [
   ["wearEdge", "none", "Tooth wear is a DentalFindingDE with external terminology the editor does not hold."],
   ["wearCervical", "none", "Tooth wear is a DentalFindingDE with external terminology the editor does not hold."],
   ["discoloration", "none", "Discoloration is a DentalFindingDE with external terminology the editor does not hold."],
-  ["mobility", "none", "Tooth mobility is a periodontal finding carried by PeriodontalObservationDE."],
+  ["mobility", "none", "Tooth mobility is a periodontal finding; PeriodontalObservationDE carries only the governed German PAR Lockerungsgrad scale, which the engine's M1/M2/M3 grades do not state."],
+  // Bead odontogram-5cz: the mucogingival axes the IG's own alignment matrix
+  // records as having NO automatic renderer migration. They stay in the
+  // UI-domain document rather than acquiring a canonical assertion nobody
+  // verified; see the compatibility section of `odontogram-fhir-alignment.md`.
+  ["cejVisibility", "none", "GingivaRecessionDE carries a surface-specific Pini-Prato CEJ-identifiability boolean; the IG records that renderer cejVisibility values have no automatic migration onto it."],
+  ["rootConcavity", "none", "The IG's cervical/root-surface step is a boolean plus a raw UCUM depth on GingivaRecessionDE; it defines no none/mild/deep values and records that this renderer axis has no automatic migration."],
+  ["gingivalThickness", "unknown", "GingivalThicknessObservationDE requires an exact surface, location detail, assessment method, device and performer, and a millimetre or probe-transparency result; a generic thin/medium/thick phenotype is explicitly not migrated."],
+  ["millerClass", "none", "GingivaRecessionDE binds its Miller classification to a licensed terminology package this build does not hold, so no Miller code may be emitted."],
   ["orthoAppliance", "none", "Orthodontic appliances are carried by care plans and Devices in the IG."],
   ["orthoDrift", "none", "Orthodontic position findings are carried by external terminology in the IG."],
   ["orthoVertical", "none", "Orthodontic position findings are carried by external terminology in the IG."],
@@ -501,12 +510,6 @@ function reportUnprojected(ctx: BuildContext, fdi: string, rec: ToothRecord): vo
     const value = rec[field];
     if (typeof value !== "string" || !value || value === skip) continue;
     reportUnmapped(ctx, { tooth: fdi, field: String(field), value, reason });
-  }
-  if (rec.perio || rec.furcation || rec.plaque || rec.pi || rec.gi || rec.mpi || rec.mbi || typeof rec.kg === "number") {
-    reportUnmapped(ctx, {
-      tooth: fdi, field: "perio", value: "charted",
-      reason: "Periodontal measurements belong to PeriodontalObservationDE/PeriImplantObservationDE; use the legacy dialect's periodontal panel until that surface is canonicalized.",
-    });
   }
   const fsm = rec.fillingSurfaceMaterials;
   if (fsm && typeof fsm === "object") {
@@ -547,6 +550,17 @@ export function buildDentalDeBundle(
     ?? payload?.examination?.effectiveDateTime
     ?? payload?.case?.examDate;
   const ctx: BuildContext = { subjectRef, effective, report };
+  // Bead odontogram-5cz: the periodontal emitter builds `PeriodontalObservationDE`
+  // and `PeriImplantObservationDE` resources against exactly the same base
+  // Observation and tooth bodySite every other canonical resource uses, so the
+  // dialect keeps one set of conventions.
+  const perioCtx: DentalDePerioContext = {
+    subjectRef,
+    baseObservation: (profile, code) => baseCanonicalObservation(ctx, profile, code),
+    toothBodySite: (fdi) => toothBodySite(fdi),
+    reportUnmapped: (entry) => reportUnmapped(ctx, entry),
+    reportText: (entry) => reportText(ctx, entry),
+  };
 
   const entries: Bundle["entry"] = [];
   if (!options.subject) {
@@ -583,6 +597,9 @@ export function buildDentalDeBundle(
 
     for (const obs of cariesObservations(ctx, fdi, rec)) entries.push({ resource: obs });
     for (const obs of extraFindings(ctx, fdi, rec)) entries.push({ resource: obs });
+    for (const entry of buildDentalDePerioEntries(perioCtx, fdi, rec)) {
+      entries.push(entry as NonNullable<Bundle["entry"]>[number]);
+    }
 
     if (typeof rec.note === "string" && rec.note.trim().length > 0) {
       const obs = baseCanonicalObservation(ctx, DENTAL_DE_FINDING_PROFILE, textOnly(FINDING_TEXT.clinicianNote));

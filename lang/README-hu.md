@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.5.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.6.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -546,6 +546,20 @@ parodontitis, valamint a restaurátum épségére vonatkozó leletek ezen az ala
 kapnak kódot. A pontos forrásértékelés mindig a `CodeableConcept.text` mezőben
 marad, és `Coding.display` sosem kerül kitalálásra, mert az IG nem közöl
 megjelenítési neveket.
+
+**Kanonikus parodontális export (2.6.0-tól):** egy felvett természetes fog
+`PeriodontalObservationDE`-ként, egy implantátumpozíció `PeriImplantObservationDE`-ként
+exportálódik a hozzá tartozó `DentalImplantDE` eszközzel együtt — hat ponton mért
+szondázási mélység, az ínyszél zománc-cement határhoz viszonyított előjeles szintje,
+a származtatott tapadási szint, szondázásra jelentkező vérzés és gennyedés, a
+Glickman-furkációfok a bejáratával, plakk jelenléte, a Silness-Löe és Löe-Silness
+indexek, a keratinizált íny szélessége, valamint a Mombelli-féle periimplantáris
+indexek, mindegyik az IG `PeriodontalMeasurementSiteExt` vagy `ToothSurfacesExt`
+kiterjesztésével minősítve. A vizsgált, negatív lelet kifejezett `false`/`0`, a
+rögzített hiány pedig szabványos `dataAbsentReason`. A recesszió-komponens
+szándékosan kimarad: az IG által rögzített SCTID valójában „Accretion on teeth"
+jelentésű, ezért az előjeles ínyszél hordozza a leletet (`REJECTED_SCT` rögzíti a
+bizonyítékot).
 
 A `parseFhirBundle` **mindkét** nyelvjárást olvassa, a vegyes köteget is, így a korábban
 exportált kötegek változatlanul importálhatók.

@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.5.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.6.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -548,6 +548,21 @@ zervikale Wurzelresorption, apikale Parodontitis sowie die Befunde zur
 Restaurations-Integrität werden auf dieser Grundlage kodiert. Die exakte
 Quellbewertung bleibt immer in `CodeableConcept.text`, und es wird kein
 `Coding.display` erfunden, da der IG keine Displays veröffentlicht.
+
+**Kanonischer Parodontal-Export (ab 2.6.0):** ein befundeter natürlicher Zahn wird
+als `PeriodontalObservationDE` exportiert, eine Implantatposition als
+`PeriImplantObservationDE` samt dem `DentalImplantDE`-Device, auf das sie sich
+bezieht — Sondierungstiefe an sechs Stellen, der vorzeichenbehaftete Abstand vom
+Gingivarand zur Schmelz-Zement-Grenze, der abgeleitete Attachmentverlust, Blutung
+und Pus nach Sondierung, der Glickman-Furkationsgrad mit Eingang, Plaque-Nachweis,
+die Indizes nach Silness-Löe und Löe-Silness, die Breite der keratinisierten
+Gingiva sowie die periimplantären Mombelli-Indizes, jeweils qualifiziert durch
+`PeriodontalMeasurementSiteExt` oder `ToothSurfacesExt` der IG. Ein untersuchter
+Normalbefund ist ein explizites `false`/`0`, eine dokumentierte Lücke ein
+standardisierter `dataAbsentReason`. Die Rezessions-Komponente wird bewusst
+weggelassen: die von der IG dafür festgelegte SCTID bedeutet tatsächlich
+„Accretion on teeth", daher trägt der vorzeichenbehaftete Gingivarand den Befund
+(`REJECTED_SCT` dokumentiert den Nachweis).
 
 `parseFhirBundle` liest **beide** Dialekte, auch ein gemischtes Bundle, sodass bereits
 exportierte Bundles unveraendert importierbar bleiben.

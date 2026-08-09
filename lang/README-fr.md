@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.5.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.6.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -195,6 +195,20 @@ parodontite apicale et les constats d'intégrité de la restauration sont codés
 cette base. L'évaluation source exacte reste toujours dans
 `CodeableConcept.text`, et aucun `Coding.display` n'est inventé, car le GI n'en
 publie pas.
+
+**Export parodontal canonique (à partir de 2.6.0) :** une dent naturelle relevée est
+exportée en `PeriodontalObservationDE` et une position implantaire en
+`PeriImplantObservationDE` accompagnée du dispositif `DentalImplantDE` qu'elle vise
+— profondeur de sondage en six points, niveau signé du bord gingival par rapport à
+la jonction émail-cément, niveau d'attache dérivé, saignement et suppuration au
+sondage, le degré de furcation de Glickman avec son entrée, présence de plaque, les
+indices de Silness-Löe et Löe-Silness, la largeur de gencive kératinisée et les
+indices péri-implantaires de Mombelli, chacun qualifié par
+`PeriodontalMeasurementSiteExt` ou `ToothSurfacesExt` de l'IG. Un constat évalué
+comme normal est un `false`/`0` explicite et une lacune enregistrée un
+`dataAbsentReason` standard. Le composant de récession est délibérément omis : le
+SCTID que l'IG y fixe signifie en réalité « Accretion on teeth », c'est donc le bord
+gingival signé qui porte le constat (`REJECTED_SCT` en consigne la preuve).
 
 `parseFhirBundle` lit **les deux** dialectes, y compris un bundle qui les mélange, si bien
 que les bundles déjà exportés continuent de s'importer sans changement.

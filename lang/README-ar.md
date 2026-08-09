@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.5.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.6.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -545,6 +545,18 @@ const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
 الداخلي والعنقي الخارجي، والتهاب دواعم السن الذروي، ونتائج سلامة الترميم. ويبقى
 التقييم المصدري الدقيق دائمًا في `CodeableConcept.text`، ولا يُختلق أي
 `Coding.display` لأن دليل التنفيذ لا ينشر أسماء العرض.
+
+**تصدير دواعم الأسنان القياسي (اعتبارًا من 2.6.0):** يُصدَّر السن الطبيعي المسجَّل بوصفه
+`PeriodontalObservationDE`، ويُصدَّر موضع الزرعة بوصفه `PeriImplantObservationDE` مع جهاز
+`DentalImplantDE` الذي يشير إليه — عمق السبر عند ست نقاط، والمستوى ذو الإشارة لحافة اللثة
+بالنسبة إلى الوصل المينائي الملاطي، ومستوى الالتصاق المشتق، والنزف والقيح عند السبر،
+ودرجة تشعب الجذور وفق Glickman مع مدخلها، ووجود اللويحة، ومؤشرا Silness-Löe و
+Löe-Silness، وعرض اللثة المتقرنة، ومؤشرات Mombelli حول الزرعة، وكل منها مُقيَّد بامتداد
+`PeriodontalMeasurementSiteExt` أو `ToothSurfacesExt` من الدليل. الموجودة المفحوصة
+الطبيعية تُمثَّل بقيمة `false`/`0` صريحة، والفجوة المسجَّلة تُمثَّل بـ `dataAbsentReason`
+القياسي. أما مكوِّن الانحسار فيُحذَف عمدًا: فالـ SCTID الذي يثبته الدليل له في الواقع معنى
+"Accretion on teeth"، ولذلك تحمل حافة اللثة ذات الإشارة هذه الموجودة (يوثّق
+`REJECTED_SCT` الدليل).
 
 يقرأ `parseFhirBundle` **كلتا** اللهجتين، بما في ذلك الحزمة المختلطة، فتظل الحزم
 المُصدَّرة سابقًا قابلة للاستيراد دون تغيير.

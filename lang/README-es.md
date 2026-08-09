@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.5.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.6.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -548,6 +548,20 @@ apical y los hallazgos de integridad de la restauración se codifican sobre esa
 base. La valoración de origen exacta permanece siempre en
 `CodeableConcept.text`, y no se inventa ningún `Coding.display`, porque la GI no
 publica displays.
+
+**Exportación periodontal canónica (desde 2.6.0):** un diente natural registrado se
+exporta como `PeriodontalObservationDE` y una posición de implante como
+`PeriImplantObservationDE` junto con el dispositivo `DentalImplantDE` al que apunta
+— profundidad de sondaje en seis puntos, nivel con signo del margen gingival
+respecto a la unión amelocementaria, nivel de inserción derivado, sangrado y
+supuración al sondaje, el grado de furcación de Glickman con su entrada, presencia
+de placa, los índices de Silness-Löe y Löe-Silness, la anchura de encía
+queratinizada y los índices periimplantarios de Mombelli, cada uno cualificado por
+`PeriodontalMeasurementSiteExt` o `ToothSurfacesExt` de la IG. Un hallazgo evaluado
+como normal es un `false`/`0` explícito y una laguna registrada es un
+`dataAbsentReason` estándar. El componente de recesión se omite deliberadamente: el
+SCTID que la IG fija para él significa realmente "Accretion on teeth", así que el
+margen con signo lleva el hallazgo (`REJECTED_SCT` registra la evidencia).
 
 `parseFhirBundle` lee **ambos** dialectos, incluido un paquete que los mezcle, por lo que
 los paquetes ya exportados se siguen importando sin cambios.

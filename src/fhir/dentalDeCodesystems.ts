@@ -33,6 +33,12 @@ export const DENTAL_DE_CARIES_PROFILE = `${DENTAL_DE_BASE}/StructureDefinition/c
 /** `DentalFindingDE` — the canonical carrier for observed tooth/surface detail
  *  that is not one of the odontogram profile's own component slices. */
 export const DENTAL_DE_FINDING_PROFILE = `${DENTAL_DE_BASE}/StructureDefinition/dental-finding`;
+/** `PeriodontalObservationDE` — the six-site periodontal record for one tooth. */
+export const DENTAL_DE_PERIODONTAL_PROFILE = `${DENTAL_DE_BASE}/StructureDefinition/periodontal-observation`;
+/** `PeriImplantObservationDE` — the peri-implant record around one implant. */
+export const DENTAL_DE_PERI_IMPLANT_PROFILE = `${DENTAL_DE_BASE}/StructureDefinition/peri-implant-observation`;
+/** `DentalImplantDE` — the Device a `PeriImplantObservationDE` must focus on. */
+export const DENTAL_DE_IMPLANT_DEVICE_PROFILE = `${DENTAL_DE_BASE}/StructureDefinition/dental-implant`;
 
 /** `OdontogramComponentCS` — structural component identifiers (NOT clinical). */
 export const DENTAL_DE_COMPONENT_SYSTEM = `${DENTAL_DE_BASE}/CodeSystem/odontogram-component`;
@@ -49,12 +55,115 @@ export const DENTAL_DE_RESTORATION_TYPE_SYSTEM = `${DENTAL_DE_BASE}/CodeSystem/r
 /** `DentalMaterialCS` — laboratory restoration materials. */
 export const DENTAL_DE_MATERIAL_SYSTEM = `${DENTAL_DE_BASE}/CodeSystem/dental-material`;
 
+/** `PeriodontalMeasurementSiteCS` — the six vendor-neutral probing positions. */
+export const PERIODONTAL_SITE_SYSTEM = `${DENTAL_DE_BASE}/CodeSystem/periodontal-measurement-site`;
+/** `PeriodontalIndexCS` — named periodontal instruments the audit kept local. */
+export const PERIODONTAL_INDEX_SYSTEM = `${DENTAL_DE_BASE}/CodeSystem/periodontal-index`;
+/** `GlickmanFurcationGradeCS` — the named Glickman 0/I/II/III/IV scale. */
+export const GLICKMAN_FURCATION_SYSTEM = `${DENTAL_DE_BASE}/CodeSystem/glickman-furcation-grade`;
+/** `PABefundTypeCS` — structured periodontal component types. */
+export const PA_BEFUND_TYPE_SYSTEM = `${DENTAL_DE_BASE}/CodeSystem/pa-befund-type`;
+/** `PeriImplantFindingCS` — peri-implant assessment/mobility identifiers. */
+export const PERI_IMPLANT_FINDING_SYSTEM = `${DENTAL_DE_BASE}/CodeSystem/peri-implant-finding`;
+
 /** `ToothSurfacesExt` — repeatable; ONE surface code per extension instance. */
 export const TOOTH_SURFACES_EXT_URL = `${DENTAL_DE_BASE}/StructureDefinition/tooth-surfaces`;
+/** `PeriodontalMeasurementSiteExt` — the probing site one component applies to. */
+export const PERIODONTAL_SITE_EXT_URL = `${DENTAL_DE_BASE}/StructureDefinition/periodontal-measurement-site`;
+/** `FdiToothNumberExt` — the FDI position a `DentalImplantDE` occupies. */
+export const FDI_TOOTH_NUMBER_EXT_URL = `${DENTAL_DE_BASE}/StructureDefinition/fdi-tooth-number`;
 /** HL7 Terminology FDI surface CodeSystem, the value space of `ToothSurfacesVS`. */
 export const FDI_SURFACE_SYSTEM = "http://terminology.hl7.org/CodeSystem/FDI-surface";
 /** SNOMED CT. */
 export const SNOMED_SYSTEM = "http://snomed.info/sct";
+/** LOINC. */
+export const LOINC_SYSTEM = "http://loinc.org";
+/** UCUM — the unit system every periodontal Quantity slice fixes. */
+export const UCUM_SYSTEM = "http://unitsofmeasure.org";
+/** HL7 Terminology `data-absent-reason`, the standard way to say a component
+ *  was expected but carries no result. */
+export const DATA_ABSENT_REASON_SYSTEM = "http://terminology.hl7.org/CodeSystem/data-absent-reason";
+
+/** LOINC codes the periodontal profiles fix on their component slices. */
+export const PERIO_LOINC = {
+  /** `PeriodontalObservationDE.code` in the IG's own published example. */
+  panel: "8704-9",
+  probingDepth: "32910-2",
+  /** Signed free-gingival-margin-to-CEJ distance; see {@link REJECTED_SCT}. */
+  gingivalMarginToCej: "64043-3",
+  plaquePresence: "34016-6",
+} as const;
+
+/** `PABefundTypeCS` codes the periodontal profiles fix. */
+export const PA_BEFUND = {
+  attachmentLoss: "attachment-loss",
+  suppuration: "suppuration-on-probing",
+} as const;
+
+/** `PeriodontalIndexCS` codes the periodontal profiles fix. */
+export const PERIODONTAL_INDEX = {
+  gingivalIndex: "loe-silness-gingival-index",
+  keratinizedGingivaWidth: "keratinized-gingiva-width",
+  modifiedPlaqueIndex: "mombelli-modified-plaque-index",
+  modifiedSulcusBleedingIndex: "mombelli-modified-sulcus-bleeding-index",
+} as const;
+
+/** `PeriImplantFindingCS` codes. */
+export const PERI_IMPLANT_FINDING = {
+  assessment: "assessment",
+  implantMobility: "implant-mobility",
+} as const;
+
+/**
+ * Engine `PERIO_SITES` -> `PeriodontalMeasurementSiteCS`. The two vocabularies
+ * describe the SAME six positions in the same order, so this is an exact 1:1
+ * rename with no clinical claim attached to it.
+ */
+export const PERIODONTAL_SITE_CODE = {
+  MB: "mesiobuccal",
+  B: "buccal",
+  DB: "distobuccal",
+  ML: "mesiolingual",
+  L: "lingual",
+  DL: "distolingual",
+} as const;
+
+/** Inverse of {@link PERIODONTAL_SITE_CODE}; unknown codes yield `undefined`. */
+export function perioSiteFromCode(code: string): string | undefined {
+  for (const [site, canonical] of Object.entries(PERIODONTAL_SITE_CODE)) {
+    if (canonical === code) return site;
+  }
+  return undefined;
+}
+
+/**
+ * `GlickmanFurcationGradeCS` codes indexed by the engine's integer grade.
+ * Index 0 is the IG's explicit "assessed, no involvement" value — it is a
+ * clinical result, never a stored engine grade (the engine stores 1..4 only).
+ */
+export const GLICKMAN_GRADE_CODE = ["0", "I", "II", "III", "IV"] as const;
+
+/** Inverse of {@link GLICKMAN_GRADE_CODE}; unknown codes yield `undefined`. */
+export function glickmanGradeFromCode(code: string): number | undefined {
+  const index = (GLICKMAN_GRADE_CODE as readonly string[]).indexOf(code);
+  return index < 0 ? undefined : index;
+}
+
+/**
+ * `Device.identifier` system for the placeholder implant identity this adapter
+ * has to mint. `PeriImplantObservationDE.focus` is 1..1 onto a `DentalImplantDE`
+ * Device, and the editor knows an implant only by the FDI position it occupies
+ * — it holds no manufacturer, serial number or practice device id. A host that
+ * owns a device registry replaces this identifier with its own; keeping the
+ * placeholder in a clearly adapter-owned URN keeps it from being mistaken for a
+ * real device identity.
+ */
+export const IMPLANT_PLACEHOLDER_IDENTIFIER_SYSTEM = "urn:odontogram:dental-implant-position";
+
+/** `Device.type` for a placeholder implant. `DentalImplantDE` leaves the type
+ *  binding open and the IG's own example uses a text-only value, so no code is
+ *  invented here either. */
+export const IMPLANT_DEVICE_TYPE_TEXT = "Endosseous dental implant";
 
 /** Component slice codes of `OdontogramObservationDE` (`OdontogramComponentCS`). */
 export const ODONTO_COMPONENT = {
@@ -114,7 +223,64 @@ export const VERIFIED_SCT = {
   internalResorption: "52994003",
   externalResorption: "41918006",
   apicalPeriodontitis: "39273001",
+  // Bead odontogram-5cz — the periodontal surface. These three are not
+  // ValueSet members chosen by this adapter: `PeriodontalObservationDE` and
+  // `PeriImplantObservationDE` FIX them on their component slices, which is a
+  // stronger admission than an extensible binding. Their meanings were still
+  // verified before use — see SCT_PROVENANCE, and REJECTED_SCT for the one
+  // fixed concept whose verification failed.
+  bleedingOnProbing: "86276007",
+  furcationInvolvementIndex: "771311009",
+  plaqueIndexSilnessLoe: "251307008",
 } as const;
+
+/**
+ * An SCTID the IG FIXES on a component slice that this adapter nevertheless
+ * refuses to emit, because an authoritative lookup contradicts the meaning the
+ * IG's label claims for it. Recorded rather than silently skipped so the
+ * refusal is reviewable and a corrected IG release is a one-line change.
+ */
+export interface RejectedSct {
+  readonly code: string;
+  /** The meaning the IG's own artifacts attach to the code. */
+  readonly igLabel: string;
+  /** The meaning the terminology server actually publishes for it. */
+  readonly verifiedMeaning: string;
+  readonly verifiedBy: string;
+  /** What this adapter does instead, and why nothing is lost. */
+  readonly consequence: string;
+}
+
+/**
+ * BEAD odontogram-5cz. `PeriodontalObservationDE` fixes
+ * `component[recession].code` to SNOMED CT `6288001` and
+ * `PeriodontalFindingCodesVS` publishes that member with the display
+ * "Gingival recession". SNOMED CT International publishes `6288001` as
+ * "Accretion on teeth" — a dental deposit, not a recession — and publishes
+ * gingival recession as `4356008` instead, which the IG does not admit.
+ *
+ * Emitting a recession measurement under `6288001` would therefore assert a
+ * deposit finding the source never made, so no recession component is emitted
+ * at all. Nothing is lost: the engine stores the SIGNED gingival margin, and
+ * LOINC `64043-3` ("Distance from the free gingival margin, FGM, to the
+ * cement-enamel junction, CEJ Tooth [PhenX]") is an EXACT contract for it,
+ * with recession recoverable as `max(margin, 0)` by any consumer.
+ */
+export const REJECTED_SCT: Record<"gingivalRecession", RejectedSct> = {
+  gingivalRecession: {
+    code: "6288001",
+    igLabel: "Gingival recession",
+    verifiedMeaning: "Accretion on teeth",
+    verifiedBy:
+      "tx.fhir.org/r4 CodeSystem/$lookup over SNOMED CT International edition version 20250201 "
+      + "returns display 'Accretion on teeth' for 6288001; the same server's $expand over a "
+      + "'gingival recession' filter returns 4356008 'Gingival recession', which is not admitted "
+      + "by PeriodontalFindingCodesVS.",
+    consequence:
+      "No recession component is emitted. The engine's signed gingival margin rides LOINC "
+      + `${PERIO_LOINC.gingivalMarginToCej} instead, which is exact, and the omission is reported.`,
+  },
+};
 
 /** Verification record for one admitted SNOMED CT concept. */
 export interface SctProvenance {
@@ -127,12 +293,19 @@ export interface SctProvenance {
    * wire that the IG itself did not publish.
    */
   readonly meaning: string;
-  /** The IG ValueSet (`input/fsh/valuesets/<name>.fsh`) that admits the code. */
+  /**
+   * Where the IG admits the code: either the ValueSet
+   * (`input/fsh/valuesets/<name>.fsh`) that contains it, or — for the
+   * periodontal concepts added by bead odontogram-5cz — the profile that fixes
+   * it on a component slice, which admits nothing else in that position.
+   */
   readonly valueSet:
     | "ToothPresenceStateVS"
     | "RootEndodonticStateVS"
     | "RestorationStatusVS"
-    | "ProstheticStateVS";
+    | "ProstheticStateVS"
+    | "PeriodontalObservationDE (fixed component code)"
+    | "PeriodontalObservationDE / PeriImplantObservationDE (fixed component code)";
   /** Where the meaning was verified, in the order the sourcing rule requires. */
   readonly verifiedBy: string;
 }
@@ -252,6 +425,34 @@ export const SCT_PROVENANCE: Record<keyof typeof VERIFIED_SCT, SctProvenance> = 
       + "osteitis values do NOT and stay on text. The IG contract forbids coding an observed "
       + "radiolucency as a diagnosis; the engine's `apicalDx` IS the apical diagnosis, so no "
       + "such upgrade happens here.",
+  },
+  bleedingOnProbing: {
+    code: "86276007",
+    meaning: "Bleeding gums",
+    valueSet: "PeriodontalObservationDE / PeriImplantObservationDE (fixed component code)",
+    verifiedBy:
+      "Fixed by both profiles on `component[bop]` and additionally listed in PeriodontalFindingCodesVS; "
+      + "tx.fhir.org $lookup returns 'Bleeding gums', not the IG's 'Bleeding on probing' label. Site-level "
+      + "bleeding after probing ENTAILS bleeding of the gingiva, so this is the generalization rule already "
+      + "used elsewhere in this adapter rather than a different finding — and it is the only code the fixed "
+      + "slice admits. No display is emitted, so the IG's inaccurate label never reaches the wire.",
+  },
+  furcationInvolvementIndex: {
+    code: "771311009",
+    meaning: "Tooth furcation involvement index for assessment of periodontal disease",
+    valueSet: "PeriodontalObservationDE (fixed component code)",
+    verifiedBy:
+      "Fixed by PeriodontalObservationDE on `component[furcation]`; tx.fhir.org $lookup returns "
+      + "'Tooth furcation involvement index for assessment of periodontal disease'. Exact: the component "
+      + "identifies the assessment scale and the Glickman grade rides in the value.",
+  },
+  plaqueIndexSilnessLoe: {
+    code: "251307008",
+    meaning: "Plaque index of Sillness and Loe",
+    valueSet: "PeriodontalObservationDE (fixed component code)",
+    verifiedBy:
+      "Fixed by PeriodontalObservationDE on `component[plaqueIndex]`; tx.fhir.org $lookup returns "
+      + "'Plaque index of Sillness and Loe'. Exact for the engine's Silness-Loe `pi` axis.",
   },
 };
 
