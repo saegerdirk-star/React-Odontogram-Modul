@@ -40,7 +40,9 @@ import { assemblePdf, type PdfExportOptions, type PdfAssembleData, type PdfDocLi
 import tooth11Svg from "./assets/teeth-svgs/11.svg?raw";
 import tooth13Svg from "./assets/teeth-svgs/13.svg?raw";
 import tooth14Svg from "./assets/teeth-svgs/14.svg?raw";
+import tooth15Svg from "./assets/teeth-svgs/15.svg?raw";
 import tooth16Svg from "./assets/teeth-svgs/16.svg?raw";
+import tooth46Svg from "./assets/teeth-svgs/46.svg?raw";
 import tooth14OcclSvg from "./assets/teeth-svgs/14_occl.svg?raw";
 import tooth16OcclSvg from "./assets/teeth-svgs/16_occl.svg?raw";
 /* Tooth SVG Test UI (v2) - vanilla JS */
@@ -53,7 +55,9 @@ export const TEMPLATES = {
   11: tooth11Svg,
   13: tooth13Svg,
   14: tooth14Svg,
+  15: tooth15Svg,
   16: tooth16Svg,
+  46: tooth46Svg,
 };
 const TEMPLATES_OCCL = {
   14: tooth14OcclSvg,
@@ -64,8 +68,10 @@ const TEMPLATES_OCCL = {
 // 11: 11,12 -> no rotate, no mirror; 21,22 -> no rotate, mirror Y
 //     31,32 -> rotate 180; 41,42 -> rotate 180 + mirror Y
 // 13: 13 -> no rotate; 23 -> mirror Y; 33 -> rotate 180; 43 -> rotate 180 + mirror Y
-// 14: 14,15 -> no rotate; 24,25 -> mirror Y; 34,35 -> rotate 180; 44,45 -> rotate 180 + mirror Y
-// 16: 16,17,18 -> no rotate; 26,27,28 -> mirror Y; 36,37,38 -> rotate 180; 46,47,48 -> rotate 180 + mirror Y
+// 14: maxillary first premolars (two roots)
+// 15: maxillary second and all mandibular premolars (one root)
+// 16: maxillary molars (three roots)
+// 46: mandibular molars (two roots)
 export const TOOTH_TEMPLATE = new Map([
   // 11 template
   [11, {tpl:11, rot:0, mirror:false}], [12,{tpl:11,rot:0,mirror:false}],
@@ -77,15 +83,31 @@ export const TOOTH_TEMPLATE = new Map([
   [23,{tpl:13,rot:0,mirror:true}],
   [33,{tpl:13,rot:180,mirror:false}],
   [43,{tpl:13,rot:180,mirror:true}],
-  // 14 template
-  [14,{tpl:14,rot:0,mirror:false}],[15,{tpl:14,rot:0,mirror:false}],
-  [24,{tpl:14,rot:0,mirror:true}],[25,{tpl:14,rot:0,mirror:true}],
-  [34,{tpl:14,rot:180,mirror:false}],[35,{tpl:14,rot:180,mirror:false}],
-  [44,{tpl:14,rot:180,mirror:true}],[45,{tpl:14,rot:180,mirror:true}],
-  // 16 template
+  // maxillary first premolars
+  [14,{tpl:14,rot:0,mirror:false}], [24,{tpl:14,rot:0,mirror:true}],
+  // single-rooted premolars
+  [15,{tpl:15,rot:0,mirror:false}], [25,{tpl:15,rot:0,mirror:true}],
+  [34,{tpl:15,rot:180,mirror:false}], [35,{tpl:15,rot:180,mirror:false}],
+  [44,{tpl:15,rot:180,mirror:true}], [45,{tpl:15,rot:180,mirror:true}],
+  // maxillary molars
   [16,{tpl:16,rot:0,mirror:false}],[17,{tpl:16,rot:0,mirror:false}],[18,{tpl:16,rot:0,mirror:false}],
   [26,{tpl:16,rot:0,mirror:true}],[27,{tpl:16,rot:0,mirror:true}],[28,{tpl:16,rot:0,mirror:true}],
+  // mandibular molars
+  [36,{tpl:46,rot:180,mirror:false}],[37,{tpl:46,rot:180,mirror:false}],[38,{tpl:46,rot:180,mirror:false}],
+  [46,{tpl:46,rot:180,mirror:true}],[47,{tpl:46,rot:180,mirror:true}],[48,{tpl:46,rot:180,mirror:true}],
+]);
+
+// Occlusal artwork has its own viewpoint contract. The source templates place
+// mesial geometry on the right. These transforms keep mesial toward the arch
+// midline for the standard chart ordering (patient right on the viewer left).
+export const OCCLUSAL_TEMPLATE = new Map([
+  [14,{tpl:14,rot:0,mirror:false}],[15,{tpl:14,rot:0,mirror:false}],
+  [16,{tpl:16,rot:0,mirror:false}],[17,{tpl:16,rot:0,mirror:false}],[18,{tpl:16,rot:0,mirror:false}],
+  [24,{tpl:14,rot:0,mirror:true}],[25,{tpl:14,rot:0,mirror:true}],
+  [26,{tpl:16,rot:0,mirror:true}],[27,{tpl:16,rot:0,mirror:true}],[28,{tpl:16,rot:0,mirror:true}],
+  [34,{tpl:14,rot:180,mirror:false}],[35,{tpl:14,rot:180,mirror:false}],
   [36,{tpl:16,rot:180,mirror:false}],[37,{tpl:16,rot:180,mirror:false}],[38,{tpl:16,rot:180,mirror:false}],
+  [44,{tpl:14,rot:180,mirror:true}],[45,{tpl:14,rot:180,mirror:true}],
   [46,{tpl:16,rot:180,mirror:true}],[47,{tpl:16,rot:180,mirror:true}],[48,{tpl:16,rot:180,mirror:true}],
 ]);
 
@@ -8981,7 +9003,7 @@ async function buildGrid(token: number){
   // preload SVG templates in parallel
   const tplCache = new Map();
   const occlCache = new Map();
-  const tplNos = [11,13,14,16] as const;
+  const tplNos = [11,13,14,15,16,46] as const;
   const occlNos = [14,16] as const;
   await Promise.all([
     ...tplNos.map(async (tplNo) => {
@@ -9051,12 +9073,6 @@ async function buildGrid(token: number){
     }
   }
 
-  function occlTemplateForTooth(toothNo: Any){
-    if([14,15,24,25,34,35,44,45].includes(toothNo)) return 14;
-    if([16,17,18,26,27,28,36,37,38,46,47,48].includes(toothNo)) return 16;
-    return null;
-  }
-
   function addPlaceholderTile(){
     const tile = el("div", { class:"tooth-tile occl-view placeholder" }, [
       el("div", { class:"tooth-svg" })
@@ -9066,13 +9082,12 @@ async function buildGrid(token: number){
 
   function addRowOccl(rowTeeth: Any, placeholders: Any){
     for(const toothNo of rowTeeth){
-      const map = TOOTH_TEMPLATE.get(toothNo);
-      const tplNo = occlTemplateForTooth(toothNo);
-      if(placeholders.has(toothNo) || !tplNo || !map){
+      const map = OCCLUSAL_TEMPLATE.get(toothNo);
+      if(placeholders.has(toothNo) || !map){
         addPlaceholderTile();
         continue;
       }
-      addTile({ toothNo, tplNo, rot: map.rot, mirror: map.mirror, view: "occl", clickable: true });
+      addTile({ toothNo, tplNo: map.tpl, rot: map.rot, mirror: map.mirror, view: "occl", clickable: true });
     }
   }
 

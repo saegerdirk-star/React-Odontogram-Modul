@@ -27,7 +27,7 @@
 // interactive odontogram tiles remain the only clickable tooth surfaces).
 import { TEMPLATES, TOOTH_TEMPLATE } from "./odontogram";
 
-export type TemplateNo = 11 | 13 | 14 | 16;
+export type TemplateNo = 11 | 13 | 14 | 15 | 16 | 46;
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -69,7 +69,9 @@ export const CEJ_Y: Record<TemplateNo, number> = {
   11: 32.2,
   13: 32.4,
   14: 32.1,
-  16: 31.0,
+  15: 24.3,
+  16: 26.5,
+  46: 25.0,
 };
 
 /**
@@ -99,7 +101,9 @@ export const IMPLANT_CEJ_Y: Record<TemplateNo, number> = {
   11: 33.0,
   13: 35.4,
   14: 34.6,
-  16: 34.3,
+  15: 21.7,
+  16: 23.0,
+  46: 21.8,
 };
 
 /** Predicate telling the arch builders whether a given tooth is an implant on
@@ -288,6 +292,7 @@ export function getToothBaseGroupFromCache(
 
   const { w, h } = viewBoxOf(doc);
   const cejY = anchorFor(tplNo, implant);
+  const normalizeY = Number(doc.documentElement.getAttribute("data-normalize-y") || "1");
 
   const outer = document.createElementNS(SVG_NS, "g") as unknown as SVGGElement;
   outer.setAttribute("data-tooth", String(toothNo));
@@ -301,7 +306,15 @@ export function getToothBaseGroupFromCache(
   //    matrix(1 0 0 -1 0 h): y' = -y + h = h - y; x unchanged.
   const flipGroup = document.createElementNS(SVG_NS, "g") as unknown as SVGGElement;
   flipGroup.setAttribute("transform", `matrix(1 0 0 -1 0 ${fmt(h)})`);
-  flipGroup.appendChild(baseClone);
+  if (normalizeY === 1) {
+    flipGroup.appendChild(baseClone);
+  } else {
+    const normalizeGroup = document.createElementNS(SVG_NS, "g") as unknown as SVGGElement;
+    normalizeGroup.setAttribute("data-template-normalize-y", String(normalizeY));
+    normalizeGroup.setAttribute("transform", `matrix(1 0 0 ${fmt(normalizeY)} 0 0)`);
+    normalizeGroup.appendChild(baseClone);
+    flipGroup.appendChild(normalizeGroup);
+  }
 
   // 2) Horizontal mirror for left/right mesial-distal correctness.
   //    matrix(-1 0 0 1 w 0): x' = -x + w = w - x; y unchanged.

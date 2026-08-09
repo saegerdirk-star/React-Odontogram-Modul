@@ -4,9 +4,11 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath, URL as NodeURL } from "node:url";
+import { OCCLUSAL_TEMPLATE, TOOTH_TEMPLATE } from "../odontogram";
 
-const FRONT = ["11", "13", "14", "16"] as const;
-const ALL = ["11", "13", "14", "16", "14_occl", "16_occl"] as const;
+const SIDE = ["11", "13", "14", "15", "16", "46"] as const;
+const POSTERIOR_SIDE = ["14", "15", "16", "46"] as const;
+const ALL = [...SIDE, "14_occl", "16_occl"] as const;
 
 function readSvg(name: string): string {
   // Use Node's own URL (not the jsdom-provided global URL, which mis-resolves
@@ -25,6 +27,17 @@ const NEW_LEAVES_ALL = [
   "crown-leakage",
 ];
 const NEW_LEAVES_FRONT = ["caries-root", "fracture-horizontal-1", "fracture-vertical-1", "ortho-ring", "ortho-bracket", "arrow-up", "arrow-down"];
+
+function elementIds(svg: string): string[] {
+  return Array.from(svg.matchAll(/\bid="([^"]+)"/g), (match) => match[1]);
+}
+
+function transformedX(x: number, width: number, placement: { rot: number; mirror: boolean }): number {
+  let result = x;
+  if (placement.rot === 180) result = width - result;
+  if (placement.mirror) result = width - result;
+  return result;
+}
 
 describe("installed tooth SVG assets", () => {
   it("every file carries SVG Version 2.5.0", () => {
@@ -46,7 +59,7 @@ describe("installed tooth SVG assets", () => {
   });
 
   it("front teeth use the corrected 'incisal' broken-crown ids (no 'inicisal')", () => {
-    for (const n of FRONT) {
+    for (const n of SIDE) {
       const s = readSvg(n);
       expect(s, n).not.toContain("inicisal");
       expect(s, n).toContain('id="tooth-broken-incisal"');
@@ -59,7 +72,7 @@ describe("installed tooth SVG assets", () => {
       "tooth-broken-mesial-distal", "tooth-broken-mesial-incisal",
       "tooth-broken-distal-incisal", "tooth-broken-mesial-distal-incisal",
     ];
-    for (const n of FRONT) {
+    for (const n of SIDE) {
       const s = readSvg(n);
       for (const v of variants) expect(s, `${n}:${v}`).toContain(`id="${v}"`);
     }
@@ -84,7 +97,7 @@ describe("installed tooth SVG assets", () => {
         if (s.includes(`id="${id}"`)) expect(isHiddenByDefault(s, id), `${n}:${id}`).toBe(true);
       }
     }
-    for (const n of FRONT) {
+    for (const n of SIDE) {
       const s = readSvg(n);
       for (const id of NEW_LEAVES_FRONT) {
         if (s.includes(`id="${id}"`)) expect(isHiddenByDefault(s, id), `${n}:${id}`).toBe(true);
@@ -108,9 +121,50 @@ describe("installed tooth SVG assets", () => {
   });
 
   it("base anatomy layers are present", () => {
-    for (const n of ["11", "13", "14", "16"]) {
+    for (const n of SIDE) {
       const s = readSvg(n);
       for (const id of ["tooth-base", "bone-base", "gum-base"]) expect(s, `${n}:${id}`).toContain(`id="${id}"`);
     }
+  });
+
+  it("posterior side templates declare the admitted root anatomy and preserve the existing view boxes", () => {
+    const expected = {
+      "14": { roots: "2", viewBox: "0 0 39.8 71.2" },
+      "15": { roots: "1", viewBox: "0 0 39.8 71.2" },
+      "16": { roots: "3", viewBox: "0 0 42.9 70.9" },
+      "46": { roots: "2", viewBox: "0 0 42.9 70.9" },
+    } as const;
+
+    for (const template of POSTERIOR_SIDE) {
+      const root = new DOMParser().parseFromString(readSvg(template), "image/svg+xml").documentElement;
+      expect(root.getAttribute("data-root-count"), template).toBe(expected[template].roots);
+      expect(root.getAttribute("viewBox"), template).toBe(expected[template].viewBox);
+    }
+  });
+
+  it("maps each admitted posterior tooth class to its anatomy template", () => {
+    for (const toothNo of [14, 24]) expect(TOOTH_TEMPLATE.get(toothNo)?.tpl).toBe(14);
+    for (const toothNo of [15, 25, 34, 35, 44, 45]) expect(TOOTH_TEMPLATE.get(toothNo)?.tpl).toBe(15);
+    for (const toothNo of [16, 17, 18, 26, 27, 28]) expect(TOOTH_TEMPLATE.get(toothNo)?.tpl).toBe(16);
+    for (const toothNo of [36, 37, 38, 46, 47, 48]) expect(TOOTH_TEMPLATE.get(toothNo)?.tpl).toBe(46);
+  });
+
+  it("keeps mesial occlusal geometry toward the arch midline in every quadrant", () => {
+    for (const [toothNo, placement] of OCCLUSAL_TEMPLATE) {
+      const svg = readSvg(String(placement.tpl));
+      const root = new DOMParser().parseFromString(svg, "image/svg+xml").documentElement;
+      const width = Number(root.getAttribute("viewBox")?.split(/\s+/)[2]);
+      const mesialX = Number(root.querySelector("#mesial-shape")?.getAttribute("d")?.match(/^M([\d.]+)/)?.[1]);
+      const distalX = Number(root.querySelector("#distal-shape")?.getAttribute("d")?.match(/^M([\d.]+)/)?.[1]);
+      const transformedMesial = transformedX(mesialX, width, placement);
+      const transformedDistal = transformedX(distalX, width, placement);
+      const viewerLeft = Math.floor(toothNo / 10) === 1 || Math.floor(toothNo / 10) === 4;
+      expect(transformedMesial > transformedDistal, String(toothNo)).toBe(viewerLeft);
+    }
+  });
+
+  it("preserves the complete clinical layer sequence for split posterior templates", () => {
+    expect(elementIds(readSvg("15"))).toEqual(elementIds(readSvg("14")));
+    expect(elementIds(readSvg("46"))).toEqual(elementIds(readSvg("16")));
   });
 });
