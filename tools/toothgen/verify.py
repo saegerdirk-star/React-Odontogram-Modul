@@ -227,6 +227,58 @@ def root_count(base_d: str, apex: float, cej: float) -> int:
     return max(set(counts), key=counts.count)
 
 
+def check_occlusal(out_dir: Path, failures: list[str]) -> None:
+    """The occlusal templates: the proportion the generator was asked for, and
+    every clinical layer of the drawing it came from.
+
+    odontogram-vlw AC3 asks for the coordinate transformation to be verified
+    here, not merely produced. AC4 asks for the clinical layer ids, hidden
+    defaults and activation paths to survive it - an x-scale should preserve all
+    of them, and this is what says so rather than assuming it.
+    """
+
+    from occlusal import OCCL_SPECS, outline_extent
+
+    print(f"\n{'Occl':9s} {'Ratio b/m':>18s}  {'id/Tags':>8s}  {'hidden':>8s}")
+    print("-" * 50)
+    for spec in OCCL_SPECS:
+        f = out_dir / f"{spec.key}.svg"
+        if not f.exists():
+            failures.append(f"{spec.key}: file is missing")
+            continue
+        txt = f.read_text()
+        src = (SOURCE / f"{spec.src}.svg").read_text()
+
+        w, h, _ = outline_extent(txt)
+        ratio = h / w
+        ok_r = abs(ratio - spec.ratio) <= 0.02
+
+        ids_ok = clinical_ids(txt) == clinical_ids(src)
+        tags_ok = re.findall(r"<(\w+)", txt) == re.findall(r"<(\w+)", src)
+        # A layer switched off in the drawing must still be switched off here,
+        # or a finding would render on a tooth nobody charted it on.
+        hidden_ok = txt.count("display: none") == src.count("display: none")
+
+        mark = lambda b: "OK" if b else "!!"  # noqa: E731
+        print(
+            f"{spec.key:9s} {mark(ok_r)} {ratio:5.2f} (target {spec.ratio:.2f})  "
+            f"{mark(ids_ok and tags_ok):>8s}  {mark(hidden_ok):>8s}"
+        )
+        if not ok_r:
+            failures.append(
+                f"{spec.key}: outline ratio {ratio:.2f} instead of {spec.ratio:.2f}"
+            )
+        if not ids_ok:
+            failures.append(f"{spec.key}: clinical id order differs from its drawing")
+        if not tags_ok:
+            failures.append(f"{spec.key}: element tags differ from its drawing")
+        if not hidden_ok:
+            failures.append(
+                f"{spec.key}: {txt.count('display: none')} hidden defaults against "
+                f"the drawing's {src.count('display: none')}"
+            )
+
+
 def main(argv):
     argv = list(argv)
     which = "permanent"
@@ -430,6 +482,8 @@ def main(argv):
             failures.append(f"{s.key}: element tags differ from the source template")
         if not geometry_ok:
             failures.append(f"{s.key}: authored geometry changed")
+
+    check_occlusal(out_dir, failures)
 
     if occl_offsets:
         vals = [v for _, v in occl_offsets]
