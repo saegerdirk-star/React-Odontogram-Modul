@@ -370,8 +370,23 @@ def build_one(s: ToothSpec, out_dir: Path, dry: bool, root_scale: float | None =
         base_d = tooth_base_d(txt)
         bx0, by0, bx1, by1 = curve_extent(base_d)
     elif s.roots == 1 and have == 2:
-        txt, hit = roots.single_root_layers(txt, (bx0 + bx1) / 2, cej, by0)
-        root_note = f"2->1 roots ({len(hit)} layers)"
+        cxs = (bx0 + bx1) / 2
+        txt, hit = roots.single_root_layers(txt, cxs, cej, by0)
+        base_d = tooth_base_d(txt)
+        # The canal can only be sized once the root that contains it exists, so
+        # the redrawn root is measured here and the lumen pass is capped to a
+        # fraction of it. Measured just apical to the cervical line, which is
+        # where the lumen cut falls and where the taper starts from.
+        root_half = silhouette_width(base_d, cej - 2.0) / 2.0
+        txt, hit_l = roots.single_root_layers(
+            txt,
+            cxs,
+            cej,
+            by0,
+            lumen=True,
+            max_half=root_half * roots.LUMEN_HALF_FRAC,
+        )
+        root_note = f"2->1 roots ({len(hit)}+{len(hit_l)} lumen layers)"
         base_d = tooth_base_d(txt)
         bx0, by0, bx1, by1 = curve_extent(base_d)
     elif s.roots != have:
@@ -424,6 +439,12 @@ def build_one(s: ToothSpec, out_dir: Path, dry: bool, root_scale: float | None =
     vb_new = (vb_old[0], 0.0, vb_old[2], bottom - top)
 
     out = rewrite_svg(txt, fn, ymap_shift, vb_new)
+
+    # Pull back any lumen that would stand outside the root apex. Must run AFTER
+    # the warp: the overhang the source drawings carry grows with the root
+    # stretching (canine: 2.00 -> 2.46 units).
+    apex_now = curve_extent(re.search(r'<path id="tooth-base" d="([^"]+)"', out).group(1))[1]
+    out, clamped = roots.clamp_lumen_apex(out, apex_now)
     out = namespace_paint_servers(out, s.key)
 
     nb = curve_extent(re.search(r'<path id="tooth-base" d="([^"]+)"', out).group(1))

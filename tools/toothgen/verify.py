@@ -18,17 +18,57 @@ TOL_FRAC = 0.015
 TOL_LEN = 1.0
 TOL_OCCL = 0.15
 
+# A canal may be no wider than this fraction of the root at the same height.
+# Generous against LUMEN_HALF_FRAC on purpose: several lumen layers overlap at
+# the chamber, and the check is here to catch a canal that fills its root, not
+# to re-assert the generator's own constant.
+TOL_LUMEN_WIDTH = 0.80
 
+
+def lumen_extremes(txt: str, base_d: str, apex: float, cej: float):
+    """How far the lumen reaches past the apex, and how wide it gets.
+
+    Nothing measured lumen before this: verify.py passed on assets in which the
+    pulp stood outside the root apex on the canine and a canal came out wider
+    than the root containing it. The guard did not fail, it did not look
+    (odontogram-66a, odontogram-0ak).
+    """
+
+    subs: list = []
+    roots._lumen_paths(txt, lambda d: subs.extend(roots._polylines(d)) or None)
+    if not subs:
+        return None, None
+
+    base = roots._polylines(base_d)
+    overhang = apex - min(p[1] for s in subs for p in s)
+
+    widest = 0.0
+    for i in range(1, 20):
+        y = cej - (cej - apex) * i / 20
+        lumen_spans = roots.spans_at(subs, y)
+        base_spans = roots.spans_at(base, y)
+        if not lumen_spans or not base_spans:
+            continue
+        base_w = sum(b - a for a, b in base_spans)
+        if base_w > 0.2:
+            widest = max(widest, sum(b - a for a, b in lumen_spans) / base_w)
+    return overhang, widest
+
+
+# Re-taken on 2026-08-10 for odontogram-66a: the lumen repair moves lumen `d`
+# attributes on all nine templates, which is an intended, reviewed correction,
+# not drift. The previous set was captured on 2026-08-09 from
+# origin/feat/tooth-anatomy-9-templates and is recorded in that bead.
 AUTHORED_GEOMETRY_SHA256 = {
-    "11": "73c0136b36cf1acbdb5c9ec5ce2ea334e3fe9657a78f0ea04a38a5a9bd996f57",
-    "12": "fab81dda956e37e23c16d90a9d46c7a63e5912efd1a2c1689c9950d000ea3415",
-    "13": "b76d83fe769f591e091f388e1f5082e2e7433935890a2bdc0f3cd4eb51b49069",
-    "14": "8d2f6483b1ad6aaea2255d1ba72a8378141de297f8b304018b3fdfbb3dff9ed2",
-    "15": "a7b284a9a20545f779969e3be41d0014f264c8aee45f570eb08a626096fa06a0",
-    "16": "d350e77de9874d6242e737c1c75fd7cf67e6e64671815428a6331c8db62615f4",
-    "17": "a0c32ff8b5625a4900f94f4329200ba2cfaecedfc4f08559c4fdbbf76acadd51",
-    "31": "04d5a3493f1cf05b9b3f17ca88514387535f2c678d70c121393740e6b2713570",
-    "46": "e40a2f87646e68f94527e0cde9584f8fff2b4604219afe46126529d1e3b3cec7",
+    "11": "5403961a7985b751261a0e0429eff97619e51534d46d8fb078bbecd0fa10482e",
+    "12": "58e0d706d419ab08413afb5d9ab5e705d5574f4b95b7628567431de00bc9ddde",
+    "13": "9d8869b7692c2f0b489997873d6111cb39e142199b5b0e51fedf048584258e5d",
+    "14": "810e488c0973a1c04474cd243b921cfc23b75194bdf5fc184ef90ef3d0b72ebd",
+    "15": "23a1e6696c70d15fd20d553ab00b8023cd2fa415501cdbd21d0e056bc943f7e7",
+    "16": "dccdd2fea0b80a5afdc74e034b79dfa0a08151d8ff5ca4d2c8cdb952e5202786",
+    "17": "57cdc697a16a578ef4d566d6a18d02c472ce48a263d10bbdf7b71c0a99e1a9f6",
+    "31": "4a10c5642fd72352dcf13c95d7f50a1ecf0a8b026661d6bb435a03a21d193e33",
+    "46": "fba5d08ec2aedf3fcc2ae63bf321b6f6d0d97ffb97da53150089edd79cf30976",
 }
 
 GEOMETRY_ATTRIBUTES = (
@@ -128,7 +168,10 @@ def main(argv):
     occl_offsets = []
 
     print(f"Checking {out_dir}\n")
-    hdr = f"{'Tpl':4s} {'Roots':>10s}  {'Root fraction':>20s}  {'Length':>14s}  {'id/Tags':>8s}"
+    hdr = (
+        f"{'Tpl':4s} {'Roots':>10s}  {'Root fraction':>20s}  {'Length':>14s}  "
+        f"{'Lumen apex':>11s} {'Lumen width':>11s}  {'id/Tags':>8s}"
+    )
     print(hdr)
     print("-" * len(hdr))
 
@@ -191,6 +234,20 @@ def main(argv):
                     f"the former two-root seam remains"
                 )
 
+        overhang, lumen_w = lumen_extremes(txt, base_d, apex, cej)
+        if overhang is None:
+            failures.append(f"{s.key}: no lumen layer found")
+        else:
+            if overhang > 0:
+                failures.append(
+                    f"{s.key}: lumen stands {overhang:.2f} outside the root apex"
+                )
+            if lumen_w > TOL_LUMEN_WIDTH:
+                failures.append(
+                    f"{s.key}: lumen reaches {lumen_w:.0%} of the root width; "
+                    f"a canal is drawn as wide as the root that contains it"
+                )
+
         n = root_count(base_d, apex, cej)
         frac = (cej - apex) / (inc - apex)
         length = inc - apex
@@ -202,10 +259,15 @@ def main(argv):
         ok_f = abs(frac - want_frac) <= TOL_FRAC
         ok_l = True
         mark = lambda b: "OK" if b else "!!"  # noqa: E731
+        ok_lo = overhang is not None and overhang <= 0
+        ok_lw = lumen_w is not None and lumen_w <= TOL_LUMEN_WIDTH
         print(
             f"{s.key:4s} {mark(ok_n)} {n} (target {s.roots})  "
             f"{mark(ok_f)} {frac:5.1%} (target {want_frac:.0%}, anatomical {s.root_frac:.0%})  "
-            f"{length:8.1f}  {mark(ids_ok and tags_ok):>8s}"
+            f"{length:8.1f}  "
+            f"{mark(ok_lo)} {overhang if overhang is not None else 0:+6.2f} "
+            f"{mark(ok_lw)} {lumen_w if lumen_w is not None else 0:8.0%}  "
+            f"{mark(ids_ok and tags_ok):>8s}"
         )
         if not ok_n:
             failures.append(f"{s.key}: {n} roots instead of {s.roots}")

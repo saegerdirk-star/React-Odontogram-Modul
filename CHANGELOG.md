@@ -9,6 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The pulp no longer stands outside the root, and a canal is no longer drawn
+  as wide as the root that contains it.** Two separate mechanisms, both visible
+  on the chart. The apical one was worst on the canine, where the pulp tip stood
+  2.46 units clear of the root outline — it is already present in the source
+  drawing and the generator amplified it, because it stretches the root to its
+  measured proportion. `clamp_lumen_apex()` runs after the warp, since before it
+  the amplification has not happened yet, and pulls each lumen back to one unit
+  inside the apex anchored at its coronal end, so the chamber and the pulp horns
+  do not move. All nine templates now end inside the root.
+
+  The width one appears wherever the generator DRAWS root geometry instead of
+  transforming it. `single_root_contour` took the new root's half-width from the
+  silhouette at the cut, and for a pulp layer that cut necessarily lies where the
+  two canals still meet — in the chamber, not in a canal — so template 15 came
+  out with a lumen at 128 % of its own root width. Contours and lumen are now
+  separated (`LUMEN_LAYERS`/`is_lumen()`), the conversion runs in two passes so
+  the canal can be sized against the root that has to contain it, and the
+  drawn palatal root of templates 16/17 gets a canal at `LUMEN_HALF_FRAC` of its
+  own width rather than the contour's. Template 15 drops to 71 %, 16 and 17 from
+  62 % to 42 %.
+
+  Two `endo-` layers are deliberately NOT lumen: an apicoectomy is drawn across
+  the apex and a resorption defect on the root surface, so both legitimately
+  reach past the outline that contains a canal. Sweeping them in with the prefix
+  would clamp a resection line into the root it is meant to cut off. This also
+  corrects the numbers first reported for this defect, which were measured with
+  those two layers included and were inflated by them.
+
+  `verify.py` measures lumen now — apical overhang and width against the root at
+  the same height. It did not before, which is how nine assets carrying the
+  defect passed it. The frozen geometry digests are re-taken, since the repair
+  changes coordinates on all nine templates; the SVG parity fingerprints are
+  untouched, because no element, id, opacity or class changes.
+
 - **The periodontal chart no longer draws one row of every jaw upside down.**
   Each arch is shown twice, once from the facial and once from the palatal or
   lingual side, and the two rows were oriented by ASPECT: the buccal row flipped,

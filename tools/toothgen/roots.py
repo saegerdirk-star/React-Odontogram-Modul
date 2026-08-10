@@ -371,6 +371,7 @@ def single_root_contour(
     y_apex: float,
     cut_above: float = 1.0,
     samples: int = 22,
+    max_half: float | None = None,
 ):
 
     segs, rest = _contour_of(d)
@@ -400,6 +401,13 @@ def single_root_contour(
     pa, pb = c_start[2], c_end[2]
     half = abs(pb[0] - pa[0]) / 2.0
     mid_x = (pa[0] + pb[0]) / 2.0
+    # The width at the cut is the right measure for an outer contour and the
+    # wrong one for a lumen: a pulp layer's cut necessarily lies where the two
+    # canals still meet, that is in the CHAMBER, so taking the width there draws
+    # a canal as wide as the root meant to contain it. `max_half` is the caller's
+    # measurement of what actually fits.
+    if max_half is not None:
+        half = min(half, max_half)
     if half < 0.4:
         return None
     span = y_cut - y_apex
@@ -427,7 +435,20 @@ def single_root_contour(
     return _splice(segs, c_start, c_end, _catmull_cubics(pts), rest)
 
 
-def single_root_layers(txt: str, cx: float, cej: float, apex: float):
+def single_root_layers(
+    txt: str,
+    cx: float,
+    cej: float,
+    apex: float,
+    lumen: bool = False,
+    max_half: float | None = None,
+):
+    """Redraw two roots as one across the registered layers.
+
+    Runs in two passes, contours first and lumen second, because the canal can
+    only be sized once the root that has to contain it exists: the caller
+    measures the redrawn root and passes `max_half` back in.
+    """
 
     changed: list[str] = []
     stack: list[str] = []
@@ -436,6 +457,8 @@ def single_root_layers(txt: str, cx: float, cej: float, apex: float):
         names = [n for n in [el_id] + stack if n]
 
         if any(n.startswith("milktooth") for n in names):
+            return False
+        if is_lumen(names) != lumen:
             return False
         return any(n.startswith(p) for n in names for p in PALATAL_ROOT_LAYERS)
 
@@ -465,7 +488,10 @@ def single_root_layers(txt: str, cx: float, cej: float, apex: float):
         if not pts:
             return m.group(0)
         y0 = min(p[1] for p in pts)
-        if y0 > cej - 3.0:
+        # A lumen reaches less far apically than the contour around it, so the
+        # depth that identifies a two-rooted contour would reject the very canal
+        # pair that has to be merged with it.
+        if y0 > cej - (1.0 if lumen else 3.0):
             return m.group(0)
 
         if not any(
@@ -476,10 +502,10 @@ def single_root_layers(txt: str, cx: float, cej: float, apex: float):
 
         y_top = max(y0 + 1.0, apex)
         for k in range(40):
-            y_cut = cej - 1.0 - k * 0.5
+            y_cut = (cej - 0.2 if lumen else cej - 1.0) - k * 0.5
             if y_cut <= y_top + 2.0:
                 break
-            out = single_root_contour(d, cx, y_cut + 1.0, y_top)
+            out = single_root_contour(d, cx, y_cut + 1.0, y_top, max_half=max_half)
             if out is not None:
                 changed.append(el_id or f"(in {stack[-1] if stack else '?'})")
                 attrs2 = attrs.replace(dm.group(0), f' d="{out}"', 1)
@@ -581,7 +607,13 @@ def palatal_root_subpaths(
         if base - top < 3.0:
             return m.group(0)
 
-        scale = 1.0 if (max(xs) - min(xs)) > (half_bottom * 3) else 0.42
+        # A drawn palatal root and the canal inside it are not the same width.
+        # Before this, every layer got the contour's half-widths and the canal
+        # came out filling its own root.
+        if is_lumen([el_id] + stack):
+            scale = LUMEN_HALF_FRAC
+        else:
+            scale = 1.0 if (max(xs) - min(xs)) > (half_bottom * 3) else 0.42
         name = el_id or f"(in {stack[-1] if stack else '?'})"
 
         woven = weave_palatal_root(d, cx, furc, top, half_top * scale)
@@ -609,3 +641,103 @@ def palatal_root_subpaths(
 
     out = re.sub(r"<(path|polygon|g|/g)([^>]*?)>", repl, txt)
     return out, changed
+
+
+# --------------------------------------------------------------------------
+# Lumen contracts
+# --------------------------------------------------------------------------
+# Layers that draw a LUMEN - canal, chamber, root filling, post - as opposed to
+# the outer contour. The root generators have to tell them apart: a redrawn root
+# must not give a lumen layer the contour's dimensions, or the canal fills the
+# whole root.
+LUMEN_LAYERS = (
+    "tooth-healthy-pulp",
+    "tooth-inflam-pulp",
+    "milktooth-healthy-pulp",
+    "milktooth-inflam-pulp",
+    "endo-",
+)
+
+# Two `endo-` layers are not lumen and must not be treated as such. An
+# apicoectomy is drawn ACROSS the apex and a resorption defect ON the root
+# surface, so both legitimately reach past the outline that contains a canal.
+# Sweeping them in with the prefix would clamp a resection line into the root it
+# is meant to cut off, and squeeze a surface lesion to a canal's width.
+NOT_LUMEN_LAYERS = (
+    "endo-resection",
+    "endo-resorption",
+)
+
+# A canal's half-width as a fraction of the root's half-width at the same height.
+LUMEN_HALF_FRAC = 0.30
+
+
+def is_lumen(names) -> bool:
+    kept = [n for n in names if n and not n.startswith(NOT_LUMEN_LAYERS)]
+    return any(n.startswith(p) for n in kept for p in LUMEN_LAYERS)
+
+
+def _lumen_paths(txt: str, handler):
+    """Rewrite the `d` of every path belonging to a lumen layer.
+
+    Same group-stack technique the root generators use: many paths carry no id
+    of their own and inherit their meaning from the enclosing `<g>`. Only `d`
+    attributes change - no element is added or removed, no id/class/style is
+    touched, so the SVG parity fingerprint is unaffected.
+    """
+    stack: list[str] = []
+    hit: list[str] = []
+
+    def repl(m):
+        head, attrs = m.group(1), m.group(2)
+        if head == "g":
+            if not attrs.rstrip().endswith("/"):
+                idm = re.search(r'\sid="([^"]+)"', attrs)
+                stack.append(idm.group(1) if idm else "")
+            return m.group(0)
+        if head == "/g":
+            if stack:
+                stack.pop()
+            return m.group(0)
+        dm = re.search(r'\sd="([^"]+)"', attrs)
+        if not dm:
+            return m.group(0)
+        idm = re.search(r'\sid="([^"]+)"', attrs)
+        if not is_lumen([idm.group(1) if idm else ""] + stack):
+            return m.group(0)
+        new_d = handler(dm.group(1))
+        if new_d is None:
+            return m.group(0)
+        hit.append(idm.group(1) if idm else "")
+        return m.group(0).replace(dm.group(0), f' d="{new_d}"')
+
+    return re.sub(r"<(/?g|path)((?:\s+[a-zA-Z:-]+=\"[^\"]*\")*)", repl, txt), hit
+
+
+def clamp_lumen_apex(txt: str, apex: float, margin: float = 1.0):
+    """No lumen may stand outside the root apex.
+
+    Needed because the SOURCE drawings already do it: on the canine the pulp
+    reaches two units past the `tooth-base` contour. While roots were short it
+    barely showed; once the generator STRETCHES a root to its measured
+    proportion the overhang grows with it (canine: 2.00 -> 2.46 units) and the
+    canal tip stands visibly clear of the tooth.
+
+    Clamped per path and only in y, anchored at the lumen's coronal end - the
+    chamber and the pulp horns stay where they are and only the canal tip
+    retreats. Runs in FINAL coordinates, after the warp; running it before would
+    miss the amplification.
+    """
+
+    def handler(d):
+        ys = [p[1] for sub in _polylines(d) for p in sub]
+        if not ys:
+            return None
+        y_top, y_bot = min(ys), max(ys)   # y_top = apical end; y grows occlusally
+        limit = apex + margin
+        if y_top >= limit or y_bot <= limit:
+            return None
+        k = (y_bot - limit) / (y_bot - y_top)
+        return svgpath.warp_path_d(d, lambda x, y: (x, y_bot - (y_bot - y) * k))
+
+    return _lumen_paths(txt, handler)
