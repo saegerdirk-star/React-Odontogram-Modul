@@ -456,4 +456,18 @@ export function applyDentalDeResource(
         break;
     }
   }
+
+  // THE NUMBER DECIDES THE DENTITION. In FDI, 51-85 IS a deciduous tooth - the
+  // notation carries the classification, so a present tooth at such a position
+  // cannot be a permanent one whatever a presence component says. Our own
+  // emitter marks it with a "Primary (deciduous) tooth" display text and reads
+  // back correctly either way, but a foreign bundle writing a plain "tooth
+  // present" used to arrive as a permanent incisor.
+  //
+  // Only PRESENCE is overruled. A bundle stating the position is absent, an
+  // implant, or unerupted is describing that position, not contradicting the
+  // numbering, and is left alone.
+  if (slot !== null && rec.toothSelection === "tooth-base") {
+    rec.toothSelection = "milktooth";
+  }
 }

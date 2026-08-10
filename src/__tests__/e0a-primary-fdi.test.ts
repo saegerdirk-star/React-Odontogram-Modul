@@ -2,6 +2,10 @@ import { describe, it, expect } from "vitest";
 import { primaryFdiForSlot, slotForPrimaryFdi } from "../utils/numbering";
 import { buildDentalDeBundle } from "../fhir/toFhirDentalDe";
 import { applyDentalDeResource, isDentalDeResource } from "../fhir/fromFhirDentalDe";
+import {
+  DENTAL_DE_ODONTOGRAM_PROFILE, DENTAL_DE_FDI_SYSTEM, DENTAL_DE_COMPONENT_SYSTEM,
+  SNOMED_SYSTEM, ODONTO_COMPONENT, VERIFIED_SCT,
+} from "../fhir/dentalDeCodesystems";
 
 /**
  * odontogram-e0a: a deciduous tooth is charted in its successor's slot, so the
@@ -120,5 +124,44 @@ describe("primary FDI identity", () => {
       expect(rec.caries).toContain("caries-occlusal");
       expect(rec.restorationType).toBe("crown");
     });
+  });
+});
+
+describe("the FDI number decides the dentition", () => {
+  // Dirk, 2026-08-10: "Mit der FDI Klassifikation legen wir fest, ob das ein
+  // Milchzahn oder ein bleibender ist." The notation carries the
+  // classification, so a present tooth at 51-85 is deciduous whatever a
+  // bundle's own presence text says.
+  const odontogramResource = (fdi: string, sct: string, text: string) => ({
+    resourceType: "Observation",
+    meta: { profile: [DENTAL_DE_ODONTOGRAM_PROFILE] },
+    bodySite: { coding: [{ system: DENTAL_DE_FDI_SYSTEM, code: fdi }] },
+    component: [{
+      code: { coding: [{ system: DENTAL_DE_COMPONENT_SYSTEM, code: ODONTO_COMPONENT.toothPresence }] },
+      valueCodeableConcept: { coding: [{ system: SNOMED_SYSTEM, code: sct }], text },
+    }],
+  });
+
+  it("reads a foreign 51 as a milk tooth even without the deciduous text", () => {
+    const teeth: Record<string, Record<string, unknown>> = {};
+    applyDentalDeResource(teeth as never, odontogramResource("51", VERIFIED_SCT.toothPresent, "Tooth present") as never);
+    expect(teeth["11"].toothSelection).toBe("milktooth");
+  });
+
+  it("still reads a permanent number as permanent", () => {
+    const teeth: Record<string, Record<string, unknown>> = {};
+    applyDentalDeResource(teeth as never, odontogramResource("11", VERIFIED_SCT.toothPresent, "Tooth present") as never);
+    expect(teeth["11"].toothSelection).toBe("tooth-base");
+  });
+
+  it("does not overrule a position that is absent rather than present", () => {
+    // "Absent at 51" describes the position; it does not contradict the
+    // numbering, so it must not be turned into a present milk tooth.
+    const teeth: Record<string, Record<string, unknown>> = {};
+    applyDentalDeResource(
+      teeth as never,
+      odontogramResource("51", VERIFIED_SCT.toothAbsent, "Tooth absent") as never,
+    );
+    expect(teeth["11"].toothSelection).not.toBe("milktooth");
   });
 });

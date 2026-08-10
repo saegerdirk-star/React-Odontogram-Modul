@@ -1809,6 +1809,12 @@ function updateToothTileNumber(toothNo: Any){
   const tiles = toothTile.get(toothNo);
   if(!tiles) return;
   const text = toLabel(getDisplayedToothNumber(toothNo), numberingSystem);
+  // The accessible name follows the number the chart shows. It used to be set
+  // once when the tile was built and never again, so a tooth charted as a milk
+  // tooth read "51" and announced "11" (odontogram-e0a AC2).
+  for(const tile of tiles){
+    if(tile?.getAttribute?.("role") === "option") tile.setAttribute("aria-label", text);
+  }
   const upper = toothLabelUpper.get(toothNo);
   if(upper) upper.textContent = text;
   const lower = toothLabelLower.get(toothNo);
