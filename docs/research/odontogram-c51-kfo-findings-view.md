@@ -238,6 +238,24 @@ the field-level clinical chart, and unavailable pages are not treated as negativ
 
 ## Implementation-ready implications for `odontogram-c51`
 
+### Prototype variants
+
+The prototype now exposes seven directly selectable layouts at the same `?prototype=kfo&variant=`
+route. A–D cover a conventional findings form, an arch-first workbench, a guided examination,
+and a dense expert matrix. A comparison with the additional Opus concepts found its proposed
+findings form to be materially equivalent to A, so it was not duplicated. Three distinct
+interaction structures were retained:
+
+- **E — KIG matrix:** the 11 groups and valid grades are the primary workspace. Selection is
+  explicitly clinician-confirmed; the view does not derive a KIG value from measurements.
+- **F — Occlusion schema:** a standalone orthodontic arch diagram places bilateral relation
+  flags, midlines, crossbite regions, and tooth-aligned cycle rows in anatomical context.
+- **G — KFO cockpit:** summary metrics, domain tabs, and a finding feed provide a shell that can
+  later accommodate longitudinal or aligner progress without changing the core findings forms.
+
+All seven variants edit the same in-memory demo state. The A–G controls are always visible in the
+floating switcher, including at mobile width.
+
 - Preserve the bead's hard separation: case-level KFO data is rendered only in Orthodontics,
   never inside `#toothGrid` or a tooth SVG.
 - Treat “complete KFO charting” as carrier-gated.  With the repository state inspected on this

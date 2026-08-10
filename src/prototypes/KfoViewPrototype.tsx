@@ -1,10 +1,10 @@
-// PROTOTYPE ONLY: four KFO view concepts for odontogram-c51.
-// Run with `npm run prototype:kfo` and switch variants with `?variant=A|B|C|D`.
+// PROTOTYPE ONLY: seven KFO view concepts for odontogram-c51.
+// Run with `npm run prototype:kfo` and switch variants with `?variant=A|B|C|D|E|F|G`.
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import "./kfo-view-prototype.css";
 
-type VariantKey = "A" | "B" | "C" | "D";
+type VariantKey = "A" | "B" | "C" | "D" | "E" | "F" | "G";
 
 type KfoState = {
   angleRight: string;
@@ -48,6 +48,9 @@ const VARIANTS: ReadonlyArray<{ key: VariantKey; name: string; premise: string }
   { key: "B", name: "Kieferzentriert", premise: "Das Gebiss ist die Arbeitsfläche, Befunde liegen darum" },
   { key: "C", name: "Geführte Untersuchung", premise: "Vier kurze Schritte mit sichtbarem Fortschritt" },
   { key: "D", name: "Expertenmatrix", premise: "Tastaturfreundliche, dichte Eingabe für Routinenutzer" },
+  { key: "E", name: "KIG-Matrix", premise: "Die deutsche Einstufung ist die zentrale Arbeitsfläche" },
+  { key: "F", name: "Okklusions-Schema", premise: "Relationen und Zahnzeilen werden anatomisch ausgerichtet" },
+  { key: "G", name: "KFO-Cockpit", premise: "Kennzahlen, Fachregister und Verlauf bilden eine skalierbare Hülle" },
 ];
 
 const upperTeeth = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
@@ -92,7 +95,7 @@ const initialState: KfoState = {
 
 function readVariant(): VariantKey {
   const value = new URLSearchParams(window.location.search).get("variant")?.toUpperCase();
-  return value === "B" || value === "C" || value === "D" ? value : "A";
+  return value && ["A", "B", "C", "D", "E", "F", "G"].includes(value) ? value as VariantKey : "A";
 }
 
 function FhirBadge({ status = "carrier" }: { status?: "carrier" | "pending" | "blocked" }) {
@@ -681,6 +684,91 @@ function VariantD(props: FormProps) {
   );
 }
 
+const KIG_ROWS = [
+  { code: "A", label: "Kraniofaziale Anomalie" },
+  { code: "U", label: "Zahnunterzahl" },
+  { code: "S", label: "Durchbruchstörung" },
+  { code: "D", label: "Sagittal distal" },
+  { code: "M", label: "Sagittal mesial" },
+  { code: "O", label: "Vertikal offen" },
+  { code: "T", label: "Vertikal tief" },
+  { code: "B", label: "Bukkal-/Lingualokklusion" },
+  { code: "P", label: "Platzmangel" },
+  { code: "E", label: "Kontaktpunktabweichung" },
+  { code: "K", label: "Kopf-/Kreuzbiss" },
+] as const;
+
+function VariantE(props: FormProps) {
+  const selected = `${props.state.kigGroup}${props.state.kigGrade}`;
+  return (
+    <div className="kfo-variant-e">
+      <section className="kfo-card kfo-kig-board">
+        <div className="kfo-kig-heading">
+          <div><span className="kfo-eyebrow">Manuelle Klassifikation</span><h2>KIG-Matrix</h2><p>Nur klinisch bestätigte Einstufungen werden übernommen. Es findet keine automatische KIG-Ableitung statt.</p></div>
+          <div className="kfo-kig-result"><small>Aktueller Befund</small><strong>{selected}</strong><span>{Number(props.state.kigGrade) >= 3 ? "GKV-Bereich" : "Grad 1–2"}</span></div>
+        </div>
+        <div className="kfo-kig-scroll">
+          <table className="kfo-kig-table">
+            <thead><tr><th>Gruppe</th>{[1, 2, 3, 4, 5].map((grade) => <th key={grade} className={grade >= 3 ? "is-gkv" : ""}>{grade}{grade === 3 && <small>GKV</small>}</th>)}</tr></thead>
+            <tbody>{KIG_ROWS.map((row) => (
+              <tr key={row.code}><th><b>{row.code}</b><span>{row.label}</span></th>{[1, 2, 3, 4, 5].map((grade) => {
+                const code = `${row.code}${grade}`;
+                const valid = KIG_GRADES[row.code]?.includes(String(grade));
+                return <td key={grade} className={grade >= 3 ? "is-gkv" : ""}>{valid ? <button type="button" className={selected === code ? "is-selected" : ""} onClick={() => { props.update("kigGroup", row.code); props.update("kigGrade", String(grade)); }}>{code}</button> : <span>–</span>}</td>;
+              })}</tr>
+            ))}</tbody>
+          </table>
+        </div>
+        <div className="kfo-kig-legend"><span><i className="is-confirmed" /> manuell bestätigt</span><span><i className="is-gkv" /> GKV-Zone Grad 3–5</span><FhirBadge status="pending" /></div>
+      </section>
+      <aside className="kfo-e-side">
+        <section className="kfo-card"><SectionTitle status="pending">Befundgrundlage</SectionTitle><div className="kfo-e-measures"><span><small>Overjet</small><strong>{props.state.overjet} mm</strong></span><span><small>Overbite</small><strong>{props.state.overbite} mm</strong></span><span><small>Platz OK / UK</small><strong>{props.state.crowdingUpper} / {props.state.crowdingLower} mm</strong></span></div><KigFields {...props} /></section>
+        <section className="kfo-card"><SectionTitle status="pending">Okklusion</SectionTitle><AngleFields {...props} compact /><div className="kfo-divider" /><OcclusionFields {...props} /></section>
+        <StateSummary state={props.state} concise />
+      </aside>
+    </div>
+  );
+}
+
+const cycleRows = [
+  { label: "Durchbruch", values: ["–", "V", "V", "P", "V", "R", "V", "V", "V", "V", "P", "V", "V", "V", "V", "–"] },
+  { label: "Fehlursache", values: ["–", "–", "–", "–", "–", "–", "–", "–", "–", "–", "–", "–", "–", "–", "–", "–"] },
+  { label: "Apparatur", values: ["–", "–", "B", "Br", "Br", "–", "Br", "Br", "Br", "Br", "–", "Br", "Br", "B", "–", "–"] },
+  { label: "Stellung", values: ["–", "–", "m", "–", "–", "–", "R", "–", "–", "E", "–", "–", "–", "–", "–", "–"] },
+] as const;
+
+function VariantF(props: FormProps) {
+  return (
+    <div className="kfo-variant-f">
+      <section className="kfo-card kfo-occlusion-stage">
+        <div className="kfo-occlusion-header"><div><span className="kfo-eyebrow">Eigenständiges KFO-Schema</span><h2>Okklusionsbefund</h2></div><strong>KIG {props.state.kigGroup}{props.state.kigGrade}</strong></div>
+        <div className="kfo-relation-flags"><span><small>rechts · Molar</small><b>{props.state.angleRight} · {props.state.sagittalRight} {props.state.sagittalUnit}</b></span><span><small>rechts · Eckzahn</small><b>{props.state.canineAngleRight} · {props.state.canineSagittalRight} {props.state.sagittalUnit}</b></span><span><small>links · Eckzahn</small><b>{props.state.canineAngleLeft} · {props.state.canineSagittalLeft} {props.state.sagittalUnit}</b></span><span><small>links · Molar</small><b>{props.state.angleLeft} · {props.state.sagittalLeft} {props.state.sagittalUnit}</b></span></div>
+        <div className="kfo-schema-arch"><Arch {...props} /><div className="kfo-midline-callout">Mittellinie OK {props.state.midlineUpper} mm · UK {props.state.midlineLower} mm</div>{props.state.crossbite.length > 0 && <div className="kfo-crossbite-band">Kreuzbiss · {props.state.crossbite.join(", ")}</div>}</div>
+        <div className="kfo-arch-legend"><span>V voll durchgebrochen</span><span>P partiell</span><span>R retiniert / Rotation</span><span>Br Bracket</span><span>B Band</span></div>
+      </section>
+      <section className="kfo-card kfo-cycle-card"><SectionTitle status="pending">Zahnbezogene KFO-Befunde</SectionTitle><div className="kfo-cycle-scroll"><div className="kfo-cycle-grid"><div /><>{upperTeeth.map((tooth) => <b key={tooth}>{tooth}</b>)}</>{cycleRows.map((row) => <div className="kfo-cycle-row" key={row.label}><strong>{row.label}</strong>{row.values.map((value, index) => <button type="button" key={`${row.label}-${upperTeeth[index]}`} className={upperTeeth[index] === props.state.selectedTooth ? "is-selected" : value !== "–" ? "has-value" : ""} onClick={() => props.update("selectedTooth", upperTeeth[index])}>{value}</button>)}</div>)}</div></div></section>
+      <div className="kfo-f-lower"><section className="kfo-card"><SectionTitle status="pending">Aktiver Zahn {props.state.selectedTooth}</SectionTitle><ToothEditor {...props} dense /></section><section className="kfo-card"><SectionTitle status="pending">Fallmesswerte</SectionTitle><OcclusionFields {...props} /><div className="kfo-divider" /><AnalysisFields {...props} /></section></div>
+    </div>
+  );
+}
+
+function VariantG(props: FormProps) {
+  const [tab, setTab] = useState("Okklusion");
+  const tabs = ["Okklusion", "KIG", "Zähne", "Modellanalyse"];
+  return (
+    <div className="kfo-variant-g">
+      <div className="kfo-kpi-row"><div className="is-alert"><small>KIG</small><strong>{props.state.kigGroup}{props.state.kigGrade}</strong><span>GKV-Bereich</span></div><div><small>Angle rechts / links</small><strong>{props.state.angleRight} / {props.state.angleLeft}</strong><span>{props.state.sagittalRight} / {props.state.sagittalLeft} {props.state.sagittalUnit}</span></div><div><small>Overjet / Overbite</small><strong>{props.state.overjet} / {props.state.overbite} mm</strong><span>{props.state.verticalRelation}</span></div><div><small>Mittellinie OK / UK</small><strong>{props.state.midlineUpper} / {props.state.midlineLower} mm</strong><span>+ = rechts</span></div><div><small>Phase</small><strong>{props.state.treatmentPhase}</strong><span>{props.state.apparatusType}</span></div></div>
+      <div className="kfo-g-layout">
+        <section className="kfo-card kfo-cockpit-card">
+          <nav className="kfo-cockpit-tabs" aria-label="KFO-Befundbereiche">{tabs.map((entry) => <button type="button" key={entry} className={tab === entry ? "is-active" : ""} onClick={() => setTab(entry)}>{entry}</button>)}</nav>
+          <div className="kfo-cockpit-content">{tab === "Okklusion" && <><AngleFields {...props} /><div className="kfo-divider" /><OcclusionFields {...props} /></>}{tab === "KIG" && <KigFields {...props} />}{tab === "Zähne" && <><Arch {...props} compact /><ToothEditor {...props} /></>}{tab === "Modellanalyse" && <><AnalysisFields {...props} /><div className="kfo-divider" /><TreatmentContextFields {...props} /></>}</div>
+        </section>
+        <aside className="kfo-card kfo-finding-feed"><SectionTitle status="carrier">Befund-Feed</SectionTitle><p>Die Hülle ist für spätere Verlaufs- und Aligner-Einträge vorbereitet.</p><ol><li><time>heute</time><div><strong>KIG {props.state.kigGroup}{props.state.kigGrade} bestätigt</strong><span>{props.state.kigMethod}</span></div></li><li><time>heute</time><div><strong>Zahn {props.state.selectedTooth} bearbeitet</strong><span>{props.state.eruptionStatus} · {props.state.appliance}</span></div></li><li><time>Import</time><div><strong>Behandlungsplan</strong><span>{props.state.treatmentPhase} · {props.state.apparatusType}</span></div></li></ol></aside>
+      </div>
+    </div>
+  );
+}
+
 function PrototypeSwitcher({ variant, onChange }: { variant: VariantKey; onChange: (variant: VariantKey) => void }) {
   const currentIndex = VARIANTS.findIndex((entry) => entry.key === variant);
   const cycle = (delta: number) => onChange(VARIANTS[(currentIndex + delta + VARIANTS.length) % VARIANTS.length].key);
@@ -700,7 +788,7 @@ function PrototypeSwitcher({ variant, onChange }: { variant: VariantKey; onChang
   return (
     <div className="kfo-prototype-switcher" aria-label="Prototyp-Varianten">
       <button type="button" onClick={() => cycle(-1)} aria-label="Vorherige Variante">Zurück</button>
-      <div><strong>{active.key} — {active.name}</strong><span>{active.premise}</span></div>
+      <div className="kfo-switcher-center"><div className="kfo-variant-buttons">{VARIANTS.map((entry) => <button type="button" key={entry.key} className={entry.key === variant ? "is-active" : ""} onClick={() => onChange(entry.key)} aria-label={`Variante ${entry.key}: ${entry.name}`}>{entry.key}</button>)}</div><strong>{active.key} — {active.name}</strong><span>{active.premise}</span></div>
       <button type="button" onClick={() => cycle(1)} aria-label="Nächste Variante">Weiter</button>
     </div>
   );
@@ -757,6 +845,9 @@ export default function KfoViewPrototype() {
           {variant === "B" && <VariantB {...formProps} />}
           {variant === "C" && <VariantC {...formProps} />}
           {variant === "D" && <VariantD {...formProps} />}
+          {variant === "E" && <VariantE {...formProps} />}
+          {variant === "F" && <VariantF {...formProps} />}
+          {variant === "G" && <VariantG {...formProps} />}
         </main>
         <PrototypeSwitcher variant={variant} onChange={changeVariant} />
       </div>
