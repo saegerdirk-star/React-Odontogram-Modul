@@ -4,10 +4,14 @@ import { resolve } from "node:path";
 import { OCCLUSAL_TEMPLATE } from "../odontogram";
 
 /**
- * odontogram-vlw AC2: mesial must point toward the arch midline on every
- * occlusal tile. It never was asserted - the composition of a 180-degree
- * rotation for the lower jaw with a horizontal mirror for quadrants 2 and 4 was
- * only ever checked by eye.
+ * odontogram-vlw AC2, the parts NOT already covered.
+ *
+ * The bead says the mesial-toward-midline composition "has never been asserted
+ * by a test". That is wrong, and I repeated it: svg-assets.test.ts already
+ * asserts exactly that, with the same landmarks and the same quadrant rule.
+ * What is left here is what it does not check - that the landmarks are on
+ * opposite sides at all, the exact set of covered teeth, and that a
+ * contralateral pair is composed to opposite handedness.
  *
  * The landmark comes from the drawing itself: every template carries a
  * `mesial-shape` and a `distal-shape` path - the geometry the per-surface
@@ -40,27 +44,6 @@ function viewBoxCentreX(markup: string): number {
   return vb[0] + vb[2] / 2;
 }
 
-/**
- * Which screen side mesial ends up on, given the tile's composition.
- * A horizontal mirror flips x; a 180-degree rotation flips x as well (and y).
- */
-function mesialSideOnScreen(tpl: number, rot: number, mirror: boolean): "left" | "right" {
-  const markup = svg(tpl);
-  const drawnRight = layerStartX(markup, "mesial-shape") > viewBoxCentreX(markup);
-  const flips = (rot === 180 ? 1 : 0) + (mirror ? 1 : 0);
-  const right = flips % 2 === 0 ? drawnRight : !drawnRight;
-  return right ? "right" : "left";
-}
-
-/**
- * The side the arch midline lies on for a given tooth, in the chart's own
- * layout: the upper row runs 18→11 then 21→28, the lower 48→41 then 31→38. So
- * for the right quadrants (1 and 4) the midline is to the right of each tile,
- * and for the left quadrants (2 and 3) it is to the left.
- */
-const midlineSide = (toothNo: number): "left" | "right" =>
-  Math.floor(toothNo / 10) === 1 || Math.floor(toothNo / 10) === 4 ? "right" : "left";
-
 describe("occlusal tiles", () => {
   it("draws mesial to one side and distal to the other in each template", () => {
     // The premise of everything below: the landmark is real and unambiguous.
@@ -71,15 +54,6 @@ describe("occlusal tiles", () => {
       const distal = layerStartX(markup, "distal-shape");
       expect(mesial > centre, `template ${tpl}: mesial right of centre`).toBe(true);
       expect(distal < centre, `template ${tpl}: distal left of centre`).toBe(true);
-    }
-  });
-
-  it("puts mesial toward the arch midline on every tile", () => {
-    for (const [toothNo, map] of OCCLUSAL_TEMPLATE) {
-      expect(
-        mesialSideOnScreen(map.tpl, map.rot, map.mirror),
-        `tooth ${toothNo}`,
-      ).toBe(midlineSide(toothNo));
     }
   });
 

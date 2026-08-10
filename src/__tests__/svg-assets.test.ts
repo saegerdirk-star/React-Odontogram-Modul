@@ -166,9 +166,10 @@ describe("installed tooth SVG assets", () => {
       34, 35, 36, 37, 38,
       44, 45, 46, 47, 48,
     ]);
-    // Only the two occlusal templates exist as assets.
+    // Four occlusal templates: upper and lower premolar, upper and lower molar
+    // (odontogram-vlw). Before that, two drawings carried all twenty teeth.
     for (const placement of OCCLUSAL_TEMPLATE.values()) {
-      expect([14, 16]).toContain(placement.tpl);
+      expect([14, 34, 16, 46]).toContain(placement.tpl);
     }
   });
 
