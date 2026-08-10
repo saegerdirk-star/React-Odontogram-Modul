@@ -3200,6 +3200,10 @@ function syncToothTemplate(toothNo: Any){
   if(!base) return;
   const state = toothState.get(toothNo);
   const primary = PRIMARY_TEMPLATE.get(toothNo);
+  if(state?.toothSelection === "milktooth" && primary != null && !tplCache.has(primary)){
+    const markup = (TEMPLATES as Any)[primary];
+    if(markup) tplCache.set(primary, parseSvgTemplate(markup));
+  }
   const want =
     state?.toothSelection === "milktooth" && primary != null && tplCache.has(primary)
       ? primary
@@ -9128,7 +9132,10 @@ let initToken = 0;
 // `svgText` is the inlined SVG markup from a `?raw` import (see TEMPLATES) —
 // parsed directly, never fetched. Kept `async` so existing `await loadSvg(...)`
 // call sites are unchanged.
-async function loadSvg(svgText: Any){
+/** Parse and normalize one inlined template. Synchronous - the markup is
+ *  compiled in, nothing is fetched - so a template can also be parsed on demand
+ *  from a synchronous render path (see `syncToothTemplate`). */
+function parseSvgTemplate(svgText: Any){
   const parser = new DOMParser();
   const doc = parser.parseFromString(svgText, "image/svg+xml");
   const svg = doc.documentElement;
@@ -9136,6 +9143,10 @@ async function loadSvg(svgText: Any){
   stripDisplayNoneToDataActive(svg);
   ensureDataActiveForSwitchables(svg);
   return svg;
+}
+
+async function loadSvg(svgText: Any){
+  return parseSvgTemplate(svgText);
 }
 
 /** Namespace only ids declared inside `defs` and their fragment references.
@@ -9180,7 +9191,12 @@ async function buildGrid(token: number){
 
   // preload SVG templates in parallel
   const occlCache = new Map();
-  const tplNos = [11,12,13,14,15,16,17,31,46,51,52,53,54,55,71,74,75] as const;
+  // Permanent templates only. The eight deciduous ones are parsed on demand by
+  // `syncToothTemplate`, so a chart with no milk teeth - the common case - does
+  // not pay for drawings it never mounts. Preloading all seventeen nearly
+  // doubled the work at startup and pushed a two-instance mount test past its
+  // five-second budget.
+  const tplNos = [11,12,13,14,15,16,17,31,46] as const;
   const occlNos = [14,16] as const;
   await Promise.all([
     ...tplNos.map(async (tplNo) => {
