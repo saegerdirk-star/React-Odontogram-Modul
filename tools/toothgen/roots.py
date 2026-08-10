@@ -735,8 +735,17 @@ def clamp_lumen_apex(txt: str, apex: float, margin: float = 1.0):
             return None
         y_top, y_bot = min(ys), max(ys)   # y_top = apical end; y grows occlusally
         limit = apex + margin
-        if y_top >= limit or y_bot <= limit:
+        if y_top >= limit:
             return None
+        if y_bot <= limit:
+            # The shape lies WHOLLY beyond the apex, so there is no coronal end
+            # to anchor and scaling toward it would be degenerate. It is moved
+            # in instead. This cannot happen while a root is only transformed;
+            # it appears once a root is grafted from a donor whose own lumen
+            # overhangs (odontogram-ay4 takes the canine's root, and the canine
+            # is the worst overhang in the sources).
+            shift = limit - y_top
+            return svgpath.warp_path_d(d, lambda x, y: (x, y + shift))
         k = (y_bot - limit) / (y_bot - y_top)
         return svgpath.warp_path_d(d, lambda x, y: (x, y_bot - (y_bot - y) * k))
 

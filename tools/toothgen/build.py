@@ -16,6 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import svgpath  # noqa: E402
 import roots  # noqa: E402
+import graft  # noqa: E402
 from spec import SPECS, ToothSpec, display_targets  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -357,11 +358,22 @@ def build_one(s: ToothSpec, out_dir: Path, dry: bool, root_scale: float | None =
     txt = src.read_text()
     cej = SRC_CEJ[s.src_template]
 
+    graft_note = ""
+    if s.graft_root_from is not None:
+        donor = (SOURCE / f"{s.graft_root_from}.svg").read_text()
+        txt, done, closed, skipped = graft.graft_root(
+            txt, donor, cej, SRC_CEJ[s.graft_root_from]
+        )
+        graft_note = (
+            f" graft<-{s.graft_root_from} ({len(done)} layers, "
+            f"{len(closed)} closed, {len(skipped)} kept)"
+        )
+
     base_d = tooth_base_d(txt)
     bx0, by0, bx1, by1 = curve_extent(base_d)
     have = source_root_count(base_d, by0, cej)
     merge_fn = None
-    root_note = f"{have} roots"
+    root_note = f"{have} roots{graft_note}"
 
     if s.roots == 3 and have == 2:
         furc = roots.find_furcation(base_d, by0, cej)

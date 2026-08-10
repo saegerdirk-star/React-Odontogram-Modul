@@ -23,6 +23,9 @@ class ToothSpec:
     furc_frac: float = 0.0
     teeth: tuple[int, ...] = field(default=())
     note: str = ""
+    # Take the root from another source template instead of converting this
+    # one's root count. See tools/toothgen/graft.py.
+    graft_root_from: int | None = None
 
 
 SPECS: list[ToothSpec] = [
@@ -96,6 +99,10 @@ SPECS: list[ToothSpec] = [
         roots=1,
         length_rel=0.815,
         teeth=(15, 25, 34, 35, 44, 45),
+        graft_root_from=13,
+        note="two-cusped crown from the premolar, root from the canine - the "
+        "only drawn single root in the sources; synthesising one out of two is "
+        "what produced the seam and the twin canals (odontogram-ay4)",
     ),
     ToothSpec(
         key="16",

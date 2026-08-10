@@ -24,6 +24,9 @@ TOL_OCCL = 0.15
 # to re-assert the generator's own constant.
 TOL_LUMEN_WIDTH = 0.80
 
+# Apical widening tolerated per quarter unit through the cervical region.
+TOL_CERVICAL_STEP = 0.03
+
 
 def lumen_extremes(txt: str, base_d: str, apex: float, cej: float):
     """How far the lumen reaches past the apex, and how wide it gets.
@@ -64,7 +67,9 @@ AUTHORED_GEOMETRY_SHA256 = {
     "12": "58e0d706d419ab08413afb5d9ab5e705d5574f4b95b7628567431de00bc9ddde",
     "13": "9d8869b7692c2f0b489997873d6111cb39e142199b5b0e51fedf048584258e5d",
     "14": "810e488c0973a1c04474cd243b921cfc23b75194bdf5fc184ef90ef3d0b72ebd",
-    "15": "23a1e6696c70d15fd20d553ab00b8023cd2fa415501cdbd21d0e056bc943f7e7",
+    # Re-taken again on 2026-08-10 for odontogram-ay4: template 15's root is
+    # grafted from source 13 instead of converted from source 14's two roots.
+    "15": "56fdc784d4c15fec97d9d9ca597541af34b25355528a2ac0ba5f981601f24055",
     "16": "dccdd2fea0b80a5afdc74e034b79dfa0a08151d8ff5ca4d2c8cdb952e5202786",
     "17": "57cdc697a16a578ef4d566d6a18d02c472ce48a263d10bbdf7b71c0a99e1a9f6",
     "31": "4a10c5642fd72352dcf13c95d7f50a1ecf0a8b026661d6bb435a03a21d193e33",
@@ -211,9 +216,66 @@ def main(argv):
 
         if s.roots == 1:
             subs = roots._polylines(base_d)
+            # A lumen may fall into several lobes inside the chamber, but below
+            # the cervical line a single-rooted tooth has ONE canal. Anything
+            # else is the twin structure of a two-rooted source surviving the
+            # conversion, which is what template 15 shipped with
+            # (odontogram-ay4).
+            # Counted as a RUN over consecutive millimetre depths. A single
+            # height with two spans is a shape - a post with a shoulder, one
+            # mark of a hatch pattern - while surviving twin canals persist over
+            # several units, which is how template 15 read: four spans holding
+            # from the cervical line to four units below it.
+            def lumen_spans(d):
+                sub = roots._polylines(d)
+                run = best = 0
+                worst = 0
+                depth = 1.0
+                while cej - depth > apex + 1.0:
+                    n = len(roots.spans_at(sub, cej - depth))
+                    run = run + 1 if n > 1 else 0
+                    best = max(best, run)
+                    worst = max(worst, n)
+                    depth += 1.0
+                if best >= 2:
+                    multi.append(worst)
+                return None
+
+            multi: list[int] = []
+            roots._lumen_paths(txt, lumen_spans)
+            if multi:
+                failures.append(
+                    f"{s.key}: {len(multi)} lumen layer(s) hold up to "
+                    f"{max(multi)} spans over consecutive depths below the "
+                    f"cervical line; the twin canals of the two-rooted source "
+                    f"survive"
+                )
+
+            # The cervical region on its own fine grid. The coarse sweep below
+            # starts at 8 % of root length and steps in whole units, so it
+            # walked straight over template 15's step, which sat within the
+            # first unit and measured 0.058 per quarter unit. Every other
+            # single-rooted template measures 0.000 there, so the threshold is
+            # read off a clean separation rather than guessed.
+            prev_w, cerv_at = None, None
+            y = cej
+            while y > cej - 4.0 and y > apex:
+                sp = roots.spans_at(subs, y)
+                if len(sp) == 1:
+                    w = sp[0][1] - sp[0][0]
+                    if prev_w is not None and w > prev_w + TOL_CERVICAL_STEP:
+                        cerv_at = y
+                    prev_w = w
+                y -= 0.25
+            if cerv_at is not None:
+                failures.append(
+                    f"{s.key}: contour widens apically at CEJ-{cej - cerv_at:.2f}; "
+                    f"a step sits in the cervical region"
+                )
+
             prev, step_at = None, None
             for k in range(24):
-                y = cej - (cej - apex) * (0.08 + 0.88 * k / 23)
+                y = cej - (cej - apex) * (0.01 + 0.95 * k / 23)
                 sp = roots.spans_at(subs, y)
                 if len(sp) != 1:
                     continue

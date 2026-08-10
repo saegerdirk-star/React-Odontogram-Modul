@@ -9,6 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Template 15 no longer reads as a converted tooth.** The single-rooted
+  premolar was produced by redrawing source 14's two roots as one, and it still
+  showed what it was made from: a step in the outer contour exactly on the join,
+  and the walls of the old twin canals surviving through the first four units
+  below the cervical line. Source 13 already contains what the conversion was
+  trying to synthesise — a genuinely single root, drawn, with one canal and its
+  own lumen layers — so it is grafted onto the premolar's two-cusped crown
+  instead (new `tools/toothgen/graft.py`, requested per spec via
+  `ToothSpec.graft_root_from`). Both defects go by construction rather than by
+  correction, and the graft also supplies a drawn cervical transition, which is
+  where the perceived kink actually lived.
+
+  59 layers are regrafted. Where a layer crosses the cervical line exactly twice
+  it is spliced smoothly into the host contour; where it crosses more often —
+  which is precisely what a pair of canals does — the host is clipped above the
+  cervical line and the donor taken below it. The premolar keeps BOTH pulp
+  horns, because it has two cusps, and only the deeper chamber receives the
+  canal, so no layer is emptied and no id disappears. The single root keeps both
+  resorption markers, mesial and distal, since one root still has both surfaces.
+  Implant layers are deliberately not grafted: an implant is a fixture, not a
+  root, and the bone around it follows the fixture.
+
+  `verify.py` measures both invariants now and names both defects on the
+  previous asset: the contour on a quarter-unit grid through the cervical region,
+  where the existing check started below the step and walked over it, and the
+  lumen span count as a run over consecutive depths, so a post with a shoulder is
+  not mistaken for a second canal. The apex clamp also learned to handle a lumen
+  lying wholly beyond the apex, which cannot arise while a root is only
+  transformed but does once one is grafted from a donor whose own lumen
+  overhangs.
+
+  Template 15's tile is 118 px instead of 128: the converted root left lumen
+  standing above the apex and the viewBox had to reach up to it. Its geometry
+  digest is re-taken; the other eight are untouched, which is itself the evidence
+  that the graft is confined to this template. SVG parity fingerprints unchanged.
+
 - **The pulp no longer stands outside the root, and a canal is no longer drawn
   as wide as the root that contains it.** Two separate mechanisms, both visible
   on the chart. The apical one was worst on the canine, where the pulp tip stood
