@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **The primary dentition has anatomy of its own.** A tooth charted as a milk
+  tooth used to be its successor's permanent template with the embedded
+  `milktooth-*` layers switched on — so the deciduous dentition was, literally,
+  the permanent one with a smaller shape turned on inside it. Eight generated
+  templates now cover all twenty primary teeth (51, 52, 53, 54, 55, 71, 74, 75;
+  the arches mirror and the lower canine reuses the upper), and charting a tooth
+  as a milk tooth mounts the deciduous drawing in its place. Switching back is
+  the same operation, because the wanted template is derived from the state each
+  time rather than remembered.
+
+  The proportions are measured, not scaled down: each template carries its own
+  root fraction, relative length and width, from the Odontographie plates where
+  a plate exists. Two shape changes separate the dentitions and cannot be
+  expressed as a number, so the generator applies them — the pulp is enlarged
+  anchored on the horn tips, which stay where they are because they decide
+  whether a preparation reads as an exposure, and the roots are splayed around
+  the developing permanent germ and hooked back in at the tips, which is what
+  makes them read as bulbous rather than merely wider.
+
+  Where a dedicated primary drawing is mounted, it is drawn as an ordinary
+  present tooth rather than through the `milktooth-*` layers. Those layers hold
+  the legacy small tooth, and source 16 — which templates 55, 74 and 75 are
+  built from — carries none at all. The substitution happens at the render call
+  site only: the tooth is still charted as a milk tooth in the tooltip, the
+  summary and the payload.
+
+  The lower first primary molar was re-derived from Bild 93 after the plate
+  arrived: it had been built from the permanent lower molar, which put its
+  cervix at 38 % of tooth height where the photograph already shows the
+  furcation. The page states outright that the SECOND primary molar is the
+  scaled-down permanent molar, which is why 75 keeps that parent and 74 must not
+  have had it.
+
 ### Fixed
 
 - **Template 15 no longer reads as a converted tooth.** The single-rooted
