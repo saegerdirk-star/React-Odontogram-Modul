@@ -227,9 +227,9 @@ PRIMARY_SPECS: list[ToothSpec] = [
     ToothSpec(
         key="54",
         label="Upper first primary molar",
-        source="Bild 91 (p. 113) + Bild 83",
+        source="Bild 91 (p. 113)",
         src_template=14,
-        root_frac=0.60,
+        root_frac=0.69,
         width_frac=0.36,
         roots=3,
         length_rel=0.741,
@@ -237,7 +237,12 @@ PRIMARY_SPECS: list[ToothSpec] = [
         primary=True,
         teeth=(54, 64),
         note="three-rooted like every upper primary molar, unlike the "
-        "two-rooted permanent premolar it is built from",
+        "two-rooted permanent premolar it is built from. Root fraction read off "
+        "Bild 91 on 2026-08-10: the cervix runs at 31% of tooth height, the "
+        "same figure Dirk took for the lower first primary molar, and both "
+        "views a and b show it at that line. It was 0.60, inherited from a "
+        "permanent parent - primary molars have short crowns and long divergent "
+        "roots in both arches",
     ),
     ToothSpec(
         key="55",
