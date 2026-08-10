@@ -27,7 +27,10 @@
 // interactive odontogram tiles remain the only clickable tooth surfaces).
 import { TEMPLATES, TOOTH_TEMPLATE } from "./odontogram";
 
-export type TemplateNo = 11 | 12 | 13 | 14 | 15 | 16 | 17 | 31 | 46;
+export type TemplateNo =
+  | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 31 | 46
+  // primary dentition — reached only while a tooth is charted as a milk tooth
+  | 51 | 52 | 53 | 54 | 55 | 71 | 74 | 75;
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -73,6 +76,15 @@ export const CEJ_Y: Record<TemplateNo, number> = {
   17: 35.2,
   31: 30.8,
   46: 36.5,
+  // primary dentition; only reached while a tooth is charted as a milk tooth
+  51: 32.9,
+  52: 29.4,
+  53: 36.7,
+  54: 30.3,
+  55: 31.3,
+  71: 26.2,
+  74: 25.6,
+  75: 30.7,
 };
 
 /**
@@ -103,6 +115,14 @@ export const IMPLANT_CEJ_Y: Record<TemplateNo, number> = {
   17: 30.7,
   31: 26.7,
   46: 31.8,
+  51: 28.4,
+  52: 25.5,
+  53: 33.9,
+  54: 27.2,
+  55: 27.4,
+  71: 22.8,
+  74: 22.7,
+  75: 27.0,
 };
 
 /** Predicate telling the arch builders whether a given tooth is an implant on

@@ -46,6 +46,14 @@ import tooth15Svg from "./assets/teeth-svgs/15.svg?raw";
 import tooth16Svg from "./assets/teeth-svgs/16.svg?raw";
 import tooth17Svg from "./assets/teeth-svgs/17.svg?raw";
 import tooth46Svg from "./assets/teeth-svgs/46.svg?raw";
+import tooth51Svg from "./assets/teeth-svgs/51.svg?raw";
+import tooth52Svg from "./assets/teeth-svgs/52.svg?raw";
+import tooth53Svg from "./assets/teeth-svgs/53.svg?raw";
+import tooth54Svg from "./assets/teeth-svgs/54.svg?raw";
+import tooth55Svg from "./assets/teeth-svgs/55.svg?raw";
+import tooth71Svg from "./assets/teeth-svgs/71.svg?raw";
+import tooth74Svg from "./assets/teeth-svgs/74.svg?raw";
+import tooth75Svg from "./assets/teeth-svgs/75.svg?raw";
 import tooth14OcclSvg from "./assets/teeth-svgs/14_occl.svg?raw";
 import tooth16OcclSvg from "./assets/teeth-svgs/16_occl.svg?raw";
 /* Tooth SVG Test UI (v2) - vanilla JS */
@@ -64,7 +72,31 @@ export const TEMPLATES = {
   17: tooth17Svg,
   31: tooth31Svg,
   46: tooth46Svg,
+  51: tooth51Svg,
+  52: tooth52Svg,
+  53: tooth53Svg,
+  54: tooth54Svg,
+  55: tooth55Svg,
+  71: tooth71Svg,
+  74: tooth74Svg,
+  75: tooth75Svg,
 };
+
+/** Which primary template stands in for a tooth that is charted as a milk
+ *  tooth. A primary tooth occupies its successor's slot in this engine, so the
+ *  key is the permanent position and the value is the deciduous drawing shown
+ *  there. Eight drawings cover all twenty: the arches are mirrored, and the
+ *  lower canine reuses the upper one. */
+export const PRIMARY_TEMPLATE = new Map<number, number>([
+  [11, 51], [21, 51],
+  [12, 52], [22, 52],
+  [13, 53], [23, 53], [33, 53], [43, 53],
+  [14, 54], [24, 54],
+  [15, 55], [25, 55],
+  [31, 71], [32, 71], [41, 71], [42, 71],
+  [34, 74], [44, 74],
+  [35, 75], [45, 75],
+]);
 const TEMPLATES_OCCL = {
   14: tooth14OcclSvg,
   16: tooth16OcclSvg,
@@ -3117,11 +3149,95 @@ export function __applyProposedStylingForTest(toothNo: Any, svg: Any): void {
   applyProposedStyling(toothNo, svg);
 }
 
+/** Parsed tooth templates, module-scoped so a tile can be re-mounted from a
+ *  different drawing after it was built (see `syncToothTemplate`). */
+const tplCache = new Map<number, Any>();
+
+const PRIMARY_TEMPLATE_KEYS = new Set(
+  Array.from(PRIMARY_TEMPLATE.values(), (n) => String(n)),
+);
+
+/** Whether the mounted drawing is a deciduous template rather than a permanent
+ *  one. Read off the generator's own `data-tooth-template` stamp, so it is the
+ *  drawing that answers and not a second table that could drift from it. */
+function isPrimaryTemplate(svg: Any): boolean {
+  const key = svg?.getAttribute?.("data-tooth-template");
+  return !!key && PRIMARY_TEMPLATE_KEYS.has(key);
+}
+
+/** The state to DRAW a given svg with.
+ *
+ *  A milk tooth used to be drawn by switching on the `milktooth-*` layers
+ *  embedded in its successor's permanent template. Where a dedicated primary
+ *  drawing is mounted, those layers are the old workaround and the drawing
+ *  itself is the milk tooth, so it is drawn as an ordinary present tooth. Two
+ *  reasons this is not optional: source 16 carries no milktooth layers at all,
+ *  so templates 55, 74 and 75 would render nothing but gum; and where the
+ *  layers do exist they hold the legacy small tooth rather than the measured
+ *  anatomy the template exists for.
+ *
+ *  Substituted here rather than inside the renderer so the stored state is
+ *  untouched - the tooth is still charted as a milk tooth everywhere else, from
+ *  the tooltip to the payload. */
+function drawnState(svg: Any, state: Any): Any {
+  if(!state || state.toothSelection !== "milktooth" || !isPrimaryTemplate(svg)) return state;
+  return { ...state, toothSelection: "tooth-base" };
+}
+
+/** Mount the drawing the tooth's CURRENT state calls for.
+ *
+ *  A milk tooth used to be drawn by switching the `milktooth-*` layers on
+ *  inside its successor's permanent template, which is why the deciduous
+ *  dentition had no anatomy of its own. It has one now, so charting a tooth as
+ *  a milk tooth swaps the whole drawing instead - and swapping back is the same
+ *  operation, since the wanted template is derived from the state each time
+ *  rather than remembered.
+ *
+ *  Side-view tiles only. The occlusal tiles have their own two templates and no
+ *  deciduous counterpart. */
+function syncToothTemplate(toothNo: Any){
+  const base = TOOTH_TEMPLATE.get(toothNo);
+  if(!base) return;
+  const state = toothState.get(toothNo);
+  const primary = PRIMARY_TEMPLATE.get(toothNo);
+  const want =
+    state?.toothSelection === "milktooth" && primary != null && tplCache.has(primary)
+      ? primary
+      : base.tpl;
+
+  const tiles = toothTile.get(toothNo);
+  const roots = toothSvgRoot.get(toothNo);
+  if(!tiles || !roots) return;
+
+  for(let i = 0; i < tiles.length; i++){
+    const tile = tiles[i];
+    if(!tile?.classList?.contains("side-view")) continue;
+    if(tile.classList.contains(`tpl-${want}`)) continue;
+    const tpl = tplCache.get(want);
+    if(!tpl) continue;
+
+    const svg = tpl.cloneNode(true);
+    namespacePaintServers(svg, `tooth-${toothNo}-side-`);
+    if(base.rot === 180) rotate180(svg);
+    if(base.mirror) mirrorVertical(svg);
+
+    const host = $(".tooth-svg", tile);
+    if(!host) continue;
+    host.replaceChildren(svg);
+    for(const cls of Array.from(tile.classList) as string[]){
+      if(/^tpl-\d+$/.test(cls)) tile.classList.remove(cls);
+    }
+    tile.classList.add(`tpl-${want}`);
+    roots[i] = svg;
+  }
+}
+
 function applyStateToSvg(toothNo: Any){
+  syncToothTemplate(toothNo);
   const roots = toothSvgRoot.get(toothNo);
   if(!roots) return;
   for(const svg of roots){
-    applyStateToSvgSingle(toothNo, svg);
+    applyStateToSvgSingle(toothNo, svg, drawnState(svg, toothState.get(toothNo)));
     applyProposedStyling(toothNo, svg); // R2-C Task 1: dashed+tint plan-only layers (Plan mode only)
   }
   applyPluginOverlays(toothNo);
@@ -9063,9 +9179,8 @@ async function buildGrid(token: number){
   grid.innerHTML = "";
 
   // preload SVG templates in parallel
-  const tplCache = new Map();
   const occlCache = new Map();
-  const tplNos = [11,12,13,14,15,16,17,31,46] as const;
+  const tplNos = [11,12,13,14,15,16,17,31,46,51,52,53,54,55,71,74,75] as const;
   const occlNos = [14,16] as const;
   await Promise.all([
     ...tplNos.map(async (tplNo) => {
