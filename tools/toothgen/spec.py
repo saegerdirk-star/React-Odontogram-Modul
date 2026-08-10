@@ -247,15 +247,22 @@ PRIMARY_SPECS: list[ToothSpec] = [
     ToothSpec(
         key="55",
         label="Upper second primary molar",
-        source="Bild 83 (overview) + derived from 16",
+        source="Bild 92 (p. 114)",
         src_template=16,
-        root_frac=0.60,
+        root_frac=0.62,
         width_frac=0.41,
         roots=3,
         length_rel=0.775,
         size_scale=PRIMARY_SIZE_SCALE,
         primary=True,
         teeth=(55, 65),
+        note="root fraction read off Bild 92 by Dirk on 2026-08-10: the cervical "
+        "seam runs at 38% of tooth height in both views a and b, so the root is "
+        "0.62. The derived value had it at 40%, which is the closest any of "
+        "these came before being measured - unlike its first-molar neighbours "
+        "54 and 74, whose crowns were a third too long. The second primary "
+        "molar really is close to a scaled-down permanent molar, as the text "
+        "says outright about the lower one",
     ),
     ToothSpec(
         key="71",

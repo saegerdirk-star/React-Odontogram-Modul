@@ -129,7 +129,8 @@ AUTHORED_GEOMETRY_SHA256 = {
     "53": "5867d6a1beede3af9117259600836af09680092151a835169c4b35006d38a3d6",
     # 54 re-taken after Bild 91 moved its cervix from 38% to 31% of tooth height.
     "54": "01afa84746564595f1f497fefa85c43639a081f9f601c0cacf203178ca87e999",
-    "55": "a36297cb104bd821a966e051fc5d980242fe0f9ef03bb2f7d452c0c7f9a7a6aa",
+    # 55 re-taken after Bild 92 moved its cervix from 40% to 38%.
+    "55": "038dc7e49d907ab6fe34c23a81a60ca919ffa309a3aee02f6793a55f8f2dce58",
     "71": "3d53cfc33d349031cea75a5bc6fbcc539aa6e116a40a7565905688ed24795664",
     "74": "6e2d2ccc0c42617d29d3d0ae2d9c4dc40ac5b579b82506a673c6c0fe921c6e8b",
     "75": "f12d024b5de3ce8a9a096ab2488c0382a31f849d03003b83fee298ec60c04d46",
