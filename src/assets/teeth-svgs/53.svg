@@ -419,7 +419,7 @@
       <path id="telescope-bridge-connector" d="M36.09,53.03c3.19-1.06,3.74-4.24,1.1-5.82-2.42-1.59-7.14-1.41-11.32-1.5-7.14,0-14.51-.35-21.54.35-4.29.53-6.59,4.32-3.85,6.71,1.76,1.41,6.16,1.5,9.34,1.5,3.19,0,8.24,0,12.53-.18,4.62,0,10.44,0,13.52-1.06h.22Z" data-active="1" style="display: none; fill: #0051bf; stroke: #1b3f1c; stroke-miterlimit: 10; stroke-width: .2px;" />
       <g id="telescope-crown" data-active="1" style="display: none;">
         <path id="telescope-crown-outside" d="M30.7,52.33c-4.84,14.21-17.7,15.18-22.2-.44-1.54-4.94-2.31-11.38,1.32-15.27,1.87-2.05,4.69-3.37,7.69-3.81,3.01-.44,6.17.1,8.69,1.53,6.59,3.51,6.59,11.99,4.62,17.72v.18h0Z" data-active="1" style="fill: #0051bf; stroke: #1b3f1c; stroke-miterlimit: 10;" />
-        <path id="telescope-crown-inside" d="M28.72,51.09c-3.96,11.65-14.4,12.44-18.14-.35-1.21-4.06-1.87-9.27,1.1-12.44,2.97-3.32,9.34-3.95,13.41-1.85,5.39,2.82,5.39,9.88,3.74,14.56v.18h-.11,0Z" data-active="1" style="fill: #aaa; stroke: #1b3f1c; stroke-miterlimit: 10;" />
+        <path id="telescope-crown-inside" d="M28.72,51.09c-3.96,11.65-14.4,12.44-18.14-.35-1.21-4.06-1.87-9.27,1.1-12.44,2.97-3.32,9.34-3.95,13.41-1.85,5.39,2.82,5.39,9.88,3.74,14.56v.18h-.11,0Z" data-active="1" style="fill: #aaa; stroke: #ffffff; stroke-miterlimit: 10; stroke-width: 1.6; paint-order: stroke;" />
         </g>
       </g>
     <g id="zircon" data-active="1">

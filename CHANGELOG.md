@@ -29,6 +29,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   permanent tooth. Payload **2.21 → 2.22**, additive: nothing wrote the value
   before, so an older document needs no migration.
 
+### Changed
+
+- **A telescope crown now reads as a double crown.** Primary and secondary crown
+  were drawn as two filled shapes sharing an edge, so at chart size the pair
+  merged into one blue cap with a grey centre — the very thing that distinguishes
+  a telescope from a single crown was the one thing not visible. The inner crown
+  carries a fine white outline under a `paint-order: stroke`, which puts the
+  separating line *inside* the outer crown's blue band instead of widening the
+  tooth. Style only: no geometry moved, so the frozen generator digests and the
+  SVG fingerprints are unchanged (neither records `stroke` or `paint-order`).
+
 ### Added
 
 - **The primary dentition has anatomy of its own.** A tooth charted as a milk
