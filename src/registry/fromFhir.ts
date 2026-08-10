@@ -6,6 +6,7 @@ import { PAYLOAD_VERSION } from "../fhir/types";
 import { localCode, ensureTooth } from "../fhir/primitives";
 import { AXES } from "./axes";
 import type { ClinicalAxis } from "./types";
+import { slotForPrimaryFdi } from "../utils/numbering";
 
 // Reverse lookup: finding code -> axis.
 const BY_FINDING: Record<string, ClinicalAxis> = {};
@@ -30,11 +31,18 @@ export function parseFhirBundleFromRegistry(bundle: unknown): OdontogramExportPa
 
       const findingCode = localCode(res.code);
       if (!findingCode) continue;
-      const toothId = res.bodySite?.coding?.find((c) => typeof c.code === "string")?.code;
+      const coded = res.bodySite?.coding?.find((c) => typeof c.code === "string")?.code;
 
       if (findingCode === "edentulous") { globals.edentulous = res.valueBoolean === true; continue; }
-      if (!toothId) continue;
+      if (!coded) continue;
+      // A deciduous tooth leaves under its own FDI number and has to come back
+      // to the slot it is charted in - 51-85 to 11-45. Without this the tooth
+      // returns under a key the chart has no position for, which the
+      // round-trip golden caught immediately (odontogram-e0a).
+      const slot = slotForPrimaryFdi(coded);
+      const toothId = slot === null ? coded : String(slot);
       const rec = ensureTooth(teeth, toothId);
+      if (slot !== null) rec.toothSelection = "milktooth";
 
       if (findingCode === "tooth-note") {
         const text = res.note?.[0]?.text;

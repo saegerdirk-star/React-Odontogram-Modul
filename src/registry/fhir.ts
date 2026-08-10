@@ -9,6 +9,7 @@ import {
 } from "../fhir/primitives";
 import { AXES } from "./axes";
 import type { ClinicalAxis } from "./types";
+import { exportedFdi } from "../fhir/toFhirDentalDe";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
@@ -102,8 +103,13 @@ export function buildFhirBundleFromRegistry(payload: OdontogramExportPayload, op
     entries.push({ resource: edentulousObs });
   }
 
-  for (const [tooth, recRaw] of Object.entries(teeth)) {
+  for (const [slot, recRaw] of Object.entries(teeth)) {
     const rec = (recRaw && typeof recRaw === "object" ? recRaw : {}) as ToothRecord;
+    // A deciduous tooth is charted in its successor's slot, so it leaves under
+    // its own FDI number - the same translation the canonical dialect makes,
+    // made in both so one export cannot know the identity while the other does
+    // not (odontogram-e0a).
+    const tooth = exportedFdi(slot, rec);
     for (const axis of AXES) for (const obs of emitForAxis(subjectRef, tooth, rec, axis)) entries.push({ resource: obs });
     // SP6 Task 1: the unified caries severity rides on the `caries` set's
     // components (see emitForAxis above), so the SP5 standalone `secondary-caries`

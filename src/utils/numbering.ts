@@ -113,3 +113,55 @@ export function toLabel(fdiTooth: number | string, system: NumberingSystem): str
 
   return String(fdi);
 }
+
+/**
+ * The primary FDI number for a permanent chart slot.
+ *
+ * A deciduous tooth occupies its successor's slot in this engine, so the slot
+ * is a permanent number and the tooth's own identity has to be derived: the
+ * quadrant moves 1-4 -> 5-8 and the position is unchanged. Only positions 1-5
+ * have a deciduous predecessor, so a molar slot returns `null` rather than an
+ * invented number.
+ *
+ * @param slot - Permanent FDI slot (11-48).
+ * @returns The primary FDI number (51-85), or `null` if the slot has no
+ *          deciduous predecessor.
+ *
+ * @example
+ * ```ts
+ * primaryFdiForSlot(11); // 51
+ * primaryFdiForSlot(45); // 85
+ * primaryFdiForSlot(16); // null — a first permanent molar replaces nothing
+ * ```
+ */
+export function primaryFdiForSlot(slot: number | string): number | null {
+  const fdi = normalizeFdi(slot);
+  if(fdi === null || !isAdultFdi(fdi)) return null;
+  const quadrant = Math.floor(fdi / 10);
+  const position = fdi % 10;
+  if(position > 5) return null;
+  return (quadrant + 4) * 10 + position;
+}
+
+/**
+ * The permanent chart slot a primary FDI number is charted in — the inverse of
+ * {@link primaryFdiForSlot}.
+ *
+ * @param fdiTooth - Primary FDI number (51-85).
+ * @returns The permanent slot (11-45), or `null` if the input is not a primary
+ *          FDI number.
+ *
+ * @example
+ * ```ts
+ * slotForPrimaryFdi(51); // 11
+ * slotForPrimaryFdi(85); // 45
+ * slotForPrimaryFdi(11); // null — already a permanent number
+ * ```
+ */
+export function slotForPrimaryFdi(fdiTooth: number | string): number | null {
+  const fdi = normalizeFdi(fdiTooth);
+  if(fdi === null || !isPrimaryFdi(fdi)) return null;
+  const quadrant = Math.floor(fdi / 10);
+  const position = fdi % 10;
+  return (quadrant - 4) * 10 + position;
+}

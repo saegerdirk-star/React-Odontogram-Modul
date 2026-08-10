@@ -12,6 +12,7 @@
 
 import type { ToothRecord } from "./types";
 import { LOCAL_VALUE_MAPS } from "./codesystems";
+import { slotForPrimaryFdi } from "../utils/numbering";
 import {
   DENTAL_DE_ODONTOGRAM_PROFILE, DENTAL_DE_CARIES_PROFILE, DENTAL_DE_FINDING_PROFILE,
   DENTAL_DE_PERIODONTAL_PROFILE, DENTAL_DE_PERI_IMPLANT_PROFILE,
@@ -309,9 +310,17 @@ export function applyDentalDeResource(
     code?: unknown; bodySite?: unknown; valueCodeableConcept?: unknown;
     component?: Any[]; note?: Array<{ text?: unknown }>;
   };
-  const fdi = codeIn(r.bodySite, DENTAL_DE_FDI_SYSTEM);
-  if (!fdi) return;
+  const coded = codeIn(r.bodySite, DENTAL_DE_FDI_SYSTEM);
+  if (!coded) return;
+  // A deciduous tooth is charted in its successor's slot here but leaves as its
+  // own FDI number, so 51-85 comes back to 11-45 and the record is marked as a
+  // milk tooth. Doing it at the key, before anything is written, means every
+  // axis the bundle carries for that tooth lands on one record rather than
+  // splitting between 51 and 11 (odontogram-e0a).
+  const slot = slotForPrimaryFdi(coded);
+  const fdi = slot === null ? coded : String(slot);
   const rec = (teeth[fdi] ??= {});
+  if (slot !== null) rec.toothSelection = "milktooth";
 
   const profiles = Array.isArray(r.meta?.profile) ? (r.meta!.profile as string[]) : [];
   if (
