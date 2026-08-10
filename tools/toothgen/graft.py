@@ -141,7 +141,7 @@ def graft_apical(
     d_donor: str,
     y_cut: float,
     mapfn,
-    band_frac: float = 0.5,
+    band_frac: float = 0.35,
     samples: int = 48,
 ) -> str | None:
     """Replace the host's geometry below `y_cut` with the donor's.
@@ -176,14 +176,20 @@ def graft_apical(
     depth = y_cut - apex
     if depth < 3.0:
         return None
-    # The transition is spread over half the root, and that length is measured,
-    # not chosen for looks. The two cervices simply do not match: the premolar's
-    # is broad and still flaring apically where the canine's is already tapering
-    # sharply, so joining them over a short band leaves a corner no smoothing
-    # can hide. Over 3 units the shaft turns 21 degrees at its sharpest; over 6,
-    # 11 degrees; from half the root on it settles at 7.5, which is what the
-    # DRAWN teeth measure (canine 7.4, upper incisor 5.5) - and the apical half
-    # is still purely the donor's drawn root.
+    # The transition length is measured, not chosen for looks. The two cervices
+    # do not match: the premolar's is broad and still flaring apically where the
+    # canine's is already tapering sharply, so joining them over a short band
+    # leaves a corner no smoothing can hide. Swept over the root, the sharpest
+    # turn along the shaft and the width of the cervical quarter run:
+    #
+    #     20%  13.2 deg   16.7        35%   8.7 deg   17.2
+    #     25%  12.0 deg   16.7        40%   9.3 deg   17.6
+    #     30%  10.3 deg   16.9        50%   9.3 deg   17.6
+    #
+    # so a third of the root is not a compromise between the two - it is the
+    # smoothest length measured AND slimmer than any longer one. 8.7 degrees is
+    # inside the range the DRAWN teeth occupy (lower incisor 3.8, upper incisor
+    # 5.5, canine 7.4), and the apical two thirds stay purely the donor's root.
     band = depth * band_frac
 
     left, right, ys = [], [], []

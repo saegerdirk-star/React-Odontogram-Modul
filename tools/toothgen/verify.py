@@ -114,7 +114,7 @@ AUTHORED_GEOMETRY_SHA256 = {
     "14": "810e488c0973a1c04474cd243b921cfc23b75194bdf5fc184ef90ef3d0b72ebd",
     # Re-taken again on 2026-08-10 for odontogram-ay4: template 15's root is
     # grafted from source 13 instead of converted from source 14's two roots.
-    "15": "9c0b3acd0d8550af51b360d7f24fe0c6aa53a45d7cbf79a709ea5d56024861f6",
+    "15": "9571e1a8855110f8b191588261bc366b676efaf9d8fc7179f2bc9f79f010bf7d",
     "16": "dccdd2fea0b80a5afdc74e034b79dfa0a08151d8ff5ca4d2c8cdb952e5202786",
     "17": "57cdc697a16a578ef4d566d6a18d02c472ce48a263d10bbdf7b71c0a99e1a9f6",
     "31": "4a10c5642fd72352dcf13c95d7f50a1ecf0a8b026661d6bb435a03a21d193e33",
