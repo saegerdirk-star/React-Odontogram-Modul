@@ -268,22 +268,27 @@ PRIMARY_SPECS: list[ToothSpec] = [
     ToothSpec(
         key="74",
         label="Lower first primary molar",
-        source="Bild 83 (overview) + derived from 46",
+        source="Bild 93 (p. 117)",
         src_template=16,
-        root_frac=0.62,
+        root_frac=0.69,
         width_frac=0.40,
         roots=2,
         length_rel=0.760,
         size_scale=PRIMARY_SIZE_SCALE,
         primary=True,
         teeth=(74, 84),
-        note="Bild 93 was never supplied; proportions come from the overview "
-        "plate and are the weakest reference in this table",
+        note="root fraction read off Bild 93 by Dirk on 2026-08-10: the cervix "
+        "runs as a wavy line and he takes 31% of tooth height as its mean, so "
+        "the root is 0.69 - it was 0.62, derived from the permanent lower "
+        "molar, which put the cervix at 38% where the photograph already shows "
+        "the furcation. That parent was the mistake: the same page states that "
+        "the SECOND primary molar is the scaled-down permanent molar, which is "
+        "why 75 keeps it and this one does not",
     ),
     ToothSpec(
         key="75",
         label="Lower second primary molar",
-        source="Bild 83 (overview) + derived from 46",
+        source="p. 117 section 3.4.3.2 + derived from 46",
         src_template=16,
         root_frac=0.62,
         width_frac=0.41,
@@ -292,6 +297,10 @@ PRIMARY_SPECS: list[ToothSpec] = [
         size_scale=PRIMARY_SIZE_SCALE,
         primary=True,
         teeth=(75, 85),
+        note="the text on that page states it outright - the lower second "
+        "primary molar is the scaled-down lower first permanent molar - so "
+        "this one keeps 46 as its parent where 74 must not. Bild 94 itself "
+        "was not supplied; the citation is the text, not the plate",
     ),
 ]
 
