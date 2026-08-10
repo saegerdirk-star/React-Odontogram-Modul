@@ -75,25 +75,151 @@ def apical_walk(d: str, y_cut: float):
     return None
 
 
-def graft_apical(d_host: str, d_donor: str, y_cut: float, mapfn) -> str | None:
-    """Replace the host's geometry below `y_cut` with the donor's."""
+# The profile stops once the two flanks are this close and the apex is drawn as
+# an arc between them instead.
+TIP_WIDTH = 0.6
+
+
+def _tip_arc(near: float, far: float, y: float, apex: float, steps: int = 9):
+    """A rounded root tip between the last two flank points."""
+
+    import math
+
+    mid = (near + far) / 2.0
+    half = (near - far) / 2.0
+    reach = y - apex
+    return [
+        (
+            mid + half * math.cos(math.pi * k / steps),
+            y - reach * math.sin(math.pi * k / steps),
+        )
+        for k in range(1, steps)
+    ]
+
+
+def _sides_at(subs, y: float):
+    sp = roots.spans_at(subs, y)
+    return (sp[0][0], sp[-1][1]) if sp else None
+
+
+def _slope_at(subs, y: float, h: float = 0.5):
+    a, b = _sides_at(subs, y + h), _sides_at(subs, y - h)
+    if a is None or b is None:
+        return None
+    return ((b[0] - a[0]) / (2 * h), (b[1] - a[1]) / (2 * h))
+
+
+def find_cut(host_subs, donor_subs, cej: float, reach: float = 4.0, step: float = 0.25):
+    """Where to join, chosen as the height whose two directions agree best.
+
+    Joining at the cervical line itself leaves a corner no blend can hide,
+    because there the premolar's crown is still flaring apically while the
+    canine's root already tapers - two directions meeting at a point. A little
+    higher, inside the cervical third, both are still flaring and the graft can
+    turn the corner smoothly over the band instead of at one height.
+    """
+
+    best, best_y = None, cej
+    y = cej
+    while y <= cej + reach:
+        sh, sd = _slope_at(host_subs, y), _slope_at(donor_subs, y)
+        if sh is not None and sd is not None:
+            gap = abs(sh[0] - sd[0]) + abs(sh[1] - sd[1])
+            if best is None or gap < best:
+                best, best_y = gap, y
+        y += step
+    return best_y
+
+
+def _smoothstep(t: float) -> float:
+    t = min(1.0, max(0.0, t))
+    return t * t * (3.0 - 2.0 * t)
+
+
+def graft_apical(
+    d_host: str,
+    d_donor: str,
+    y_cut: float,
+    mapfn,
+    band_frac: float = 0.5,
+    samples: int = 48,
+) -> str | None:
+    """Replace the host's geometry below `y_cut` with the donor's.
+
+    Rebuilt from the two contours' SIDE PROFILES rather than by splicing the
+    donor's sampled outline in directly. Splicing the outline joins the values
+    but not the direction, and it inherits every near-duplicate point the
+    sampling produces: the first version of this measured 141 degrees of turn at
+    the joint and 180 at the tip, where the drawn canine turns at most 6. A
+    profile blended with a smoothstep is continuous in value AND in slope at
+    both ends of the band by construction, which is what a kink is the absence
+    of.
+
+    Left and right are carried separately, so the donor's root keeps its own
+    asymmetry instead of being averaged into a symmetric taper.
+    """
 
     host = apical_walk(d_host, y_cut)
     if host is None:
         return None
     c1, c2, _, segs, rest = host
 
-    donor = apical_walk(svgpath.warp_path_d(d_donor, mapfn), y_cut)
-    if donor is None:
+    host_subs = roots._polylines(d_host)
+    donor_subs = roots._polylines(svgpath.warp_path_d(d_donor, mapfn))
+
+    at_cut = _sides_at(host_subs, y_cut)
+    host_slope = _slope_at(host_subs, y_cut + 0.75)
+    if at_cut is None or host_slope is None:
         return None
-    pts = list(donor[2])
+
+    apex = min(p[1] for s in donor_subs for p in s)
+    depth = y_cut - apex
+    if depth < 3.0:
+        return None
+    # The transition is spread over half the root, and that length is measured,
+    # not chosen for looks. The two cervices simply do not match: the premolar's
+    # is broad and still flaring apically where the canine's is already tapering
+    # sharply, so joining them over a short band leaves a corner no smoothing
+    # can hide. Over 3 units the shaft turns 21 degrees at its sharpest; over 6,
+    # 11 degrees; from half the root on it settles at 7.5, which is what the
+    # DRAWN teeth measure (canine 7.4, upper incisor 5.5) - and the apical half
+    # is still purely the donor's drawn root.
+    band = depth * band_frac
+
+    left, right, ys = [], [], []
+    for i in range(samples + 1):
+        d = depth * i / samples
+        y = y_cut - d
+        donor_sides = _sides_at(donor_subs, y)
+        if donor_sides is None:
+            break
+        # Smoothstep has zero slope at both ends, so the outline leaves the cut
+        # in the host's own direction and arrives in the donor's. Continuous in
+        # value AND in direction at both ends of the band - which is what a kink
+        # is the absence of.
+        e = _smoothstep(d / band) if band > 0 else 1.0
+        l = (at_cut[0] - d * host_slope[0]) * (1 - e) + donor_sides[0] * e
+        r = (at_cut[1] - d * host_slope[1]) * (1 - e) + donor_sides[1] * e
+        # Stop before the sides meet. Running the profile into the apex makes
+        # the two flanks collide in a single point, which is a spike, not a root
+        # tip - it measured 84 degrees of turn where a drawn root turns at 6.
+        if r - l < TIP_WIDTH and ys:
+            break
+        left.append(l)
+        right.append(r)
+        ys.append(y)
+
+    if len(ys) < 6:
+        return None
 
     pa, pb = c1[2], c2[2]
-    if _dist(pts[0], pa) > _dist(pts[-1], pa):
-        pts.reverse()
-    # Force the two ends onto the host's own crossings. The map already matches
-    # the widths at the cervical line, so this is a nudge of a fraction of a
-    # unit - and it is what guarantees no step survives at the joint.
+    left_first = pa[0] < pb[0]
+    near = left if left_first else right
+    far = right if left_first else left
+
+    pts = [(near[i], ys[i]) for i in range(len(ys))]
+    pts += _tip_arc(near[-1], far[-1], ys[-1], apex)
+    pts += [(far[i], ys[i]) for i in range(len(ys) - 1, -1, -1)]
     pts[0], pts[-1] = pa, pb
     return roots._splice(segs, c1, c2, roots._catmull_cubics(pts), rest)
 

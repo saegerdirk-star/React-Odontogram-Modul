@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 import sys
 import hashlib
@@ -26,6 +27,50 @@ TOL_LUMEN_WIDTH = 0.80
 
 # Apical widening tolerated per quarter unit through the cervical region.
 TOL_CERVICAL_STEP = 0.03
+
+# Direction change tolerated along the root shaft, in degrees per unit of
+# contour, with the apical tip excluded because a root tip turns sharply by
+# nature. The drawn templates measure 3.8 to 8.5 here.
+TOL_SHAFT_TURN = 15.0
+TIP_EXCLUDED = 3.5
+
+
+def shaft_turn(base_d: str, apex: float, cej: float, chord: float = 1.0):
+    """The sharpest direction change along the root outline.
+
+    A kink is a discontinuity in DIRECTION, not in width, and nothing here
+    measured direction: the contour checks ask only whether the outline widens
+    again apically. Template 15 passed all of them while a clinician read a kink
+    straight off the chart, and a first attempt at repairing it passed them
+    while making the outline visibly worse. Measured over a chord rather than
+    between adjacent sampled points, because at point spacing a wobble of a
+    twentieth of a unit reads as eighty degrees and nothing is learnt.
+    """
+
+    pts = roots._polylines(base_d)[0]
+    walk = [pts[0]]
+    run = 0.0
+    for a, b in zip(pts, pts[1:]):
+        run += ((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2) ** 0.5
+        if run >= chord:
+            walk.append(b)
+            run = 0.0
+
+    worst, worst_at = 0.0, None
+    for a, b, c in zip(walk, walk[1:], walk[2:]):
+        if not (apex + TIP_EXCLUDED < b[1] < cej + 0.5):
+            continue
+        v1 = (b[0] - a[0], b[1] - a[1])
+        v2 = (c[0] - b[0], c[1] - b[1])
+        l1 = (v1[0] ** 2 + v1[1] ** 2) ** 0.5
+        l2 = (v2[0] ** 2 + v2[1] ** 2) ** 0.5
+        if l1 < 0.3 or l2 < 0.3:
+            continue
+        cosine = (v1[0] * v2[0] + v1[1] * v2[1]) / (l1 * l2)
+        angle = math.degrees(math.acos(max(-1.0, min(1.0, cosine))))
+        if angle > worst:
+            worst, worst_at = angle, b[1]
+    return worst, worst_at
 
 
 def lumen_extremes(txt: str, base_d: str, apex: float, cej: float):
@@ -69,7 +114,7 @@ AUTHORED_GEOMETRY_SHA256 = {
     "14": "810e488c0973a1c04474cd243b921cfc23b75194bdf5fc184ef90ef3d0b72ebd",
     # Re-taken again on 2026-08-10 for odontogram-ay4: template 15's root is
     # grafted from source 13 instead of converted from source 14's two roots.
-    "15": "56fdc784d4c15fec97d9d9ca597541af34b25355528a2ac0ba5f981601f24055",
+    "15": "9c0b3acd0d8550af51b360d7f24fe0c6aa53a45d7cbf79a709ea5d56024861f6",
     "16": "dccdd2fea0b80a5afdc74e034b79dfa0a08151d8ff5ca4d2c8cdb952e5202786",
     "17": "57cdc697a16a578ef4d566d6a18d02c472ce48a263d10bbdf7b71c0a99e1a9f6",
     "31": "4a10c5642fd72352dcf13c95d7f50a1ecf0a8b026661d6bb435a03a21d193e33",
@@ -271,6 +316,13 @@ def main(argv):
                 failures.append(
                     f"{s.key}: contour widens apically at CEJ-{cej - cerv_at:.2f}; "
                     f"a step sits in the cervical region"
+                )
+
+            turn, turn_at = shaft_turn(base_d, apex, cej)
+            if turn > TOL_SHAFT_TURN:
+                failures.append(
+                    f"{s.key}: the root outline turns {turn:.0f} degrees at "
+                    f"CEJ-{cej - turn_at:.1f}; the shaft is not continuous"
                 )
 
             prev, step_at = None, None

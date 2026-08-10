@@ -134,7 +134,7 @@ describe("installed tooth SVG assets", () => {
       // Shorter since the root is grafted from the canine instead of converted
       // from the premolar's two roots (odontogram-ay4): the converted root left
       // lumen standing above the apex, and the viewBox had to reach up to it.
-      "15": { roots: "1", viewBox: "0.0 0.0 39.8 73.0" },
+      "15": { roots: "1", viewBox: "0.0 0.0 39.8 72.8" },
       "16": { roots: "3", viewBox: "0.0 0.0 42.9 72.6" },
       "17": { roots: "3", viewBox: "0.0 0.0 42.9 70.9" },
       "46": { roots: "2", viewBox: "0.0 0.0 42.9 77.1" },
