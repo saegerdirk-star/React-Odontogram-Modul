@@ -8,7 +8,10 @@ describe("registry stable option lists match today's option functions", () => {
   it("toothSelection", () => expect(optionsFor("toothSelection")).toEqual([
     { value: "none", labelKey: "toothSelect.none" }, { value: "tooth-base", labelKey: "toothSelect.permanent" },
     { value: "milktooth", labelKey: "toothSelect.milk" }, { value: "implant", labelKey: "toothSelect.implant" },
-    { value: "tooth-under-gum", labelKey: "toothSelect.underGum" }]));
+    { value: "tooth-under-gum", labelKey: "toothSelect.underGum" },
+    // odontogram-8vu: a position whose tooth has not erupted. Distinct from
+    // "none", which means the tooth is missing.
+    { value: "not-erupted", labelKey: "toothSelect.notErupted" }]));
   it("mobility", () => expect(optionsFor("mobility")).toEqual([
     { value: "none", labelKey: "mobility.none" }, { value: "m1", labelKey: "mobility.m1" },
     { value: "m2", labelKey: "mobility.m2" }, { value: "m3", labelKey: "mobility.m3" }]));

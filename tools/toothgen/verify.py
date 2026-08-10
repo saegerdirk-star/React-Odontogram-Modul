@@ -119,6 +119,21 @@ AUTHORED_GEOMETRY_SHA256 = {
     "17": "57cdc697a16a578ef4d566d6a18d02c472ce48a263d10bbdf7b71c0a99e1a9f6",
     "31": "4a10c5642fd72352dcf13c95d7f50a1ecf0a8b026661d6bb435a03a21d193e33",
     "46": "fba5d08ec2aedf3fcc2ae63bf321b6f6d0d97ffb97da53150089edd79cf30976",
+    # Primary dentition, taken on 2026-08-10 after Dirk read the rendered
+    # dentition in the running chart and accepted it. Until then these eight
+    # were deliberately unfrozen, which the digest check reports as a state
+    # rather than a fault - a drawing does not have to pass a digest before it
+    # may exist, it has to pass the dentist (odontogram-0ak, odontogram-e0a).
+    "51": "170b6a615d3ca51a97e505c36bf13c62bfa24726c77710c4c0f992d1948a6450",
+    "52": "39eaf927f97c309bde9e72221c630c28f43661775f350d928cf833f2956c1b24",
+    "53": "5867d6a1beede3af9117259600836af09680092151a835169c4b35006d38a3d6",
+    # 54 re-taken after Bild 91 moved its cervix from 38% to 31% of tooth height.
+    "54": "01afa84746564595f1f497fefa85c43639a081f9f601c0cacf203178ca87e999",
+    # 55 re-taken after Bild 92 moved its cervix from 40% to 38%.
+    "55": "038dc7e49d907ab6fe34c23a81a60ca919ffa309a3aee02f6793a55f8f2dce58",
+    "71": "3d53cfc33d349031cea75a5bc6fbcc539aa6e116a40a7565905688ed24795664",
+    "74": "6e2d2ccc0c42617d29d3d0ae2d9c4dc40ac5b579b82506a673c6c0fe921c6e8b",
+    "75": "f12d024b5de3ce8a9a096ab2488c0382a31f849d03003b83fee298ec60c04d46",
 }
 
 GEOMETRY_ATTRIBUTES = (

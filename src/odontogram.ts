@@ -65,6 +65,41 @@ export const TEMPLATES = {
   31: tooth31Svg,
   46: tooth46Svg,
 };
+
+/** The eight deciduous drawings, loaded on demand rather than compiled into the
+ *  module graph.
+ *
+ *  They are the same size as the permanent ones - roughly 85 KB of markup each -
+ *  and importing them eagerly doubled the tooth artwork every consumer parses at
+ *  import time. Measured on this repository's own suite: import time went from
+ *  37.5 to 54.3 seconds and a two-instance mount test fell off its five-second
+ *  budget. A chart with no milk teeth should not pay for drawings it never
+ *  mounts. */
+const PRIMARY_SVG_LOADERS: Record<string, () => Promise<string>> = import.meta.glob(
+  "./assets/teeth-svgs/{51,52,53,54,55,71,74,75}.svg",
+  { query: "?raw", import: "default" },
+) as Any;
+
+function primaryTemplateLoader(tpl: number): (() => Promise<string>) | null {
+  const key = Object.keys(PRIMARY_SVG_LOADERS).find((k) => k.endsWith(`/${tpl}.svg`));
+  return key ? PRIMARY_SVG_LOADERS[key] : null;
+}
+
+/** Which primary template stands in for a tooth that is charted as a milk
+ *  tooth. A primary tooth occupies its successor's slot in this engine, so the
+ *  key is the permanent position and the value is the deciduous drawing shown
+ *  there. Eight drawings cover all twenty: the arches are mirrored, and the
+ *  lower canine reuses the upper one. */
+export const PRIMARY_TEMPLATE = new Map<number, number>([
+  [11, 51], [21, 51],
+  [12, 52], [22, 52],
+  [13, 53], [23, 53], [33, 53], [43, 53],
+  [14, 54], [24, 54],
+  [15, 55], [25, 55],
+  [31, 71], [32, 71], [41, 71], [42, 71],
+  [34, 74], [44, 74],
+  [35, 75], [45, 75],
+]);
 const TEMPLATES_OCCL = {
   14: tooth14OcclSvg,
   16: tooth16OcclSvg,
@@ -1667,7 +1702,11 @@ function onGlobalToggleClick(e: Any){
 }
 
 function isToothPresent(sel: Any){
-  return sel !== "none" && sel !== "implant";
+  // `not-erupted` joins `none` here: the position carries no tooth to chart a
+  // finding on. It is kept apart from `none` only where the DIFFERENCE matters
+  // - the whole-mouth summary, which must not call an unerupted tooth missing
+  // (odontogram-8vu).
+  return sel !== "none" && sel !== "not-erupted" && sel !== "implant";
 }
 
 /** SP7 Task 5 (extended by SP15 Task 3 / B4): hide the `mods.inflammation`
@@ -1774,6 +1813,12 @@ function updateToothTileNumber(toothNo: Any){
   const tiles = toothTile.get(toothNo);
   if(!tiles) return;
   const text = toLabel(getDisplayedToothNumber(toothNo), numberingSystem);
+  // The accessible name follows the number the chart shows. It used to be set
+  // once when the tile was built and never again, so a tooth charted as a milk
+  // tooth read "51" and announced "11" (odontogram-e0a AC2).
+  for(const tile of tiles){
+    if(tile?.getAttribute?.("role") === "option") tile.setAttribute("aria-label", text);
+  }
   const upper = toothLabelUpper.get(toothNo);
   if(upper) upper.textContent = text;
   const lower = toothLabelLower.get(toothNo);
@@ -3117,11 +3162,117 @@ export function __applyProposedStylingForTest(toothNo: Any, svg: Any): void {
   applyProposedStyling(toothNo, svg);
 }
 
+/** Parsed tooth templates, module-scoped so a tile can be re-mounted from a
+ *  different drawing after it was built (see `syncToothTemplate`). */
+const tplCache = new Map<number, Any>();
+
+/** Deciduous drawings whose fetch is already running, so a repaint storm asks
+ *  for each one once. */
+const primaryLoadsInFlight = new Set<number>();
+
+const PRIMARY_TEMPLATE_KEYS = new Set(
+  Array.from(PRIMARY_TEMPLATE.values(), (n) => String(n)),
+);
+
+/** Whether the mounted drawing is a deciduous template rather than a permanent
+ *  one. Read off the generator's own `data-tooth-template` stamp, so it is the
+ *  drawing that answers and not a second table that could drift from it. */
+function isPrimaryTemplate(svg: Any): boolean {
+  const key = svg?.getAttribute?.("data-tooth-template");
+  return !!key && PRIMARY_TEMPLATE_KEYS.has(key);
+}
+
+/** The state to DRAW a given svg with.
+ *
+ *  A milk tooth used to be drawn by switching on the `milktooth-*` layers
+ *  embedded in its successor's permanent template. Where a dedicated primary
+ *  drawing is mounted, those layers are the old workaround and the drawing
+ *  itself is the milk tooth, so it is drawn as an ordinary present tooth. Two
+ *  reasons this is not optional: source 16 carries no milktooth layers at all,
+ *  so templates 55, 74 and 75 would render nothing but gum; and where the
+ *  layers do exist they hold the legacy small tooth rather than the measured
+ *  anatomy the template exists for.
+ *
+ *  Substituted here rather than inside the renderer so the stored state is
+ *  untouched - the tooth is still charted as a milk tooth everywhere else, from
+ *  the tooltip to the payload. */
+function drawnState(svg: Any, state: Any): Any {
+  if(!state || state.toothSelection !== "milktooth" || !isPrimaryTemplate(svg)) return state;
+  return { ...state, toothSelection: "tooth-base" };
+}
+
+/** Mount the drawing the tooth's CURRENT state calls for.
+ *
+ *  A milk tooth used to be drawn by switching the `milktooth-*` layers on
+ *  inside its successor's permanent template, which is why the deciduous
+ *  dentition had no anatomy of its own. It has one now, so charting a tooth as
+ *  a milk tooth swaps the whole drawing instead - and swapping back is the same
+ *  operation, since the wanted template is derived from the state each time
+ *  rather than remembered.
+ *
+ *  Side-view tiles only. The occlusal tiles have their own two templates and no
+ *  deciduous counterpart. */
+function syncToothTemplate(toothNo: Any){
+  const base = TOOTH_TEMPLATE.get(toothNo);
+  if(!base) return;
+  const state = toothState.get(toothNo);
+  const primary = PRIMARY_TEMPLATE.get(toothNo);
+  if(state?.toothSelection === "milktooth" && primary != null && !tplCache.has(primary)){
+    // First milk tooth charted at this position: fetch the drawing, then repaint
+    // the tooth. Until it arrives the permanent template stays mounted, which is
+    // what was shown a moment ago anyway - one frame, not a blank tile.
+    if(!primaryLoadsInFlight.has(primary)){
+      const loader = primaryTemplateLoader(primary);
+      if(loader){
+        primaryLoadsInFlight.add(primary);
+        loader().then((markup) => {
+          tplCache.set(primary, parseSvgTemplate(markup));
+          primaryLoadsInFlight.delete(primary);
+          for(const tn of PRIMARY_TEMPLATE.keys()){
+            if(PRIMARY_TEMPLATE.get(tn) === primary) applyStateToSvg(tn);
+          }
+        }).catch(() => primaryLoadsInFlight.delete(primary));
+      }
+    }
+  }
+  const want =
+    state?.toothSelection === "milktooth" && primary != null && tplCache.has(primary)
+      ? primary
+      : base.tpl;
+
+  const tiles = toothTile.get(toothNo);
+  const roots = toothSvgRoot.get(toothNo);
+  if(!tiles || !roots) return;
+
+  for(let i = 0; i < tiles.length; i++){
+    const tile = tiles[i];
+    if(!tile?.classList?.contains("side-view")) continue;
+    if(tile.classList.contains(`tpl-${want}`)) continue;
+    const tpl = tplCache.get(want);
+    if(!tpl) continue;
+
+    const svg = tpl.cloneNode(true);
+    namespacePaintServers(svg, `tooth-${toothNo}-side-`);
+    if(base.rot === 180) rotate180(svg);
+    if(base.mirror) mirrorVertical(svg);
+
+    const host = $(".tooth-svg", tile);
+    if(!host) continue;
+    host.replaceChildren(svg);
+    for(const cls of Array.from(tile.classList) as string[]){
+      if(/^tpl-\d+$/.test(cls)) tile.classList.remove(cls);
+    }
+    tile.classList.add(`tpl-${want}`);
+    roots[i] = svg;
+  }
+}
+
 function applyStateToSvg(toothNo: Any){
+  syncToothTemplate(toothNo);
   const roots = toothSvgRoot.get(toothNo);
   if(!roots) return;
   for(const svg of roots){
-    applyStateToSvgSingle(toothNo, svg);
+    applyStateToSvgSingle(toothNo, svg, drawnState(svg, toothState.get(toothNo)));
     applyProposedStyling(toothNo, svg); // R2-C Task 1: dashed+tint plan-only layers (Plan mode only)
   }
   applyPluginOverlays(toothNo);
@@ -4572,7 +4723,11 @@ function resetTeethGated(toothNos: number[]): void {
 function applyPrimaryDentition(): void {
   const targetFor = (toothNo: number)=>{
     const s = defaultState();
-    s.toothSelection = PRIMARY_MILK.has(toothNo) ? "milktooth" : "none";
+    // The twelve positions a primary dentition leaves empty are the six-year
+    // molars and behind. They have not erupted; they are not missing, and
+    // recording them as `none` made a healthy chart report twelve missing teeth
+    // (odontogram-8vu).
+    s.toothSelection = PRIMARY_MILK.has(toothNo) ? "milktooth" : "not-erupted";
     return s;
   };
   const changed = ALL_TEETH.filter(tn => JSON.stringify(serializeState(toothState.get(tn) ?? defaultState())) !== JSON.stringify(serializeState(targetFor(tn))));
@@ -4602,7 +4757,9 @@ function applyMixedDentition(): void {
     }else if(MIXED_MILK.has(toothNo)){
       s.toothSelection = "milktooth";
     }else if(MIXED_NONE.has(toothNo)){
-      s.toothSelection = "none";
+      // Second and third molars in a mixed dentition: not yet erupted rather
+      // than missing, for the same reason as the primary preset above.
+      s.toothSelection = "not-erupted";
     }
     return s;
   };
@@ -8651,6 +8808,7 @@ function buildOdontogramProseText(summary: OdontogramSummary): string {
   const parts: string[] = [summary.overview];
   if(summary.permanentList) parts.push(summary.permanentList);
   if(summary.missingList) parts.push(summary.missingList);
+  if(summary.uneruptedList) parts.push(summary.uneruptedList);
   if(summary.implants) parts.push(`${summary.implants.heading}: ${summary.implants.text}`);
   for(const section of summary.sections){
     if(section.items.length) parts.push(`${section.heading}: ${section.items.join("; ")}`);
@@ -9012,7 +9170,10 @@ let initToken = 0;
 // `svgText` is the inlined SVG markup from a `?raw` import (see TEMPLATES) —
 // parsed directly, never fetched. Kept `async` so existing `await loadSvg(...)`
 // call sites are unchanged.
-async function loadSvg(svgText: Any){
+/** Parse and normalize one inlined template. Synchronous - the markup is
+ *  compiled in, nothing is fetched - so a template can also be parsed on demand
+ *  from a synchronous render path (see `syncToothTemplate`). */
+function parseSvgTemplate(svgText: Any){
   const parser = new DOMParser();
   const doc = parser.parseFromString(svgText, "image/svg+xml");
   const svg = doc.documentElement;
@@ -9020,6 +9181,10 @@ async function loadSvg(svgText: Any){
   stripDisplayNoneToDataActive(svg);
   ensureDataActiveForSwitchables(svg);
   return svg;
+}
+
+async function loadSvg(svgText: Any){
+  return parseSvgTemplate(svgText);
 }
 
 /** Namespace only ids declared inside `defs` and their fragment references.
@@ -9063,8 +9228,12 @@ async function buildGrid(token: number){
   grid.innerHTML = "";
 
   // preload SVG templates in parallel
-  const tplCache = new Map();
   const occlCache = new Map();
+  // Permanent templates only. The eight deciduous ones are parsed on demand by
+  // `syncToothTemplate`, so a chart with no milk teeth - the common case - does
+  // not pay for drawings it never mounts. Preloading all seventeen nearly
+  // doubled the work at startup and pushed a two-instance mount test past its
+  // five-second budget.
   const tplNos = [11,12,13,14,15,16,17,31,46] as const;
   const occlNos = [14,16] as const;
   await Promise.all([
@@ -10012,6 +10181,9 @@ export type OdontogramSummary = {
   overview: string;
   permanentList: string | null;
   missingList: string | null;
+  /** Positions whose tooth has not erupted, e.g. the six-year molars in a
+   *  milk dentition. Never counted among the missing ones. */
+  uneruptedList: string | null;
   sections: OdontogramSummarySection[];
   /** Implants heading + list — only present when at least one implant exists. */
   implants: { heading: string; text: string } | null;
@@ -10076,6 +10248,8 @@ export function getOdontogramSummary(): OdontogramSummary {
 
   const permanent: number[] = [];
   const missing: number[] = [];
+  /** Positions whose tooth has not erupted - distinct from missing. */
+  const unerupted: number[] = [];
   const implants: number[] = [];
   let milkCount = 0;
   const caries: string[] = [];
@@ -10100,7 +10274,13 @@ export function getOdontogramSummary(): OdontogramSummary {
     const isMissing = sel === "none";
     const isImplant = sel === "implant";
     const isMilk = sel === "milktooth";
-    if(isMissing) missing.push(toothNo);
+    // A tooth that has not erupted is counted apart from the missing ones.
+    // Nothing was lost and nothing is absent that ought to be there, so a
+    // healthy milk dentition must not report twelve missing teeth
+    // (odontogram-8vu).
+    const isUnerupted = sel === "not-erupted";
+    if(isUnerupted) unerupted.push(toothNo);
+    else if(isMissing) missing.push(toothNo);
     else if(isImplant) implants.push(toothNo);
     else if(isMilk) milkCount++;
     else permanent.push(toothNo);
@@ -10286,6 +10466,9 @@ export function getOdontogramSummary(): OdontogramSummary {
   const missingList = missing.length
     ? t("toothInfo.missingList", { count: missing.length, list: missing.map(lbl).join(", ") })
     : null;
+  const uneruptedList = unerupted.length
+    ? t("toothInfo.uneruptedList", { count: unerupted.length, list: unerupted.map(lbl).join(", ") })
+    : null;
 
   const sections: OdontogramSummarySection[] = [
     { key: "caries", heading: t("toothInfo.caries"), items: caries, emptyText: t("toothInfo.cariesEmpty") },
@@ -10337,6 +10520,7 @@ export function getOdontogramSummary(): OdontogramSummary {
     overview,
     permanentList,
     missingList,
+    uneruptedList,
     sections,
     implants: implantInfo,
     periodontalTitle: t("toothInfo.periodontalTitle"),

@@ -243,7 +243,11 @@ export interface ExaminationSnapshotRecord {
 /** The payload/document version this engine writes. Readers accept every
  *  earlier version (1.4 upwards) — see `isLegacyPayloadVersion()` and the
  *  per-axis hydration defaults in `odontogram.ts`. */
-export const PAYLOAD_VERSION = "2.21";
+// 2.22 (odontogram-8vu): additive - `toothSelection` gains "not-erupted" for a
+// position whose tooth has not erupted, distinct from "none", which means the
+// tooth is missing. Nothing wrote the value before, so an older document is
+// unaffected and needs no migration.
+export const PAYLOAD_VERSION = "2.22";
 
 /**
  * The UI-domain document (bead odontogram-3l1, AC2/AC4).

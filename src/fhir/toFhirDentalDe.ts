@@ -35,6 +35,24 @@ import {
   rootCariesSct, resorptionSct, apicalDxSct, restorationStatusSct,
 } from "./dentalDeCodesystems";
 import { buildDentalDePerioEntries, type DentalDePerioContext } from "./toFhirDentalDePerio";
+import { primaryFdiForSlot } from "../utils/numbering";
+
+/** The FDI code a record is EXPORTED under.
+ *
+ *  A deciduous tooth occupies its successor's slot in this engine, so the
+ *  payload key is a permanent number - a milk tooth charted at position 11 is
+ *  stored as 11. FDI has its own numbers for the deciduous dentition and a
+ *  reader outside this engine cannot recover them from the key, so the
+ *  translation happens at the boundary: the tooth leaves as 51-85 and is read
+ *  back the same way (odontogram-e0a).
+ *
+ *  Positions 6-8 have no deciduous predecessor, so a molar slot is never
+ *  translated even if something charted a milk tooth there. */
+export function exportedFdi(slot: string, rec: ToothRecord): string {
+  if (rec?.toothSelection !== "milktooth") return slot;
+  const primary = primaryFdiForSlot(slot);
+  return primary === null ? slot : String(primary);
+}
 
 // The `fhir/r4` component/extension types do not model the R4 `component.extension`
 // slot the IG uses, so component nodes are assembled structurally.
@@ -151,6 +169,17 @@ function presenceComponent(ctx: BuildContext, fdi: string, rec: ToothRecord): An
           reason: "No eruption/retention SNOMED concept in ToothPresenceStateVS is identifiable from the published IG artifacts.",
         });
         return textOnly(FINDING_TEXT.toothUnderGum);
+      case "not-erupted":
+        // Same gap as the retained tooth above, and the same treatment: the IG
+        // publishes no eruption concept, so the state travels as text rather
+        // than as an invented code. Emitting nothing would be worse - the
+        // position would arrive as a permanent tooth, since that is what an
+        // unset record defaults to (odontogram-8vu).
+        reportText(ctx, {
+          tooth: fdi, field: "toothSelection", value: selection,
+          reason: "No eruption-state SNOMED concept in ToothPresenceStateVS is identifiable from the published IG artifacts.",
+        });
+        return textOnly(FINDING_TEXT.toothNotErupted);
       default:
         return undefined;
     }
@@ -574,8 +603,9 @@ export function buildDentalDeBundle(
     });
   }
 
-  for (const [fdi, recRaw] of Object.entries(teeth)) {
+  for (const [slot, recRaw] of Object.entries(teeth)) {
     const rec = (recRaw && typeof recRaw === "object" ? recRaw : {}) as ToothRecord;
+    const fdi = exportedFdi(slot, rec);
 
     const components: Any[] = [];
     const presence = presenceComponent(ctx, fdi, rec);

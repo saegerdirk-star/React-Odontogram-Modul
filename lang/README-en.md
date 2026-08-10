@@ -135,6 +135,7 @@ Or load it with a client-only dynamic import: `dynamic(() => import("./Odontogra
 ### ✨ Key Features
 - 🖱️ Fast selection and multi-select (CMD/CTRL + click)
 - 🦷 Tooth types: permanent, primary (milk), implant, subgingival, missing
+- 🍼 The primary dentition has anatomy of its own: eight generated templates cover all twenty deciduous teeth with their own measured root fractions, lengths and widths, a relatively larger pulp and roots splayed around the permanent germ. Charting a tooth as a milk tooth mounts the deciduous drawing in place of its successor's. In FHIR the tooth is identified as **51–85**, because in FDI the number itself says which dentition it belongs to; on import that number decides, and only presence is overruled
 - 🦷 Tooth substrate (orthogonal to any restoration): natural, radix (root remnant), broken, prepared for crown
 - 👑 Restorations by type × material: crown / inlay / onlay / veneer / bridge in e.max, gold, gradia, zirconia, metal, metal-ceramic, telescope or temporary (onlay is occlusal-view only) — chosen from one combined low-click "Fix: Crown – …" picker; legacy `metal` crowns migrate to `metal-ceramic` (PFM); implants use the same type × material model, composed with an implant connector layer. The picker is scoped by tooth kind: an implant offers only crown/bridge (plus its five attachment options, below); a missing/gap tooth offers only a bridge pontic (plus removable-partial/-full); a `radix` substrate hides the restoration control entirely (no restoration can be authored on a root remnant)
 - 🦿 Removable/attachment prosthetics on the dedicated `prosthesis` axis ("Kivehető:" entries in the combined picker): implant healing abutment, locator, locator with overdenture, bar, bar with overdenture; tooth-supported removable partial or full denture
@@ -379,12 +380,27 @@ Opened from the topbar gear icon; a focus-trapped, ARIA `dialog` with a tabbed l
 **Tooth templates** (in `src/assets/teeth-svgs/`):
 | Template | Teeth using it |
 |---|---|
-| `11.svg` | 11, 12, 21, 22, 31, 32, 41, 42 (incisors) |
+| **Permanent teeth** | |
+| `11.svg` | 11, 21 |
+| `12.svg` | 12, 22 |
+| `31.svg` | 31, 32, 41, 42 |
 | `13.svg` | 13, 23, 33, 43 (canines) |
-| `14.svg` / `14_occl.svg` | 14, 15, 24, 25, 34, 35, 44, 45 (premolars) |
-| `16.svg` / `16_occl.svg` | 16, 17, 18, 26, 27, 28, 36, 37, 38, 46, 47, 48 (molars) |
+| `14.svg` / `14_occl.svg` | 14, 24 |
+| `15.svg` | 15, 25, 34, 35, 44, 45 |
+| `16.svg` / `16_occl.svg` | 16, 26 |
+| `17.svg` | 17, 18, 27, 28 |
+| `46.svg` | 36, 37, 38, 46, 47, 48 |
+| **Primary teeth** | |
+| `51.svg` | 51, 61 |
+| `52.svg` | 52, 62 |
+| `53.svg` | 53, 63, 73, 83 (primary canines) |
+| `54.svg` | 54, 64 |
+| `55.svg` | 55, 65 |
+| `71.svg` | 71, 72, 81, 82 (primary incisors) |
+| `74.svg` | 74, 84 |
+| `75.svg` | 75, 85 (primary molars) |
 
-Templates are rotated 180 degrees for the lower jaw and mirrored horizontally for the left side.
+A tooth charted as a milk tooth is drawn from its own template, mounted in place of the permanent one; the permanent templates are rotated 180 degrees for the lower jaw and mirrored horizontally for the left side, and the primary ones follow the same mapping.
 
 **Icon SVGs** (in `src/assets/icon-svgs/`):
 `icon_8.svg` (wisdom), `icon_gum.svg` (bone), `icon_no_selection.svg` (clear), `icon_occl.svg` (occlusal view), `icon_pulp.svg` (pulp)

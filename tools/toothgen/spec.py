@@ -227,9 +227,9 @@ PRIMARY_SPECS: list[ToothSpec] = [
     ToothSpec(
         key="54",
         label="Upper first primary molar",
-        source="Bild 91 (p. 113) + Bild 83",
+        source="Bild 91 (p. 113)",
         src_template=14,
-        root_frac=0.60,
+        root_frac=0.69,
         width_frac=0.36,
         roots=3,
         length_rel=0.741,
@@ -237,20 +237,32 @@ PRIMARY_SPECS: list[ToothSpec] = [
         primary=True,
         teeth=(54, 64),
         note="three-rooted like every upper primary molar, unlike the "
-        "two-rooted permanent premolar it is built from",
+        "two-rooted permanent premolar it is built from. Root fraction read off "
+        "Bild 91 on 2026-08-10: the cervix runs at 31% of tooth height, the "
+        "same figure Dirk took for the lower first primary molar, and both "
+        "views a and b show it at that line. It was 0.60, inherited from a "
+        "permanent parent - primary molars have short crowns and long divergent "
+        "roots in both arches",
     ),
     ToothSpec(
         key="55",
         label="Upper second primary molar",
-        source="Bild 83 (overview) + derived from 16",
+        source="Bild 92 (p. 114)",
         src_template=16,
-        root_frac=0.60,
+        root_frac=0.62,
         width_frac=0.41,
         roots=3,
         length_rel=0.775,
         size_scale=PRIMARY_SIZE_SCALE,
         primary=True,
         teeth=(55, 65),
+        note="root fraction read off Bild 92 by Dirk on 2026-08-10: the cervical "
+        "seam runs at 38% of tooth height in both views a and b, so the root is "
+        "0.62. The derived value had it at 40%, which is the closest any of "
+        "these came before being measured - unlike its first-molar neighbours "
+        "54 and 74, whose crowns were a third too long. The second primary "
+        "molar really is close to a scaled-down permanent molar, as the text "
+        "says outright about the lower one",
     ),
     ToothSpec(
         key="71",

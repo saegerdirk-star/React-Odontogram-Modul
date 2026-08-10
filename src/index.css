@@ -442,6 +442,23 @@ select:focus{
 .tooth-tile.tpl-16 .tooth-svg svg{width:69px;height:118px}
 .tooth-tile.tpl-17 .tooth-svg svg{width:69px;height:115px}
 .tooth-tile.tpl-46 .tooth-svg svg{width:69px;height:125px}
+/* primary dentition — mounted in place of the successor's template while a
+   tooth is charted as a milk tooth (PRIMARY_TEMPLATE in odontogram.ts) */
+.tooth-tile.tpl-51 .tooth-svg svg{width:64px;height:99px}
+.tooth-tile.tpl-52 .tooth-svg svg{width:64px;height:93px}
+.tooth-tile.tpl-53 .tooth-svg svg{width:65px;height:115px}
+.tooth-tile.tpl-54 .tooth-svg svg{width:64px;height:95px}
+.tooth-tile.tpl-55 .tooth-svg svg{width:69px;height:100px}
+.tooth-tile.tpl-71 .tooth-svg svg{width:64px;height:87px}
+.tooth-tile.tpl-74 .tooth-svg svg{width:69px;height:98px}
+.tooth-tile.tpl-75 .tooth-svg svg{width:69px;height:103px}
+/* The lower primary canine is not drawn separately — it is template 53 shown
+   about a tenth smaller, which is the observed difference between the arches
+   and saves a drawing that would differ in nothing else. The origin is the
+   OCCLUSAL PLANE, not the tile edge: every template puts that plane 7.5 units
+   from the viewBox edge, which is 12.1px at this tile size, and scaling about
+   the tile edge instead lifted the two canines 1.3px clear of the arch. */
+.tooth-tile.lower-row.tpl-53 .tooth-svg svg{transform:scale(.9);transform-origin:center 12.1px}
 .tooth-tile.wisdom-hidden{opacity:.45; pointer-events:none}
 .tooth-tile.wisdom-hidden .tooth-svg svg{opacity:0}
 .tooth-tile.occl-hidden{display:none !important}

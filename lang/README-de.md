@@ -137,6 +137,7 @@ Oder laden Sie sie mit einem rein clientseitigen dynamischen Import: `dynamic(()
 ### ✨ Hauptmerkmale
 - 🖱️ Schnelle Auswahl und Mehrfachauswahl (CMD/CTRL + Klick)
 - 🦷 Zahntypen: bleibend, Milchzahn, Implantat, subgingival, fehlend
+- 🍼 Das Milchgebiss hat eine eigene Anatomie: acht erzeugte Vorlagen decken alle zwanzig Milchzähne ab, mit eigenen gemessenen Wurzelanteilen, Längen und Breiten, verhältnismäßig größerer Pulpa und um den bleibenden Zahnkeim gespreizten Wurzeln. Wird ein Zahn als Milchzahn erfasst, tritt die Milchzahnzeichnung an die Stelle der Zeichnung seines Nachfolgers. In FHIR erscheint der Zahn als **51–85**, denn in der FDI-Notation sagt die Nummer selbst, zu welcher Dentition er gehört; beim Import entscheidet sie, und überstimmt wird nur die Anwesenheit
 - 🦷 Zahnsubstrat (unabhängig von jeder Restauration): natürlich, Radix (Wurzelrest), frakturiert, für Krone präpariert
 - 👑 Restaurationen nach Typ × Material: Krone / Inlay / Onlay / Veneer / Brücke in e.max, Gold, Gradia, Zirkon, Metall, Metallkeramik, Teleskop oder provisorisch (Onlay nur okklusale Ansicht) — Auswahl über einen einzigen kombinierten „Fix: Krone – …"-Picker mit wenigen Klicks; bestehende `metal`-Kronen migrieren zu `metal-ceramic` (Metallkeramik); Implantate verwenden dasselbe Typ-×-Material-Modell, kombiniert mit einer Implantat-Verbinder-Ebene. Der Picker ist nach Zahnart gestaffelt: ein Implantat bietet nur Krone/Brücke (plus die fünf Attachment-Optionen weiter unten); ein fehlender/Lücken-Zahn bietet nur ein Brückenglied (plus herausnehmbare Teil-/Vollprothese); ein `radix`-Substrat blendet die Restaurationssteuerung vollständig aus (an einem Wurzelrest kann keine Restauration angelegt werden)
 - 🦿 Herausnehmbare/Abutment-Prothetik auf der eigenen `prosthesis`-Achse („Kivehető:"-Einträge im kombinierten Picker): Implantat-Heilabutment, Locator, Locator mit Suprakonstruktion, Steg, Steg mit Suprakonstruktion; zahngetragene herausnehmbare Teil- oder Vollprothese
@@ -381,12 +382,27 @@ Wird über das Zahnrad-Symbol in der Kopfleiste geöffnet; ein fokus-gefangener,
 **Zahnvorlagen** (in `src/assets/teeth-svgs/`):
 | Vorlage | Verwendende Zähne |
 |---|---|
-| `11.svg` | 11, 12, 21, 22, 31, 32, 41, 42 (Schneidezähne) |
+| **Bleibende Zähne** | |
+| `11.svg` | 11, 21 |
+| `12.svg` | 12, 22 |
+| `31.svg` | 31, 32, 41, 42 |
 | `13.svg` | 13, 23, 33, 43 (Eckzähne) |
-| `14.svg` / `14_occl.svg` | 14, 15, 24, 25, 34, 35, 44, 45 (Prämolaren) |
-| `16.svg` / `16_occl.svg` | 16, 17, 18, 26, 27, 28, 36, 37, 38, 46, 47, 48 (Molaren) |
+| `14.svg` / `14_occl.svg` | 14, 24 |
+| `15.svg` | 15, 25, 34, 35, 44, 45 |
+| `16.svg` / `16_occl.svg` | 16, 26 |
+| `17.svg` | 17, 18, 27, 28 |
+| `46.svg` | 36, 37, 38, 46, 47, 48 |
+| **Milchzähne** | |
+| `51.svg` | 51, 61 |
+| `52.svg` | 52, 62 |
+| `53.svg` | 53, 63, 73, 83 (Milcheckzähne) |
+| `54.svg` | 54, 64 |
+| `55.svg` | 55, 65 |
+| `71.svg` | 71, 72, 81, 82 (Milchschneidezähne) |
+| `74.svg` | 74, 84 |
+| `75.svg` | 75, 85 (Milchmolaren) |
 
-Vorlagen werden für den Unterkiefer um 180 Grad gedreht und für die linke Seite horizontal gespiegelt.
+Ein als Milchzahn erfasster Zahn wird aus einer eigenen Vorlage gezeichnet, die anstelle der bleibenden eingehängt wird; die bleibenden Vorlagen werden für den Unterkiefer um 180 Grad gedreht und für die linke Seite horizontal gespiegelt, die Milchzahnvorlagen folgen derselben Zuordnung.
 
 **Icon-SVGs** (in `src/assets/icon-svgs/`):
 `icon_8.svg` (Weisheitszahn), `icon_gum.svg` (Knochen), `icon_no_selection.svg` (Auswahl löschen), `icon_occl.svg` (Okklusionsansicht), `icon_pulp.svg` (Pulpa)

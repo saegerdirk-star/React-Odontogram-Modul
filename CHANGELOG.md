@@ -9,6 +9,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A milk dentition no longer reports twelve missing teeth.** The primary
+  preset recorded the positions behind the deciduous dentition — 16–18, 26–28,
+  36–38, 46–48 — as `none`, and `none` means *missing*. A healthy four-year-old's
+  chart therefore read "teeth marked missing (12): 18, 17, 16, …": a finding no
+  clinician made, produced by a preset, and carried into an export.
+
+  Those teeth are not missing, they have not erupted, and the model had no way
+  to say so — an unset position defaults to a permanent tooth, and the only way
+  to show nothing was `none`. `toothSelection` gains **`not-erupted`**: it draws
+  exactly what an empty position draws (verified — the SVG fingerprint of the
+  new state is byte-identical to `none` on all eleven templates, and no existing
+  fingerprint changed), it is counted and named separately from missing teeth in
+  the whole-mouth summary, and both dentition presets use it.
+
+  It survives both FHIR round trips. In the canonical dialect the IG publishes
+  no eruption concept, so the state travels as text with the gap reported —
+  emitting nothing would be worse, since an absent record hydrates back to a
+  permanent tooth. Payload **2.21 → 2.22**, additive: nothing wrote the value
+  before, so an older document needs no migration.
+
+### Added
+
+- **The primary dentition has anatomy of its own.** A tooth charted as a milk
+  tooth used to be its successor's permanent template with the embedded
+  `milktooth-*` layers switched on — so the deciduous dentition was, literally,
+  the permanent one with a smaller shape turned on inside it. Eight generated
+  templates now cover all twenty primary teeth (51, 52, 53, 54, 55, 71, 74, 75;
+  the arches mirror and the lower canine reuses the upper), and charting a tooth
+  as a milk tooth mounts the deciduous drawing in its place. Switching back is
+  the same operation, because the wanted template is derived from the state each
+  time rather than remembered.
+
+  The proportions are measured, not scaled down: each template carries its own
+  root fraction, relative length and width, from the Odontographie plates where
+  a plate exists. Two shape changes separate the dentitions and cannot be
+  expressed as a number, so the generator applies them — the pulp is enlarged
+  anchored on the horn tips, which stay where they are because they decide
+  whether a preparation reads as an exposure, and the roots are splayed around
+  the developing permanent germ and hooked back in at the tips, which is what
+  makes them read as bulbous rather than merely wider.
+
+  Where a dedicated primary drawing is mounted, it is drawn as an ordinary
+  present tooth rather than through the `milktooth-*` layers. Those layers hold
+  the legacy small tooth, and source 16 — which templates 55, 74 and 75 are
+  built from — carries none at all. The substitution happens at the render call
+  site only: the tooth is still charted as a milk tooth in the tooltip, the
+  summary and the payload.
+
+  The lower first primary molar was re-derived from Bild 93 after the plate
+  arrived: it had been built from the permanent lower molar, which put its
+  cervix at 38 % of tooth height where the photograph already shows the
+  furcation. The page states outright that the SECOND primary molar is the
+  scaled-down permanent molar, which is why 75 keeps that parent and 74 must not
+  have had it.
+
+### Fixed
+
 - **Template 15 no longer reads as a converted tooth.** The single-rooted
   premolar was produced by redrawing source 14's two roots as one, and it still
   showed what it was made from: a step in the outer contour exactly on the join,

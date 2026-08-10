@@ -6,6 +6,7 @@ import { PAYLOAD_VERSION } from "../fhir/types";
 import { localCode, ensureTooth } from "../fhir/primitives";
 import { AXES } from "./axes";
 import type { ClinicalAxis } from "./types";
+import { slotForPrimaryFdi } from "../utils/numbering";
 
 // Reverse lookup: finding code -> axis.
 const BY_FINDING: Record<string, ClinicalAxis> = {};
@@ -14,6 +15,8 @@ for (const a of AXES) BY_FINDING[a.finding.local] = a;
 /** Registry-driven inverse of buildFhirBundle. Byte-identical to the legacy parseFhirBundle. */
 export function parseFhirBundleFromRegistry(bundle: unknown): OdontogramExportPayload {
   const teeth: Record<string, ToothRecord> = {};
+  /** Slots whose resources arrived under a deciduous FDI number. */
+  const primaryRead = new Set<string>();
   const globals: Record<string, boolean> = {};
   const entries = (bundle as { entry?: unknown })?.entry;
   if (Array.isArray(entries)) {
@@ -30,11 +33,18 @@ export function parseFhirBundleFromRegistry(bundle: unknown): OdontogramExportPa
 
       const findingCode = localCode(res.code);
       if (!findingCode) continue;
-      const toothId = res.bodySite?.coding?.find((c) => typeof c.code === "string")?.code;
+      const coded = res.bodySite?.coding?.find((c) => typeof c.code === "string")?.code;
 
       if (findingCode === "edentulous") { globals.edentulous = res.valueBoolean === true; continue; }
-      if (!toothId) continue;
+      if (!coded) continue;
+      // A deciduous tooth leaves under its own FDI number and has to come back
+      // to the slot it is charted in - 51-85 to 11-45. Without this the tooth
+      // returns under a key the chart has no position for, which the
+      // round-trip golden caught immediately (odontogram-e0a).
+      const slot = slotForPrimaryFdi(coded);
+      const toothId = slot === null ? coded : String(slot);
       const rec = ensureTooth(teeth, toothId);
+      if (slot !== null) primaryRead.add(toothId);
 
       if (findingCode === "tooth-note") {
         const text = res.note?.[0]?.text;
@@ -144,5 +154,21 @@ export function parseFhirBundleFromRegistry(bundle: unknown): OdontogramExportPa
     for (const surf of Object.keys(rec.secondaryCaries)) delete rec.cariesSeverity[surf];
     if (Object.keys(rec.cariesSeverity).length === 0) delete rec.cariesSeverity;
   }
+  // THE NUMBER DECIDES THE DENTITION, in this dialect as in the canonical one.
+  // In FDI, 51-85 IS a deciduous tooth: the notation carries the
+  // classification, so a present tooth read from such a position cannot come
+  // back as a permanent one, whatever the bundle's own axes said. Applied after
+  // the loop because the axes are written into the record as they are
+  // encountered and one of them is `toothSelection` itself.
+  //
+  // Only PRESENCE is overruled. A bundle stating the position is absent, an
+  // implant or unerupted describes that position rather than contradicting the
+  // numbering, and is left as it is.
+  for (const [slot, rec] of Object.entries(teeth)) {
+    if (primaryRead.has(slot) && rec.toothSelection === "tooth-base") {
+      rec.toothSelection = "milktooth";
+    }
+  }
+
   return { version: PAYLOAD_VERSION, globals, teeth };
 }

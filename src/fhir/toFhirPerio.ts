@@ -4,6 +4,7 @@
 import type { Bundle, Observation, Condition, CodeableConcept, ToothRecord, OdontogramExportPayload, FhirExportOptions } from "./types";
 import { LOCAL_SYSTEM, FDI_SYSTEM, ICD10_SYSTEM } from "./codesystems";
 import { PLACEHOLDER_PATIENT_FULLURL, baseObservation } from "./primitives";
+import { exportedFdi } from "./toFhirDentalDe";
 import {
   derivePerioClassification,
   type PerioDerivationInput,
@@ -614,9 +615,9 @@ export function appendPerioObservations(bundle: Bundle, payload: OdontogramExpor
     payload && typeof payload === "object" && payload.teeth && typeof payload.teeth === "object" ? payload.teeth : {};
   const subjectRef = options.subject ?? PLACEHOLDER_PATIENT_FULLURL;
   if (!bundle.entry) bundle.entry = [];
-  for (const [tooth, recRaw] of Object.entries(teeth)) {
+  for (const [slot, recRaw] of Object.entries(teeth)) {
     const rec = (recRaw && typeof recRaw === "object" ? recRaw : {}) as ToothRecord;
-    const obs = buildToothPerioObservation(subjectRef, tooth, rec);
+    const obs = buildToothPerioObservation(subjectRef, exportedFdi(slot, rec), rec);
     if (obs) bundle.entry.push({ resource: obs });
   }
 }

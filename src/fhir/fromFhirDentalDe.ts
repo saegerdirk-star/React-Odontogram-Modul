@@ -12,6 +12,7 @@
 
 import type { ToothRecord } from "./types";
 import { LOCAL_VALUE_MAPS } from "./codesystems";
+import { slotForPrimaryFdi } from "../utils/numbering";
 import {
   DENTAL_DE_ODONTOGRAM_PROFILE, DENTAL_DE_CARIES_PROFILE, DENTAL_DE_FINDING_PROFILE,
   DENTAL_DE_PERIODONTAL_PROFILE, DENTAL_DE_PERI_IMPLANT_PROFILE,
@@ -166,6 +167,7 @@ function applyPresence(rec: ToothRecord, value: unknown): void {
   }
   if (text === FINDING_TEXT.implantPresent) { rec.toothSelection = "implant"; return; }
   if (text === FINDING_TEXT.toothUnderGum) { rec.toothSelection = "tooth-under-gum"; return; }
+  if (text === FINDING_TEXT.toothNotErupted) { rec.toothSelection = "not-erupted"; return; }
 }
 
 // ---------------------------------------------------------------------------
@@ -309,9 +311,17 @@ export function applyDentalDeResource(
     code?: unknown; bodySite?: unknown; valueCodeableConcept?: unknown;
     component?: Any[]; note?: Array<{ text?: unknown }>;
   };
-  const fdi = codeIn(r.bodySite, DENTAL_DE_FDI_SYSTEM);
-  if (!fdi) return;
+  const coded = codeIn(r.bodySite, DENTAL_DE_FDI_SYSTEM);
+  if (!coded) return;
+  // A deciduous tooth is charted in its successor's slot here but leaves as its
+  // own FDI number, so 51-85 comes back to 11-45 and the record is marked as a
+  // milk tooth. Doing it at the key, before anything is written, means every
+  // axis the bundle carries for that tooth lands on one record rather than
+  // splitting between 51 and 11 (odontogram-e0a).
+  const slot = slotForPrimaryFdi(coded);
+  const fdi = slot === null ? coded : String(slot);
   const rec = (teeth[fdi] ??= {});
+  if (slot !== null) rec.toothSelection = "milktooth";
 
   const profiles = Array.isArray(r.meta?.profile) ? (r.meta!.profile as string[]) : [];
   if (
@@ -446,5 +456,19 @@ export function applyDentalDeResource(
       default:
         break;
     }
+  }
+
+  // THE NUMBER DECIDES THE DENTITION. In FDI, 51-85 IS a deciduous tooth - the
+  // notation carries the classification, so a present tooth at such a position
+  // cannot be a permanent one whatever a presence component says. Our own
+  // emitter marks it with a "Primary (deciduous) tooth" display text and reads
+  // back correctly either way, but a foreign bundle writing a plain "tooth
+  // present" used to arrive as a permanent incisor.
+  //
+  // Only PRESENCE is overruled. A bundle stating the position is absent, an
+  // implant, or unerupted is describing that position, not contradicting the
+  // numbering, and is left alone.
+  if (slot !== null && rec.toothSelection === "tooth-base") {
+    rec.toothSelection = "milktooth";
   }
 }
