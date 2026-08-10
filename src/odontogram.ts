@@ -46,14 +46,6 @@ import tooth15Svg from "./assets/teeth-svgs/15.svg?raw";
 import tooth16Svg from "./assets/teeth-svgs/16.svg?raw";
 import tooth17Svg from "./assets/teeth-svgs/17.svg?raw";
 import tooth46Svg from "./assets/teeth-svgs/46.svg?raw";
-import tooth51Svg from "./assets/teeth-svgs/51.svg?raw";
-import tooth52Svg from "./assets/teeth-svgs/52.svg?raw";
-import tooth53Svg from "./assets/teeth-svgs/53.svg?raw";
-import tooth54Svg from "./assets/teeth-svgs/54.svg?raw";
-import tooth55Svg from "./assets/teeth-svgs/55.svg?raw";
-import tooth71Svg from "./assets/teeth-svgs/71.svg?raw";
-import tooth74Svg from "./assets/teeth-svgs/74.svg?raw";
-import tooth75Svg from "./assets/teeth-svgs/75.svg?raw";
 import tooth14OcclSvg from "./assets/teeth-svgs/14_occl.svg?raw";
 import tooth16OcclSvg from "./assets/teeth-svgs/16_occl.svg?raw";
 /* Tooth SVG Test UI (v2) - vanilla JS */
@@ -72,15 +64,26 @@ export const TEMPLATES = {
   17: tooth17Svg,
   31: tooth31Svg,
   46: tooth46Svg,
-  51: tooth51Svg,
-  52: tooth52Svg,
-  53: tooth53Svg,
-  54: tooth54Svg,
-  55: tooth55Svg,
-  71: tooth71Svg,
-  74: tooth74Svg,
-  75: tooth75Svg,
 };
+
+/** The eight deciduous drawings, loaded on demand rather than compiled into the
+ *  module graph.
+ *
+ *  They are the same size as the permanent ones - roughly 85 KB of markup each -
+ *  and importing them eagerly doubled the tooth artwork every consumer parses at
+ *  import time. Measured on this repository's own suite: import time went from
+ *  37.5 to 54.3 seconds and a two-instance mount test fell off its five-second
+ *  budget. A chart with no milk teeth should not pay for drawings it never
+ *  mounts. */
+const PRIMARY_SVG_LOADERS: Record<string, () => Promise<string>> = import.meta.glob(
+  "./assets/teeth-svgs/{51,52,53,54,55,71,74,75}.svg",
+  { query: "?raw", import: "default" },
+) as Any;
+
+function primaryTemplateLoader(tpl: number): (() => Promise<string>) | null {
+  const key = Object.keys(PRIMARY_SVG_LOADERS).find((k) => k.endsWith(`/${tpl}.svg`));
+  return key ? PRIMARY_SVG_LOADERS[key] : null;
+}
 
 /** Which primary template stands in for a tooth that is charted as a milk
  *  tooth. A primary tooth occupies its successor's slot in this engine, so the
@@ -3153,6 +3156,10 @@ export function __applyProposedStylingForTest(toothNo: Any, svg: Any): void {
  *  different drawing after it was built (see `syncToothTemplate`). */
 const tplCache = new Map<number, Any>();
 
+/** Deciduous drawings whose fetch is already running, so a repaint storm asks
+ *  for each one once. */
+const primaryLoadsInFlight = new Set<number>();
+
 const PRIMARY_TEMPLATE_KEYS = new Set(
   Array.from(PRIMARY_TEMPLATE.values(), (n) => String(n)),
 );
@@ -3201,8 +3208,22 @@ function syncToothTemplate(toothNo: Any){
   const state = toothState.get(toothNo);
   const primary = PRIMARY_TEMPLATE.get(toothNo);
   if(state?.toothSelection === "milktooth" && primary != null && !tplCache.has(primary)){
-    const markup = (TEMPLATES as Any)[primary];
-    if(markup) tplCache.set(primary, parseSvgTemplate(markup));
+    // First milk tooth charted at this position: fetch the drawing, then repaint
+    // the tooth. Until it arrives the permanent template stays mounted, which is
+    // what was shown a moment ago anyway - one frame, not a blank tile.
+    if(!primaryLoadsInFlight.has(primary)){
+      const loader = primaryTemplateLoader(primary);
+      if(loader){
+        primaryLoadsInFlight.add(primary);
+        loader().then((markup) => {
+          tplCache.set(primary, parseSvgTemplate(markup));
+          primaryLoadsInFlight.delete(primary);
+          for(const tn of PRIMARY_TEMPLATE.keys()){
+            if(PRIMARY_TEMPLATE.get(tn) === primary) applyStateToSvg(tn);
+          }
+        }).catch(() => primaryLoadsInFlight.delete(primary));
+      }
+    }
   }
   const want =
     state?.toothSelection === "milktooth" && primary != null && tplCache.has(primary)
