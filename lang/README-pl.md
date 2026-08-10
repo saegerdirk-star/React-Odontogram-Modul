@@ -135,6 +135,7 @@ Ewentualnie załaduj go za pomocą dynamicznego importu tylko po stronie klienta
 ### ✨ Kluczowe funkcje
 - 🖱️ Szybkie zaznaczanie i wielokrotne zaznaczanie (CMD/CTRL + klik)
 - 🦷 Typy zębów: stały, mleczny, implant, poddziąsłowy, brakujący
+- 🍼 Uzębienie mleczne ma własną anatomię: osiem wygenerowanych szablonów obejmuje wszystkie dwadzieścia zębów mlecznych z własnymi zmierzonymi proporcjami korzenia, długościami i szerokościami, względnie większą miazgą i korzeniami rozchodzącymi się wokół zawiązka zęba stałego. Zapisanie zęba jako mlecznego osadza jego rysunek w miejscu rysunku następcy. W FHIR ząb jest oznaczany jako **51–85**, ponieważ w FDI sam numer mówi, do którego uzębienia należy; przy imporcie to on rozstrzyga, a nadpisywana jest wyłącznie obecność
 - 🦷 Podłoże zęba (niezależne od jakiejkolwiek odbudowy): naturalne, radix (pozostałość korzenia), złamane, przygotowane pod koronę
 - 👑 Odbudowy według typu × materiału: korona / wkład (inlay) / nakład (onlay) / licówka / most z e.max, złota, gradii, cyrkonu, metalu, metalowo-ceramicznego, teleskopowego lub tymczasowego (nakład dostępny tylko w widoku okluzyjnym) — wybierane z jednego połączonego, niskoklikowego selektora „Fix: Korona – …”; istniejące korony `metal` migrują automatycznie do `metal-ceramic` (metalowo-ceramicznej); implanty korzystają z tego samego modelu typ × materiał, złożonego z warstwą łącznika implantu. Selektor jest zawężany wg rodzaju zęba: implant oferuje tylko koronę/most (plus pięć opcji łącznikowych opisanych poniżej); ząb brakujący/luka oferuje tylko przęsło mostowe (plus protezę ruchomą częściową/całkowitą); podłoże `radix` całkowicie ukrywa kontrolkę odbudowy (na pozostałości korzenia nie można zapisać żadnej odbudowy)
 - 🦿 Protetyka ruchoma/na łącznikach na dedykowanej osi `prosthesis` (wpisy „Kivehető:” w połączonym selektorze): śruba gojąca implantu, lokator, lokator z protezą nakładaną, belka, belka z protezą nakładaną; ruchoma proteza częściowa lub całkowita wsparta na zębach
@@ -379,12 +380,27 @@ Otwierane za pomocą ikony trybika na pasku górnym; okno dialogowe ARIA `dialog
 **Szablony zębów** (w `src/assets/teeth-svgs/`):
 | Szablon | Zęby używające go |
 |---|---|
-| `11.svg` | 11, 12, 21, 22, 31, 32, 41, 42 (siekacze) |
+| **Zęby stałe** | |
+| `11.svg` | 11, 21 |
+| `12.svg` | 12, 22 |
+| `31.svg` | 31, 32, 41, 42 |
 | `13.svg` | 13, 23, 33, 43 (kły) |
-| `14.svg` / `14_occl.svg` | 14, 15, 24, 25, 34, 35, 44, 45 (zęby przedtrzonowe) |
-| `16.svg` / `16_occl.svg` | 16, 17, 18, 26, 27, 28, 36, 37, 38, 46, 47, 48 (trzonowce) |
+| `14.svg` / `14_occl.svg` | 14, 24 |
+| `15.svg` | 15, 25, 34, 35, 44, 45 |
+| `16.svg` / `16_occl.svg` | 16, 26 |
+| `17.svg` | 17, 18, 27, 28 |
+| `46.svg` | 36, 37, 38, 46, 47, 48 |
+| **Zęby mleczne** | |
+| `51.svg` | 51, 61 |
+| `52.svg` | 52, 62 |
+| `53.svg` | 53, 63, 73, 83 (kły mleczne) |
+| `54.svg` | 54, 64 |
+| `55.svg` | 55, 65 |
+| `71.svg` | 71, 72, 81, 82 (siekacze mleczne) |
+| `74.svg` | 74, 84 |
+| `75.svg` | 75, 85 (trzonowce mleczne) |
 
-Szablony są obracane o 180 stopni dla żuchwy i odbijane poziomo dla lewej strony.
+Ząb zapisany jako mleczny rysowany jest z własnego szablonu, osadzanego w miejsce stałego; szablony stałe są obracane o 180 stopni dla żuchwy i odbijane poziomo dla strony lewej, a mleczne stosują to samo przypisanie.
 
 **Ikony SVG** (w `src/assets/icon-svgs/`):
 `icon_8.svg` (mądrość), `icon_gum.svg` (kość), `icon_no_selection.svg` (wyczyść), `icon_occl.svg` (widok okluzyjny), `icon_pulp.svg` (miazga)

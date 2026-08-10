@@ -135,6 +135,7 @@ Alebo ho načítajte pomocou dynamického importu iba na strane klienta: `dynami
 ### ✨ Kľúčové funkcie
 - 🖱️ Rýchly výber a viacnásobný výber (CMD/CTRL + klik)
 - 🦷 Typy zubov: trvalý, mliečny, implantát, subgingiválny, chýbajúci
+- 🍼 Mliečny chrup má vlastnú anatómiu: osem generovaných šablón pokrýva všetkých dvadsať mliečnych zubov s vlastnými meranými podielmi koreňa, dĺžkami a šírkami, pomerne väčšou dreňou a koreňmi rozostúpenými okolo zárodku trvalého zuba. Ak sa zub zaznamená ako mliečny, jeho kresba nahradí kresbu nástupcu. Vo FHIR sa zub označuje ako **51–85**, pretože v FDI samotné číslo hovorí, do ktorého chrupu patrí; pri importe rozhoduje ono a prepísaná je len prítomnosť
 - 🦷 Substrát zuba (nezávislý od akejkoľvek náhrady): prirodzený, radix (zvyšok koreňa), zlomený, preparovaný na korunku
 - 👑 Náhrady podľa typu × materiálu: korunka / inlay / onlay / fazeta / mostík z e.max, zlata, gradie, zirkónu, kovu, kovovo-keramického materiálu, teleskopu alebo dočasného materiálu (onlay je dostupný len v okluzálnom zobrazení) — vyberané z jedného kombinovaného výberu s nízkym počtom klikov „Fix: Korunka – …"; staršie korunky `metal` sa automaticky migrujú na `metal-ceramic` (kovovo-keramickú); implantáty používajú rovnaký model typ × materiál, doplnený o vrstvu konektora implantátu. Výber je obmedzený podľa druhu zuba: implantát ponúka iba korunku/mostík (plus svojich päť možností upevnenia, pozri nižšie); chýbajúci/medzerový zub ponúka iba článok mostíka (plus snímateľnú čiastočnú/celkovú protézu); substrát `radix` úplne skrýva ovládací prvok náhrady (na zvyšku koreňa nemožno zaznamenať žiadnu náhradu)
 - 🦿 Snímateľná/náustavcová protetika na vyhradenej osi `prosthesis` (položky „Kivehető:" v kombinovanom výbere): hojivý abutment implantátu, lokátor, lokátor s protézou (overdenture), steg, steg s protézou; zubami podopretá snímateľná čiastočná alebo celková náhrada
@@ -379,12 +380,27 @@ Otvárané cez ikonu ozubeného kolieska na hornej lište; dialóg s uzamknutým
 **Šablóny zubov** (v `src/assets/teeth-svgs/`):
 | Šablóna | Zuby, ktoré ju používajú |
 |---|---|
-| `11.svg` | 11, 12, 21, 22, 31, 32, 41, 42 (rezáky) |
-| `13.svg` | 13, 23, 33, 43 (špičáky) |
-| `14.svg` / `14_occl.svg` | 14, 15, 24, 25, 34, 35, 44, 45 (premoláre) |
-| `16.svg` / `16_occl.svg` | 16, 17, 18, 26, 27, 28, 36, 37, 38, 46, 47, 48 (moláre) |
+| **Trvalé zuby** | |
+| `11.svg` | 11, 21 |
+| `12.svg` | 12, 22 |
+| `31.svg` | 31, 32, 41, 42 |
+| `13.svg` | 13, 23, 33, 43 (očné zuby) |
+| `14.svg` / `14_occl.svg` | 14, 24 |
+| `15.svg` | 15, 25, 34, 35, 44, 45 |
+| `16.svg` / `16_occl.svg` | 16, 26 |
+| `17.svg` | 17, 18, 27, 28 |
+| `46.svg` | 36, 37, 38, 46, 47, 48 |
+| **Mliečne zuby** | |
+| `51.svg` | 51, 61 |
+| `52.svg` | 52, 62 |
+| `53.svg` | 53, 63, 73, 83 (mliečne očné zuby) |
+| `54.svg` | 54, 64 |
+| `55.svg` | 55, 65 |
+| `71.svg` | 71, 72, 81, 82 (mliečne rezáky) |
+| `74.svg` | 74, 84 |
+| `75.svg` | 75, 85 (mliečne moláre) |
 
-Šablóny sú pre dolnú čeľusť otočené o 180 stupňov a pre ľavú stranu horizontálne zrkadlové.
+Zub zaznamenaný ako mliečny sa kreslí z vlastnej šablóny, ktorá sa vloží namiesto trvalej; trvalé šablóny sa pre dolnú čeľusť otáčajú o 180 stupňov a pre ľavú stranu zrkadlia vodorovne, mliečne sledujú rovnaké priradenie.
 
 **Ikony SVG** (v `src/assets/icon-svgs/`):
 `icon_8.svg` (múdrosť), `icon_gum.svg` (kosť), `icon_no_selection.svg` (zrušiť), `icon_occl.svg` (oklúzny pohľad), `icon_pulp.svg` (dreň)

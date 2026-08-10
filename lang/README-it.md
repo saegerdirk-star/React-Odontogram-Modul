@@ -135,6 +135,7 @@ Oppure caricalo con un import dinamico solo client-side: `dynamic(() => import("
 ### ✨ Funzionalità principali
 - 🖱️ Selezione rapida e selezione multipla (CMD/CTRL + clic)
 - 🦷 Tipi di dente: permanente, deciduo (da latte), impianto, sottogengivale, mancante
+- 🍼 La dentizione decidua ha un'anatomia propria: otto modelli generati coprono tutti i venti denti decidui con proporzioni radicolari, lunghezze e larghezze misurate, una polpa relativamente più ampia e radici divergenti attorno al germe permanente. Registrando un dente come deciduo, il suo disegno prende il posto di quello del successore. In FHIR il dente è identificato come **51–85**, perché in FDI è il numero stesso a dire a quale dentizione appartiene; in importazione decide quel numero e viene sovrascritta solo la presenza
 - 🦷 Substrato dentale (ortogonale a qualsiasi restauro): naturale, radix (residuo radicolare), fratturato, preparato per corona
 - 👑 Restauri per tipo × materiale: corona / inlay / onlay / faccetta / ponte in e.max, oro, gradia, zirconio, metallo, metalloceramica, telescopico o provvisorio (l'onlay è disponibile solo in vista occlusale) — scelti da un unico selettore combinato a basso numero di clic "Fix: Corona – …"; le corone `metal` esistenti migrano a `metal-ceramic` (PFM, metalloceramica); gli impianti utilizzano lo stesso modello tipo × materiale, composto con un livello connettore per impianto. Il selettore è delimitato in base al tipo di dente: un impianto offre solo corona/ponte (più le sue cinque opzioni di attacco, di seguito); un dente mancante/spazio offre solo un elemento intermedio di ponte (più protesi parziale/totale rimovibile); un substrato `radix` nasconde interamente il controllo del restauro (nessun restauro può essere assegnato a un residuo radicolare)
 - 🦿 Protesi rimovibili/su attacco sull'asse dedicato `prosthesis` (voci "Kivehető:" nel selettore combinato): abutment di guarigione dell'impianto, locator, locator con overdenture, barra, barra con overdenture; protesi parziale o totale rimovibile supportata dai denti
@@ -379,12 +380,27 @@ Si apre dall'icona a ingranaggio nella barra superiore; un `dialog` ARIA con foc
 **Template dentali** (in `src/assets/teeth-svgs/`):
 | Template | Denti che lo utilizzano |
 |---|---|
-| `11.svg` | 11, 12, 21, 22, 31, 32, 41, 42 (incisivi) |
+| **Denti permanenti** | |
+| `11.svg` | 11, 21 |
+| `12.svg` | 12, 22 |
+| `31.svg` | 31, 32, 41, 42 |
 | `13.svg` | 13, 23, 33, 43 (canini) |
-| `14.svg` / `14_occl.svg` | 14, 15, 24, 25, 34, 35, 44, 45 (premolari) |
-| `16.svg` / `16_occl.svg` | 16, 17, 18, 26, 27, 28, 36, 37, 38, 46, 47, 48 (molari) |
+| `14.svg` / `14_occl.svg` | 14, 24 |
+| `15.svg` | 15, 25, 34, 35, 44, 45 |
+| `16.svg` / `16_occl.svg` | 16, 26 |
+| `17.svg` | 17, 18, 27, 28 |
+| `46.svg` | 36, 37, 38, 46, 47, 48 |
+| **Denti decidui** | |
+| `51.svg` | 51, 61 |
+| `52.svg` | 52, 62 |
+| `53.svg` | 53, 63, 73, 83 (canini decidui) |
+| `54.svg` | 54, 64 |
+| `55.svg` | 55, 65 |
+| `71.svg` | 71, 72, 81, 82 (incisivi decidui) |
+| `74.svg` | 74, 84 |
+| `75.svg` | 75, 85 (molari decidui) |
 
-I template vengono ruotati di 180 gradi per la mascella inferiore e specchiati orizzontalmente per il lato sinistro.
+Un dente registrato come deciduo viene disegnato da un proprio modello, montato al posto di quello permanente; i modelli permanenti sono ruotati di 180 gradi per l'arcata inferiore e specchiati orizzontalmente per il lato sinistro, e quelli decidui seguono la stessa corrispondenza.
 
 **SVG icone** (in `src/assets/icon-svgs/`):
 `icon_8.svg` (giudizio), `icon_gum.svg` (osso), `icon_no_selection.svg` (cancella), `icon_occl.svg` (vista occlusale), `icon_pulp.svg` (polpa)

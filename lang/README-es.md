@@ -135,6 +135,7 @@ O cárgalo con un import dinámico solo de cliente: `dynamic(() => import("./Odo
 ### ✨ Características principales
 - 🖱️ Selección rápida y selección múltiple (CMD/CTRL + clic)
 - 🦷 Tipos de dientes: permanente, primario (de leche), implante, subgingival, ausente
+- 🍼 La dentición temporal tiene anatomía propia: ocho plantillas generadas cubren los veinte dientes temporales con sus propias proporciones radiculares, longitudes y anchuras medidas, una pulpa relativamente mayor y raíces divergentes alrededor del germen permanente. Al registrar un diente como temporal se monta su dibujo en lugar del de su sucesor. En FHIR el diente se identifica como **51–85**, porque en FDI el propio número indica a qué dentición pertenece; en la importación ese número decide y solo se sobrescribe la presencia
 - 🦷 Sustrato dental (ortogonal a cualquier restauración): natural, radix (resto radicular), fracturado, preparado para corona
 - 👑 Restauraciones por tipo × material: corona / incrustación (inlay) / incrustación oclusal (onlay) / carilla / puente en e.max, oro, gradia, circonio, metal, metal-cerámica, telescópica o temporal (el onlay es solo de vista oclusal) — se eligen desde un único selector combinado "Fix: Corona – …" de pocos clics; las coronas `metal` heredadas migran a `metal-ceramic` (metal-cerámica); los implantes usan el mismo modelo tipo × material, compuesto con una capa de conector de implante. El selector se acota según el tipo de diente: un implante solo ofrece corona/puente (más sus cinco opciones de anclaje, ver abajo); un diente ausente/hueco solo ofrece póntico de puente (más removible parcial/completa); un sustrato `radix` oculta por completo el control de restauración (no se puede registrar restauración sobre un resto radicular)
 - 🦿 Prótesis removibles/de anclaje en el eje dedicado `prosthesis` (entradas "Kivehető:" en el selector combinado): pilar de cicatrización del implante, localizador, localizador con sobredentadura, barra, barra con sobredentadura; prótesis parcial o completa removible soportada por dientes
@@ -379,12 +380,27 @@ Se abre desde el icono de engranaje de la barra superior; un `dialog` ARIA con f
 **Plantillas dentales** (`src/assets/teeth-svgs/`):
 | Plantilla | Dientes que la usan |
 |---|---|
-| `11.svg` | 11, 12, 21, 22, 31, 32, 41, 42 (incisivos) |
+| **Dientes permanentes** | |
+| `11.svg` | 11, 21 |
+| `12.svg` | 12, 22 |
+| `31.svg` | 31, 32, 41, 42 |
 | `13.svg` | 13, 23, 33, 43 (caninos) |
-| `14.svg` / `14_occl.svg` | 14, 15, 24, 25, 34, 35, 44, 45 (premolares) |
-| `16.svg` / `16_occl.svg` | 16, 17, 18, 26, 27, 28, 36, 37, 38, 46, 47, 48 (molares) |
+| `14.svg` / `14_occl.svg` | 14, 24 |
+| `15.svg` | 15, 25, 34, 35, 44, 45 |
+| `16.svg` / `16_occl.svg` | 16, 26 |
+| `17.svg` | 17, 18, 27, 28 |
+| `46.svg` | 36, 37, 38, 46, 47, 48 |
+| **Dientes temporales** | |
+| `51.svg` | 51, 61 |
+| `52.svg` | 52, 62 |
+| `53.svg` | 53, 63, 73, 83 (caninos temporales) |
+| `54.svg` | 54, 64 |
+| `55.svg` | 55, 65 |
+| `71.svg` | 71, 72, 81, 82 (incisivos temporales) |
+| `74.svg` | 74, 84 |
+| `75.svg` | 75, 85 (molares temporales) |
 
-Las plantillas se rotan 180 grados para la mandíbula inferior y se reflejan horizontalmente para el lado izquierdo.
+Un diente registrado como temporal se dibuja a partir de su propia plantilla, montada en lugar de la permanente; las plantillas permanentes se giran 180 grados para el maxilar inferior y se reflejan horizontalmente para el lado izquierdo, y las temporales siguen la misma correspondencia.
 
 **SVGs de iconos** (`src/assets/icon-svgs/`):
 `icon_8.svg` (muela del juicio), `icon_gum.svg` (hueso), `icon_no_selection.svg` (borrar), `icon_occl.svg` (vista oclusal), `icon_pulp.svg` (pulpa)

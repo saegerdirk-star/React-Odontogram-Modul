@@ -135,6 +135,7 @@ Vagy töltsd be egy kizárólag kliensoldali dinamikus importtal: `dynamic(() =>
 ### ✨ Főbb funkciók
 - 🖱️ Gyors fogkijelölés és többfogos kiválasztás (CMD/CTRL + kattintás)
 - 🦷 Fogtípusok: maradó, tejfog, implantátum, ínyalatti, hiányzó
+- 🍼 A tejfogazatnak saját anatómiája van: nyolc generált sablon fedi le mind a húsz tejfogat, saját mért gyökérarányokkal, hosszakkal és szélességekkel, viszonylag nagyobb pulpával és a maradó fogcsíra köré széttartó gyökerekkel. Ha egy fogat tejfogként rögzítenek, a tejfograjz kerül az utódja rajzának helyére. FHIR-ben a fog **51–85** azonosítót kap, mert az FDI-ben maga a szám mondja meg, melyik fogazathoz tartozik; importáláskor ez dönt, és csak a jelenlétet írja felül
 - 🦷 Fogszubsztrátum (bármely pótlástól függetlenül): természetes, radix (gyökércsonk), törött, koronára előkészített
 - 👑 Pótlások típus × anyag szerint: korona / inlay / onlay / héj (veneer) / híd e.max, arany, gradia, cirkon, fém, fémkerámia, teleszkópos vagy ideiglenes anyagból (az onlay csak okkluzális nézetben érhető el) — egyetlen kombinált, kevés kattintást igénylő „Fix: Korona – …” választóból kiválasztva; a korábbi `metal` koronák automatikusan `metal-ceramic` (fémkerámia) típusra migrálódnak; az implantátumok ugyanazt a típus × anyag modellt használják, kiegészítve egy implantátum-csatlakozó réteggel. A választó a fog típusától függően szűkül: implantátum esetén csak korona/híd választható (plusz az alábbi öt csatlakozási lehetőség), hiányzó/foghiány fog esetén csak híd-pontik (plusz kivehető részleges/teljes fogsor), `radix` szubsztrátum esetén a pótlás-választó teljesen elrejtve (gyökércsonkra nem rögzíthető pótlás)
 - 🦿 Kivehető/csatlakozós protetika a dedikált `prosthesis` tengelyen (a kombinált választó „Kivehető:” bejegyzései): implantátum gyógyuló csavarja, lokátor, lokátor protézissel (overdenture), bár, bár protézissel; fogtámasztékú kivehető részleges vagy teljes fogsor
@@ -379,12 +380,27 @@ A fejléc fogaskerék ikonjával nyitható; egy focus-trapped, ARIA `dialog` lap
 **Fogsablonok** (`src/assets/teeth-svgs/`):
 | Sablon | Használó fogak |
 |---|---|
-| `11.svg` | 11, 12, 21, 22, 31, 32, 41, 42 (metszőfogak) |
+| **Maradó fogak** | |
+| `11.svg` | 11, 21 |
+| `12.svg` | 12, 22 |
+| `31.svg` | 31, 32, 41, 42 |
 | `13.svg` | 13, 23, 33, 43 (szemfogak) |
-| `14.svg` / `14_occl.svg` | 14, 15, 24, 25, 34, 35, 44, 45 (kis őrlőfogak) |
-| `16.svg` / `16_occl.svg` | 16, 17, 18, 26, 27, 28, 36, 37, 38, 46, 47, 48 (nagy őrlőfogak) |
+| `14.svg` / `14_occl.svg` | 14, 24 |
+| `15.svg` | 15, 25, 34, 35, 44, 45 |
+| `16.svg` / `16_occl.svg` | 16, 26 |
+| `17.svg` | 17, 18, 27, 28 |
+| `46.svg` | 36, 37, 38, 46, 47, 48 |
+| **Tejfogak** | |
+| `51.svg` | 51, 61 |
+| `52.svg` | 52, 62 |
+| `53.svg` | 53, 63, 73, 83 (tejszemfogak) |
+| `54.svg` | 54, 64 |
+| `55.svg` | 55, 65 |
+| `71.svg` | 71, 72, 81, 82 (tejmetszők) |
+| `74.svg` | 74, 84 |
+| `75.svg` | 75, 85 (tejmolárisok) |
 
-A sablonok az alsó állcsontnál 180 fokkal elforgatva, a bal oldalnál vízszintesen tükrözve jelennek meg.
+A tejfogként rögzített fog saját sablonból rajzolódik, amely a maradó sablon helyére kerül; a maradó sablonok az alsó állcsonthoz 180 fokkal elfordulnak és a bal oldalhoz vízszintesen tükröződnek, a tejfogsablonok ugyanezt a leképezést követik.
 
 **Ikon SVG-k** (`src/assets/icon-svgs/`):
 `icon_8.svg` (bölcsesség), `icon_gum.svg` (csont), `icon_no_selection.svg` (törlés), `icon_occl.svg` (okkluzális nézet), `icon_pulp.svg` (pulpa)
