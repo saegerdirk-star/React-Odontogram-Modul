@@ -13,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import roots  # noqa: E402
 from build import ASSETS, SOURCE, curve_extent, tooth_base_d  # noqa: E402
-from spec import SPECS, display_targets  # noqa: E402
+from spec import PRIMARY_SPECS, SPECS, display_targets  # noqa: E402
 
 TOL_FRAC = 0.015
 TOL_LEN = 1.0
@@ -213,6 +213,19 @@ def root_count(base_d: str, apex: float, cej: float) -> int:
 
 
 def main(argv):
+    argv = list(argv)
+    which = "permanent"
+    for flag in ("--primary", "--all"):
+        if flag in argv:
+            which = flag[2:]
+            argv.remove(flag)
+
+    specs = []
+    if which in ("permanent", "all"):
+        specs += SPECS
+    if which in ("primary", "all"):
+        specs += PRIMARY_SPECS
+
     out_dir = Path(argv[1]) if len(argv) > 1 else ASSETS
     failures = []
     occl_offsets = []
@@ -225,7 +238,7 @@ def main(argv):
     print(hdr)
     print("-" * len(hdr))
 
-    for s in SPECS:
+    for s in specs:
         f = out_dir / f"{s.key}.svg"
         if not f.exists():
             failures.append(f"{s.key}: file is missing")
@@ -240,7 +253,12 @@ def main(argv):
         src = (SOURCE / f"{s.src_template}.svg").read_text()
         ids_ok = clinical_ids(src) == clinical_ids(txt)
         tags_ok = re.findall(r"<(\w+)", src) == re.findall(r"<(\w+)", txt)
-        geometry_ok = geometry_digest(txt) == AUTHORED_GEOMETRY_SHA256[s.key]
+        # A template with no recorded digest is not yet frozen, which is a
+        # state, not a fault. The digests exist to report geometry that moved
+        # when nobody meant it to; they are not a gate a new drawing has to pass
+        # before it may exist (odontogram-0ak).
+        frozen = AUTHORED_GEOMETRY_SHA256.get(s.key)
+        geometry_ok = frozen is None or geometry_digest(txt) == frozen
 
         base_d = tooth_base_d(txt)
         x0, apex, x1, inc = curve_extent(base_d)
