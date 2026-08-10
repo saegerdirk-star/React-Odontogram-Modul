@@ -240,9 +240,10 @@ the field-level clinical chart, and unavailable pages are not treated as negativ
 
 ### Prototype variants
 
-The prototype now exposes seven directly selectable layouts at the same `?prototype=kfo&variant=`
-route. A–D cover a conventional findings form, an arch-first workbench, a guided examination,
-and a dense expert matrix. A comparison with the additional Opus concepts found its proposed
+The standalone prototype in `prototypes/kfo-view/` exposes seven directly selectable layouts at
+`/prototypes/kfo-view/?variant=A` through `G`. A–D cover a conventional findings form, an
+arch-first workbench, a guided examination, and a dense expert matrix. A comparison with the
+additional Opus concepts found its proposed
 findings form to be materially equivalent to A, so it was not duplicated. Three distinct
 interaction structures were retained:
 
