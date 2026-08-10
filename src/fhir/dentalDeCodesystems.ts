@@ -199,6 +199,7 @@ export const FINDING_TEXT = {
   clinicianNote: "Clinician note",
   implantPresent: "Dental implant present at this position",
   toothUnderGum: "Tooth retained under the gingiva (not erupted)",
+  toothNotErupted: "Tooth not erupted",
   toothAbsent: "Tooth absent",
   missingAfterExtraction: "Missing after extraction",
   rootRemnant: "Root remnant (radix)",

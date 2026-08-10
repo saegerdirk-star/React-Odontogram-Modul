@@ -58,6 +58,11 @@ export const LOCAL_VALUE_MAPS: Record<string, Record<string, CodeEntry>> = {
     "implant": { code: "implant", display: "Dental implant" },
     "tooth-under-gum": { code: "tooth-under-gum", display: "Tooth under gum" },
     "no-tooth-after-extraction": { code: "no-tooth-after-extraction", display: "Missing after extraction" },
+    // Distinct from "none". A position whose tooth has not erupted is not a
+    // missing tooth: nothing was lost and nothing is absent that should be
+    // there. Recording it as `none` made a healthy four-year-old's chart report
+    // twelve missing teeth (odontogram-8vu).
+    "not-erupted": { code: "not-erupted", display: "Tooth not erupted" },
   },
   endo: {
     "none": { code: "none", display: "No endodontic treatment" },

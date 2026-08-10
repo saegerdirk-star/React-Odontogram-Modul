@@ -41,6 +41,7 @@ export const AXES: ClinicalAxis[] = [
       { value: "milktooth", labelKey: "toothSelect.milk" },
       { value: "implant", labelKey: "toothSelect.implant" },
       { value: "tooth-under-gum", labelKey: "toothSelect.underGum" },
+      { value: "not-erupted", labelKey: "toothSelect.notErupted" },
     ] },
   { id: "endo", field: "endo", kind: "enum", valueGroup: "endo",
     skipValue: "none", finding: { local: "endodontic-status", display: "Endodontic status" },

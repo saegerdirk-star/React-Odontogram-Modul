@@ -5,7 +5,7 @@ import { describe, it, expect } from "vitest";
 import { validValues, validSurfaces } from "../validate";
 
 const EXPECT: Record<string, string[]> = {
-  toothSelection: ["none","tooth-base","milktooth","implant","tooth-under-gum","no-tooth-after-extraction"],
+  toothSelection: ["none","tooth-base","milktooth","implant","tooth-under-gum","no-tooth-after-extraction","not-erupted"],
   endo: ["none","endo-medical-filling","endo-filling","endo-filling-incomplete","endo-glass-pin","endo-metal-pin"],
   fillingMaterial: ["none","amalgam","composite","gic","temporary"],
   mobility: ["none","m1","m2","m3"],

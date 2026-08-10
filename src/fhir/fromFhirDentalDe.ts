@@ -167,6 +167,7 @@ function applyPresence(rec: ToothRecord, value: unknown): void {
   }
   if (text === FINDING_TEXT.implantPresent) { rec.toothSelection = "implant"; return; }
   if (text === FINDING_TEXT.toothUnderGum) { rec.toothSelection = "tooth-under-gum"; return; }
+  if (text === FINDING_TEXT.toothNotErupted) { rec.toothSelection = "not-erupted"; return; }
 }
 
 // ---------------------------------------------------------------------------

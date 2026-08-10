@@ -1702,7 +1702,11 @@ function onGlobalToggleClick(e: Any){
 }
 
 function isToothPresent(sel: Any){
-  return sel !== "none" && sel !== "implant";
+  // `not-erupted` joins `none` here: the position carries no tooth to chart a
+  // finding on. It is kept apart from `none` only where the DIFFERENCE matters
+  // - the whole-mouth summary, which must not call an unerupted tooth missing
+  // (odontogram-8vu).
+  return sel !== "none" && sel !== "not-erupted" && sel !== "implant";
 }
 
 /** SP7 Task 5 (extended by SP15 Task 3 / B4): hide the `mods.inflammation`
@@ -4719,7 +4723,11 @@ function resetTeethGated(toothNos: number[]): void {
 function applyPrimaryDentition(): void {
   const targetFor = (toothNo: number)=>{
     const s = defaultState();
-    s.toothSelection = PRIMARY_MILK.has(toothNo) ? "milktooth" : "none";
+    // The twelve positions a primary dentition leaves empty are the six-year
+    // molars and behind. They have not erupted; they are not missing, and
+    // recording them as `none` made a healthy chart report twelve missing teeth
+    // (odontogram-8vu).
+    s.toothSelection = PRIMARY_MILK.has(toothNo) ? "milktooth" : "not-erupted";
     return s;
   };
   const changed = ALL_TEETH.filter(tn => JSON.stringify(serializeState(toothState.get(tn) ?? defaultState())) !== JSON.stringify(serializeState(targetFor(tn))));
@@ -4749,7 +4757,9 @@ function applyMixedDentition(): void {
     }else if(MIXED_MILK.has(toothNo)){
       s.toothSelection = "milktooth";
     }else if(MIXED_NONE.has(toothNo)){
-      s.toothSelection = "none";
+      // Second and third molars in a mixed dentition: not yet erupted rather
+      // than missing, for the same reason as the primary preset above.
+      s.toothSelection = "not-erupted";
     }
     return s;
   };
@@ -8798,6 +8808,7 @@ function buildOdontogramProseText(summary: OdontogramSummary): string {
   const parts: string[] = [summary.overview];
   if(summary.permanentList) parts.push(summary.permanentList);
   if(summary.missingList) parts.push(summary.missingList);
+  if(summary.uneruptedList) parts.push(summary.uneruptedList);
   if(summary.implants) parts.push(`${summary.implants.heading}: ${summary.implants.text}`);
   for(const section of summary.sections){
     if(section.items.length) parts.push(`${section.heading}: ${section.items.join("; ")}`);
@@ -10170,6 +10181,9 @@ export type OdontogramSummary = {
   overview: string;
   permanentList: string | null;
   missingList: string | null;
+  /** Positions whose tooth has not erupted, e.g. the six-year molars in a
+   *  milk dentition. Never counted among the missing ones. */
+  uneruptedList: string | null;
   sections: OdontogramSummarySection[];
   /** Implants heading + list — only present when at least one implant exists. */
   implants: { heading: string; text: string } | null;
@@ -10234,6 +10248,8 @@ export function getOdontogramSummary(): OdontogramSummary {
 
   const permanent: number[] = [];
   const missing: number[] = [];
+  /** Positions whose tooth has not erupted - distinct from missing. */
+  const unerupted: number[] = [];
   const implants: number[] = [];
   let milkCount = 0;
   const caries: string[] = [];
@@ -10258,7 +10274,13 @@ export function getOdontogramSummary(): OdontogramSummary {
     const isMissing = sel === "none";
     const isImplant = sel === "implant";
     const isMilk = sel === "milktooth";
-    if(isMissing) missing.push(toothNo);
+    // A tooth that has not erupted is counted apart from the missing ones.
+    // Nothing was lost and nothing is absent that ought to be there, so a
+    // healthy milk dentition must not report twelve missing teeth
+    // (odontogram-8vu).
+    const isUnerupted = sel === "not-erupted";
+    if(isUnerupted) unerupted.push(toothNo);
+    else if(isMissing) missing.push(toothNo);
     else if(isImplant) implants.push(toothNo);
     else if(isMilk) milkCount++;
     else permanent.push(toothNo);
@@ -10444,6 +10466,9 @@ export function getOdontogramSummary(): OdontogramSummary {
   const missingList = missing.length
     ? t("toothInfo.missingList", { count: missing.length, list: missing.map(lbl).join(", ") })
     : null;
+  const uneruptedList = unerupted.length
+    ? t("toothInfo.uneruptedList", { count: unerupted.length, list: unerupted.map(lbl).join(", ") })
+    : null;
 
   const sections: OdontogramSummarySection[] = [
     { key: "caries", heading: t("toothInfo.caries"), items: caries, emptyText: t("toothInfo.cariesEmpty") },
@@ -10495,6 +10520,7 @@ export function getOdontogramSummary(): OdontogramSummary {
     overview,
     permanentList,
     missingList,
+    uneruptedList,
     sections,
     implants: implantInfo,
     periodontalTitle: t("toothInfo.periodontalTitle"),

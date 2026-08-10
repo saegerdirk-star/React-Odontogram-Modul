@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **A milk dentition no longer reports twelve missing teeth.** The primary
+  preset recorded the positions behind the deciduous dentition — 16–18, 26–28,
+  36–38, 46–48 — as `none`, and `none` means *missing*. A healthy four-year-old's
+  chart therefore read "teeth marked missing (12): 18, 17, 16, …": a finding no
+  clinician made, produced by a preset, and carried into an export.
+
+  Those teeth are not missing, they have not erupted, and the model had no way
+  to say so — an unset position defaults to a permanent tooth, and the only way
+  to show nothing was `none`. `toothSelection` gains **`not-erupted`**: it draws
+  exactly what an empty position draws (verified — the SVG fingerprint of the
+  new state is byte-identical to `none` on all eleven templates, and no existing
+  fingerprint changed), it is counted and named separately from missing teeth in
+  the whole-mouth summary, and both dentition presets use it.
+
+  It survives both FHIR round trips. In the canonical dialect the IG publishes
+  no eruption concept, so the state travels as text with the gap reported —
+  emitting nothing would be worse, since an absent record hydrates back to a
+  permanent tooth. Payload **2.21 → 2.22**, additive: nothing wrote the value
+  before, so an older document needs no migration.
+
 ### Added
 
 - **The primary dentition has anatomy of its own.** A tooth charted as a milk

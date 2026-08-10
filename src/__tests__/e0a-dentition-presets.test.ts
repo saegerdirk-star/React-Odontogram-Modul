@@ -45,17 +45,16 @@ describe("dentition presets", () => {
       expect(slotsWith(selections(), "tooth-base")).toEqual([]);
     });
 
-    it("empties the twelve positions with no deciduous predecessor", () => {
+    it("records the twelve positions behind it as not erupted, not missing", () => {
       __applyDentitionPresetForTest("primary");
       const sel = selections();
-      // These are the six-year molars and behind - they erupt after the primary
-      // dentition and replace nothing. They are currently recorded as `none`,
-      // which reads as MISSING and is what odontogram-8vu is about; this test
-      // pins WHICH positions are affected, not that "missing" is the right word
-      // for them.
+      // The six-year molars and behind. They erupt after the primary dentition
+      // and replace nothing, so they are neither present nor missing
+      // (odontogram-8vu).
       for (const slot of [16, 17, 18, 26, 27, 28, 36, 37, 38, 46, 47, 48]) {
-        expect(sel[slot], `slot ${slot}`).toBe("none");
+        expect(sel[slot], `slot ${slot}`).toBe("not-erupted");
       }
+      expect(slotsWith(sel, "none")).toEqual([]);
     });
   });
 
@@ -72,7 +71,7 @@ describe("dentition presets", () => {
         expect(sel[slot], `milk ${slot}`).toBe("milktooth");
       }
       for (const slot of [17, 18, 27, 28, 37, 38, 47, 48]) {
-        expect(sel[slot], `empty ${slot}`).toBe("none");
+        expect(sel[slot], `unerupted ${slot}`).toBe("not-erupted");
       }
     });
 
@@ -88,7 +87,7 @@ describe("dentition presets", () => {
       const sel = selections();
       const counted = slotsWith(sel, "tooth-base").length
         + slotsWith(sel, "milktooth").length
-        + slotsWith(sel, "none").length;
+        + slotsWith(sel, "not-erupted").length;
       expect(counted).toBe(32);
     });
   });

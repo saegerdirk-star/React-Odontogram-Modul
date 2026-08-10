@@ -169,6 +169,17 @@ function presenceComponent(ctx: BuildContext, fdi: string, rec: ToothRecord): An
           reason: "No eruption/retention SNOMED concept in ToothPresenceStateVS is identifiable from the published IG artifacts.",
         });
         return textOnly(FINDING_TEXT.toothUnderGum);
+      case "not-erupted":
+        // Same gap as the retained tooth above, and the same treatment: the IG
+        // publishes no eruption concept, so the state travels as text rather
+        // than as an invented code. Emitting nothing would be worse - the
+        // position would arrive as a permanent tooth, since that is what an
+        // unset record defaults to (odontogram-8vu).
+        reportText(ctx, {
+          tooth: fdi, field: "toothSelection", value: selection,
+          reason: "No eruption-state SNOMED concept in ToothPresenceStateVS is identifiable from the published IG artifacts.",
+        });
+        return textOnly(FINDING_TEXT.toothNotErupted);
       default:
         return undefined;
     }
