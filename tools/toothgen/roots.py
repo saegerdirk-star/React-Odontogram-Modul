@@ -524,6 +524,153 @@ PALATAL_ROOT_LAYERS = (
 )
 
 
+PULP_LAYERS = (
+    "tooth-healthy-pulp",
+    "tooth-inflam-pulp",
+    "milktooth-healthy-pulp",
+    "milktooth-inflam-pulp",
+    "pulp-inflam-path",
+)
+
+
+def _layer_paths(txt: str, prefixes, handler):
+    """Rewrite the `d` of every path whose own id or an enclosing group's id
+    starts with one of `prefixes`. `handler(d)` returns a replacement or None."""
+
+    stack: list[str] = []
+    changed: list[str] = []
+
+    def allowed(el_id: str) -> bool:
+        names = [el_id] + stack
+        return any(n.startswith(p) for n in names if n for p in prefixes)
+
+    def repl(m):
+        head, attrs = m.group(1), m.group(2)
+        if head == "g":
+            if not attrs.rstrip().endswith("/"):
+                idm = re.search(r'\sid="([^"]+)"', attrs)
+                stack.append(idm.group(1) if idm else "")
+            return m.group(0)
+        if head == "/g":
+            if stack:
+                stack.pop()
+            return m.group(0)
+
+        dm = re.search(r'\sd="([^"]+)"', attrs)
+        if not dm:
+            return m.group(0)
+        idm = re.search(r'\sid="([^"]+)"', attrs)
+        el_id = idm.group(1) if idm else ""
+        if not allowed(el_id):
+            return m.group(0)
+
+        new_d = handler(dm.group(1))
+        if new_d is None:
+            return m.group(0)
+        changed.append(el_id or f"(in {stack[-1] if stack else '?'})")
+        attrs2 = attrs.replace(dm.group(0), f' d="{new_d}"', 1)
+        return f"<{head}{attrs2}>"
+
+    out = re.sub(r"<(path|polygon|g|/g)([^>]*?)>", repl, txt)
+    return out, changed
+
+
+def scale_pulp(
+    txt: str,
+    factor: float,
+    cx: float,
+    apex: float | None = None,
+    margin: float = 1.2,
+):
+    """Enlarge the pulp of a primary tooth.
+
+    The primary pulp is relatively larger than the permanent one, but the horns
+    sit where they sit: they are the clinically relevant landmark, and moving
+    them would change where a preparation is read as an exposure. The whole pulp
+    is therefore anchored on the horn tips - the occlusal-most point across all
+    pulp layers, taken once for the file so chamber and canals keep their
+    relation to each other - and grows apically and in width from there.
+
+    The apical growth is capped so the enlarged pulp still ends `margin` inside
+    the root apex. Without the cap the very enlargement that makes a tooth read
+    as primary is what pushes its canal out through the root tip.
+    """
+
+    pts = []
+
+    def collect(d: str):
+        pts.extend(p for sub in _polylines(d) for p in sub)
+        return None
+
+    _layer_paths(txt, PULP_LAYERS, collect)
+    if not pts:
+        return txt, [], 1.0
+
+    horn = max(p[1] for p in pts)
+    top = min(p[1] for p in pts)
+
+    fy = factor
+    if apex is not None and horn > top:
+        room = horn - (apex + margin)
+        if room > 0:
+            fy = min(fy, room / (horn - top))
+        else:
+            fy = 1.0
+    fy = max(1.0, fy)
+
+    def grow(d: str):
+        return svgpath.warp_path_d(
+            d, lambda x, y: (cx + (x - cx) * factor, horn - (horn - y) * fy)
+        )
+
+    out, changed = _layer_paths(txt, PULP_LAYERS, grow)
+    return out, changed, fy
+
+
+def spread_roots_xmap(
+    cx: float,
+    apex: float,
+    cej: float,
+    factor: float,
+    hook: float = 0.35,
+    knee: float = 0.7,
+):
+    """Splay the roots of a primary tooth, then hook the tips back in.
+
+    Primary roots diverge to make room for the permanent germ developing between
+    them, and curve back towards their apices. The divergence is widest around
+    `knee` of the root length and is reduced again by `hook` at the tip, which
+    is what makes the roots read as bulbous rather than merely as wider.
+
+    Returned as an x-map so it composes with the y-warp in `build_one` and every
+    layer travels through the same transformation - the roots cannot separate
+    from the bone, gum and lumen layers drawn around them.
+    """
+
+    span = cej - apex
+    if span <= 0:
+        raise ValueError("the cervical line must sit occlusal to the apex")
+    tip = factor - hook * (factor - 1.0)
+
+    def amplitude(y: float) -> float:
+        if y >= cej:
+            return 1.0
+        s = min(1.0, (cej - y) / span)
+        if s <= knee:
+            t = s / knee
+        else:
+            t = (s - knee) / (1.0 - knee)
+        ease = t * t * (3.0 - 2.0 * t)
+        if s <= knee:
+            return 1.0 + (factor - 1.0) * ease
+        return factor + (tip - factor) * ease
+
+    def fn(x: float, y: float):
+        return (cx + (x - cx) * amplitude(y), y)
+
+    return fn
+
+
 def palatal_root_subpaths(
     txt: str,
     cx: float,

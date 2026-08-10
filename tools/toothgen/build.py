@@ -1,4 +1,4 @@
-"""Generate the nine anatomical tooth templates from four source SVGs.
+"""Generate the anatomical tooth templates from four source SVGs.
 
 One coordinate transformation is applied to every registered clinical layer.
 Root and crown zones use a smooth piecewise-affine vertical warp; root-count
@@ -16,7 +16,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import svgpath  # noqa: E402
 import roots  # noqa: E402
-from spec import SPECS, ToothSpec, display_targets  # noqa: E402
+from spec import (  # noqa: E402
+    PRIMARY_PULP_SCALE,
+    PRIMARY_ROOT_SPREAD,
+    PRIMARY_SPECS,
+    SPECS,
+    ToothSpec,
+    display_targets,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -379,6 +386,14 @@ def build_one(s: ToothSpec, out_dir: Path, dry: bool, root_scale: float | None =
             f"{s.key}: source has {have} roots, target has {s.roots}; no conversion is defined"
         )
 
+    if s.primary:
+        cxs = (bx0 + bx1) / 2.0
+        txt, pulp_hit, fy = roots.scale_pulp(txt, PRIMARY_PULP_SCALE, cxs, by0)
+        merge_fn = roots.spread_roots_xmap(cxs, by0, cej, PRIMARY_ROOT_SPREAD)
+        capped = "" if fy >= PRIMARY_PULP_SCALE - 1e-9 else f", capped to {fy:.3f}"
+        root_note += f" +pulp {len(pulp_hit)}{capped} +spread"
+        base_d = tooth_base_d(txt)
+
     apex, inc = by0, by1
 
     d_length_rel, d_root_frac, d_width_frac = display_targets(s, root_scale)
@@ -488,6 +503,13 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--only", default=None)
     ap.add_argument(
+        "--set",
+        choices=("permanent", "primary", "all"),
+        default="permanent",
+        help="Which dentition to build (default: permanent, so an "
+        "unqualified run keeps writing exactly the nine shipped templates)",
+    )
+    ap.add_argument(
         "--root-scale",
         type=float,
         default=None,
@@ -497,8 +519,14 @@ def main():
     args = ap.parse_args()
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
+    build_set: list[ToothSpec] = []
+    if args.set in ("permanent", "all"):
+        build_set += SPECS
+    if args.set in ("primary", "all"):
+        build_set += PRIMARY_SPECS
+
     rows = []
-    for s in SPECS:
+    for s in build_set:
         if args.only and s.key != args.only:
             continue
         rows.append(build_one(s, out_dir, args.dry_run, args.root_scale))

@@ -23,6 +23,13 @@ class ToothSpec:
     furc_frac: float = 0.0
     teeth: tuple[int, ...] = field(default=())
     note: str = ""
+    # A primary tooth is not a permanent tooth drawn smaller. It carries its own
+    # measured proportions above, and `primary` additionally requests the two
+    # shape changes that separate the dentitions and cannot be expressed as
+    # numbers: a relatively larger pulp, and roots that diverge around the
+    # permanent germ. `size_scale` is the overall reduction on top of that.
+    size_scale: float = 1.0
+    primary: bool = False
 
 
 SPECS: list[ToothSpec] = [
@@ -150,10 +157,138 @@ def display_targets(
     k = ROOT_DISPLAY_SCALE if root_scale is None else root_scale
 
     shrink = (1.0 - s.root_frac) + k * s.root_frac
-    length_rel = s.length_rel * shrink
+    length_rel = s.length_rel * s.size_scale * shrink
     root_frac = k * s.root_frac / shrink
     width_frac = s.width_frac / shrink
     return length_rel, root_frac, width_frac
+
+
+PRIMARY_SIZE_SCALE = 0.8
+
+PRIMARY_PULP_SCALE = 1.05
+
+PRIMARY_ROOT_SPREAD = 1.25
+
+# The lower primary canine is not drawn separately. It is template 53 rendered
+# about a tenth smaller, which is the observed difference between the arches and
+# saves a template that would otherwise differ in nothing else.
+PRIMARY_LOWER_CANINE_SCALE = 0.9
+
+
+PRIMARY_SPECS: list[ToothSpec] = [
+    ToothSpec(
+        key="51",
+        label="Upper primary central incisor",
+        source="derived from 11, Bild 83 (overview)",
+        src_template=11,
+        root_frac=0.62,
+        width_frac=0.27,
+        roots=1,
+        length_rel=0.87,
+        size_scale=PRIMARY_SIZE_SCALE,
+        primary=True,
+        teeth=(51, 61),
+    ),
+    ToothSpec(
+        key="52",
+        label="Upper primary lateral incisor",
+        source="derived from 12, Bild 83 (overview)",
+        src_template=11,
+        root_frac=0.65,
+        width_frac=0.24,
+        roots=1,
+        length_rel=0.815,
+        size_scale=PRIMARY_SIZE_SCALE,
+        primary=True,
+        teeth=(52, 62),
+    ),
+    ToothSpec(
+        key="53",
+        label="Primary canine",
+        source="Bild 89 (p. 111) / Bild 90 (p. 112) + Bild 83",
+        src_template=13,
+        root_frac=0.62,
+        width_frac=0.30,
+        roots=1,
+        length_rel=1.0,
+        size_scale=PRIMARY_SIZE_SCALE,
+        primary=True,
+        teeth=(53, 63, 73, 83),
+        note="one drawing for both arches; the lower is rendered at "
+        "PRIMARY_LOWER_CANINE_SCALE",
+    ),
+    ToothSpec(
+        key="54",
+        label="Upper first primary molar",
+        source="Bild 91 (p. 113) + Bild 83",
+        src_template=14,
+        root_frac=0.60,
+        width_frac=0.36,
+        roots=3,
+        length_rel=0.741,
+        size_scale=PRIMARY_SIZE_SCALE,
+        primary=True,
+        teeth=(54, 64),
+        note="three-rooted like every upper primary molar, unlike the "
+        "two-rooted permanent premolar it is built from",
+    ),
+    ToothSpec(
+        key="55",
+        label="Upper second primary molar",
+        source="Bild 83 (overview) + derived from 16",
+        src_template=16,
+        root_frac=0.60,
+        width_frac=0.41,
+        roots=3,
+        length_rel=0.775,
+        size_scale=PRIMARY_SIZE_SCALE,
+        primary=True,
+        teeth=(55, 65),
+    ),
+    ToothSpec(
+        key="71",
+        label="Lower primary incisor",
+        source="derived from 31, Bild 83 (overview)",
+        src_template=11,
+        root_frac=0.68,
+        width_frac=0.19,
+        roots=1,
+        length_rel=0.759,
+        size_scale=PRIMARY_SIZE_SCALE,
+        primary=True,
+        teeth=(71, 72, 81, 82),
+    ),
+    ToothSpec(
+        key="74",
+        label="Lower first primary molar",
+        source="Bild 83 (overview) + derived from 46",
+        src_template=16,
+        root_frac=0.62,
+        width_frac=0.40,
+        roots=2,
+        length_rel=0.760,
+        size_scale=PRIMARY_SIZE_SCALE,
+        primary=True,
+        teeth=(74, 84),
+        note="Bild 93 was never supplied; proportions come from the overview "
+        "plate and are the weakest reference in this table",
+    ),
+    ToothSpec(
+        key="75",
+        label="Lower second primary molar",
+        source="Bild 83 (overview) + derived from 46",
+        src_template=16,
+        root_frac=0.62,
+        width_frac=0.41,
+        roots=2,
+        length_rel=0.796,
+        size_scale=PRIMARY_SIZE_SCALE,
+        primary=True,
+        teeth=(75, 85),
+    ),
+]
+
+PRIMARY_SPEC_BY_KEY = {s.key: s for s in PRIMARY_SPECS}
 
 
 def tooth_to_template() -> dict[int, str]:
@@ -172,12 +307,27 @@ def check_coverage() -> list[int]:
     return [t for t in all_teeth if t not in have]
 
 
-if __name__ == "__main__":
-    missing = check_coverage()
-    print(f"{len(SPECS)} templates, {sum(len(s.teeth) for s in SPECS)} teeth assigned")
-    for s in SPECS:
+def primary_coverage() -> list[int]:
+
+    all_teeth = [q * 10 + i for q in (5, 6, 7, 8) for i in range(1, 6)]
+    have = {t for s in PRIMARY_SPECS for t in s.teeth}
+    return [t for t in all_teeth if t not in have]
+
+
+def _report(specs: list[ToothSpec], missing: list[int], title: str) -> None:
+    print(
+        f"{title}: {len(specs)} templates, "
+        f"{sum(len(s.teeth) for s in specs)} teeth assigned"
+    )
+    for s in specs:
         print(
             f"  {s.key:3s} {s.label:32s} {s.roots} roots  root fraction {s.root_frac:.0%}"
             f"  relative length {s.length_rel:.2f}  <- {s.source}"
         )
-    print("missing teeth:", missing or "none")
+    print("  missing teeth:", missing or "none")
+
+
+if __name__ == "__main__":
+    _report(SPECS, check_coverage(), "Permanent")
+    print()
+    _report(PRIMARY_SPECS, primary_coverage(), "Primary")

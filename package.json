@@ -56,7 +56,9 @@
     "test:coverage": "NODE_OPTIONS=--max-old-space-size=8192 vitest run --coverage",
     "parity:capture": "PARITY_CAPTURE=1 NODE_OPTIONS=--max-old-space-size=8192 vitest run src/__tests__/parity/capture.test.ts",
     "toothgen:build": "uv run tools/toothgen/build.py",
+    "toothgen:build:primary": "uv run tools/toothgen/build.py --set primary",
     "toothgen:verify": "uv run tools/toothgen/verify.py && uv run tools/toothgen/check_roundtrip.py",
+    "toothgen:verify:primary": "uv run tools/toothgen/verify.py --primary",
     "docs": "typedoc",
     "prepublishOnly": "npm run build:lib"
   },
