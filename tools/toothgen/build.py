@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import svgpath  # noqa: E402
 import roots  # noqa: E402
 import graft  # noqa: E402
+import gum  # noqa: E402
 from spec import (  # noqa: E402
     PRIMARY_PULP_SCALE,
     PRIMARY_ROOT_SPREAD,
@@ -366,6 +367,30 @@ def curve_extent(d: str):
     return min(xs), min(ys), max(xs), max(ys)
 
 
+def replace_gum(
+    txt: str,
+    occl: float,
+    cej: float,
+    cx: float,
+    neck_half: float,
+    col_px: float,
+) -> str:
+
+    for lid, d in (
+        ("bone-base", gum.bone_path(occl, cx, col_px)),
+        ("gum-base", gum.gum_path(occl, cej, cx, neck_half, col_px)),
+    ):
+        txt, n = re.subn(
+            rf'(<path id="{lid}" d=")[^"]+(")',
+            lambda m, d=d: m.group(1) + d + m.group(2),
+            txt,
+            count=1,
+        )
+        if n != 1:
+            raise SystemExit(f"{lid} not found")
+    return txt
+
+
 def source_root_count(base_d: str, apex: float, cej: float) -> int:
 
     subs = roots._polylines(base_d)
@@ -486,7 +511,15 @@ def build_one(s: ToothSpec, out_dir: Path, dry: bool, root_scale: float | None =
         )
     top = min(ymap(cy0) - 1.0, new_occl - (total_new + 1.0))
 
-    shift = -top
+    # The viewBox is written to one decimal, so its height is rounded - and the
+    # occlusal plane is positioned FROM the bottom, which means that rounding
+    # walked the plane by up to 0.05 units per template. That was invisible
+    # while every tooth was an island; now that bone and gum draw one line
+    # across the arch it showed as a step at every joint. Absorb the rounding
+    # into the shift instead, so the plane lands exactly OCCL_MARGIN above the
+    # written bottom in every template.
+    h_vb = round(bottom - top, 1)
+    shift = -top + (h_vb - (bottom - top))
 
     def fn(x, y):
 
@@ -498,7 +531,7 @@ def build_one(s: ToothSpec, out_dir: Path, dry: bool, root_scale: float | None =
     def ymap_shift(y):
         return ymap(y) + shift
 
-    vb_new = (vb_old[0], 0.0, vb_old[2], bottom - top)
+    vb_new = (vb_old[0], 0.0, vb_old[2], h_vb)
 
     out = rewrite_svg(txt, fn, ymap_shift, vb_new)
 
@@ -512,6 +545,24 @@ def build_one(s: ToothSpec, out_dir: Path, dry: bool, root_scale: float | None =
     nb = curve_extent(re.search(r'<path id="tooth-base" d="([^"]+)"', out).group(1))
     n_apex, n_inc = nb[1], nb[3]
     n_cej = ymap_shift(cej)
+
+    # The gingiva is drawn here, not warped from the source. Two neighbouring
+    # halves of one papilla come from two different drawings and cannot agree
+    # on its height; a generated band can, because gum.py measures from the
+    # occlusal plane, which every template shares. See gum.py for the shape.
+    out = replace_gum(
+        out,
+        n_inc,
+        n_cej,
+        (nb[0] + nb[2]) / 2.0,
+        silhouette_width(
+            re.search(r'<path id="tooth-base" d="([^"]+)"', out).group(1),
+            n_cej + gum.MARGIN_DOWN,
+        )
+        / 2.0,
+        s.col_px,
+    )
+
     got_root = (n_cej - n_apex) / (n_inc - n_apex)
     got_total = n_inc - n_apex
     got_w = max(
@@ -602,7 +653,12 @@ def main():
     print("\n--- CSS (src/index.css) ---")
     for r in rows:
         print(
-            f".tooth-tile.tpl-{r['key']} .tooth-svg svg{{width:{r['px'][0]:.0f}px;height:{r['px'][1]:.0f}px}}"
+            # Two decimals, not whole pixels. Rounding the two sides
+            # independently gave each template a slightly different scale, and
+            # `preserveAspectRatio` then centred the shortfall - which moved the
+            # occlusal plane by up to half a pixel from tile to tile. Invisible
+            # per tooth; a step in every shared line across the arch.
+            f".tooth-tile.tpl-{r['key']} .tooth-svg svg{{width:{r['px'][0]:.2f}px;height:{r['px'][1]:.2f}px}}"
         )
     print("\n--- perioGraphic.ts: CEJ_Y (mirrored frame, finalY = h - rawY) ---")
     for r in rows:

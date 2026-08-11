@@ -31,6 +31,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The gingiva is one line across the arch.** Once the row closed up at the
+  contact points the gum stopped being hidden by the gaps between the teeth and
+  read as a row of separate red flames. The cause was not that the shapes failed
+  to reach each other — measured, neighbouring gum outlines overlap by 2 to 21 px.
+  The break was vertical: every template carried its own hand-drawn gum, each one
+  correct on its own, and a papilla is *shared* between two teeth. Two halves
+  coming from two different drawings have no way to agree on its height.
+
+  Warping the drawn outlines into agreement was tried twice and does not work; a
+  hand-drawn gum is almost entirely long cubics, and the ones carrying the
+  papilla are exactly the ones a shift by x deforms. So `gum-base` and
+  `bone-base` are now **drawn** by the generator (`tools/toothgen/gum.py`) in
+  each template's final coordinates instead of warped out of the sources. The
+  crest is one level line, the free gingival margin still dips to each tooth's
+  own cervix, and the papillae land at one height because each template puts its
+  peak half a column plus half a grid gap from its own centre — two neighbours
+  therefore agree on the joint without either knowing which tooth it stands next
+  to. `ToothSpec.col_px` records that column width, and `verify.py` now checks it
+  against `grid-template-columns` in `src/index.css`, because nothing else ties
+  the two together.
+
+  Three alignment defects surfaced with it and are fixed: the tile SVG clipped at
+  its viewBox (`overflow: visible`, so the drawing can bridge the 7 px the molar
+  tiles stand apart), the viewBox height was rounded to one decimal *after* the
+  occlusal plane was positioned from the bottom, and the CSS width and height per
+  template were rounded to whole pixels independently, which gave each template a
+  slightly different scale. Every shared line across the arch was stepping on all
+  three.
+
+  Rendering only — SVG-fingerprint parity is byte-identical, since the
+  fingerprint reads id, opacity and class and never geometry. No payload, state
+  or API change.
+
 - **Tooth 14 is drawn from buccal like every other tooth.** The source template
   draws the two roots of the upper first premolar side by side, which can only
   be the *proximal* aspect: those roots separate bucco-palatally, along the line

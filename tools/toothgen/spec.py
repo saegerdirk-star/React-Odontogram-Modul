@@ -49,6 +49,19 @@ class ToothSpec:
     # second outline to hide, and nothing added that the parity fingerprint
     # would see.
     root_converge: float = 1.0
+    # Width of the grid column this template stands in, in CSS pixels; MUST
+    # match `grid-template-columns` in src/index.css (verify.py checks it).
+    #
+    # Only the gum needs it, and it needs it for one reason: the papilla has to
+    # peak exactly where two teeth meet. Half a column plus half the grid gap,
+    # measured from each of two neighbouring tooth centres, always adds up to
+    # the pitch between them - (a+g)/2 + (b+g)/2 = (a+b)/2 + g - so both
+    # templates put their knee on the same point without either knowing which
+    # tooth is standing next to it. A template serving positions of differing
+    # column width (tpl 15, 54 and 57) is off by half that difference, which is
+    # under 2 px, and both sides arrive flat, so the peak just flattens
+    # slightly rather than stepping.
+    col_px: float = 44.0
 
 
 # `root_frac` below is Dirk's own reading off the Odontographie plates
@@ -78,6 +91,7 @@ class ToothSpec:
 SPECS: list[ToothSpec] = [
     ToothSpec(
         key="11",
+        col_px=44,
         label="Upper central incisor",
         source="Fig. 32a (p. 49)",
         src_template=11,
@@ -89,6 +103,7 @@ SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="12",
+        col_px=44,
         label="Upper lateral incisor",
         source="Fig. 35a (p. 51)",
         src_template=11,
@@ -101,6 +116,7 @@ SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="31",
+        col_px=44,
         label="Lower incisor",
         source="Fig. 38a (p. 52)",
         src_template=11,
@@ -113,6 +129,7 @@ SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="13",
+        col_px=50,
         label="Canine",
         source="Fig. 45a (p. 61)",
         src_template=13,
@@ -125,6 +142,7 @@ SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="14",
+        col_px=57,
         label="Upper first premolar",
         source="Fig. 54a (p. 71)",
         src_template=14,
@@ -139,6 +157,7 @@ SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="15",
+        col_px=54,
         label="Single-rooted premolar",
         source="Fig. 56a (p. 73) / Fig. 62a (p. 78)",
         src_template=14,
@@ -154,6 +173,7 @@ SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="16",
+        col_px=72,
         label="Upper first molar",
         source="derived from Fig. 70a and Fig. 3",
         src_template=16,
@@ -167,6 +187,7 @@ SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="17",
+        col_px=72,
         label="Upper second/third molar",
         source="Fig. 70a (p. 88)",
         src_template=16,
@@ -180,6 +201,7 @@ SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="46",
+        col_px=72,
         label="Lower molar",
         source="Fig. 76a (p. 95)",
         src_template=16,
@@ -281,6 +303,7 @@ PRIMARY_LOWER_CANINE_SCALE = 0.9
 PRIMARY_SPECS: list[ToothSpec] = [
     ToothSpec(
         key="51",
+        col_px=44,
         label="Upper primary central incisor",
         source="derived from 11, Bild 83 (overview)",
         src_template=11,
@@ -294,6 +317,7 @@ PRIMARY_SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="52",
+        col_px=44,
         label="Upper primary lateral incisor",
         source="derived from 12, Bild 83 (overview)",
         src_template=11,
@@ -307,6 +331,7 @@ PRIMARY_SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="53",
+        col_px=50,
         label="Primary canine",
         source="Bild 89 (p. 111) / Bild 90 (p. 112) + Bild 83",
         src_template=13,
@@ -322,6 +347,7 @@ PRIMARY_SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="54",
+        col_px=57,
         label="Upper first primary molar",
         source="Bild 91 (p. 113)",
         src_template=14,
@@ -342,6 +368,7 @@ PRIMARY_SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="55",
+        col_px=54,
         label="Upper second primary molar",
         source="Bild 92 (p. 114)",
         src_template=16,
@@ -362,6 +389,7 @@ PRIMARY_SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="71",
+        col_px=44,
         label="Lower primary incisor",
         source="derived from 31, Bild 83 (overview)",
         src_template=11,
@@ -375,6 +403,7 @@ PRIMARY_SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="74",
+        col_px=57,
         label="Lower first primary molar",
         source="Bild 93 (p. 117)",
         src_template=16,
@@ -395,6 +424,7 @@ PRIMARY_SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="75",
+        col_px=54,
         label="Lower second primary molar",
         source="p. 117 section 3.4.3.2 + derived from 46",
         src_template=16,

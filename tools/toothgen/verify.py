@@ -115,36 +115,46 @@ def lumen_extremes(txt: str, base_d: str, apex: float, cej: float):
 # reviewed corrections rather than drift. `OCCL_MARGIN` went 7.5 -> 8.0 in the
 # same change because the longer crown region pushed gum past the old viewBox
 # bottom. The previous set was taken on 2026-08-10 and is recorded below.
+# Re-taken on 2026-08-11 for odontogram-qyc: `gum-base` and `bone-base` are no
+# longer warped out of the source drawings, they are DRAWN by tools/toothgen/
+# gum.py in each template's final coordinates. That was the only way to make the
+# gingiva read as one line across the arch - a papilla is shared between two
+# teeth, and two hand-drawn halves have no way to agree on its height. The same
+# change levels the bone block and absorbs the viewBox rounding into the shift,
+# so the occlusal plane lands exactly OCCL_MARGIN above the written bottom;
+# both move geometry on every template. Intended, reviewed corrections. SVG
+# fingerprint parity is byte-identical throughout - the fingerprint reads id,
+# opacity and class, never geometry.
 AUTHORED_GEOMETRY_SHA256 = {
-    "11": "6372efd50de3e153953892b66d2b13cb643408c98054ebe1e591b99f021a6caa",
-    "12": "95cb14201400172323e2ad8cc0db1ae67c90e0bfbebeeca744930b814e2cabf0",
-    "13": "49822c6e67781377314fe18d52d5404084ac38d75737daa4189f76047645a887",
+    "11": "ab5dc7641f836cd1b36c6008e856dcc3c1a0533cb5d263a7e04f3cfb4963b3cd",
+    "12": "8214a8238ad87de6c7f994a9c8a10be83014cd942f52b2a385fcb441e50cf303",
+    "13": "2af5255168b287d3289431fdaeb6ef9a151455c2c0fb99dc01e339d9dc5c218b",
     # Re-taken for odontogram-1c0 on 2026-08-11: tpl 14 is drawn from BUCCAL
     # now - the two roots converge and the palatal tip drops - instead of the
     # proximal aspect the source draws. Intended, reviewed correction.
-    "14": "4fc08c6d75f7d4ce4ff197f649cb8fc126e249f789b48c5dbb78ad9f59505aed",
+    "14": "6374086256c6b55c6b44d0ddec8ab44cdfce40677d98fd404b4663b2f2f49f99",
     # Re-taken again on 2026-08-10 for odontogram-ay4: template 15's root is
     # grafted from source 13 instead of converted from source 14's two roots.
-    "15": "9a76672b5ed49872cb68128eee4cf09385d5962bc8355a326af6235c34a41890",
-    "16": "a0cc25bff09788ccc4cf9c2534a1642a6e7b0e946ae032d55b312c5140a7c142",
-    "17": "ab9a9b3f1822f187cdbf6656d56a92f9eb219ce1cded139d4252bb57f7e75e2e",
-    "31": "d968484c4189c1b3cb5a4084bb26bb2c85d2a0975831c7f4c8399547e086d4a7",
-    "46": "869b326cd2f9ac36eef948c22397a6e6332f874df5c805deebdde2683151e4ac",
+    "15": "953875061dd0d6eab6597e9bc7b605121973afb0b5a366e45c6927ef9c2fd8ad",
+    "16": "fc0166b1dd87fe97f3899e9c26146e9b567f1b279262d694106448d1cac279ca",
+    "17": "30082d4f3678e70cc7022d9a4f028413b29be95b3db753eef4c94d5fdbfc9179",
+    "31": "19ca24a8ee5a26fd73a8fe3b7ee3e0e1dadb974af15cfeeaa3b31bb18bff2f37",
+    "46": "1f83535babc3513176ca0339f53b89e458d2be5f88da320f4586b772b1a44615",
     # Primary dentition, taken on 2026-08-10 after Dirk read the rendered
     # dentition in the running chart and accepted it. Until then these eight
     # were deliberately unfrozen, which the digest check reports as a state
     # rather than a fault - a drawing does not have to pass a digest before it
     # may exist, it has to pass the dentist (odontogram-0ak, odontogram-e0a).
-    "51": "4b892d1808a323ce3fc1e7c1c6b4225c902d8d4884c374a1295974c8f6552fff",
-    "52": "0e12cf13fb53692e52bf290634bde1e6cd4272ffb92d40162bc9e41cf68f72f0",
-    "53": "d6f50515ae3fa8949762669c4a54a1fe4cab41864a7f87e975e0b0935edb0af4",
+    "51": "17dafc0b812292ffdc9a568a7d573c81de61ecf252544b2700677431506371f6",
+    "52": "ae160b0c4518289b72de29a76df880fbfcd47c313a5031a1cae2d85fc9450f20",
+    "53": "a51cf948698dbd7b10ef22ed81b6ad8b2f8833edd66cb0702c08889555fa92f0",
     # 54 re-taken after Bild 91 moved its cervix from 38% to 31% of tooth height.
-    "54": "e8c65f5bcfa7b9d4b58b283a06af2cbd57400977a80c7c93d928db114639b794",
+    "54": "39531d278542f8c085e4984a575cfbe7d5688dfb7d328e9da18059984d92a2d2",
     # 55 re-taken after Bild 92 moved its cervix from 40% to 38%.
-    "55": "15ff78bdf8e8ca72f5a36b92ffcdca868e2deefca8591913d82c08282ccecc86",
-    "71": "c61d8c328e89c9a3fcbd8298516e4fe0695d57a3ea346281c6c6f2d2b567709c",
-    "74": "2850a21fed18f9dbbb3da438239e9de5c04707adfc13fe1b566caf61bba693b0",
-    "75": "790e74749c64f4f00bb09680964a1b1670272a470a1493e7acb6934d9db4bd43",
+    "55": "05eea7bf394bd2058b1d31046dd6747d1aaac43d75590769f22de6580bd24449",
+    "71": "edd2a2b742d951aca57e353af08e6242132ecf733b9f5a7b6a401194b51111b3",
+    "74": "f56a36df48e8294045e0862fcd858f65f2f439c2d632728cf2ca38a698da75bf",
+    "75": "03ca2b126142936097ed2bf08e0c60429373b7f11e0de8254c585cfc02d4bdfe",
 }
 
 GEOMETRY_ATTRIBUTES = (
@@ -287,6 +297,42 @@ def check_occlusal(out_dir: Path, failures: list[str]) -> None:
             failures.append(
                 f"{spec.key}: {txt.count('display: none')} hidden defaults against "
                 f"the drawing's {src.count('display: none')}"
+            )
+
+
+INDEX_CSS = ASSETS.parents[1] / "index.css"
+
+
+def check_columns(specs, failures):
+    """`ToothSpec.col_px` has to name a column the grid actually has.
+
+    The gum puts its papilla half a column plus half a gap from the tooth's
+    centre, which is what makes two neighbours peak on the same point without
+    either knowing the other (see tools/toothgen/gum.py). That only holds while
+    the number in the spec is the number in the stylesheet, and nothing else
+    ties the two together - so widening a column in src/index.css and leaving
+    the spec alone would silently walk every papilla off its joint. This is the
+    check that says so.
+    """
+    try:
+        css = INDEX_CSS.read_text()
+    except OSError:
+        failures.append(f"cannot read {INDEX_CSS}")
+        return
+    m = re.search(r"\.tooth-grid\{[^}]*?grid-template-columns:([^;]+);", css, re.S)
+    if not m:
+        failures.append("grid-template-columns not found in src/index.css")
+        return
+    have = {float(v) for v in re.findall(r"minmax\([^,]+,\s*([\d.]+)px\)", m.group(1))}
+    if not have:
+        failures.append("no minmax() columns found in src/index.css")
+        return
+    print(f"\nGrid columns in src/index.css: {sorted(have)}")
+    for s in specs:
+        if s.col_px not in have:
+            failures.append(
+                f"{s.key}: col_px {s.col_px:g} is not a column the grid has "
+                f"({sorted(have)}); the papilla would miss the joint"
             )
 
 
@@ -495,6 +541,7 @@ def main(argv):
             failures.append(f"{s.key}: authored geometry changed")
 
     check_occlusal(out_dir, failures)
+    check_columns(specs, failures)
 
     if occl_offsets:
         vals = [v for _, v in occl_offsets]
