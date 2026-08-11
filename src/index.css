@@ -2358,7 +2358,8 @@ select:focus{
    no template carries a clasp or an attachment, and a drawing nobody verified
    would be worse than a notation Dirk already reads. It lives on the tile
    <div>, never in the SVG, so it is outside the fingerprint entirely. */
-.tooth-tile[data-retention]::after{
+.tooth-tile[data-retention="ste"]::after,
+.tooth-tile[data-retention*="G"]::after{
   content:attr(data-retention); position:absolute; left:50%; transform:translateX(-50%);
   font-size:10px; font-weight:700; line-height:1; letter-spacing:.02em;
   color:#5b3a8e; background:rgba(91,58,142,.10); border-radius:4px; padding:1px 4px;
@@ -2372,3 +2373,6 @@ select:focus{
    saddle reads, so the two cannot drift apart. */
 #toothGrid > svg.retention-overlay{position:absolute; inset:0; pointer-events:none; z-index:3}
 .retention-overlay-bar{fill:#8e7cc3; stroke:#4a3b6b; stroke-width:.75}
+/* The clasp is DRAWN, at Dirk's request — he reads charly every day and a
+   notation he has to translate is one that slows him down. */
+.retention-overlay-clasp{fill:none; stroke:#1a1a1a; stroke-linecap:round; stroke-linejoin:round}

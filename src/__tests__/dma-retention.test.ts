@@ -281,3 +281,67 @@ describe("FHIR", () => {
     expect(report.unmapped.some((e) => e.field === "retention" && e.tooth === "34")).toBe(true);
   });
 });
+
+describe("one bar can rest on implants and natural teeth at once", () => {
+  // Dirk, 2026-08-11: implant and natural abutments occur mixed in one case.
+  const arches = [[13, 12, 11, 21, 22, 23], [43, 42, 41, 31, 32, 33]];
+  const IMPLANT_BAR = { toothSelection: "implant", prosthesis: "bar" };
+
+  it("counts an implant that records its bar on the prosthesis axis", async () => {
+    const { isBarAbutment } = await import("../retention");
+    expect(isBarAbutment(IMPLANT_BAR)).toBe(true);
+    expect(isBarAbutment({ toothSelection: "implant", prosthesis: "bar-denture" })).toBe(true);
+    expect(isBarAbutment({ toothSelection: "implant", prosthesis: "locator" })).toBe(false);
+  });
+
+  it("draws ONE bar across a mixed span, not two halves", async () => {
+    const { detectBarSpans } = await import("../retention");
+    const state: Any = {
+      13: IMPLANT_BAR,
+      11: { ...CROWNED, retention: "bar-abutment" },
+    };
+    expect(detectBarSpans(arches, (tn) => state[tn])).toEqual([[13, 11]]);
+  });
+
+  it("still lets each tooth kind answer where it always answered", async () => {
+    const { retentionOptions: opts } = await import("../retention");
+    // the implant's own axis is untouched — no second place to store a bar
+    expect(opts(IMPLANT_BAR)).toEqual(["none"]);
+  });
+});
+
+describe("the drawn clasp", () => {
+  const rect = { x: 100, y: 0, width: 50, height: 200 };
+  const rectFor = () => rect;
+
+  it("draws one hook per engaged side", async () => {
+    const { computeClaspGlyphs } = await import("../retention");
+    const state: Any = { 34: { toothSelection: "tooth-base", retention: "clasp" } };
+    const one = computeClaspGlyphs([34], (tn) => state[tn], rectFor, () => "distal");
+    const two = computeClaspGlyphs([34], (tn) => state[tn], rectFor, () => "both");
+    expect(one).toHaveLength(1);
+    expect(two).toHaveLength(2);
+  });
+
+  it("puts mesial toward the arch midline on both sides of the arch", async () => {
+    const { mesialIsLeft } = await import("../retention");
+    expect(mesialIsLeft(23)).toBe(true);   // quadrant 2
+    expect(mesialIsLeft(33)).toBe(true);   // quadrant 3
+    expect(mesialIsLeft(13)).toBe(false);  // quadrant 1
+    expect(mesialIsLeft(43)).toBe(false);  // quadrant 4
+  });
+
+  it("draws nothing for an attachment or a bar — only the clasp is a hook", async () => {
+    const { computeClaspGlyphs } = await import("../retention");
+    const state: Any = { 34: { ...CROWNED, retention: "attachment" } };
+    expect(computeClaspGlyphs([34], (tn) => state[tn], rectFor, () => "both")).toEqual([]);
+  });
+
+  it("skips a tile that is missing or collapsed rather than throwing", async () => {
+    const { computeClaspGlyphs } = await import("../retention");
+    const state: Any = { 34: { toothSelection: "tooth-base", retention: "clasp" } };
+    expect(computeClaspGlyphs([34], (tn) => state[tn], () => null, () => "both")).toEqual([]);
+    expect(computeClaspGlyphs([34], (tn) => state[tn],
+      () => ({ x: 0, y: 0, width: 0, height: 0 }), () => "both")).toEqual([]);
+  });
+});

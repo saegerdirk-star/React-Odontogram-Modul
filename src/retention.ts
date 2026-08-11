@@ -34,6 +34,8 @@ export interface RetentionStateLike {
   restorationType?: string;
   restorationMaterial?: string;
   retention?: string;
+  /** An implant records a bar here, not on `retention` — see `isBarAbutment`. */
+  prosthesis?: string;
 }
 
 /** Reads a tooth's state by FDI number; `undefined` for a tooth never charted. */
@@ -116,13 +118,29 @@ export function hasRetention(state: RetentionStateLike | undefined): boolean {
 export function detectBarSpans(arches: number[][], getState: GetRetentionState): number[][] {
   const spans: number[][] = [];
   for(const arch of arches){
-    const abutments = arch.filter((tn) => {
-      const s = getState(tn);
-      return s?.retention === "bar-abutment" && retentionAllowed(s, "bar-abutment");
-    });
+    const abutments = arch.filter((tn) => isBarAbutment(getState(tn)));
     if(abutments.length >= 2) spans.push(abutments);
   }
   return spans;
+}
+
+/**
+ * Whether this tooth holds a bar — by EITHER route.
+ *
+ * A natural abutment records it on `retention`; an implant records it on the
+ * `prosthesis` axis it already had (`bar` / `bar-denture`), and that stays the
+ * right place for an implant. But one bar can rest on both — Dirk confirms
+ * implant and natural abutments occur mixed in one case (2026-08-11) — and a
+ * bar that only saw half its abutments would be drawn short, or not at all.
+ *
+ * So the DERIVATION reads both, while neither axis gains a value the other
+ * already owns: one clinical bar, one drawn element, each tooth kind still
+ * answering where it answered before.
+ */
+export function isBarAbutment(state: RetentionStateLike | undefined): boolean {
+  if(state?.retention === "bar-abutment" && retentionAllowed(state, "bar-abutment")) return true;
+  const p = state?.prosthesis;
+  return state?.toothSelection === "implant" && (p === "bar" || p === "bar-denture");
 }
 
 /** charly's own shorthand, read off its finding keypad (screenshot, Dirk
@@ -216,4 +234,107 @@ export function computeRetentionBars(
     bars.push({ x: x0, y: midY - height / 2, width, height });
   }
   return bars;
+}
+
+// ---------------------------------------------------------------------------
+// The clasp as it is DRAWN
+// ---------------------------------------------------------------------------
+//
+// Dirk asked for a drawn clasp rather than a text marker, "rein aus Gewohnheit"
+// — and habit is the right argument here: he reads these charts every day, and
+// a notation he has to translate is a notation that slows him down.
+//
+// No template carries clasp artwork, so the hook is drawn in the SAME
+// grid-level overlay as the bar, off the SAME tile geometry. That keeps it out
+// of the per-tooth SVG entirely (parity-safe) and means the hook and the bar
+// can never disagree about where a tooth is.
+
+/** Which SIDE of the screen a tooth's mesial surface faces. Mesial points
+ *  toward the arch midline, so it is the left edge in quadrants 2 and 3 and
+ *  the right edge in 1 and 4 — the same rule the perio chart's diamond tiles
+ *  follow, stated once per module rather than shared through a UI file. */
+export function mesialIsLeft(toothNo: number): boolean {
+  const quadrant = Math.floor(toothNo / 10);
+  return quadrant === 2 || quadrant === 3;
+}
+
+/** One drawn clasp hook, in grid-relative coordinates. */
+export interface ClaspGlyph {
+  /** Path data for the hook, already placed. */
+  d: string;
+  /** Stroke width, scaled to the tile. */
+  width: number;
+}
+
+/** Where down the tile the hook sits, as a fraction of tile height.
+ *
+ *  Deliberately the SAME fraction the bridge saddle uses, because that constant
+ *  already answers this exact question — it is where a crown sits on the tile —
+ *  and a clasp arm engages the crown, not the root. At 0.60 the hooks landed at
+ *  the gingival margin, which is where the BAR belongs and a clasp does not.
+ *  Mirrored for the lower arch, like every other overlay fraction here. */
+const CLASP_Y_FRACTION = 0.72;
+/** Hook size as a fraction of tile width. A tile is ~50px on a full arch, so a
+ *  hook much smaller than this stops reading as a hook at all. */
+const CLASP_SIZE = 0.42;
+
+/**
+ * Build the hook path for ONE engaged side of one tooth.
+ *
+ * The hook opens toward the tooth: on the tooth's mesial edge it curves back
+ * distally, and vice versa, so the arm reads as gripping the crown rather than
+ * pointing away from it. `sideIsLeft` is resolved by the caller from
+ * {@link mesialIsLeft}, so this function never needs to know FDI numbering.
+ */
+function claspPath(rect: RetentionRect, isLower: boolean, sideIsLeft: boolean): ClaspGlyph {
+  const size = rect.width * CLASP_SIZE;
+  const yF = isLower ? 1 - CLASP_Y_FRACTION : CLASP_Y_FRACTION;
+  const y = rect.y + rect.height * yF;
+  // Start just outside the crown edge, sweep around it, end back on the crown.
+  const edge = sideIsLeft ? rect.x : rect.x + rect.width;
+  const inward = sideIsLeft ? 1 : -1;
+  const x0 = edge + inward * size * 0.15;
+  const up = isLower ? 1 : -1;                 // "toward the occlusal edge"
+  const d = [
+    `M ${x0} ${y + up * size * 0.55}`,
+    `C ${x0 - inward * size * 0.55} ${y + up * size * 0.35}`,
+    `  ${x0 - inward * size * 0.55} ${y - up * size * 0.35}`,
+    `  ${x0 + inward * size * 0.10} ${y - up * size * 0.45}`,
+    `C ${x0 + inward * size * 0.75} ${y - up * size * 0.52}`,
+    `  ${x0 + inward * size * 0.95} ${y - up * size * 0.20}`,
+    `  ${x0 + inward * size * 0.90} ${y + up * size * 0.05}`,
+  ].join(" ");
+  return { d, width: Math.max(1.6, size * 0.26) };
+}
+
+/**
+ * The clasp hooks to draw across the whole chart: one per engaged side, so a
+ * clasp recorded as engaging both sides draws two.
+ *
+ * Guards mirror the bar's: a missing or zero-sized tile is skipped rather than
+ * throwing.
+ */
+export function computeClaspGlyphs(
+  teeth: number[],
+  getState: GetRetentionState,
+  rectFor: (toothNo: number) => RetentionRect | null,
+  getSide: (toothNo: number) => string,
+): ClaspGlyph[] {
+  const out: ClaspGlyph[] = [];
+  for(const toothNo of teeth){
+    const state = getState(toothNo);
+    if(state?.retention !== "clasp" || !retentionAllowed(state, "clasp")) continue;
+    const rect = rectFor(toothNo);
+    if(!rect || rect.width <= 0 || rect.height <= 0) continue;
+    const side = getSide(toothNo);
+    const mesialLeft = mesialIsLeft(toothNo);
+    const isLower = toothNo >= 31;
+    const sides: boolean[] =
+      side === "mesial" ? [mesialLeft] :
+      side === "distal" ? [!mesialLeft] :
+      side === "both" ? [true, false] :
+      [!mesialLeft];                  // unrecorded: draw where a clasp usually sits
+    for(const sideIsLeft of sides) out.push(claspPath(rect, isLower, sideIsLeft));
+  }
+  return out;
 }

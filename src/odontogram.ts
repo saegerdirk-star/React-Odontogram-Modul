@@ -24,7 +24,7 @@ import {
 // Bead odontogram-dma: retention gating + bar-span derivation, kept DOM-free.
 import {
   retentionOptions, retentionAllowed, detectBarSpans, retentionMark,
-  isTelescopeRetention, hasRetention, computeRetentionBars,
+  isTelescopeRetention, hasRetention, computeRetentionBars, computeClaspGlyphs,
   type RetentionValue,
 } from "./retention";
 import {
@@ -1597,12 +1597,19 @@ function updateRetentionBarOverlay(grid: HTMLElement | null){
   const SVG_NS = "http://www.w3.org/2000/svg";
   let overlay = grid.querySelector(":scope > svg.retention-overlay") as SVGSVGElement | null;
   const spans = detectBarSpans([UPPER_ARCH, LOWER_ARCH], (tn) => toothState.get(tn));
-  if(spans.length === 0){
+  const gridRect = grid.getBoundingClientRect();
+  const rectFor = (tn: number) => tileRectFor(grid, gridRect, tn);
+  const claspGlyphs = computeClaspGlyphs(
+    ALL_TEETH as number[],
+    (tn) => toothState.get(tn),
+    rectFor,
+    (tn) => toothState.get(tn)?.retentionSide ?? "none",
+  );
+  if(spans.length === 0 && claspGlyphs.length === 0){
     if(overlay){ while(overlay.firstChild) overlay.removeChild(overlay.firstChild); }
     return;
   }
-  const gridRect = grid.getBoundingClientRect();
-  const bars = computeRetentionBars(spans, (tn) => tileRectFor(grid, gridRect, tn));
+  const bars = computeRetentionBars(spans, rectFor);
   if(!overlay){
     overlay = document.createElementNS(SVG_NS, "svg");
     overlay.setAttribute("class", "retention-overlay");
@@ -1615,6 +1622,13 @@ function updateRetentionBarOverlay(grid: HTMLElement | null){
   overlay.setAttribute("width", String(W));
   overlay.setAttribute("height", String(H));
   overlay.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  for(const glyph of claspGlyphs){
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("class", "retention-overlay-clasp");
+    path.setAttribute("d", glyph.d);
+    path.setAttribute("stroke-width", String(glyph.width));
+    overlay.appendChild(path);
+  }
   for(const bar of bars){
     const rect = document.createElementNS(SVG_NS, "rect");
     rect.setAttribute("class", "retention-overlay-bar");
