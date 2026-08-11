@@ -270,41 +270,55 @@ export interface ClaspGlyph {
  *
  *  Deliberately the SAME fraction the bridge saddle uses, because that constant
  *  already answers this exact question — it is where a crown sits on the tile —
- *  and a clasp arm engages the crown, not the root. At 0.60 the hooks landed at
- *  the gingival margin, which is where the BAR belongs and a clasp does not.
- *  Mirrored for the lower arch, like every other overlay fraction here. */
+ *  and a clasp arm engages the crown, not the root. Mirrored for the lower
+ *  arch, like every other overlay fraction here. */
 const CLASP_Y_FRACTION = 0.72;
-/** Hook size as a fraction of tile width. A tile is ~50px on a full arch, so a
- *  hook much smaller than this stops reading as a hook at all. */
-const CLASP_SIZE = 0.42;
+
+/** Hook RADIUS as a fraction of tile width.
+ *
+ *  Small on purpose. A clasp arm hugs the proximal contour of one crown; drawn
+ *  large it sweeps across the occlusal surface and reads as a blob sitting on
+ *  the tooth rather than as an arm gripping it — which is exactly what a first
+ *  attempt at 0.42 of tile WIDTH looked like on the running chart. At 0.115 the
+ *  whole circle is under a quarter of the tile, so the hook stays on the crown
+ *  it belongs to and never reaches its neighbour. */
+const CLASP_RADIUS = 0.115;
+/** How far the hook's centre sits inside the crown edge, in radii. >1 keeps the
+ *  entire arc inside the tile. */
+const CLASP_INSET = 1.35;
+/** Half the arc's opening, in degrees: the gap that faces the tooth's centre
+ *  and makes the shape read as a hook rather than a ring. */
+const CLASP_GAP_HALF = 52;
 
 /**
  * Build the hook path for ONE engaged side of one tooth.
  *
- * The hook opens toward the tooth: on the tooth's mesial edge it curves back
- * distally, and vice versa, so the arm reads as gripping the crown rather than
- * pointing away from it. `sideIsLeft` is resolved by the caller from
- * {@link mesialIsLeft}, so this function never needs to know FDI numbering.
+ * A near-closed circular arc whose OPENING faces the crown's centre, so the arm
+ * reads as gripping the tooth rather than pointing away from it. `sideIsLeft`
+ * is resolved by the caller from {@link mesialIsLeft}, so this function never
+ * needs to know FDI numbering.
  */
 function claspPath(rect: RetentionRect, isLower: boolean, sideIsLeft: boolean): ClaspGlyph {
-  const size = rect.width * CLASP_SIZE;
+  const r = rect.width * CLASP_RADIUS;
   const yF = isLower ? 1 - CLASP_Y_FRACTION : CLASP_Y_FRACTION;
-  const y = rect.y + rect.height * yF;
-  // Start just outside the crown edge, sweep around it, end back on the crown.
+  const cy = rect.y + rect.height * yF;
   const edge = sideIsLeft ? rect.x : rect.x + rect.width;
   const inward = sideIsLeft ? 1 : -1;
-  const x0 = edge + inward * size * 0.15;
-  const up = isLower ? 1 : -1;                 // "toward the occlusal edge"
-  const d = [
-    `M ${x0} ${y + up * size * 0.55}`,
-    `C ${x0 - inward * size * 0.55} ${y + up * size * 0.35}`,
-    `  ${x0 - inward * size * 0.55} ${y - up * size * 0.35}`,
-    `  ${x0 + inward * size * 0.10} ${y - up * size * 0.45}`,
-    `C ${x0 + inward * size * 0.75} ${y - up * size * 0.52}`,
-    `  ${x0 + inward * size * 0.95} ${y - up * size * 0.20}`,
-    `  ${x0 + inward * size * 0.90} ${y + up * size * 0.05}`,
-  ].join(" ");
-  return { d, width: Math.max(1.6, size * 0.26) };
+  const cx = edge + inward * r * CLASP_INSET;
+  // The gap points toward the crown: 0° (screen-right) for a hook on the left
+  // edge, 180° for one on the right edge.
+  const gap = inward > 0 ? 0 : 180;
+  const rad = (deg: number) => (deg * Math.PI) / 180;
+  const at = (deg: number) => [
+    (cx + r * Math.cos(rad(deg))).toFixed(2),
+    (cy + r * Math.sin(rad(deg))).toFixed(2),
+  ];
+  const [x0, y0] = at(gap + CLASP_GAP_HALF);
+  const [x1, y1] = at(gap - CLASP_GAP_HALF);
+  // Sweep the LONG way round (large-arc), so what is drawn is the hook and not
+  // the little gap itself.
+  const d = `M ${x0} ${y0} A ${r.toFixed(2)} ${r.toFixed(2)} 0 1 1 ${x1} ${y1}`;
+  return { d, width: Math.max(1.1, r * 0.52) };
 }
 
 /**
