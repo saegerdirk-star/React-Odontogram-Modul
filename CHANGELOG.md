@@ -31,6 +31,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The ceramic and composite materials are named by their material class.**
+  Two of the eight restoration materials were brand names and nothing else —
+  `emax` and `gradia` — so a dentist looking for a ceramic inlay or a composite
+  inlay found neither word anywhere in the picker and reported both as missing.
+  They read *Lithium disilicate* and *Laboratory composite* now, in all twelve
+  languages — the same class names the canonical `dental-de` `DentalMaterialCS`
+  carries (`lithiumdisilikat`, `komposit`), so the label names what the export
+  names. The product name is deliberately **not** in the label: which
+  product was used is a separate assertion from what class of material it is,
+  and a finding that travels to a colleague, an insurer or a FHIR consumer
+  carries the class.
+
+  This also closes the "composite inlay cannot be recorded" half of
+  odontogram-00a. It could: `gradia` **is** an indirect laboratory composite,
+  and the engine already knew it — `codesystems.ts` exports it as *Indirect
+  composite (Gradia)* and the canonical `dental-de` dialect maps it to
+  `komposit`. The material was recordable, exportable and correctly typed; only
+  its label kept that secret. No new material value, no payload change, no
+  migration.
+
 - **The restoration dropdown is grouped by type.** It is 32 entries deep on a
   molar and was flat, so it hid what it contained: a dentist looking for a gold
   inlay met eight crowns and eight bridge units and gave up before reaching entry
