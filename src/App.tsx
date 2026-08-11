@@ -1166,6 +1166,38 @@ export default function App({
                   <span>{t("periImplant.label")}</span>
                   <select id="periImplantSelect"></select>
                 </div>
+                {/* odontogram-im1: which implant is in the tooth. Its own block
+                    rather than more entries in the restoration list, and shown
+                    only on an implant — the same gate `#periImplantRow` uses.
+                    Every field may stay empty: an implant that arrived with the
+                    patient is a complete record without any of this. */}
+                <div id="implantProductBlock" className="implant-product hidden">
+                  <div className="implant-product-head">
+                    <span>{t("implantProduct.legend")}</span>
+                    <span className="hint">{t("implantProduct.optional")}</span>
+                  </div>
+                  <div className="row">
+                    <span>{t("implantProduct.manufacturer")}</span>
+                    <input id="implantManufacturer" type="text" list="implantManufacturerList" autoComplete="off" />
+                    <datalist id="implantManufacturerList"></datalist>
+                  </div>
+                  <div className="row">
+                    <span>{t("implantProduct.system")}</span>
+                    <input id="implantSystem" type="text" list="implantSystemList" autoComplete="off" />
+                    <datalist id="implantSystemList"></datalist>
+                  </div>
+                  <div className="row implant-product-dims">
+                    <span>{t("implantProduct.diameter")}</span>
+                    <input id="implantDiameter" type="number" min="1" max="10" step="0.1" />
+                    <span>{t("implantProduct.length")}</span>
+                    <input id="implantLength" type="number" min="4" max="25" step="0.5" />
+                  </div>
+                  <div className="row">
+                    <span>{t("implantProduct.udi")}</span>
+                    <input id="implantUdi" type="text" autoComplete="off" />
+                  </div>
+                  <div id="implantUdiReadout" className="hint implant-product-readout"></div>
+                </div>
               </div>
             </section>
 

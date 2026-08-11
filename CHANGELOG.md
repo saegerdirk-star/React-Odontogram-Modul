@@ -23,6 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   those apart is provenance — odontogram-ap7's axis, not a second flag grown
   here.
 
+  It is authored in its own block under the peri-implant status, shown only
+  when the tooth is an implant. Manufacturer and system are free text with a
+  suggestion list gathered from what the practice has already placed — there
+  are hundreds of implant systems and nobody would maintain a catalogue, so
+  none is kept. Typing or scanning a UDI shows the lot and expiry it yielded,
+  so a scan visibly does something.
+
   API: `getImplantProduct` / `setImplantProduct` (silent no-op on a natural
   tooth, guard before the DS-1 gate, mirroring the Mombelli indices) and
   `getChartedImplantProducts`. The systems list writes itself from the charts —

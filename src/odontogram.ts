@@ -4407,6 +4407,7 @@ function syncControlsFromState(state: Any){
     state.periImplant = $("#periImplantSelect").value;
   }
   syncPeriImplantVisibility($("#periImplantRow"), $("#modsChecks"), state.toothSelection);
+  syncImplantProduct(state);
   // SP7 Task 5 (extended by SP15 Task 3 / B4): the periapical-inflammation mod
   // is retired as an authoring control on a PRESENT tooth (apicalDx drives the
   // glyph) AND on an implant (periImplant covers implant inflammation). It
@@ -7283,6 +7284,75 @@ export function getChartedImplantProducts(): ImplantProduct[] {
   return out;
 }
 
+/** Paint the implant-product block from a tooth state, and hide it unless the
+ *  tooth is an implant — the same gate `#periImplantRow` uses. */
+function syncImplantProduct(state: Any): void {
+  const block = $("#implantProductBlock");
+  if(!block) return;
+  const isImplant = state?.toothSelection === "implant";
+  block.classList.toggle("hidden", !isImplant);
+  if(!isImplant) return;
+
+  const p: ImplantProduct = state.implantProduct ?? {};
+  const put = (sel: string, v: unknown) => {
+    const elx = $(sel) as HTMLInputElement | null;
+    if(!elx) return;
+    const next = v == null ? "" : String(v);
+    // Never overwrite what the clinician is typing.
+    if(document.activeElement !== elx && elx.value !== next) elx.value = next;
+  };
+  put("#implantManufacturer", p.manufacturer);
+  put("#implantSystem", p.system);
+  put("#implantDiameter", p.diameterMm);
+  put("#implantLength", p.lengthMm);
+  put("#implantUdi", p.udi);
+
+  // What the carrier gave up, shown so a scan visibly did something.
+  const bits: string[] = [];
+  if(p.lot) bits.push(`${t("implantProduct.lot")}: ${p.lot}`);
+  if(p.expiry) bits.push(`${t("implantProduct.expiry")}: ${p.expiry}`);
+  const readout = $("#implantUdiReadout");
+  if(readout) readout.textContent = bits.join("  ·  ");
+
+  fillDatalist("#implantManufacturerList", (x)=>x.manufacturer);
+  fillDatalist("#implantSystemList", (x)=>x.system);
+}
+
+/** Offer what this practice has already placed, gathered from the charts. */
+function fillDatalist(sel: string, pick: (p: ImplantProduct)=>string | undefined): void {
+  const list = $(sel);
+  if(!list) return;
+  const seen = new Map<string, string>();
+  for(const p of getChartedImplantProducts()){
+    const v = pick(p);
+    if(v && !seen.has(v.toLowerCase())) seen.set(v.toLowerCase(), v);
+  }
+  const values = [...seen.values()].sort((a, b)=>a.localeCompare(b));
+  if(list.dataset.values === values.join("\u0000")) return;
+  list.dataset.values = values.join("\u0000");
+  list.innerHTML = "";
+  for(const v of values) list.appendChild(el("option", { value: v }));
+}
+
+/** Read the block back onto every selected implant. */
+function commitImplantProduct(): void {
+  const val = (sel: string) => ((($(sel) as HTMLInputElement | null)?.value) ?? "").trim();
+  const num = (sel: string) => {
+    const raw = val(sel);
+    return raw === "" ? undefined : Number(raw.replace(",", "."));
+  };
+  const product: ImplantProduct = {
+    manufacturer: val("#implantManufacturer") || undefined,
+    system: val("#implantSystem") || undefined,
+    diameterMm: num("#implantDiameter"),
+    lengthMm: num("#implantLength"),
+    udi: val("#implantUdi") || undefined,
+  };
+  for(const toothNo of selectedTeeth) setImplantProduct(Number(toothNo), product);
+  const active = activeTooth ?? [...selectedTeeth][0];
+  if(active != null) syncImplantProduct(toothState.get(active));
+}
+
 // ---- Bead odontogram-2vd: explicit assessment status --------------------
 // Periodontal charting stores findings, not the act of looking. A site with no
 // probing depth, a surface with no plaque and a tooth with mobility "none" all
@@ -9612,6 +9682,20 @@ function wireControls(){
 
   // Peri-implant status (SP8 Task 5: implants only — supersedes the parodontal/
   // inflammation mods there).
+  // odontogram-im1: the implant product block. Free text with a datalist
+  // rather than a catalogue — there are hundreds of implant systems and nobody
+  // would maintain a list of them, so the list is gathered from what this
+  // practice has actually placed and needs no maintenance.
+  for(const id of ["#implantManufacturer","#implantSystem","#implantDiameter","#implantLength","#implantUdi"]){
+    const elx = $(id) as HTMLInputElement | null;
+    if(!elx) continue;
+    // `change`, not `input`: committing on every keystroke would push a
+    // half-typed system name through the DS-1 gate and, in status mode on a
+    // plan-edited tooth, raise the blocking confirm once per character.
+    elx.addEventListener("change", ()=>commitImplantProduct());
+    elx.addEventListener("blur", ()=>commitImplantProduct());
+  }
+
   buildSelect($("#periImplantSelect"), getPeriImplantOptions(), (value)=>{
     applyToSelected((s)=>{ applyPeriImplantSelection(s, value); });
   });

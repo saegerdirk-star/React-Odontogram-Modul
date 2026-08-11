@@ -2289,3 +2289,32 @@ select:focus{
   .perio-fullgrid-miller{ width: 17px; height: 15px; }
   .perio-fullgrid-kg{ width: 16px; }
 }
+
+/* odontogram-im1 — which implant is in the tooth. Its own block, shown only on
+   an implant, because a product record with five fields and a scan field does
+   not belong inside a restoration dropdown. Every field may stay empty: an
+   implant that arrived with the patient is a complete record without any of
+   this, so nothing here is styled as required or missing. */
+.implant-product{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  padding:8px 10px;
+  margin-top:6px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:rgba(255,255,255,.5);
+}
+.implant-product.hidden{display:none}
+.implant-product-head{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:8px;
+  font-weight:600;
+}
+.implant-product-head .hint{font-weight:400}
+.implant-product .row{gap:8px}
+.implant-product input[type="text"]{flex:1 1 auto; min-width:0}
+.implant-product-dims input[type="number"]{width:5.5em}
+.implant-product-readout{min-height:1em}
