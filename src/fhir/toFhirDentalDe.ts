@@ -36,6 +36,7 @@ import {
 } from "./dentalDeCodesystems";
 import { buildDentalDePerioEntries, type DentalDePerioContext } from "./toFhirDentalDePerio";
 import { primaryFdiForSlot } from "../utils/numbering";
+import type { CariesObservationDEProfileRaw } from "./generated/de-cognovis-fhir-dental/profiles/Observation_CariesObservationDE";
 
 /** The FDI code a record is EXPORTED under.
  *
@@ -58,6 +59,8 @@ export function exportedFdi(slot: string, rec: ToothRecord): string {
 // slot the IG uses, so component nodes are assembled structurally.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
+
+const DENTAL_DE_FINAL_STATUS: CariesObservationDEProfileRaw["status"] = "final";
 
 interface SurfaceExtension {
   url: string;
@@ -123,7 +126,7 @@ function baseCanonicalObservation(ctx: BuildContext, profile: string, code: Code
   const obs: Any = {
     resourceType: "Observation",
     meta: { profile: [profile] },
-    status: "final",
+    status: DENTAL_DE_FINAL_STATUS,
     category: DENTAL_CATEGORY,
     code,
     subject: { reference: ctx.subjectRef },

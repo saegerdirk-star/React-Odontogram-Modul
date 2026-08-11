@@ -36,9 +36,12 @@ export default defineConfig({
   },
   build: {
     lib: {
-      entry: path.resolve(__dirname, 'src/index.ts'),
+      entry: {
+        odontogram: path.resolve(__dirname, 'src/index.ts'),
+        fhir: path.resolve(__dirname, 'src/fhir/index.ts'),
+      },
       formats: ['es'],
-      fileName: () => 'odontogram.js',
+      fileName: (_format, entryName) => `${entryName}.js`,
       // Guarantee a stable, single stylesheet name (dist/style.css).
       cssFileName: 'style',
     },
