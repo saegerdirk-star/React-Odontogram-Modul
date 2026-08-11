@@ -9,15 +9,29 @@ function source(relative: string): string {
   return readFileSync(resolve(root, relative), "utf8");
 }
 
+function executableCode(text: string): string {
+  return text
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/(^|[^:])\/\/.*$/gm, "$1")
+    .replace(/`(?:\\.|[^`\\])*`/g, '""')
+    .replace(/"(?:\\.|[^"\\])*"/g, '""')
+    .replace(/'(?:\\.|[^'\\])*'/g, "''");
+}
+
 const optionalFhirConsumerOptions: FhirExportOptions = { dialect: "legacy" };
 
 describe("optional FHIR package boundary", () => {
   it("keeps the document contract independent from the FHIR adapter", () => {
     const documentSource = source("src/document.ts");
+    const documentCode = executableCode(documentSource);
 
-    expect(documentSource).not.toMatch(/from\s+["'][^"']*fhir/);
-    expect(documentSource).not.toMatch(/https?:\/\//);
+    expect(documentCode).not.toMatch(/from\s+["'][^"']*fhir/);
+    expect(documentCode).not.toMatch(/https?:\/\//);
     expect(documentSource).toContain("export type OdontogramDocument");
+    expect(documentSource).toContain("Per-tooth record as produced by the engine's serializeState().");
+    expect(documentSource).toContain("The serialized odontogram export payload");
+    expect(documentSource).toContain("Serialized examination identity/context");
+    expect(documentSource).toContain("The payload/document version this engine writes");
   });
 
   it("publishes an optional FHIR entry without changing the root entry", () => {
