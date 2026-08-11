@@ -111,30 +111,45 @@ class ToothSpec:
 #   51  6.5    52  5.1    53  6.0    54  7.3    55  8.2
 #   71  4.15   74  7.7    75  9.9
 #
-# The scale is 3.049 units per mm, chosen so the whole permanent arch keeps the
-# width it had - the correction redistributes width between tooth classes, it
-# does not make the chart wider or narrower.
+# Corrected AGAIN the same day, once the generator started measuring a crown
+# width as the outline's full extent rather than as the tooth material a
+# horizontal line passes through (`crown_width` vs `silhouette_width` in
+# build.py). The old measure dropped the groove between the buccal cusps, so
+# every posterior template read about a third narrower than it is and was then
+# scaled up to match its target. The values here are unchanged in KIND - the
+# same table, the same reasoning - only the scale they are fitted against is
+# now the right one.
+#
+# The scale is 4.048 units per mm, chosen so the upper arch's columns still add
+# up to the width the chart had. The correction redistributes width between
+# tooth classes; it does not make the chart wider or narrower.
+#
+# `col_px` follows from the same numbers: each column is its tooth plus 6 px, so
+# every contact is 10 px. That is also where the Class I canine relationship now
+# comes from. Both arches use the same rule, the lower incisors are narrower
+# teeth, and 43 therefore ends up in the embrasure between 12 and 13 without
+# anything being arranged by hand - see the note on `col_px` in ToothSpec.
 SPECS: list[ToothSpec] = [
     ToothSpec(
         key="11",
-        col_px=44,
+        col_px=62,
         label="Upper central incisor",
         source="Fig. 32a (p. 49)",
         src_template=11,
         root_frac=0.59,
-        width_frac=0.31,
+        width_frac=0.412,
         roots=1,
         length_rel=0.87,
         teeth=(11, 21),
     ),
     ToothSpec(
         key="12",
-        col_px=44,
+        col_px=49,
         label="Upper lateral incisor",
         source="Fig. 35a (p. 51)",
         src_template=11,
         root_frac=0.62,
-        width_frac=0.253,
+        width_frac=0.3363,
         roots=1,
         length_rel=0.815,
         teeth=(12, 22),
@@ -142,12 +157,12 @@ SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="31",
-        col_px=31,
+        col_px=40,
         label="Lower incisor",
         source="Fig. 38a (p. 52)",
         src_template=11,
         root_frac=0.64,
-        width_frac=0.22,
+        width_frac=0.2917,
         roots=1,
         length_rel=0.759,
         teeth=(31, 32, 41, 42),
@@ -155,12 +170,12 @@ SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="13",
-        col_px=50,
+        col_px=54,
         label="Canine",
         source="Fig. 45a (p. 61)",
         src_template=13,
         root_frac=0.64,
-        width_frac=0.23,
+        width_frac=0.3057,
         roots=1,
         length_rel=1.0,
         teeth=(13, 23, 33, 43),
@@ -168,12 +183,12 @@ SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="14",
-        col_px=57,
+        col_px=52,
         label="Upper first premolar",
         source="Fig. 54a (p. 71)",
         src_template=14,
         root_frac=0.63,
-        width_frac=0.267,
+        width_frac=0.3544,
         roots=2,
         length_rel=0.833,
         furc_frac=0.55,
@@ -183,12 +198,12 @@ SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="15",
-        col_px=54,
+        col_px=51,
         label="Single-rooted premolar",
         source="Fig. 56a (p. 73) / Fig. 62a (p. 78)",
         src_template=14,
         root_frac=0.66,
-        width_frac=0.266,
+        width_frac=0.3536,
         roots=1,
         length_rel=0.815,
         teeth=(15, 25, 34, 35, 44, 45),
@@ -204,7 +219,7 @@ SPECS: list[ToothSpec] = [
         source="derived from Fig. 70a and Fig. 3",
         src_template=16,
         root_frac=0.61,
-        width_frac=0.429,
+        width_frac=0.5691,
         roots=3,
         length_rel=0.741,
         furc_frac=0.58,
@@ -213,12 +228,12 @@ SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="17",
-        col_px=72,
+        col_px=63,
         label="Upper second/third molar",
         source="Fig. 70a (p. 88)",
         src_template=16,
         root_frac=0.60,
-        width_frac=0.385,
+        width_frac=0.5111,
         roots=3,
         length_rel=0.722,
         furc_frac=0.62,
@@ -227,12 +242,12 @@ SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="46",
-        col_px=72,
+        col_px=75,
         label="Lower molar",
         source="Fig. 76a (p. 95)",
         src_template=16,
         root_frac=0.68,
-        width_frac=0.419,
+        width_frac=0.5563,
         roots=2,
         length_rel=0.796,
         furc_frac=0.62,
@@ -329,12 +344,12 @@ PRIMARY_LOWER_CANINE_SCALE = 0.9
 PRIMARY_SPECS: list[ToothSpec] = [
     ToothSpec(
         key="51",
-        col_px=44,
+        col_px=62,
         label="Upper primary central incisor",
         source="derived from 11, Bild 83 (overview)",
         src_template=11,
         root_frac=0.62,
-        width_frac=0.297,
+        width_frac=0.3938,
         roots=1,
         length_rel=0.87,
         size_scale=PRIMARY_SIZE_SCALE,
@@ -343,12 +358,12 @@ PRIMARY_SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="52",
-        col_px=44,
+        col_px=49,
         label="Upper primary lateral incisor",
         source="derived from 12, Bild 83 (overview)",
         src_template=11,
         root_frac=0.65,
-        width_frac=0.248,
+        width_frac=0.3299,
         roots=1,
         length_rel=0.815,
         size_scale=PRIMARY_SIZE_SCALE,
@@ -357,12 +372,12 @@ PRIMARY_SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="53",
-        col_px=50,
+        col_px=54,
         label="Primary canine",
         source="Bild 89 (p. 111) / Bild 90 (p. 112) + Bild 83",
         src_template=13,
         root_frac=0.62,
-        width_frac=0.238,
+        width_frac=0.3163,
         roots=1,
         length_rel=1.0,
         size_scale=PRIMARY_SIZE_SCALE,
@@ -373,12 +388,12 @@ PRIMARY_SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="54",
-        col_px=57,
+        col_px=52,
         label="Upper first primary molar",
         source="Bild 91 (p. 113)",
         src_template=14,
         root_frac=0.69,
-        width_frac=0.391,
+        width_frac=0.5193,
         roots=3,
         length_rel=0.741,
         size_scale=PRIMARY_SIZE_SCALE,
@@ -394,12 +409,12 @@ PRIMARY_SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="55",
-        col_px=54,
+        col_px=51,
         label="Upper second primary molar",
         source="Bild 92 (p. 114)",
         src_template=16,
         root_frac=0.62,
-        width_frac=0.42,
+        width_frac=0.5577,
         roots=3,
         length_rel=0.775,
         size_scale=PRIMARY_SIZE_SCALE,
@@ -415,12 +430,12 @@ PRIMARY_SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="71",
-        col_px=31,
+        col_px=40,
         label="Lower primary incisor",
         source="derived from 31, Bild 83 (overview)",
         src_template=11,
         root_frac=0.68,
-        width_frac=0.217,
+        width_frac=0.2882,
         roots=1,
         length_rel=0.759,
         size_scale=PRIMARY_SIZE_SCALE,
@@ -429,12 +444,12 @@ PRIMARY_SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="74",
-        col_px=57,
+        col_px=51,
         label="Lower first primary molar",
         source="Bild 93 (p. 117)",
         src_template=16,
         root_frac=0.69,
-        width_frac=0.402,
+        width_frac=0.5341,
         roots=2,
         length_rel=0.760,
         size_scale=PRIMARY_SIZE_SCALE,
@@ -450,12 +465,12 @@ PRIMARY_SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="75",
-        col_px=54,
+        col_px=51,
         label="Lower second primary molar",
         source="p. 117 section 3.4.3.2 + derived from 46",
         src_template=16,
         root_frac=0.62,
-        width_frac=0.494,
+        width_frac=0.6556,
         roots=2,
         length_rel=0.796,
         size_scale=PRIMARY_SIZE_SCALE,

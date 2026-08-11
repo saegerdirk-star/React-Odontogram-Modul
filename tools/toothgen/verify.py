@@ -129,42 +129,45 @@ def lumen_extremes(txt: str, base_d: str, apex: float, cej: float):
 # column instead of 44, so their gum papilla moves with the joint. That change
 # is what puts the lower canine in the embrasure between the upper lateral and
 # the upper canine, which is where the mouth puts it.
-# Re-taken on 2026-08-11 for odontogram-t4c: `width_frac` is corrected on all
-# seventeen templates from the standard mean mesiodistal crown diameters. The
-# previous values carried no source and were not consistent with each other -
-# the canine and both premolars came out about a fifth too wide and the
-# incisors about a seventh too narrow. Every template scales horizontally, so
-# every digest moves. Intended, reviewed correction.
+# Re-taken TWICE on 2026-08-11 for odontogram-5ca. First, `width_frac` was set
+# from the standard mean mesiodistal crown diameters, since the values it had
+# carried no source and did not agree with each other. Then the measurement the
+# generator fits those targets against turned out to be broken: it flattened
+# the outline through the Bezier ANCHORS instead of the curve, so a molar read
+# 24.6 units wide where it is 40.0, and the templates drawn with the longest
+# curves - the premolars and molars - had been scaled up by a third to make
+# that undersized number match. Both are intended, reviewed corrections. Every
+# template scales horizontally, so every digest moves.
 AUTHORED_GEOMETRY_SHA256 = {
-    "11": "18f5459d745e18e8690c3d1d2cdb3b892db2e47d4d4711c14cbaf02f06740a68",
-    "12": "1c635bf4e31f5a90784c158cbc9ed960d3f5451f2ee3d8c1f3ab9655172c716a",
-    "13": "9485ab1ea8952ca131a83d43c8cbb029be7fa641a16243cca1c41cb6fe0cb9bc",
+    "11": "1ca8729d87a2242fe953ee697900116fc8137d7d692a6ec3c0759965f4371c12",
+    "12": "bf22d1ad5653b465dfe8ad789d9def8862eda281c68b1dd576f9542ed5bddadc",
+    "13": "c63b1e7f378ded9ede219910cebc69f8f7747d03b8db707b25ae84ce0e0ad310",
     # Re-taken for odontogram-1c0 on 2026-08-11: tpl 14 is drawn from BUCCAL
     # now - the two roots converge and the palatal tip drops - instead of the
     # proximal aspect the source draws. Intended, reviewed correction.
-    "14": "f7209e3ac87299694c3d88d02962d2b9612b1547bcfd5b865cdf92498e29cc5c",
+    "14": "8b0a455ff4cdf5d10968e0c4008058b6fd09e809f614f0e99634b6d4edb5f92f",
     # Re-taken again on 2026-08-10 for odontogram-ay4: template 15's root is
     # grafted from source 13 instead of converted from source 14's two roots.
-    "15": "33f82d3e28a40e48a66ab61a5c6160b23001cc60abd5ca5b01554886e76b5152",
-    "16": "e4ef8bd154191c80c28309a06bdc6f91746a5554b9da436fe20f41eb42ed109e",
-    "17": "cecc84aea4fa61945ca9a18660d78089a97a1afaadb2a6f3f28552bfe4e47f73",
-    "31": "1def41e46acdbc9ab4363d7ca33b794614ea8a74797814e23c04e77f28aa64ac",
-    "46": "c67feb39eb35a3dc45d5fe67e6e4f8e34b2339526b28270dcbb6613c7c5d4daf",
+    "15": "38e63e3e1b5182ac9257709da93b35ba452bfc3cd9a6fb828f81fb841c6d369e",
+    "16": "8c461d6f1fe41c86b14d9b7eee74d2a294186f57c668a8763947cb8701f38a85",
+    "17": "2e850b149d45b7042614d15e1f94f04a5f488e0ba459c7a3cc3dd672f8ae0bd5",
+    "31": "49f14d83c59e0660ce62371d1be34a02f81c5fb74004262e0325049b08deb3d0",
+    "46": "58552c2010d087cc8afccc3313cb298cbf54a007b7a4fa96c2d230f0ea00d31d",
     # Primary dentition, taken on 2026-08-10 after Dirk read the rendered
     # dentition in the running chart and accepted it. Until then these eight
     # were deliberately unfrozen, which the digest check reports as a state
     # rather than a fault - a drawing does not have to pass a digest before it
     # may exist, it has to pass the dentist (odontogram-0ak, odontogram-e0a).
-    "51": "f98bc0519778ca5adeb1a716bb260da2a29e99bbda5321dc9026b015b554ab6e",
-    "52": "54a473a929cbc402412dc9d9d545e6fbcaf8912ae13d3e3f2af84ddb60e33b8c",
-    "53": "9c382f027b6d4759f16e153d30f7b6d0439d5e0a29237dc43db22972d8a378a0",
+    "51": "9e0b40f26d91e3216d4a1c0097ecb040491a1e18648520ab591d2dd82ee64f60",
+    "52": "d4c834816c3eceae6228f733b24a35b3c85b3405c6f6c9fcbe5b25ed3d8484d1",
+    "53": "e2a0cea023c01fbf614970e9e6a860d69107addab4805807e283f7e152d5ad4c",
     # 54 re-taken after Bild 91 moved its cervix from 38% to 31% of tooth height.
-    "54": "7ce6b797637ef6fb02f4038d3c3c946717027b44eea7d87ebd4323965cb84225",
+    "54": "85658c0847d8c54046bf988cccac6f58e9ff0c459f9b8298e1c62cd8afe9fe6f",
     # 55 re-taken after Bild 92 moved its cervix from 40% to 38%.
-    "55": "517afea76d82c390831417e6d4a82148fc03fd2df52a5a9067290db82079320c",
-    "71": "8bad79c6d8a6a2cd44ce0787435a7721f67d4cb543bc42d22bfe9ef6d838caca",
-    "74": "d5d9694ce32a841fb3732b0e4612669d0f906eed66f46c49d18440d294949b24",
-    "75": "2eb928925b5a0259acf4531f1c4bba9ae2377665d424b710c7c13a268132b44f",
+    "55": "b39beb81abf8455683beede0be85c008d6a789e0f52b08d1575a632ad4bc2ffa",
+    "71": "4f1024b46695e4275d1feac5091acdf9261c79188633642ec743c0a5da192e19",
+    "74": "57c5e7617a66689f4aa23b8cacd603dbfd427038e42a048810f4a03ea55580b1",
+    "75": "1e6d9a31e048888a560d51961f21f4e4391c523105943d7b3e927f2a6a6c6cb2",
 }
 
 GEOMETRY_ATTRIBUTES = (

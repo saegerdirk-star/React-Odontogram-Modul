@@ -79,42 +79,54 @@ def content_bbox(txt: str):
     return (x0, y0, x1, y1)
 
 
-def silhouette_width(d: str, y: float) -> float:
+def _crossings(d: str, y: float) -> list[float]:
+    """Sorted x of every place the outline crosses the horizontal line ``y``.
 
-    cmds = svgpath.subdivide_for_warp(
-        svgpath.to_absolute(d), lambda a, b: (a, b * 1.0001), tol=0.01
-    )
-    pts = []
-    cur = (0.0, 0.0)
-    start = (0.0, 0.0)
-    subs = []
-    for cmd, a in cmds:
-        if cmd == "M":
-            if len(pts) > 1:
-                subs.append(pts)
-            cur = (a[0], a[1])
-            start = cur
-            pts = [cur]
-        elif cmd == "Z":
-            if len(pts) > 1:
-                pts.append(start)
-                subs.append(pts)
-            pts = [start]
-            cur = start
-        else:
-            p = (a[-2], a[-1])
-            pts.append(p)
-            cur = p
-    if len(pts) > 1:
-        subs.append(pts)
+    Flattened through ``roots._polylines``, which subdivides a cubic until it
+    is straight. The obvious shortcut - walking the command list and taking
+    each segment's ENDPOINT - is what stood here, and it measures a polygon
+    through the Bezier anchors rather than the outline itself. On a molar,
+    whose crown bulges in the MIDDLE of long cubics, it read 24.6 units where
+    the tooth is 40.0: a third of the width, gone. Every template was then
+    scaled to make that undersized number match its target, so the ones drawn
+    with the longest curves - the premolars and molars - came out about a third
+    too wide, and it looked like their roots were splayed, because the bounding
+    box was the only thing telling the truth (odontogram-5ca).
+    """
     xs = []
-    for sub in subs:
+    for sub in roots._polylines(d):
         for (ax, ay), (bx, by) in zip(sub, sub[1:]):
             if (ay <= y < by) or (by <= y < ay):
                 t = (y - ay) / (by - ay)
                 xs.append(ax + t * (bx - ax))
     xs.sort()
+    return xs
+
+
+def silhouette_width(d: str, y: float) -> float:
+    """How much TOOTH the line at ``y`` passes through - material, not extent.
+
+    Pairs the crossings, so a line through a furcation counts the two roots and
+    not the gap between them. That is what "how wide is the root that has to
+    contain this canal" asks for. It is not what a crown width asks for, which
+    is why crown_width exists below.
+    """
+    xs = _crossings(d, y)
     return sum(xs[i + 1] - xs[i] for i in range(0, len(xs) - 1, 2))
+
+
+def crown_width(d: str, y: float) -> float:
+    """Mesial surface to distal surface at ``y`` - the outline's full extent.
+
+    The mesiodistal crown diameter is the greatest distance between the mesial
+    and the distal surface, so a fissure between two cusps - which lies INSIDE
+    the tooth - must not be subtracted from it. On the shipped templates the
+    crown outline is convex at every height the generator samples, so this and
+    silhouette_width agree there; they are kept apart because they answer
+    different questions and only one of them is a width.
+    """
+    xs = _crossings(d, y)
+    return (xs[-1] - xs[0]) if len(xs) >= 2 else 0.0
 
 
 def make_warp(
@@ -493,7 +505,7 @@ def build_one(s: ToothSpec, out_dir: Path, dry: bool, root_scale: float | None =
 
     meas_d = svgpath.warp_path_d(base_d, merge_fn) if merge_fn else base_d
     w_src = max(
-        silhouette_width(meas_d, y)
+        crown_width(meas_d, y)
         for y in [inc - (inc - cej) * f for f in (0.2, 0.35, 0.5, 0.65, 0.8)]
     )
     w_dst = d_width_frac * total_new
@@ -555,7 +567,7 @@ def build_one(s: ToothSpec, out_dir: Path, dry: bool, root_scale: float | None =
         n_inc,
         n_cej,
         (nb[0] + nb[2]) / 2.0,
-        silhouette_width(
+        crown_width(
             re.search(r'<path id="tooth-base" d="([^"]+)"', out).group(1),
             n_cej + gum.MARGIN_DOWN,
         )
@@ -566,7 +578,7 @@ def build_one(s: ToothSpec, out_dir: Path, dry: bool, root_scale: float | None =
     got_root = (n_cej - n_apex) / (n_inc - n_apex)
     got_total = n_inc - n_apex
     got_w = max(
-        silhouette_width(
+        crown_width(
             re.search(r'<path id="tooth-base" d="([^"]+)"', out).group(1), y
         )
         for y in [n_inc - (n_inc - n_cej) * f for f in (0.2, 0.35, 0.5, 0.65, 0.8)]

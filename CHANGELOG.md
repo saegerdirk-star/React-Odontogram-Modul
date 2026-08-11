@@ -31,28 +31,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Crown widths follow the mesiodistal diameters they are meant to.**
+- **Crown widths follow the mesiodistal diameters they are meant to, and the
+  generator can now measure a width.** Two defects, one behind the other.
+
   `width_frac` — the tooth's crown width as a fraction of its own length — was
-  the one anatomical value in the generator that carried no source, and the
-  values did not agree with each other. Measured crown against crown against the
-  mean mesiodistal crown diameters, the canine and both premolars stood about a
-  fifth too wide and the incisors about a seventh too narrow; the pattern is a
-  source-level systematic, since 13, 14 and 15 are exactly the three templates
-  derived from source drawings 13 and 14.
+  the one anatomical value in the generator that carried no source. It is now
+  set from the standard mean mesiodistal crown diameters (Wheeler / Ash &
+  Nelson), averaged over the positions each template serves and recorded in full
+  in `tools/toothgen/spec.py`. Unlike `root_frac` and `length_rel` these are
+  **not** read off the Odontographie plates: measuring a width automatically off
+  those pages was attempted and abandoned, because it returned a fragment for
+  one template and a clipped specimen for another.
 
-  Corrected on all seventeen templates from the standard mean mesiodistal crown
-  diameters (Wheeler / Ash & Nelson), averaged over the positions each template
-  serves and recorded in full in `tools/toothgen/spec.py`. Unlike `root_frac`
-  and `length_rel` these are **not** read off the Odontographie plates:
-  measuring a width automatically off those pages was attempted and abandoned,
-  because it returned a fragment for one template and a clipped specimen for
-  another — the same failure mode that made the cervical line unreadable.
+  Fitting those targets then exposed the second defect. The generator measured a
+  width by flattening the outline through the **Bézier anchors** rather than the
+  curve, so a molar read 24.6 units wide where it is 40.0 — and every template
+  had been scaled up to make that undersized number match. The error was largest
+  exactly where the outline curves most between anchors, which is why the
+  premolars and molars had come out about a third too wide while the incisors
+  were close to right, and why it looked from the bounding boxes as though the
+  posterior roots were splayed. `_crossings` now flattens through the same
+  adaptive subdivision the rest of the generator uses, and `crown_width` (full
+  extent, for a crown) is separated from `silhouette_width` (tooth material, for
+  asking how wide the root holding a canal is).
 
-  The scale is 3.049 units per mm, chosen so the whole permanent arch keeps the
-  width it had. The correction redistributes width between tooth classes rather
-  than making the chart wider or narrower, so the column widths and the canine
-  relationship are untouched — 43's centre stays in the 13/12 embrasure.
-  Rendering only; parity byte-identical.
+  With both fixed, **every contact in the mouth is 9 to 11 px** — anterior and
+  posterior, upper and lower — because each column is now simply its own tooth
+  plus 6 px, one rule for all thirty-two positions. Rendering only; parity
+  byte-identical.
 
 - **The lower canine stands where the mouth puts it.** The two arches shared one
   column list, so every tooth sat directly above its antagonist — and a lower

@@ -275,20 +275,20 @@ select:focus{
    minmax() lower bound keeps the old behaviour of shrinking under a narrow
    container rather than overflowing it.
    The two arches USED to share one column list, so that a tooth and its
-   antagonist stood in one column. They no longer can. A lower incisor is drawn
-   22.5 px wide against the upper central's 36.6, and one shared column either
-   leaves the lower front standing 25 px apart - which is what it did - or
-   crushes the upper front to close it. Each arch is its own grid now, and the
-   only difference between the two lists is the four incisor columns, 44 px
-   above and 31 px below.
-   That single difference is why the lower canine lands where the mouth puts
-   it. Four columns narrower by 13 px makes the lower arch 52 px narrower, so
-   centred it sits 26 px in on each side, and the tip of 43/33 comes to rest in
-   the embrasure between the upper lateral and the upper canine - the Class I
-   canine relationship, arrived at by closing contacts rather than by being
-   drawn in. The 44 px floor is deliberately broken for those four: at 31 px
-   wide and a full row tall the tile is still well over the 24 px WCAG 2.5.8
-   asks for, and a lower incisor that is not 31 px wide is not a lower incisor. */
+   antagonist stood in one column. They no longer can, and they no longer need
+   to: EVERY column below is its own tooth plus 6 px, in both arches, emitted
+   from the same mesiodistal crown widths the drawings are scaled to
+   (`ToothSpec.col_px`, checked by verify.py). One rule, no hand-set values.
+   Every contact is therefore 10 px, and the Class I canine relationship falls
+   out of it rather than being arranged: half a column plus half a gap adds the
+   same slack on both sides of every contact, so the slack cancels and what is
+   left between 13 and 43 is the anatomical difference - the lower six front
+   teeth are 10 mm narrower than the upper six, which is 31 px per side at this
+   scale. The tip of 43/33 lands in the embrasure between the upper lateral and
+   the upper canine because the teeth are the widths they are.
+   The 44 px touch-target floor is gone for the lower incisors, which stand in
+   40 px. At a full row tall that is still well over the 24 px WCAG 2.5.8 asks
+   for, and a lower incisor that is not 40 px wide is not a lower incisor. */
 .tooth-grid{
   display:flex;
   flex-direction:column;
@@ -303,21 +303,21 @@ select:focus{
 }
 .upper-arch{
   grid-template-columns:
-    minmax(28px, 72px) minmax(28px, 72px) minmax(28px, 72px)
-    minmax(28px, 54px) minmax(28px, 57px) minmax(28px, 50px)
-    minmax(28px, 44px) minmax(28px, 44px)
-    minmax(28px, 44px) minmax(28px, 44px)
-    minmax(28px, 50px) minmax(28px, 57px) minmax(28px, 54px)
-    minmax(28px, 72px) minmax(28px, 72px) minmax(28px, 72px);
+    minmax(28px, 63px) minmax(28px, 63px) minmax(28px, 72px)
+    minmax(28px, 51px) minmax(28px, 52px) minmax(28px, 54px)
+    minmax(28px, 49px) minmax(28px, 62px)
+    minmax(28px, 62px) minmax(28px, 49px)
+    minmax(28px, 54px) minmax(28px, 52px) minmax(28px, 51px)
+    minmax(28px, 72px) minmax(28px, 63px) minmax(28px, 63px);
 }
 .lower-arch{
   grid-template-columns:
-    minmax(28px, 72px) minmax(28px, 72px) minmax(28px, 72px)
-    minmax(28px, 54px) minmax(28px, 57px) minmax(28px, 50px)
-    minmax(24px, 31px) minmax(24px, 31px)
-    minmax(24px, 31px) minmax(24px, 31px)
-    minmax(28px, 50px) minmax(28px, 57px) minmax(28px, 54px)
-    minmax(28px, 72px) minmax(28px, 72px) minmax(28px, 72px);
+    minmax(28px, 75px) minmax(28px, 75px) minmax(28px, 75px)
+    minmax(28px, 51px) minmax(28px, 51px) minmax(28px, 54px)
+    minmax(28px, 40px) minmax(28px, 40px)
+    minmax(28px, 40px) minmax(28px, 40px)
+    minmax(28px, 54px) minmax(28px, 51px) minmax(28px, 51px)
+    minmax(28px, 75px) minmax(28px, 75px) minmax(28px, 75px);
 }
 /* Engine-owned multi-tooth bridge-span overlay. Absolutely positioned so it does
    not consume a grid cell; sits above the tiles but never intercepts pointer
