@@ -274,55 +274,56 @@ export interface ClaspGlyph {
  *  arch, like every other overlay fraction here. */
 const CLASP_Y_FRACTION = 0.72;
 
-/** Hook RADIUS as a fraction of tile width.
- *
- *  Small on purpose. A clasp arm hugs the proximal contour of one crown; drawn
- *  large it sweeps across the occlusal surface and reads as a blob sitting on
- *  the tooth rather than as an arm gripping it — which is exactly what a first
- *  attempt at 0.42 of tile WIDTH looked like on the running chart. At 0.115 the
- *  whole circle is under a quarter of the tile, so the hook stays on the crown
- *  it belongs to and never reaches its neighbour. */
-const CLASP_RADIUS = 0.115;
-/** How far the hook's centre sits inside the crown edge, in radii. >1 keeps the
- *  entire arc inside the tile. */
-const CLASP_INSET = 1.35;
-/** Half the arc's opening, in degrees: the gap that makes the shape read as a
- *  hook rather than a ring. */
-const CLASP_GAP_HALF = 52;
+/** Arc RADIUS as a fraction of tile width. It is also the arc's reach in BOTH
+ *  directions, since a quarter circle spans one radius across and one down. */
+const CLASP_RADIUS = 0.20;
+/** How far inside the tile edge the arc's proximal end sits, as a fraction of
+ *  tile width. The tile is wider than the crown it holds, so anchoring on the
+ *  bare tile edge would float the hook in the interdental space instead of
+ *  landing it on the tooth. */
+const CLASP_EDGE_INSET = 0.10;
 
 /**
- * Build the hook path for ONE engaged side of one tooth.
+ * Build the clasp arm for ONE engaged side of one tooth.
  *
- * A near-closed circular arc whose OPENING faces the crown's centre, so the arm
- * reads as gripping the tooth rather than pointing away from it. `sideIsLeft`
- * is resolved by the caller from {@link mesialIsLeft}, so this function never
- * needs to know FDI numbering.
+ * A QUARTER circle, not a near-closed ring (Dirk, 2026-08-11), placed the way
+ * a clasp arm actually runs:
+ *
+ *   - one end toward the crown's greatest extent — its widest point, level
+ *     with the height of contour, which is what the arm engages;
+ *   - the other, more occlusal end toward the interdental space, where the arm
+ *     leaves the tooth toward the denture;
+ *   - and therefore the belly toward the gingiva, which is the curve asked for
+ *     one step earlier.
+ *
+ * All three fall out of ONE construction: the arc's centre sits at the
+ * occlusal-inward corner, so the quarter between "one radius gingival of the
+ * centre" and "one radius proximal of it" bulges away from that corner.
+ *
+ * `uy` is the OCCLUSAL screen direction, and it is arch-derived rather than
+ * side-derived: the lower arch draws crowns up (occlusal is -y), the upper
+ * draws them down. Taking it from the engaged side instead would put every
+ * upper clasp upside down.
  */
 function claspPath(rect: RetentionRect, isLower: boolean, sideIsLeft: boolean): ClaspGlyph {
   const r = rect.width * CLASP_RADIUS;
   const yF = isLower ? 1 - CLASP_Y_FRACTION : CLASP_Y_FRACTION;
-  const cy = rect.y + rect.height * yF;
-  const edge = sideIsLeft ? rect.x : rect.x + rect.width;
-  const inward = sideIsLeft ? 1 : -1;
-  const cx = edge + inward * r * CLASP_INSET;
-  // The belly of the arc points at the GINGIVA and the opening faces
-  // occlusally (Dirk, 2026-08-11) — that is the way a clasp arm actually runs,
-  // sweeping under the survey line toward the gum. Which screen direction that
-  // is depends on the arch, not on the side: the lower arch draws crowns up and
-  // gum down, the upper the other way about. In SVG angles, 90° is screen-down
-  // and 270° screen-up, so the GAP sits opposite the gingiva.
-  const gap = isLower ? 270 : 90;
-  const rad = (deg: number) => (deg * Math.PI) / 180;
-  const at = (deg: number) => [
-    (cx + r * Math.cos(rad(deg))).toFixed(2),
-    (cy + r * Math.sin(rad(deg))).toFixed(2),
-  ];
-  const [x0, y0] = at(gap + CLASP_GAP_HALF);
-  const [x1, y1] = at(gap - CLASP_GAP_HALF);
-  // Sweep the LONG way round (large-arc), so what is drawn is the hook and not
-  // the little gap itself.
-  const d = `M ${x0} ${y0} A ${r.toFixed(2)} ${r.toFixed(2)} 0 1 1 ${x1} ${y1}`;
-  return { d, width: Math.max(1.1, r * 0.52) };
+  const cy = rect.y + rect.height * yF;              // height of contour
+  const ux = sideIsLeft ? 1 : -1;                    // toward the crown's centre
+  const uy = isLower ? -1 : 1;                       // toward the occlusal edge
+  const edge = (sideIsLeft ? rect.x : rect.x + rect.width) + ux * rect.width * CLASP_EDGE_INSET;
+
+  const cx = edge + ux * r;
+  const ccy = cy + uy * r;                           // arc centre: occlusal-inward corner
+  const crownEnd = [cx, cy];                         // toward the greatest extent
+  const interdentalEnd = [edge, ccy];                // toward the interdental space
+  // Short way round. Which rotational direction that is flips with either the
+  // side or the arch, so it is derived rather than tabulated.
+  const sweep = ux * uy < 0 ? 1 : 0;
+  const n = (v: number) => v.toFixed(2);
+  const d = `M ${n(crownEnd[0])} ${n(crownEnd[1])} `
+    + `A ${n(r)} ${n(r)} 0 0 ${sweep} ${n(interdentalEnd[0])} ${n(interdentalEnd[1])}`;
+  return { d, width: Math.max(1.2, r * 0.30) };
 }
 
 /**
