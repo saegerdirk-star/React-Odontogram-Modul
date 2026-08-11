@@ -286,8 +286,8 @@ const CLASP_RADIUS = 0.115;
 /** How far the hook's centre sits inside the crown edge, in radii. >1 keeps the
  *  entire arc inside the tile. */
 const CLASP_INSET = 1.35;
-/** Half the arc's opening, in degrees: the gap that faces the tooth's centre
- *  and makes the shape read as a hook rather than a ring. */
+/** Half the arc's opening, in degrees: the gap that makes the shape read as a
+ *  hook rather than a ring. */
 const CLASP_GAP_HALF = 52;
 
 /**
@@ -305,9 +305,13 @@ function claspPath(rect: RetentionRect, isLower: boolean, sideIsLeft: boolean): 
   const edge = sideIsLeft ? rect.x : rect.x + rect.width;
   const inward = sideIsLeft ? 1 : -1;
   const cx = edge + inward * r * CLASP_INSET;
-  // The gap points toward the crown: 0° (screen-right) for a hook on the left
-  // edge, 180° for one on the right edge.
-  const gap = inward > 0 ? 0 : 180;
+  // The belly of the arc points at the GINGIVA and the opening faces
+  // occlusally (Dirk, 2026-08-11) — that is the way a clasp arm actually runs,
+  // sweeping under the survey line toward the gum. Which screen direction that
+  // is depends on the arch, not on the side: the lower arch draws crowns up and
+  // gum down, the upper the other way about. In SVG angles, 90° is screen-down
+  // and 270° screen-up, so the GAP sits opposite the gingiva.
+  const gap = isLower ? 270 : 90;
   const rad = (deg: number) => (deg * Math.PI) / 180;
   const at = (deg: number) => [
     (cx + r * Math.cos(rad(deg))).toFixed(2),
