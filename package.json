@@ -34,10 +34,10 @@
   ],
   "main": "./dist/odontogram.js",
   "module": "./dist/odontogram.js",
-  "types": "./dist/odontogram.d.ts",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/odontogram.d.ts",
+      "types": "./dist/index.d.ts",
       "import": "./dist/odontogram.js"
     },
     "./fhir": {
@@ -53,6 +53,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:lib": "vite build --config vite.lib.config.ts",
+    "verify:lib-artifacts": "node tools/verify-library-artifacts.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "NODE_OPTIONS=--max-old-space-size=8192 vitest run",

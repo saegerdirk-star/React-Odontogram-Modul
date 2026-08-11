@@ -124,7 +124,7 @@ export default function OdontogramClient() {
 Vagy töltsd be egy kizárólag kliensoldali dinamikus importtal: `dynamic(() => import("./OdontogramClient"), { ssr: false })`.
 
 #### Fontos megjegyzések és jelenlegi korlátok
-- **Kizárólag ESM** — a csomag egyetlen ES modult (`dist/odontogram.js`) publikál, kiegészítve egy típusdeklarációs belépési ponttal (`dist/index.d.ts`). A bundler modulfeloldást célozza; nincs CommonJS build.
+- **Kizárólag ESM** — a csomag fő ES modult (`dist/odontogram.js`) és opcionális FHIR ES modult (`dist/fhir.js`) publikál, a megfelelő típusdeklarációkkal (`dist/index.d.ts` és `dist/fhir.d.ts`). A bundler modulfeloldást célozza; nincs CommonJS build.
 - **A stíluslap külön van** — kötelező egyszer importálnod a `react-advanced-odontogram/style.css` fájlt; ez nem töltődik be automatikusan. A stílus globális CSS, amely a `.odontogram-root` alá van skálázva, és `--odon-*` CSS változók vezérlik.
 - **SSR / kizárólag kliensoldali** — a komponens csatoláskor (mount) olvassa a DOM-ot (`document`), ezért a böngészőben kell futnia. SSR keretrendszerekben egy Client Component-ben (`"use client"`) vagy kizárólag kliensoldali dinamikus importon keresztül kell renderelni.
 - **Az eszközök (assets) önállóak** — a fog- és ikon-SVG-k build időben be vannak ágyazva a JavaScript bundle-be; **nincs futásidejű asset lekérés**, amit be kellene állítani, és semmi extrát nem kell átmásolni a public mappádba.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { FhirExportOptions } from "../fhir/index";
 
@@ -46,19 +46,18 @@ describe("optional FHIR package boundary", () => {
     expect(optionalFhirConsumerOptions.dialect).toBe("legacy");
   });
 
-  it("ships declaration files for every package type entry", () => {
+  it("maps each package type entry to a declared library entry", () => {
     const packageJson = JSON.parse(source("package.json")) as {
       types: string;
       exports: Record<string, { types?: string }>;
     };
-    const typeEntries = [
-      packageJson.types,
-      ...Object.values(packageJson.exports).flatMap((entry) => entry.types ? [entry.types] : []),
-    ];
+    const viteLibraryConfig = source("vite.lib.config.ts");
 
-    for (const typeEntry of typeEntries) {
-      expect(existsSync(resolve(root, typeEntry))).toBe(true);
-    }
+    expect(packageJson.types).toBe("./dist/index.d.ts");
+    expect(packageJson.exports["."]?.types).toBe("./dist/index.d.ts");
+    expect(packageJson.exports["./fhir"]?.types).toBe("./dist/fhir.d.ts");
+    expect(viteLibraryConfig).toMatch(/index:\s*path\.resolve\(__dirname, ['"]src\/index\.ts['"]\)/);
+    expect(viteLibraryConfig).toMatch(/fhir:\s*path\.resolve\(__dirname, ['"]src\/fhir\/index\.ts['"]\)/);
   });
 
   it("keeps document types and payload version in one source module", () => {

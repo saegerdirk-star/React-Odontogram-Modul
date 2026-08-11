@@ -5,8 +5,8 @@
 //
 // Imports the global stylesheet as a side effect so the library build extracts
 // it to a single `dist/style.css` (consumers import it once — see the README).
-// The bundled type declaration (`dist/index.d.ts`, produced by vite-plugin-dts
-// with `rollupTypes`) strips this CSS side-effect import, so a consumer's `tsc`
+// The bundled root declaration (`dist/index.d.ts`, produced by vite-plugin-dts)
+// strips this CSS side-effect import, so a consumer's `tsc`
 // never sees an unresolved `./index.css`. The demo/dev app boots from
 // `src/main.tsx` instead.
 //
