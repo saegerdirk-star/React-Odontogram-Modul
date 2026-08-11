@@ -126,7 +126,7 @@ export default function OdontogramClient() {
 或者使用仅限客户端的动态导入来加载它：`dynamic(() => import("./OdontogramClient"), { ssr: false })`。
 
 #### 重要说明与当前限制
-- **仅支持 ESM** —— 该包发布为单个 ES 模块（`dist/odontogram.js`），并附带一个类型声明入口（`dist/index.d.ts`）。它面向打包工具的模块解析方式；不提供 CommonJS 构建版本。
+- **仅支持 ESM** —— 该包发布主 ES 模块（`dist/odontogram.js`）和可选 FHIR ES 模块（`dist/fhir.js`），并附带相应的类型声明（`dist/index.d.ts` 和 `dist/fhir.d.ts`）。它面向打包工具的模块解析方式；不提供 CommonJS 构建版本。
 - **样式表是独立的** —— 你**必须**导入一次 `react-advanced-odontogram/style.css`；它不会被自动注入。样式为全局 CSS，作用域限定在 `.odontogram-root` 下，并由 `--odon-*` CSS 变量驱动。
 - **SSR / 仅限客户端** —— 该组件在挂载时会读取 DOM（`document`），因此必须在浏览器中运行。在支持 SSR 的框架中，请在 Client Component（`"use client"`）中渲染它，或通过仅限客户端的动态导入方式加载。
 - **资源是自包含的** —— 牙齿和图标的 SVG 在构建时被内联到 JavaScript 包中；**无需配置任何运行时资源请求**，也无需向你的 public 文件夹额外复制任何文件。

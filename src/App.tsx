@@ -26,7 +26,7 @@ export {
   perioAxisApplies, PERIO_ASSESSMENT_AXES,
 } from "./odontogram";
 export type { ExaminationContext, AssessmentStatus, PerioAssessmentAxis } from "./odontogram";
-export type { ExaminationSnapshotRecord, ExaminationContextRecord } from "./fhir/types";
+export type { ExaminationSnapshotRecord, ExaminationContextRecord } from "./document";
 import type { EngineClaim } from "./odontogram";
 export { buildFhirBundle } from "./fhir/toFhir";
 export { parseFhirBundle } from "./fhir/fromFhir";

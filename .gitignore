@@ -1,5 +1,6 @@
 # === Node / React ===
 node_modules/
+.codegen-cache/
 test_uis/odontogram_editor_v4/node_modules
 backend/node_modules
 npm-debug.log*
