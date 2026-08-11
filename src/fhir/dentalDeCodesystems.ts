@@ -65,6 +65,10 @@ export const GLICKMAN_FURCATION_SYSTEM = `${DENTAL_DE_BASE}/CodeSystem/glickman-
 export const PA_BEFUND_TYPE_SYSTEM = `${DENTAL_DE_BASE}/CodeSystem/pa-befund-type`;
 /** `PeriImplantFindingCS` — peri-implant assessment/mobility identifiers. */
 export const PERI_IMPLANT_FINDING_SYSTEM = `${DENTAL_DE_BASE}/CodeSystem/peri-implant-finding`;
+/** `DentalImplantPropertyCS` — the quantity-valued physical properties a
+ *  `DentalImplantDE` slices `Device.property` by. Read from the published
+ *  CodeSystem (v0.41.6, active 2026-07-29), not derived. */
+export const DENTAL_DE_IMPLANT_PROPERTY_SYSTEM = `${DENTAL_DE_BASE}/CodeSystem/dental-implant-property`;
 
 /** `ToothSurfacesExt` — repeatable; ONE surface code per extension instance. */
 export const TOOTH_SURFACES_EXT_URL = `${DENTAL_DE_BASE}/StructureDefinition/tooth-surfaces`;
@@ -154,18 +158,32 @@ export function glickmanGradeFromCode(code: string): number | undefined {
 /**
  * `Device.identifier` system for the placeholder implant identity this adapter
  * has to mint. `PeriImplantObservationDE.focus` is 1..1 onto a `DentalImplantDE`
- * Device, and the editor knows an implant only by the FDI position it occupies
- * — it holds no manufacturer, serial number or practice device id. A host that
- * owns a device registry replaces this identifier with its own; keeping the
- * placeholder in a clearly adapter-owned URN keeps it from being mistaken for a
- * real device identity.
+ * Device, and the editor may know an implant only by the FDI position it
+ * occupies. A host that owns a device registry replaces this identifier with
+ * its own; keeping the placeholder in a clearly adapter-owned URN keeps it from
+ * being mistaken for a real device identity.
+ *
+ * Since odontogram-im1 the editor CAN know more. Where a UDI is recorded, the
+ * device identifier it carries is emitted as a real identifier alongside this
+ * one — a GTIN names the product globally, which a URN built from a tooth
+ * number never could.
  */
 export const IMPLANT_PLACEHOLDER_IDENTIFIER_SYSTEM = "urn:odontogram:dental-implant-position";
 
-/** `Device.type` for a placeholder implant. `DentalImplantDE` leaves the type
- *  binding open and the IG's own example uses a text-only value, so no code is
- *  invented here either. */
+/** `Device.type` for an implant. `DentalImplantDE` leaves the type binding open
+ *  (example-bound to DeviceType) and the IG's own example uses a text-only
+ *  value, so no code is invented here either. */
 export const IMPLANT_DEVICE_TYPE_TEXT = "Endosseous dental implant";
+
+/** `DentalImplantPropertyCS` codes, verbatim from the published CodeSystem.
+ *  Both are mustSupport slices of `Device.property` on `DentalImplantDE`, so
+ *  the IG expects them whenever the practice knows them. */
+export const IMPLANT_PROPERTY = {
+  /** "Implant diameter" — nominal physical diameter of the dental implant. */
+  diameter: "diameter",
+  /** "Implant length" — nominal physical length of the dental implant. */
+  length: "length",
+} as const;
 
 /** Component slice codes of `OdontogramObservationDE` (`OdontogramComponentCS`). */
 export const ODONTO_COMPONENT = {

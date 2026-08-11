@@ -30,6 +30,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   none is kept. Typing or scanning a UDI shows the lot and expiry it yielded,
   so a scan visibly does something.
 
+  **It reaches FHIR**, and needed nothing invented to get there: `DentalImplantDE`
+  already defines `manufacturer`, `lotNumber`, `expirationDate`, `serialNumber`,
+  `modelNumber`, `deviceName` and `udiCarrier`, and slices `Device.property`
+  into `diameter` and `length` as millimetre Quantities — both mustSupport,
+  with their own published `DentalImplantPropertyCS`. The engine had been
+  sending a Device with nothing in it but a placeholder identifier.
+
+  The Device is now emitted for **every** charted implant. It used to be minted
+  inside the peri-implant builder, so an implant with no peri-implant
+  measurement produced no Device at all — and in an initial examination that is
+  the commonest implant there is. The Device asserts *that* an implant is
+  present, which is true whether or not the practice knows which one; the
+  identity fields are then simply absent, and an omitted `lotNumber` says
+  nothing false. The canonical reader takes it back, so a round trip keeps it.
+
   API: `getImplantProduct` / `setImplantProduct` (silent no-op on a natural
   tooth, guard before the DS-1 gate, mirroring the Mombelli indices) and
   `getChartedImplantProducts`. The systems list writes itself from the charts —

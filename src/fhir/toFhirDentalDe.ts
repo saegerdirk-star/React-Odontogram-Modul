@@ -34,7 +34,7 @@ import {
   toFdiSurface, restorationTypeCode, restorationMaterialCode,
   rootCariesSct, resorptionSct, apicalDxSct, restorationStatusSct,
 } from "./dentalDeCodesystems";
-import { buildDentalDePerioEntries, type DentalDePerioContext } from "./toFhirDentalDePerio";
+import { buildDentalDePerioEntries, buildImplantDevice, type DentalDePerioContext } from "./toFhirDentalDePerio";
 import { primaryFdiForSlot } from "../utils/numbering";
 
 /** The FDI code a record is EXPORTED under.
@@ -627,6 +627,15 @@ export function buildDentalDeBundle(
 
     for (const obs of cariesObservations(ctx, fdi, rec)) entries.push({ resource: obs });
     for (const obs of extraFindings(ctx, fdi, rec)) entries.push({ resource: obs });
+    // odontogram-im1: the implant's own identity, emitted for EVERY charted
+    // implant. It used to be minted inside the peri-implant builder, so an
+    // implant with no peri-implant measurement produced no Device at all - and
+    // in an initial examination that is the commonest implant there is. The
+    // Device asserts THAT an implant is present, which is true whether or not
+    // the practice knows which one.
+    if (rec.toothSelection === "implant") {
+      entries.push(buildImplantDevice(perioCtx, fdi, rec) as NonNullable<Bundle["entry"]>[number]);
+    }
     for (const entry of buildDentalDePerioEntries(perioCtx, fdi, rec)) {
       entries.push(entry as NonNullable<Bundle["entry"]>[number]);
     }

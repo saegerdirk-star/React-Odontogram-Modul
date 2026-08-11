@@ -42,6 +42,7 @@ import {
   PERIODONTAL_SITE_CODE, GLICKMAN_GRADE_CODE,
   IMPLANT_PLACEHOLDER_IDENTIFIER_SYSTEM, IMPLANT_DEVICE_TYPE_TEXT,
   VERIFIED_SCT, toFdiSurface,
+  DENTAL_DE_IMPLANT_PROPERTY_SYSTEM, IMPLANT_PROPERTY,
 } from "./dentalDeCodesystems";
 
 // The `fhir/r4` types do not model `Observation.component.extension` (an R4
@@ -531,11 +532,50 @@ function buildPeriImplant(ctx: DentalDePerioContext, fdi: string, src: PerioSour
 
   if (build.components.length === 0) return [];
 
-  const deviceId = `odontogram-implant-${fdi}`;
-  const deviceFullUrl = `urn:uuid:${deviceId}`;
+  const obs = ctx.baseObservation(
+    DENTAL_DE_PERI_IMPLANT_PROFILE, localCode(PERI_IMPLANT_FINDING_SYSTEM, PERI_IMPLANT_FINDING.assessment),
+  ) as Any;
+  obs.bodySite = ctx.toothBodySite(fdi);
+  // The Device is emitted by the bundle builder for EVERY implant, so this only
+  // points at it. It used to be minted here, which meant an implant with no
+  // peri-implant measurement produced no Device at all - and in an initial
+  // examination that is the commonest implant there is (odontogram-im1).
+  obs.focus = [{ reference: implantDeviceFullUrl(fdi) }];
+  obs.component = build.components;
+
+  return [{ resource: obs }];
+}
+
+/** The in-bundle identity of the `DentalImplantDE` for one position. */
+export function implantDeviceFullUrl(fdi: string): string {
+  return `urn:uuid:odontogram-implant-${fdi}`;
+}
+
+/**
+ * The `DentalImplantDE` Device for one implant position.
+ *
+ * Emitted for EVERY charted implant, whether or not anything else is known
+ * about it. The Device asserts THAT an implant is present, which is true even
+ * when the practice has no idea which one - an implant that arrived with the
+ * patient is a complete record without a product (Dirk, 2026-08-11). The
+ * identity fields are then simply absent; an omitted `lotNumber` says nothing
+ * false and needs no `dataAbsentReason`.
+ *
+ * Every element used here is defined by the profile - manufacturer, lotNumber,
+ * expirationDate, serialNumber, modelNumber, deviceName, udiCarrier, and
+ * `property` sliced into `diameter` and `length` as mm Quantities, both
+ * mustSupport. Nothing is invented (the sourcing rule in dentalDeCodesystems).
+ */
+export function buildImplantDevice(
+  ctx: DentalDePerioContext, fdi: string, rec: ToothRecord,
+): PerioBundleEntry {
+  const p = (rec as Any).implantProduct as Any | undefined;
+  const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
+
   const device: Any = {
     resourceType: "Device",
-    id: deviceId,
+    id: `odontogram-implant-${fdi}`,
     meta: { profile: [DENTAL_DE_IMPLANT_DEVICE_PROFILE] },
     extension: [{ url: FDI_TOOTH_NUMBER_EXT_URL, valueCode: fdi }],
     identifier: [{ system: IMPLANT_PLACEHOLDER_IDENTIFIER_SYSTEM, value: fdi }],
@@ -543,17 +583,58 @@ function buildPeriImplant(ctx: DentalDePerioContext, fdi: string, src: PerioSour
     type: { text: IMPLANT_DEVICE_TYPE_TEXT },
     patient: { reference: ctx.subjectRef },
   };
-  ctx.reportText({
-    tooth: fdi, field: "implantDevice", value: deviceId,
-    reason: "PeriImplantObservationDE.focus is 1..1 onto a DentalImplantDE Device, so a placeholder device identity is minted from the FDI position; a host that owns a device registry must replace it.",
-  });
 
-  const obs = ctx.baseObservation(
-    DENTAL_DE_PERI_IMPLANT_PROFILE, localCode(PERI_IMPLANT_FINDING_SYSTEM, PERI_IMPLANT_FINDING.assessment),
-  ) as Any;
-  obs.bodySite = ctx.toothBodySite(fdi);
-  obs.focus = [{ reference: deviceFullUrl }];
-  obs.component = build.components;
+  const manufacturer = str(p?.manufacturer);
+  const system = str(p?.system);
+  const udi = str(p?.udi);
+  const di = str(p?.deviceIdentifier);
+  const lot = str(p?.lot);
+  const serial = str(p?.serial);
+  const expiry = str(p?.expiry);
+  const diameter = num(p?.diameterMm);
+  const length = num(p?.lengthMm);
 
-  return [{ fullUrl: deviceFullUrl, resource: device }, { resource: obs }];
+  if (manufacturer) device.manufacturer = manufacturer;
+  if (system) {
+    device.modelNumber = system;
+    // `deviceName.type` is required by base Device; "model-name" is what a
+    // system designation is.
+    device.deviceName = [{ name: system, type: "model-name" }];
+  }
+  if (lot) device.lotNumber = lot;
+  if (serial) device.serialNumber = serial;
+  if (expiry) device.expirationDate = expiry;
+  if (udi) {
+    const carrier: Any = { carrierHRF: udi };
+    if (di) carrier.deviceIdentifier = di;
+    device.udiCarrier = [carrier];
+  }
+  // The GTIN is NOT repeated as a second `Device.identifier`. It would need a
+  // system URI, the IG defines none, and picking one would be exactly the kind
+  // of invention the sourcing rule forbids. `udiCarrier.deviceIdentifier` is
+  // the element FHIR defines for it and it already carries it above.
+
+  const property: Any[] = [];
+  if (diameter !== undefined) {
+    property.push({
+      type: { coding: [{ system: DENTAL_DE_IMPLANT_PROPERTY_SYSTEM, code: IMPLANT_PROPERTY.diameter }] },
+      valueQuantity: [mm(diameter)],
+    });
+  }
+  if (length !== undefined) {
+    property.push({
+      type: { coding: [{ system: DENTAL_DE_IMPLANT_PROPERTY_SYSTEM, code: IMPLANT_PROPERTY.length }] },
+      valueQuantity: [mm(length)],
+    });
+  }
+  if (property.length) device.property = property;
+
+  if (!manufacturer && !system && !udi && !lot && !expiry) {
+    ctx.reportText({
+      tooth: fdi, field: "implantDevice", value: device.id,
+      reason: "No implant product is recorded, which is a complete record for an implant that arrived with the patient; the Device asserts the implant's presence and carries a placeholder identity a host with a device registry replaces.",
+    });
+  }
+
+  return { fullUrl: implantDeviceFullUrl(fdi), resource: device };
 }
