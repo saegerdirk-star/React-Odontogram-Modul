@@ -512,25 +512,25 @@ select:focus{
    sixteen different graphics on one line. Rounding the two sides independently
    gives each template a slightly different scale, `preserveAspectRatio` centres
    the shortfall, and every shared line across the arch steps at every tile. */
-.tooth-tile.tpl-11 .tooth-svg svg{width:64.31px;height:132.19px}
+.tooth-tile.tpl-11 .tooth-svg svg{width:64.31px;height:131.06px}
 .tooth-tile.tpl-12 .tooth-svg svg{width:64.31px;height:128.14px}
-.tooth-tile.tpl-31 .tooth-svg svg{width:64.31px;height:124.25px}
-.tooth-tile.tpl-13 .tooth-svg svg{width:65.29px;height:142.56px}
-.tooth-tile.tpl-14 .tooth-svg svg{width:64.48px;height:145.15px}
-.tooth-tile.tpl-15 .tooth-svg svg{width:64.48px;height:132.68px}
-.tooth-tile.tpl-16 .tooth-svg svg{width:69.50px;height:139.48px}
-.tooth-tile.tpl-17 .tooth-svg svg{width:69.50px;height:138.19px}
-.tooth-tile.tpl-46 .tooth-svg svg{width:69.50px;height:143.86px}
+.tooth-tile.tpl-31 .tooth-svg svg{width:64.31px;height:125.39px}
+.tooth-tile.tpl-13 .tooth-svg svg{width:65.29px;height:138.67px}
+.tooth-tile.tpl-14 .tooth-svg svg{width:64.48px;height:144.83px}
+.tooth-tile.tpl-15 .tooth-svg svg{width:64.48px;height:132.84px}
+.tooth-tile.tpl-16 .tooth-svg svg{width:69.50px;height:141.43px}
+.tooth-tile.tpl-17 .tooth-svg svg{width:69.50px;height:140.45px}
+.tooth-tile.tpl-46 .tooth-svg svg{width:69.50px;height:144.34px}
 /* primary dentition — mounted in place of the successor's template while a
    tooth is charted as a milk tooth (PRIMARY_TEMPLATE in odontogram.ts) */
-.tooth-tile.tpl-51 .tooth-svg svg{width:64.31px;height:108.05px}
-.tooth-tile.tpl-52 .tooth-svg svg{width:64.31px;height:104.81px}
-.tooth-tile.tpl-53 .tooth-svg svg{width:65.29px;height:117.13px}
-.tooth-tile.tpl-54 .tooth-svg svg{width:64.48px;height:113.72px}
-.tooth-tile.tpl-55 .tooth-svg svg{width:69.50px;height:116.32px}
-.tooth-tile.tpl-71 .tooth-svg svg{width:64.31px;height:101.41px}
-.tooth-tile.tpl-74 .tooth-svg svg{width:69.50px;height:115.83px}
-.tooth-tile.tpl-75 .tooth-svg svg{width:69.50px;height:117.61px}
+.tooth-tile.tpl-51 .tooth-svg svg{width:64.31px;height:107.08px}
+.tooth-tile.tpl-52 .tooth-svg svg{width:64.31px;height:104.65px}
+.tooth-tile.tpl-53 .tooth-svg svg{width:65.29px;height:114.05px}
+.tooth-tile.tpl-54 .tooth-svg svg{width:64.48px;height:115.18px}
+.tooth-tile.tpl-55 .tooth-svg svg{width:69.50px;height:117.13px}
+.tooth-tile.tpl-71 .tooth-svg svg{width:64.31px;height:102.38px}
+.tooth-tile.tpl-74 .tooth-svg svg{width:69.50px;height:116.80px}
+.tooth-tile.tpl-75 .tooth-svg svg{width:69.50px;height:117.94px}
 /* The lower primary canine is not drawn separately — it is template 53 shown
    about a tenth smaller, which is the observed difference between the arches
    and saves a drawing that would differ in nothing else. The origin is the

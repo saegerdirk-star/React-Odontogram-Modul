@@ -138,36 +138,41 @@ def lumen_extremes(txt: str, base_d: str, apex: float, cej: float):
 # curves - the premolars and molars - had been scaled up by a third to make
 # that undersized number match. Both are intended, reviewed corrections. Every
 # template scales horizontally, so every digest moves.
+# Re-taken again on 2026-08-11 for odontogram-3y9: LENGTH_SPREAD 0.45 -> 0.30.
+# The apex line was still 15.1 px ragged, essentially all of it the canine
+# standing proud of the second molars; at 0.30 it is 9.6 px and the canine is
+# still visibly the longest tooth, which is what "almost equal" asked for. One
+# constant, every template's length moves. Intended, reviewed correction.
 AUTHORED_GEOMETRY_SHA256 = {
-    "11": "1ca8729d87a2242fe953ee697900116fc8137d7d692a6ec3c0759965f4371c12",
-    "12": "bf22d1ad5653b465dfe8ad789d9def8862eda281c68b1dd576f9542ed5bddadc",
-    "13": "c63b1e7f378ded9ede219910cebc69f8f7747d03b8db707b25ae84ce0e0ad310",
+    "11": "144396a2d9d2c51ac4e1f905857cb3d133935ca1d0f6c06732e1d27ba8346e10",
+    "12": "9fa7b90c58def903ea8a64847aba82bbb4273f7bd6722e0d1f844f60e48d77ec",
+    "13": "78f490c0a26b6fd79d390800b4c6d03103967550cd03427fff6c29e1804257ab",
     # Re-taken for odontogram-1c0 on 2026-08-11: tpl 14 is drawn from BUCCAL
     # now - the two roots converge and the palatal tip drops - instead of the
     # proximal aspect the source draws. Intended, reviewed correction.
-    "14": "8b0a455ff4cdf5d10968e0c4008058b6fd09e809f614f0e99634b6d4edb5f92f",
+    "14": "b571f9176594e0a63a8885d74ab8194e65f85483ab8d8686048d6eb32917a525",
     # Re-taken again on 2026-08-10 for odontogram-ay4: template 15's root is
     # grafted from source 13 instead of converted from source 14's two roots.
-    "15": "38e63e3e1b5182ac9257709da93b35ba452bfc3cd9a6fb828f81fb841c6d369e",
-    "16": "8c461d6f1fe41c86b14d9b7eee74d2a294186f57c668a8763947cb8701f38a85",
-    "17": "2e850b149d45b7042614d15e1f94f04a5f488e0ba459c7a3cc3dd672f8ae0bd5",
-    "31": "49f14d83c59e0660ce62371d1be34a02f81c5fb74004262e0325049b08deb3d0",
-    "46": "58552c2010d087cc8afccc3313cb298cbf54a007b7a4fa96c2d230f0ea00d31d",
+    "15": "8d7e88a32e926ac793e07d80f89b227eb5f7931f383c8e82c4299ec04820152b",
+    "16": "8e248bb7e47467e3c36a473205a2fab3f9f4217e634f02e4565822495a5800dc",
+    "17": "d160f77008c245580f9521dd219f2f91f5ee45fca37fa5956a30cfca29d44443",
+    "31": "72b0a2aee5a4ff899a9c2c85155d51a941fca62140fe14b7a6e0f6e6c83ea835",
+    "46": "104996ed31bef30845aa8024076871a49d177bacd1703e758bd20c3acf5106b0",
     # Primary dentition, taken on 2026-08-10 after Dirk read the rendered
     # dentition in the running chart and accepted it. Until then these eight
     # were deliberately unfrozen, which the digest check reports as a state
     # rather than a fault - a drawing does not have to pass a digest before it
     # may exist, it has to pass the dentist (odontogram-0ak, odontogram-e0a).
-    "51": "9e0b40f26d91e3216d4a1c0097ecb040491a1e18648520ab591d2dd82ee64f60",
-    "52": "d4c834816c3eceae6228f733b24a35b3c85b3405c6f6c9fcbe5b25ed3d8484d1",
-    "53": "e2a0cea023c01fbf614970e9e6a860d69107addab4805807e283f7e152d5ad4c",
+    "51": "1e63ebdce62a29a40ee441ee962f3f5014a7cc82b0fd136391f51b98ea3df6f9",
+    "52": "db37be336adbe6c2453ebb5abaf85b558f03ebda46216d14440b84bbab67a603",
+    "53": "8ce2ba27c6769a0a02570e795a5953ac3dee654b8f76f768cd2df24d5ff94367",
     # 54 re-taken after Bild 91 moved its cervix from 38% to 31% of tooth height.
-    "54": "85658c0847d8c54046bf988cccac6f58e9ff0c459f9b8298e1c62cd8afe9fe6f",
+    "54": "d77049d162b47f7581508fa091faac111295c5b564c92d742e07e48775a54c44",
     # 55 re-taken after Bild 92 moved its cervix from 40% to 38%.
-    "55": "b39beb81abf8455683beede0be85c008d6a789e0f52b08d1575a632ad4bc2ffa",
-    "71": "4f1024b46695e4275d1feac5091acdf9261c79188633642ec743c0a5da192e19",
-    "74": "57c5e7617a66689f4aa23b8cacd603dbfd427038e42a048810f4a03ea55580b1",
-    "75": "1e6d9a31e048888a560d51961f21f4e4391c523105943d7b3e927f2a6a6c6cb2",
+    "55": "070887e92d9906f2896e95b9e7a23831e10aaac6bd9d78d75f300f6591186025",
+    "71": "3d10dba845b65cabba818c5b3ccfe842fab2b13c2349c2221e0361b938755140",
+    "74": "c51272e7439616662b15f80cf52f2ba805391e0c45cea33ff1739e8e89e0bec8",
+    "75": "b6f18fdf33717ed216191e21ceb5b4f40ec43a64e63e2702ec318c97eb4e11f7",
 }
 
 GEOMETRY_ATTRIBUTES = (

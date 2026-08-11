@@ -31,6 +31,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The apex line reads even, with the canine still the longest tooth.**
+  `LENGTH_SPREAD` 0.45 → 0.30. Every crown tip already sat on one line; the
+  APICAL ends did not, and the 15.1 px of raggedness was essentially one tooth —
+  the canine standing proud of the second molars. It is 9.6 px now, and the
+  canine is still visibly longest, which is what "almost equal" asked for.
+
+  The constant is a display decision and is documented as one: it pulls every
+  tooth's length toward the mean without touching `length_rel`, which stays the
+  measured proportion. `CEJ_Y` and `IMPLANT_CEJ_Y` in `src/perioGraphic.ts` move
+  with it, and the periodontal chart is unaffected in what it measures — its mm
+  grid is its own scale and the restored roots still run well past 15 mm, so a
+  deep pocket lands on drawn root. Parity byte-identical.
+
 - **Crown widths follow the mesiodistal diameters they are meant to, and the
   generator can now measure a width.** Two defects, one behind the other.
 

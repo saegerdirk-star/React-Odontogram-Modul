@@ -67,24 +67,24 @@ export const EXCLUDED_TOOTH_BASE_IDS: readonly string[] = [
  * canine sits highest (longest root), the lower incisor lowest.
  */
 export const CEJ_Y: Record<TemplateNo, number> = {
-  11: 41.1,
+  11: 40.8,
   12: 37.8,
-  13: 39.1,
-  14: 37.3,
+  13: 38.1,
+  14: 37.2,
   15: 34.6,
-  16: 37.3,
-  17: 37.7,
-  31: 35.3,
-  46: 32.8,
+  16: 37.7,
+  17: 38.3,
+  31: 35.6,
+  46: 32.9,
   // primary dentition; only reached while a tooth is charted as a milk tooth
-  51: 32.5,
+  51: 32.3,
   52: 29.9,
-  53: 34.2,
-  54: 26.6,
-  55: 31.3,
-  71: 27.4,
-  74: 26.8,
-  75: 31.5,
+  53: 33.4,
+  54: 26.9,
+  55: 31.4,
+  71: 27.6,
+  74: 27.0,
+  75: 31.6,
 };
 
 /**
@@ -106,23 +106,23 @@ export const CEJ_Y: Record<TemplateNo, number> = {
  * the templates are.
  */
 export const IMPLANT_CEJ_Y: Record<TemplateNo, number> = {
-  11: 35.2,
+  11: 35.0,
   12: 32.5,
-  13: 36.1,
-  14: 33.3,
+  13: 35.2,
+  14: 33.2,
   15: 31.0,
-  16: 32.5,
-  17: 32.9,
-  31: 30.5,
-  46: 28.8,
-  51: 28.1,
+  16: 32.9,
+  17: 33.4,
+  31: 30.7,
+  46: 28.9,
+  51: 27.9,
   52: 26.0,
-  53: 31.7,
-  54: 24.1,
-  55: 27.5,
-  71: 24.0,
-  74: 23.8,
-  75: 27.7,
+  53: 30.9,
+  54: 24.3,
+  55: 27.6,
+  71: 24.1,
+  74: 23.9,
+  75: 27.8,
 };
 
 /** Predicate telling the arch builders whether a given tooth is an implant on

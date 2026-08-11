@@ -289,7 +289,7 @@ ROOT_DISPLAY_SCALE = 0.75
 # canine stays visibly the longest. The mean is taken PER DENTITION, so the
 # primary set keeps its own scale instead of being pulled toward the permanent
 # one.
-LENGTH_SPREAD = 0.45
+LENGTH_SPREAD = 0.30
 
 _MEAN_LENGTH_REL: dict[bool, float] = {}
 

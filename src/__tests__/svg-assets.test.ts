@@ -135,15 +135,15 @@ describe("installed tooth SVG assets", () => {
     // the length decision divides itself back out of `width_frac`, so how wide
     // a tooth is drawn did not move.
     const expected = {
-      "14": { roots: "2", viewBox: "0.0 0.0 39.8 89.6" },
+      "14": { roots: "2", viewBox: "0.0 0.0 39.8 89.4" },
       // Still shorter than its neighbours relative to its class because the
       // root is grafted from the canine instead of converted from the
       // premolar's two roots (odontogram-ay4): the converted root left lumen
       // standing above the apex, and the viewBox had to reach up to it.
-      "15": { roots: "1", viewBox: "0.0 0.0 39.8 81.9" },
-      "16": { roots: "3", viewBox: "0.0 0.0 42.9 86.1" },
-      "17": { roots: "3", viewBox: "0.0 0.0 42.9 85.3" },
-      "46": { roots: "2", viewBox: "0.0 0.0 42.9 88.8" },
+      "15": { roots: "1", viewBox: "0.0 0.0 39.8 82.0" },
+      "16": { roots: "3", viewBox: "0.0 0.0 42.9 87.3" },
+      "17": { roots: "3", viewBox: "0.0 0.0 42.9 86.7" },
+      "46": { roots: "2", viewBox: "0.0 0.0 42.9 89.1" },
     } as const;
 
     for (const template of POSTERIOR_SIDE) {
