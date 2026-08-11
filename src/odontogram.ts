@@ -18,6 +18,7 @@ import { validValues, validSurfaces } from "./registry/validate";
 import { optionsFor, isAxisFlagSatisfied } from "./registry/uiOptions";
 import {
   composeRestorationLayers, restorationOptions, isValidRestoration, RESTORATION_MATRIX,
+  allRestorationLayers,
   type RestorationType, type RestorationMaterial,
 } from "./registry/restorations";
 import {
@@ -3344,6 +3345,56 @@ const PREEXIST_LINE_OPACITY = "0.5";
  *  its own in these drawings — every layer's colour sits on its child paths. */
 const PREEXIST_SHAPES = "path,polygon,rect,circle,ellipse";
 
+/** Endodontic and adhesive work placed IN the tooth. Root fillings belong in
+ *  the hatch as much as a crown does — they are treatment somebody carried
+ *  out, and whether it was ours is the same question (Dirk, 2026-08-11). */
+const PREEXIST_ENDO_LAYERS = [
+  "endo-medical-filling", "endo-filling", "endo-filling-incomplete",
+  "endo-glass-pin", "endo-metal-pin", "parapulpal-pin", "endo-resection",
+  "fissure-sealing",
+];
+
+/** The per-material wrapper `<g>`s the composed restorations live inside. */
+const PREEXIST_RESTORATION_GROUPS = [
+  "emax", "gold", "gradia", "metal-ceramic", "zircon", "metal", "telescope",
+];
+
+/**
+ * Whether a layer is RESTORATIVE WORK — something a dentist placed in or on
+ * the tooth — as opposed to the tooth itself or a disease finding.
+ *
+ * This is the hatch's scope, and it is narrower than the derivation's on
+ * purpose. Hatching every non-healthy layer marked the whole tooth body
+ * wherever the baseline held a radix or an implant, which is precisely what a
+ * provenance marking must not do: the question is which WORK the patient
+ * arrived with, and a tooth is not work. Caries, calculus and the periodontal
+ * findings are excluded for the same reason from the other side — they are
+ * disease, not something anyone placed.
+ *
+ * The set is read off the existing registries rather than typed out, so a
+ * restoration added later is covered without a second list to maintain.
+ * `getPreExistingAxes()` stays broad and still reports presence, substrate,
+ * caries and the rest — the chart narrows, the record does not.
+ */
+function isRestorativeLayer(id: string): boolean {
+  if(id.startsWith("filling-")) return true;                       // direct fillings
+  if(PREEXIST_ENDO_LAYERS.includes(id)) return true;
+  if(PREEXIST_RESTORATION_GROUPS.includes(id)) return true;
+  return allRestorationLayers().includes(id);                      // crown/inlay/onlay/veneer/bridge
+}
+
+/** Whether `el` is actually VISIBLE inside `layer` — no ancestor up to and
+ *  including the layer is switched off. Without this the per-material wrapper
+ *  `<g id="gold">` would hatch its inactive siblings too (`gold-inlay`,
+ *  `gold-veneer`, `gold-bridge-connector`), painting shapes nobody can see. */
+function isActiveWithin(el: Any, layer: Any): boolean {
+  for(let cur: Any = el; cur; cur = cur.parentElement){
+    if(cur.getAttribute && cur.getAttribute("data-active") === "0") return false;
+    if(cur === layer) return true;
+  }
+  return true;
+}
+
 /** Perceived lightness of a fill, 0-1, or `null` when the value names no
  *  colour at all (`none`, a `url()`, a keyword, empty). Decides whether the
  *  hatch lines go dark or light: one fixed line colour disappears on either
@@ -3432,6 +3483,7 @@ function markPreExisting(svg: Any, layer: Any){
   for(const el of shapes){
     if(!el.style || !PREEXIST_SHAPES.includes(el.tagName?.replace(/^.*:/, "").toLowerCase())) continue;
     if(el.getAttribute("data-preexisting") === "1") continue;
+    if(!isActiveWithin(el, layer)) continue;
     if(el.getAttribute("data-base-pfill") === null) el.setAttribute("data-base-pfill", el.style.fill || "");
     const base = el.getAttribute("data-base-pfill") || "";
     el.style.fill = `url(#${ensureHatchPattern(svg, base)})`;
@@ -3472,6 +3524,7 @@ function applyPreExistingStyling(toothNo: Any, svg: Any){
   const healthy = healthyLayerIds(toothNo, svg);
   for(const id of nowIds){
     if(!baseIds.has(id) || healthy.has(id)) continue;
+    if(!isRestorativeLayer(id)) continue;   // work, never the tooth or the disease
     const el = svgGetById(svg, id);
     if(el) markPreExisting(svg, el);
   }

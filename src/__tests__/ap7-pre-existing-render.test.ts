@@ -146,3 +146,71 @@ describe("Plan mode leaves the tooth to the dashed channel", () => {
     setChartMode("status");
   });
 });
+
+describe("the hatch marks WORK, never the tooth and never the disease", () => {
+  const svg16 = readFileSync(fileURLToPath(new NodeURL("../assets/teeth-svgs/16.svg", import.meta.url)), "utf8");
+  const TOOTH16 = 16;
+
+  /** Every layer id the hatch actually marked, for a state archived at intake. */
+  function markedFor(state: Record<string, unknown>): string[] {
+    __resetChartStateForTest();
+    resetExaminations();
+    setChartMode("status");
+    __setToothStateForTest(TOOTH16, state);
+    captureExamination({ effectiveDateTime: "2026-01-15" });
+    const node = __parseSvgForTest(svg16);
+    __renderActiveLayersOnNode(node, TOOTH16, state);
+    __applyPreExistingStylingForTest(TOOTH16, node);
+    return [...new Set(Array.from(node.querySelectorAll('[data-preexisting="1"]'))
+      .map((e: any) => e.id).filter(Boolean))] as string[];
+  }
+
+  it("hatches a root canal filling the patient arrived with", () => {
+    // Dirk, 2026-08-11: a root filling is work somebody carried out, so the
+    // same question applies to it as to a crown.
+    expect(markedFor({ toothSelection: "tooth-base", endo: "endo-filling" })).toContain("endo-filling");
+  });
+
+  it("hatches a root canal filling carrying a pin", () => {
+    const marked = markedFor({ toothSelection: "tooth-base", endo: "endo-metal-pin" });
+    expect(marked).toContain("endo-filling");
+    expect(marked).toContain("endo-metal-pin");
+  });
+
+  it("hatches a direct filling", () => {
+    expect(markedFor({ toothSelection: "tooth-base", fillingSurfaceMaterials: { occlusal: "amalgam" } }))
+      .toContain("filling-amalgam-occlusal");
+  });
+
+  it("never hatches the tooth body — a radix is a tooth, not work", () => {
+    expect(markedFor({ toothSelection: "tooth-base", toothSubstrate: "radix" })).toEqual([]);
+  });
+
+  it("never hatches an implant body", () => {
+    expect(markedFor({ toothSelection: "implant" })).toEqual([]);
+  });
+
+  it("never hatches disease — caries, calculus, periodontal findings", () => {
+    expect(markedFor({ toothSelection: "tooth-base", caries: ["caries-occlusal"] })).toEqual([]);
+    expect(markedFor({ toothSelection: "tooth-base", calculus: true })).toEqual([]);
+    expect(markedFor({ toothSelection: "tooth-base", mods: ["parodontal"] })).toEqual([]);
+  });
+
+  it("does not paint the invisible siblings inside a material wrapper group", () => {
+    // <g id="gold"> also contains gold-inlay / gold-veneer / gold-bridge-connector,
+    // all switched off. Marking them paints shapes nobody can see.
+    const marked = markedFor({ toothSelection: "tooth-base", restorationType: "crown", restorationMaterial: "gold" });
+    expect(marked).toContain("gold-crown");
+    for(const sibling of ["gold-inlay", "gold-veneer", "gold-bridge-connector"]){
+      expect(marked).not.toContain(sibling);
+    }
+  });
+
+  it("still records the tooth as pre-existing even where nothing is hatched", async () => {
+    // The chart narrows; the record does not. im1 needs to know an implant was
+    // already there, and the tooltip/summary still say so.
+    const { getPreExistingAxes } = await import("../odontogram");
+    markedFor({ toothSelection: "implant" });
+    expect(getPreExistingAxes(TOOTH16)).toContain("presence");
+  });
+});
