@@ -529,6 +529,12 @@ const UNPROJECTED_AXES: Array<[keyof ToothRecord, string, string]> = [
   ["rootConcavity", "none", "The IG's cervical/root-surface step is a boolean plus a raw UCUM depth on GingivaRecessionDE; it defines no none/mild/deep values and records that this renderer axis has no automatic migration."],
   ["gingivalThickness", "unknown", "GingivalThicknessObservationDE requires an exact surface, location detail, assessment method, device and performer, and a millimetre or probe-transparency result; a generic thin/medium/thick phenotype is explicitly not migrated."],
   ["millerClass", "none", "GingivaRecessionDE binds its Miller classification to a licensed terminology package this build does not hold, so no Miller code may be emitted."],
+  // Bead odontogram-dma: the IG models a removable denture as a
+  // DentalProsthesisDE Device, and defines no concept for the retention
+  // element on the abutment tooth - so the finding is reported at the boundary
+  // rather than given a code nobody verified (the standing sourcing rule).
+  ["retention", "none", "The IG carries a removable denture as a DentalProsthesisDE Device and defines no concept for the retention element on its abutment tooth."],
+  ["retentionSide", "none", "The engaged side of a retention element has no counterpart in the IG, which records no retention element to qualify."],
   ["orthoAppliance", "none", "Orthodontic appliances are carried by care plans and Devices in the IG."],
   ["orthoDrift", "none", "Orthodontic position findings are carried by external terminology in the IG."],
   ["orthoVertical", "none", "Orthodontic position findings are carried by external terminology in the IG."],

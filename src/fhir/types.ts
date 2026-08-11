@@ -38,6 +38,10 @@ export interface ToothRecord {
   // so a tooth that never sets them stays byte-identical. Emitted via the
   // declarative FIELD_MAPPINGS enum path — no svgLayer, no render.
   cejVisibility?: string;
+  // Bead odontogram-dma: the retention element holding a removable denture to
+  // this tooth, and the side it engages. ONE value, never a set.
+  retention?: string;
+  retentionSide?: string;
   rootConcavity?: string;
   // SP-perio PG-D Task 3: gingival thickness phenotype (unknown|thin|medium|thick)
   // and Miller recession class (none|i|ii|iii|iv). Declarative enum axes like
@@ -254,11 +258,15 @@ export interface ExaminationSnapshotRecord {
 // position whose tooth has not erupted, distinct from "none", which means the
 // tooth is missing. Nothing wrote the value before, so an older document is
 // unaffected and needs no migration.
+// 2.25 (odontogram-dma): additive - `retention` (none/clasp/attachment/
+// bar-abutment) and `retentionSide`, what holds a removable denture to a
+// natural tooth. Both omit-when-none, so a chart with no removable work is
+// byte-identical apart from this version string.
 // 2.24 (odontogram-wxt): additive - `cervicalSurfaces`, the surfaces whose
 // filling or caries lesion extends into the cervical region. Omitted entirely
 // when empty, so a document that never records it is byte-identical apart from
 // this version string, and an older document needs no migration.
-export const PAYLOAD_VERSION = "2.24";
+export const PAYLOAD_VERSION = "2.25";
 
 /**
  * The UI-domain document (bead odontogram-3l1, AC2/AC4).

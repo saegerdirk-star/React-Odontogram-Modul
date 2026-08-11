@@ -241,6 +241,26 @@ export const LOCAL_VALUE_MAPS: Record<string, Record<string, CodeEntry>> = {
     "mild": { code: "mild", display: "Mild root concavity" },
     "deep": { code: "deep", display: "Deep root concavity" },
   },
+  // Bead odontogram-dma: what holds a removable denture to a natural tooth.
+  // ONE value per tooth, not a set (Dirk, 2026-08-11): "a bar abutment does
+  // not normally carry a clasp, a telescope abutment neither, but a single
+  // tooth - crowned or not - does." Modelled as a set it would invite
+  // combinations that do not occur and then need a rule to forbid them; as an
+  // enum the exclusion falls out of the model itself.
+  retention: {
+    "none": { code: "none", display: "No retention element" },
+    "clasp": { code: "clasp", display: "Clasp (Klammer)" },
+    "attachment": { code: "attachment", display: "Attachment (Geschiebe)" },
+    "bar-abutment": { code: "bar-abutment", display: "Bar abutment (Steg)" },
+  },
+  // The side the element engages. charly writes it as `<Kl` / `Kl>` and
+  // `( G` / `G )`, so it is part of the finding rather than decoration.
+  retentionSide: {
+    "none": { code: "none", display: "Engaged side not recorded" },
+    "mesial": { code: "mesial", display: "Engages mesially" },
+    "distal": { code: "distal", display: "Engages distally" },
+    "both": { code: "both", display: "Engages mesially and distally" },
+  },
   // SP-perio PG-D Task 3: two per-tooth categorical DATA axes (registry/FHIR/
   // payload only; the Dental Chart rows/UI land in later PG-D tasks). NO
   // svgLayer — neither renders. Local codes only (no verified SNOMED/LOINC).

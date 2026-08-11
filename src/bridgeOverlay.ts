@@ -41,8 +41,8 @@ export type MaterialColor = (material: string) => string;
  * arches are scanned independently so a span never joins across the 28|48
  * boundary.
  */
-const UPPER_ARCH = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
-const LOWER_ARCH = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
+export const UPPER_ARCH = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
+export const LOWER_ARCH = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
 const ARCHES: readonly (readonly number[])[] = [UPPER_ARCH, LOWER_ARCH];
 
 // Saddle bar geometry (fractions of the tile box). Shared by the live overlay

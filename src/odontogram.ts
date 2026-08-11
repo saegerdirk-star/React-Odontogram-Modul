@@ -21,6 +21,12 @@ import {
   allRestorationLayers,
   type RestorationType, type RestorationMaterial,
 } from "./registry/restorations";
+// Bead odontogram-dma: retention gating + bar-span derivation, kept DOM-free.
+import {
+  retentionOptions, retentionAllowed, detectBarSpans, retentionMark,
+  isTelescopeRetention, hasRetention,
+  type RetentionValue,
+} from "./retention";
 import {
   renderBridgeOverlay,
   detectBridgeSpans,
@@ -28,6 +34,7 @@ import {
   barRect,
   tileRectFor,
   defaultMaterialColor,
+  UPPER_ARCH, LOWER_ARCH,
   type BridgeToothState,
 } from "./bridgeOverlay";
 import { derivePerioClassification, type PerioClassification, type PerioDerivationInput, type ToothDerivationInput } from "./perioClassification";
@@ -376,6 +383,12 @@ function defaultState(){
     // SP-perio PG-C Task 2: two per-tooth categorical DATA axes (registry/FHIR/
     // payload only; the Dental Chart rows/UI land in PG-C Task 3). Both default
     // "none" and are omit-when-none on serialize; NO svgLayer, so neither renders.
+    // Bead odontogram-dma: what holds a removable denture to this tooth. ONE
+    // value, never a set — a bar abutment does not normally carry a clasp and
+    // a telescope abutment does not either, so choosing one replaces the other
+    // and the exclusion falls out of the model instead of needing a rule.
+    retention: "none",      // none | clasp | attachment | bar-abutment
+    retentionSide: "none",  // none | mesial | distal | both (charly's <Kl / Kl>)
     cejVisibility: "none", // none | detectable | not-detectable
     rootConcavity: "none", // none | mild | deep
     // SP-perio PG-D Task 3: two per-tooth categorical DATA axes (registry/FHIR/
@@ -3960,6 +3973,20 @@ function getStateSummary(toothNo: number): string[]{
     if(prosthesisKey) summary.push(t(prosthesisKey));
   }
 
+  // Bead odontogram-dma: what holds a removable denture here. Gated on the
+  // SAME predicate the picker uses, so a tolerantly-imported element the tooth
+  // cannot carry never surfaces where the control itself refuses it. The
+  // telescope is named too — it is a crown material in the model, but
+  // clinically it IS the retention, and a summary that omitted it would read
+  // as "this abutment holds nothing".
+  if(state.retention && state.retention !== "none" && retentionAllowed(state, state.retention)){
+    const side = state.retentionSide && state.retentionSide !== "none"
+      ? ` (${t("retentionSide." + state.retentionSide)})` : "";
+    summary.push(`${t("retention." + kebabToCamel(state.retention))}${side}`);
+  }else if(isTelescopeRetention(state)){
+    summary.push(t("retention.telescope"));
+  }
+
   // Endo
   if(state.endo !== "none"){
     const endoKey = {
@@ -6296,6 +6323,10 @@ function serializeState(s: Any){
     // (!== "none"), like the omit-when-empty perio fields above — a default tooth
     // stays byte-identical (payload bumped to 2.14). Both round-trip via
     // validateEnum in hydrateState (default "none").
+    // Bead odontogram-dma: omit-when-none, so a chart with no removable work
+    // stays byte-identical apart from the version field.
+    ...(s.retention && s.retention !== "none" ? { retention: s.retention } : {}),
+    ...(s.retentionSide && s.retentionSide !== "none" ? { retentionSide: s.retentionSide } : {}),
     ...(s.cejVisibility && s.cejVisibility !== "none" ? { cejVisibility: s.cejVisibility } : {}),
     ...(s.rootConcavity && s.rootConcavity !== "none" ? { rootConcavity: s.rootConcavity } : {}),
     // SP-perio PG-D Task 3: gingivalThickness/millerClass are emitted ONLY
@@ -6352,6 +6383,8 @@ export const VALID_ROOT_CARIES = validValues("rootCaries");
 export const VALID_PERI_IMPLANT = validValues("periImplant");
 // SP-perio PG-C Task 2: the two new categorical data axes (registry axes; read
 // from AXES like every other enum).
+export const VALID_RETENTION = validValues("retention");
+export const VALID_RETENTION_SIDE = validValues("retentionSide");
 export const VALID_CEJ_VISIBILITY = validValues("cejVisibility");
 export const VALID_ROOT_CONCAVITY = validValues("rootConcavity");
 // SP-perio PG-D Task 3: the two new categorical data axes (registry axes; read
@@ -6663,6 +6696,10 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   // SP-perio PG-C Task 2: cejVisibility/rootConcavity (additive enum axes). A
   // legacy payload (<=2.13) never carried these fields, so absent/invalid ->
   // "none". No migration needed.
+  // Bead odontogram-dma: additive enum axes; a legacy payload carries neither
+  // key, which reads as "no retention element recorded".
+  s.retention = validateEnum(raw.retention, VALID_RETENTION, "none");
+  s.retentionSide = validateEnum(raw.retentionSide, VALID_RETENTION_SIDE, "none");
   s.cejVisibility = validateEnum(raw.cejVisibility, VALID_CEJ_VISIBILITY, "none");
   s.rootConcavity = validateEnum(raw.rootConcavity, VALID_ROOT_CONCAVITY, "none");
   // SP-perio PG-D Task 3: gingivalThickness/millerClass (additive enum axes).
@@ -7279,6 +7316,60 @@ export function getPlanChanges(): PlanChange[] {
     }
   }
   return out;
+}
+
+// ---- Bead odontogram-dma: retention elements ----
+//
+// The gating and the derivation live in `src/retention.ts`, DOM-free, so the
+// renderer and the tests share one answer. Only the chart plumbing is here.
+
+/** The retention elements `toothNo` can carry, in picker order. `["none"]` on
+ *  a tooth that can carry none — an implant answers this on the existing
+ *  `prosthesis` axis instead. */
+export function getRetentionOptions(toothNo: number): RetentionValue[] {
+  return retentionOptions(toothState.get(toothNo));
+}
+
+/** What holds a denture to `toothNo`, and the side it engages. */
+export function getRetention(toothNo: number): { retention: string; side: string } {
+  const s = toothState.get(toothNo);
+  return { retention: s?.retention ?? "none", side: s?.retentionSide ?? "none" };
+}
+
+/**
+ * Record (or clear) the retention element on one tooth.
+ *
+ * A silent no-op for an element the tooth cannot carry — an attachment or a
+ * bar needs a crown to be built into, a clasp only needs the tooth to be
+ * there. The guard runs BEFORE the DS-1 gate, so a rejected call marks nothing
+ * plan-edited and fires no state-change notification.
+ *
+ * Setting the element to `none` clears the side with it: a side with no
+ * element to engage is an orphan, exactly as an un-charted perio site clears
+ * its own gm/bop/sup rather than leaving them behind.
+ */
+export function setRetention(toothNo: number, value: string, side: string = "none"): void {
+  let s = toothState.get(toothNo);
+  if(!s){ s = defaultState(); toothState.set(toothNo, s); }
+  if(!retentionAllowed(s, value)) return;
+  const nextSide = value === "none" ? "none" : (VALID_RETENTION_SIDE.has(side) ? side : "none");
+  gateToothEdit(toothNo, () => {
+    if(s.retention === value && s.retentionSide === nextSide) return false;
+    s.retention = value;
+    s.retentionSide = nextSide;
+    applyStateToSvg(toothNo);
+    notifyStateChange();
+    return true;
+  });
+}
+
+/**
+ * The bar spans this chart carries, derived from per-tooth state — never
+ * stored, exactly as a bridge span is. See `detectBarSpans` for why a bar's
+ * abutments are connected across the gap rather than required to be adjacent.
+ */
+export function getBarSpans(): number[][] {
+  return detectBarSpans([UPPER_ARCH, LOWER_ARCH], (tn) => toothState.get(tn));
 }
 
 // ---- Bead odontogram-ap7: what the patient arrived with ----
@@ -11282,6 +11373,17 @@ export function getOdontogramSummary(): OdontogramSummary {
     // implant attachments / removable / bar-retained dentures via `prosthesis`)
     if(s.restorationType && s.restorationType !== "none"){
       prosthetics.push(`${lbl(toothNo)}: ${restorationSummaryLabel(s.restorationType, s.restorationMaterial)}`);
+    }
+    // Bead odontogram-dma: retention elements read with the prosthetics, since
+    // that is the case they belong to — a partial denture at the gap and the
+    // clasp that holds it are one treatment, and listing them apart is how the
+    // chart lost the connection in the first place.
+    if(s.retention && s.retention !== "none" && retentionAllowed(s, s.retention)){
+      const side = s.retentionSide && s.retentionSide !== "none"
+        ? ` (${t("retentionSide." + s.retentionSide)})` : "";
+      prosthetics.push(`${lbl(toothNo)}: ${t("retention." + kebabToCamel(s.retention))}${side}`);
+    }else if(isTelescopeRetention(s)){
+      prosthetics.push(`${lbl(toothNo)}: ${t("retention.telescope")}`);
     }
     if(s.prosthesis && s.prosthesis !== "none"){
       prosthetics.push(`${lbl(toothNo)}: ${t(PROSTHESIS_SUMMARY_KEY[s.prosthesis] || s.prosthesis)}`);

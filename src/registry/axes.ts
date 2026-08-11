@@ -272,6 +272,19 @@ export const AXES: ClinicalAxis[] = [
     skipValue: "none", finding: { local: "miller-recession-class", display: "Miller recession class" },
     values: valuesFrom("millerClass") },
 
+  // Bead odontogram-dma: retention elements that hold a removable denture to a
+  // natural tooth. ONE value per tooth (see LOCAL_VALUE_MAPS.retention for why
+  // it is an enum and not a set). No svgLayer: the clasp and the attachment
+  // have no artwork and are surfaced as a tile marker in charly's own notation,
+  // and the bar is DERIVED across tiles like a bridge span rather than being a
+  // per-tooth layer - so SVG-fingerprint parity is byte-identical.
+  { id: "retention", field: "retention", kind: "enum", valueGroup: "retention",
+    skipValue: "none", finding: { local: "retention-element", display: "Denture retention element" },
+    values: valuesFrom("retention") },
+  { id: "retentionSide", field: "retentionSide", kind: "enum", valueGroup: "retentionSide",
+    skipValue: "none", finding: { local: "retention-side", display: "Retention element engaged side" },
+    values: valuesFrom("retentionSide") },
+
   { id: "periImplant", field: "periImplant", kind: "enum", valueGroup: "periImplant",
     skipValue: "none", finding: { local: "peri-implant-status", display: "Peri-implant status" },
     // No svgLayer: activation is explicit in applyStateToSvgSingle (mucositis reuses

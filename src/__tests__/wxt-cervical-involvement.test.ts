@@ -142,7 +142,7 @@ describe("the write helper the popup uses", () => {
 
 describe("payload", () => {
   it("is at the version this axis was added in", () => {
-    expect(PAYLOAD_VERSION).toBe("2.24");
+    expect(PAYLOAD_VERSION).toBe("2.25");
   });
 
   it("emits nothing at all when no surface carries the marker", () => {
