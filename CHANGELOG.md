@@ -31,6 +31,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The lower canine stands where the mouth puts it.** The two arches shared one
+  column list, so every tooth sat directly above its antagonist — and a lower
+  incisor is drawn 22.5 px wide against the upper central's 36.6. In a 44 px
+  column that left the lower front standing 25 px apart while the upper front
+  stood 11 px apart, and it put 43 and 13 on the same vertical, which the mouth
+  never does.
+
+  Each arch is its own grid now. The only difference between the two column
+  lists is the four incisor columns, 44 px above and 31 px below, which closes
+  the lower front to the same ~11 px the rest of that arch has. The rest follows
+  on its own: four columns narrower by 13 px make the lower arch 52 px narrower,
+  so centred it sits 26 px in on each side, and the tip of 43/33 comes to rest in
+  the embrasure between the upper lateral incisor and the upper canine — the
+  Class I canine relationship, arrived at by closing contacts rather than by
+  being drawn in. Measured on the running chart: 43's centre at 565 px, the
+  13/12 embrasure spanning 561 to 575.
+
+  The 44 px touch-target floor is deliberately broken for those four columns. At
+  31 px wide and a full row tall the tile is still well over the 24 × 24 px
+  WCAG 2.5.8 asks for, and a lower incisor that is not 31 px wide is not a lower
+  incisor. The tiles keep their ARIA option roles: each arch wrapper is
+  `role="presentation"`, so the listbox still owns them directly.
+
 - **The gingiva is one line across the arch.** Once the row closed up at the
   contact points the gum stopped being hidden by the gaps between the teeth and
   read as a row of separate red flames. The cause was not that the shapes failed

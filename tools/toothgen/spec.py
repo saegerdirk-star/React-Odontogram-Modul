@@ -116,7 +116,7 @@ SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="31",
-        col_px=44,
+        col_px=31,
         label="Lower incisor",
         source="Fig. 38a (p. 52)",
         src_template=11,
@@ -389,7 +389,7 @@ PRIMARY_SPECS: list[ToothSpec] = [
     ),
     ToothSpec(
         key="71",
-        col_px=44,
+        col_px=31,
         label="Lower primary incisor",
         source="derived from 31, Bild 83 (overview)",
         src_template=11,

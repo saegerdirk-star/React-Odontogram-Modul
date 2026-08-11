@@ -274,11 +274,34 @@ select:focus{
    44 px so the lateral-incisor tile stays a usable touch target, and the
    minmax() lower bound keeps the old behaviour of shrinking under a narrow
    container rather than overflowing it.
-   Both arches share these columns on purpose: a tooth and its antagonist stay
-   in one column, which is why a column is sized by the wider of the two (the
-   lower molar at 65.5 px against the upper at 61.0). */
+   The two arches USED to share one column list, so that a tooth and its
+   antagonist stood in one column. They no longer can. A lower incisor is drawn
+   22.5 px wide against the upper central's 36.6, and one shared column either
+   leaves the lower front standing 25 px apart - which is what it did - or
+   crushes the upper front to close it. Each arch is its own grid now, and the
+   only difference between the two lists is the four incisor columns, 44 px
+   above and 31 px below.
+   That single difference is why the lower canine lands where the mouth puts
+   it. Four columns narrower by 13 px makes the lower arch 52 px narrower, so
+   centred it sits 26 px in on each side, and the tip of 43/33 comes to rest in
+   the embrasure between the upper lateral and the upper canine - the Class I
+   canine relationship, arrived at by closing contacts rather than by being
+   drawn in. The 44 px floor is deliberately broken for those four: at 31 px
+   wide and a full row tall the tile is still well over the 24 px WCAG 2.5.8
+   asks for, and a lower incisor that is not 31 px wide is not a lower incisor. */
 .tooth-grid{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  padding:10px;
+  position:relative;
+}
+.tooth-arch{
   display:grid;
+  justify-content:center;
+  gap:4px;
+}
+.upper-arch{
   grid-template-columns:
     minmax(28px, 72px) minmax(28px, 72px) minmax(28px, 72px)
     minmax(28px, 54px) minmax(28px, 57px) minmax(28px, 50px)
@@ -286,10 +309,15 @@ select:focus{
     minmax(28px, 44px) minmax(28px, 44px)
     minmax(28px, 50px) minmax(28px, 57px) minmax(28px, 54px)
     minmax(28px, 72px) minmax(28px, 72px) minmax(28px, 72px);
-  justify-content:center;
-  gap:4px;
-  padding:10px;
-  position:relative;
+}
+.lower-arch{
+  grid-template-columns:
+    minmax(28px, 72px) minmax(28px, 72px) minmax(28px, 72px)
+    minmax(28px, 54px) minmax(28px, 57px) minmax(28px, 50px)
+    minmax(24px, 31px) minmax(24px, 31px)
+    minmax(24px, 31px) minmax(24px, 31px)
+    minmax(28px, 50px) minmax(28px, 57px) minmax(28px, 54px)
+    minmax(28px, 72px) minmax(28px, 72px) minmax(28px, 72px);
 }
 /* Engine-owned multi-tooth bridge-span overlay. Absolutely positioned so it does
    not consume a grid cell; sits above the tiles but never intercepts pointer

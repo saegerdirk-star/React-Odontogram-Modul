@@ -125,6 +125,10 @@ def lumen_extremes(txt: str, base_d: str, apex: float, cej: float):
 # both move geometry on every template. Intended, reviewed corrections. SVG
 # fingerprint parity is byte-identical throughout - the fingerprint reads id,
 # opacity and class, never geometry.
+# 31 and 71 re-taken again the same day: the lower incisors now stand in a 31 px
+# column instead of 44, so their gum papilla moves with the joint. That change
+# is what puts the lower canine in the embrasure between the upper lateral and
+# the upper canine, which is where the mouth puts it.
 AUTHORED_GEOMETRY_SHA256 = {
     "11": "ab5dc7641f836cd1b36c6008e856dcc3c1a0533cb5d263a7e04f3cfb4963b3cd",
     "12": "8214a8238ad87de6c7f994a9c8a10be83014cd942f52b2a385fcb441e50cf303",
@@ -138,7 +142,7 @@ AUTHORED_GEOMETRY_SHA256 = {
     "15": "953875061dd0d6eab6597e9bc7b605121973afb0b5a366e45c6927ef9c2fd8ad",
     "16": "fc0166b1dd87fe97f3899e9c26146e9b567f1b279262d694106448d1cac279ca",
     "17": "30082d4f3678e70cc7022d9a4f028413b29be95b3db753eef4c94d5fdbfc9179",
-    "31": "19ca24a8ee5a26fd73a8fe3b7ee3e0e1dadb974af15cfeeaa3b31bb18bff2f37",
+    "31": "74ba18b1ffe9873c4bc9a0c757e1fcbc770739afe11fdb709034c2fe57f7b014",
     "46": "1f83535babc3513176ca0339f53b89e458d2be5f88da320f4586b772b1a44615",
     # Primary dentition, taken on 2026-08-10 after Dirk read the rendered
     # dentition in the running chart and accepted it. Until then these eight
@@ -152,7 +156,7 @@ AUTHORED_GEOMETRY_SHA256 = {
     "54": "39531d278542f8c085e4984a575cfbe7d5688dfb7d328e9da18059984d92a2d2",
     # 55 re-taken after Bild 92 moved its cervix from 40% to 38%.
     "55": "05eea7bf394bd2058b1d31046dd6747d1aaac43d75590769f22de6580bd24449",
-    "71": "edd2a2b742d951aca57e353af08e6242132ecf733b9f5a7b6a401194b51111b3",
+    "71": "171fc8aced40b95463000f237a05595e5634c903ae28e9307f417c358937aadc",
     "74": "f56a36df48e8294045e0862fcd858f65f2f439c2d632728cf2ca38a698da75bf",
     "75": "03ca2b126142936097ed2bf08e0c60429373b7f11e0de8254c585cfc02d4bdfe",
 }
@@ -319,11 +323,17 @@ def check_columns(specs, failures):
     except OSError:
         failures.append(f"cannot read {INDEX_CSS}")
         return
-    m = re.search(r"\.tooth-grid\{[^}]*?grid-template-columns:([^;]+);", css, re.S)
-    if not m:
+    # Both arches, because they no longer have the same columns: the lower
+    # incisors stand in 31 px where the upper ones stand in 44.
+    decls = re.findall(r"grid-template-columns:([^;]+);", css, re.S)
+    if not decls:
         failures.append("grid-template-columns not found in src/index.css")
         return
-    have = {float(v) for v in re.findall(r"minmax\([^,]+,\s*([\d.]+)px\)", m.group(1))}
+    have = {
+        float(v)
+        for d in decls
+        for v in re.findall(r"minmax\([^,]+,\s*([\d.]+)px\)", d)
+    }
     if not have:
         failures.append("no minmax() columns found in src/index.css")
         return

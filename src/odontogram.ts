@@ -9250,6 +9250,20 @@ async function buildGrid(token: number){
   ]);
   if(!initialized || token !== initToken) return;
 
+  // Each arch is its own grid. The two arches do NOT have the same columns and
+  // cannot: the lower incisors are barely two thirds the width of the upper
+  // ones, so one shared column list either leaves the lower front standing
+  // apart or crushes the upper front. Giving each arch its own columns is also
+  // what puts the lower canine where the mouth puts it - between the upper
+  // lateral and the upper canine - because the lower arch then comes out
+  // narrower by exactly the four incisors' difference. `role="presentation"`
+  // so the tiles stay children of the listbox in the accessibility tree.
+  const upperArch = el("div", { class:"tooth-arch upper-arch", role:"presentation" });
+  const lowerArch = el("div", { class:"tooth-arch lower-arch", role:"presentation" });
+  grid.appendChild(upperArch);
+  grid.appendChild(lowerArch);
+  let arch: Any = upperArch;
+
   function addTile({toothNo, tplNo, rot, mirror, view, clickable}: Any){
     if(!initialized || token !== initToken) return;
     const tpl = view === "occl" ? occlCache.get(tplNo) : tplCache.get(tplNo);
@@ -9290,7 +9304,7 @@ async function buildGrid(token: number){
       tile.removeAttribute("data-tooth");
     }
 
-    grid.appendChild(tile);
+    arch.appendChild(tile);
 
     if(!toothSvgRoot.has(toothNo)) toothSvgRoot.set(toothNo, []);
     toothSvgRoot.get(toothNo).push(svg);
@@ -9313,7 +9327,7 @@ async function buildGrid(token: number){
     const tile = el("div", { class:"tooth-tile occl-view placeholder" }, [
       el("div", { class:"tooth-svg" })
     ]);
-    grid.appendChild(tile);
+    arch.appendChild(tile);
   }
 
   function addRowOccl(rowTeeth: Any, placeholders: Any){
@@ -9335,7 +9349,7 @@ async function buildGrid(token: number){
       row.appendChild(cell);
       targetMap.set(toothNo, cell);
     }
-    grid.appendChild(row);
+    arch.appendChild(row);
   }
 
   const upperSide = [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28];
@@ -9344,9 +9358,11 @@ async function buildGrid(token: number){
   const lowerOcclPlaceholders = new Set([43,42,41,31,32,33]);
 
   if(!initialized || token !== initToken) return;
+  arch = upperArch;
   addLabelRow(upperSide, toothLabelUpper);
   addRowSide(upperSide);
   addRowOccl(upperSide, upperOcclPlaceholders);
+  arch = lowerArch;
   addRowOccl(lowerSide, lowerOcclPlaceholders);
   addRowSide(lowerSide);
   addLabelRow(lowerSide, toothLabelLower);
