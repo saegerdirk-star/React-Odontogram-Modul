@@ -126,7 +126,7 @@ export default function OdontogramClient() {
 Oder laden Sie sie mit einem rein clientseitigen dynamischen Import: `dynamic(() => import("./OdontogramClient"), { ssr: false })`.
 
 #### Wichtige Hinweise & aktuelle Einschränkungen
-- **Nur ESM** — das Paket veröffentlicht ein einzelnes ES-Modul (`dist/odontogram.js`) plus einen Typdeklarations-Einstiegspunkt (`dist/index.d.ts`). Es zielt auf die Bundler-Modulauflösung ab; es gibt keinen CommonJS-Build.
+- **Nur ESM** — das Paket veröffentlicht einen Haupt-ES-Modul-Einstieg (`dist/odontogram.js`) und einen optionalen FHIR-ES-Modul-Einstieg (`dist/fhir.js`), jeweils mit Typdeklarationen (`dist/index.d.ts` und `dist/fhir.d.ts`). Es zielt auf die Bundler-Modulauflösung ab; es gibt keinen CommonJS-Build.
 - **Das Stylesheet ist separat** — Sie **müssen** `react-advanced-odontogram/style.css` einmal importieren; es wird nicht automatisch eingebunden. Das Styling ist globales CSS, das unter `.odontogram-root` skoped ist und von `--odon-*`-CSS-Variablen gesteuert wird.
 - **SSR / nur clientseitig** — die Komponente liest beim Mounten das DOM (`document`), daher muss sie im Browser laufen. Rendern Sie sie in SSR-Frameworks in einer Client-Komponente (`"use client"`) oder über einen rein clientseitigen dynamischen Import.
 - **Assets sind eigenständig** — die Zahn- und Icon-SVGs werden zur Build-Zeit in das JavaScript-Bundle eingebettet; es gibt **keinen Laufzeit-Asset-Abruf**, den man konfigurieren müsste, und nichts Zusätzliches, das in Ihren öffentlichen Ordner kopiert werden müsste.

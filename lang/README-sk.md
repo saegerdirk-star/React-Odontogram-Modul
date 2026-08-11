@@ -124,7 +124,7 @@ export default function OdontogramClient() {
 Alebo ho načítajte pomocou dynamického importu iba na strane klienta: `dynamic(() => import("./OdontogramClient"), { ssr: false })`.
 
 #### Dôležité poznámky a súčasné obmedzenia
-- **Iba ESM** — balík publikuje jeden ES modul (`dist/odontogram.js`) plus vstupný bod deklarácie typov (`dist/index.d.ts`). Je cielený na rozlíšenie modulov bundlerom; neexistuje CommonJS zostavenie.
+- **Iba ESM** — balík publikuje hlavný ES modul (`dist/odontogram.js`) a voliteľný FHIR ES modul (`dist/fhir.js`) s príslušnými deklaráciami typov (`dist/index.d.ts` a `dist/fhir.d.ts`). Je cielený na rozlíšenie modulov bundlerom; neexistuje CommonJS zostavenie.
 - **Hárok štýlov je samostatný** — **musíte** raz importovať `react-advanced-odontogram/style.css`; nevkladá sa automaticky. Štýlovanie je globálne CSS ohraničené pod `.odontogram-root` a riadené CSS premennými `--odon-*`.
 - **SSR / iba klient** — komponent pri pripojení číta DOM (`document`), preto musí bežať v prehliadači. V SSR frameworkoch ho vykresľujte v klientskom komponente (`"use client"`) alebo cez dynamický import iba na strane klienta.
 - **Zdroje sú samostatné** — SVG súbory zubov a ikon sú pri zostavení vložené priamo do JavaScriptového balíka; **nie je potrebné konfigurovať žiadne získavanie zdrojov za behu** a nič netreba kopírovať do vášho verejného priečinka.

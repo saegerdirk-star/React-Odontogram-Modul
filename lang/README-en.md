@@ -124,7 +124,7 @@ export default function OdontogramClient() {
 Or load it with a client-only dynamic import: `dynamic(() => import("./OdontogramClient"), { ssr: false })`.
 
 #### Important notes & current limitations
-- **ESM-only** — the package publishes a single ES module (`dist/odontogram.js`) plus a type-declaration entry (`dist/index.d.ts`). It targets bundler module resolution; there is no CommonJS build.
+- **ESM-only** — the package publishes a main ES module (`dist/odontogram.js`) and an optional FHIR ES module (`dist/fhir.js`), with matching type declarations (`dist/index.d.ts` and `dist/fhir.d.ts`). It targets bundler module resolution; there is no CommonJS build.
 - **The stylesheet is separate** — you **must** import `react-advanced-odontogram/style.css` once; it is not injected automatically. Styling is global CSS scoped under `.odontogram-root` and driven by `--odon-*` CSS variables.
 - **SSR / client-only** — the component reads the DOM on mount (`document`), so it must run in the browser. In SSR frameworks, render it in a Client Component (`"use client"`) or via a client-only dynamic import.
 - **Assets are self-contained** — the tooth and icon SVGs are inlined into the JavaScript bundle at build time; there is **no runtime asset fetch** to configure and nothing extra to copy to your public folder.
@@ -882,4 +882,3 @@ If you use this module in your work, please cite it.
 > Zenodo. Until v1.49.0 is archived, cite it via the concept DOI.
 
 Machine-readable citation metadata is in [`CITATION.cff`](CITATION.cff).
-
