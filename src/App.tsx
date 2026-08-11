@@ -45,6 +45,8 @@ import { useI18n } from "./i18n/useI18n";
 import SettingsModal, { type SettingsState } from "./SettingsModal";
 import PerioChart from "./PerioChart";
 import PerioSidebar from "./PerioSidebar";
+// Bead odontogram-ap7: capture/correct the initial examination.
+import ExaminationCard from "./ExaminationCard";
 import DualStateConfirm from "./DualStateConfirm";
 import ExportOptionsModal from "./ExportOptionsModal";
 import type { Language } from "./i18n/translations";
@@ -937,6 +939,7 @@ export default function App({
           </div>
 
           <div className="panel-body">
+            <ExaminationCard />
             <div className={showStatusCard ? "" : "hidden"}>
               <section className="card" id="statusCard">
                 <div className="card-title card-title-row">

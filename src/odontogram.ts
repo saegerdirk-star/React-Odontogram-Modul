@@ -951,6 +951,7 @@ function readExaminationSnapshots(raw: Any): ExaminationSnapshot[] {
 export function resetExaminations(): void {
   examinations = [];
   examinationSeq = 0;
+  repaintForBaselineChange();   // the baseline is gone: un-hatch (odontogram-ap7)
 }
 
 /**
@@ -995,8 +996,25 @@ export function captureExamination(patch: Partial<Record<ExaminationField, strin
   const at = examinations.findIndex((s) => s.examination.id === snapshot.examination.id);
   if(at >= 0) examinations[at] = snapshot;
   else examinations.push(snapshot);
+  repaintForBaselineChange();
   notifyStateChange();
   return snapshot.examination.id as string;
+}
+
+/** Repaint every tooth because the BASELINE moved (bead odontogram-ap7).
+ *
+ *  Archiving the first examination changes what every tooth on the chart
+ *  MEANS — each finding either was there at intake or was not — so the archive
+ *  can no more be changed without a repaint than the chart mode can. Without
+ *  this, hatching appeared only on teeth that happened to be edited afterwards,
+ *  which reads as an unreliable marking rather than as a missing repaint.
+ *
+ *  Cheap when nothing depends on it: `applyPreExistingStyling` returns at once
+ *  while no examination is archived, so a host that never captures pays for one
+ *  ordinary repaint. */
+function repaintForBaselineChange(): void {
+  if(toothSvgRoot.size === 0) return;   // no grid mounted (host API / tests)
+  for(const toothNo of ALL_TEETH) applyStateToSvg(toothNo);
 }
 
 /**
@@ -1037,6 +1055,9 @@ export function removeExamination(id: string): boolean {
   const at = examinations.findIndex((s) => s.examination.id === id);
   if(at < 0) return false;
   examinations.splice(at, 1);
+  // Removing the EARLIEST examination promotes the next one to baseline, so
+  // what counts as pre-existing changes (odontogram-ap7).
+  repaintForBaselineChange();
   notifyStateChange();
   return true;
 }
@@ -1065,6 +1086,77 @@ export function loadExamination(id: string): boolean {
   examinations = archive;
   notifyStateChange();
   return true;
+}
+
+// ---- Bead odontogram-ap7: correcting the initial examination ----
+//
+// A finding mis-charted at intake and put right later would otherwise derive
+// as "found under our care", which is the opposite of the truth. Dirk chose to
+// solve it by making the initial examination itself correctable rather than by
+// adding a per-tooth override: an examination is an examination, and there
+// should be one account of what the patient arrived with — not a second note
+// beside it that can contradict the first.
+//
+// The whole round trip lives here rather than in the UI because it has an
+// invariant the caller must not be able to get wrong: `loadExamination`
+// replaces the live case, so entering a correction without stashing today's
+// findings would DESTROY them. Stash, load, correct, re-archive, restore.
+
+let baselineCorrectionStash: OdontogramDocument | null = null;
+let baselineCorrectionId: string | null = null;
+
+/** Whether a baseline correction is in progress — the chart currently shows
+ *  the initial examination, not today's findings. */
+export function isCorrectingBaseline(): boolean { return baselineCorrectionId !== null; }
+
+/**
+ * Enter baseline-correction mode: stash today's findings and load the initial
+ * examination into the chart so it can be edited.
+ *
+ * Returns `false` when there is no baseline to correct, or when a correction
+ * is already running (entering twice would overwrite the stash with the
+ * baseline itself — the one way to lose today's findings).
+ *
+ * The stash is runtime-only and deliberately not serialized: a correction is a
+ * moment at the chair, not a document state. A host that reloads mid-correction
+ * gets the baseline as its chart, so the UI must make the mode unmissable.
+ */
+export function beginBaselineCorrection(): boolean {
+  if(baselineCorrectionId !== null) return false;
+  const baseline = getBaselineExamination();
+  if(!baseline || baseline.id === null) return false;
+  baselineCorrectionStash = collectExportPayload() as OdontogramDocument;
+  baselineCorrectionId = baseline.id;
+  loadExamination(baseline.id);
+  return true;
+}
+
+/** Restore today's findings, leaving the archive exactly as it was. Returns
+ *  whether a correction was in progress. */
+export function cancelBaselineCorrection(): boolean {
+  if(baselineCorrectionId === null || !baselineCorrectionStash) return false;
+  const archive = examinations;
+  loadLiveDocument(baselineCorrectionStash);
+  examinations = archive;
+  baselineCorrectionStash = null;
+  baselineCorrectionId = null;
+  repaintForBaselineChange();
+  notifyStateChange();
+  return true;
+}
+
+/**
+ * Re-archive the corrected chart AS the initial examination — passing its own
+ * id, which `captureExamination` replaces in place rather than filing a new
+ * one — then restore today's findings.
+ *
+ * The examination keeps its identity and its date: this is a correction of the
+ * record, not a second examination on a later day.
+ */
+export function commitBaselineCorrection(): boolean {
+  if(baselineCorrectionId === null || !baselineCorrectionStash) return false;
+  captureExamination({ id: baselineCorrectionId });
+  return cancelBaselineCorrection();
 }
 
 // Plan chart is lazily deep-cloned from status the FIRST time plan mode is
@@ -3214,6 +3306,185 @@ export function __applyProposedStylingForTest(toothNo: Any, svg: Any): void {
   applyProposedStyling(toothNo, svg);
 }
 
+// ---- Bead odontogram-ap7: hatching what the patient arrived with ----
+//
+// PARITY IS SACRED, and this pass respects it the same way the proposed
+// styling above does, through a different channel. `collectActiveLayers`
+// fingerprints id/opacity/class only, so the marking uses ONLY `style.fill`
+// (never opacity, never a class), and the `<pattern>` it points at lives in
+// `<defs>`, which the fingerprint walk skips outright. The whole pass is also
+// gated on an archived examination existing, and the parity fixtures archive
+// none, so the capture is a byte-identical no-op.
+//
+// Fill is the right channel for a second reason: it is in neither the
+// fingerprint NOR the frozen geometry digests in `tools/toothgen/verify.py`,
+// so hatching cannot disturb the generator's contracts either.
+//
+// It deliberately does not run in Plan mode. A tooth can carry a proposed
+// finding, a pre-existing one and a discoloration tint at once, and three
+// simultaneous treatments read as noise rather than as three facts. The plan
+// is about the future and provenance about the past, so each owns the tooth in
+// its own mode; discoloration is unaffected either way, since it tints
+// `tooth-base`, which is anatomy and never a finding.
+
+/** Hatch geometry, in template units (the drawings are ~40-80 units wide).
+ *
+ *  The marking has to be legible WITHOUT swallowing the colour underneath it —
+ *  the colour is what says gold from amalgam from composite, and a hatch that
+ *  costs the reader that has taken more than it gave. Line over pitch is the
+ *  ink budget: 0.45 of 3.2 covers about 14% of the area, and the half-opaque
+ *  line halves that again, so roughly 7% of the finding is actually painted
+ *  over. Wide and faint reads as a texture; narrow and solid reads as a
+ *  repaint. */
+const PREEXIST_PITCH = 3.2;
+const PREEXIST_STROKE = 0.45;
+const PREEXIST_LINE_OPACITY = "0.5";
+
+/** Shape elements whose fill is worth swapping. A `<g>` carries no paint of
+ *  its own in these drawings — every layer's colour sits on its child paths. */
+const PREEXIST_SHAPES = "path,polygon,rect,circle,ellipse";
+
+/** Perceived lightness of a fill, 0-1, or `null` when the value names no
+ *  colour at all (`none`, a `url()`, a keyword, empty). Decides whether the
+ *  hatch lines go dark or light: one fixed line colour disappears on either
+ *  the near-black caries shape or the near-white enamel one.
+ *
+ *  BOTH notations are parsed, and that is not defensive padding. The drawings
+ *  author `fill: #cfe3ee`, but `style.fill` reads back as `rgb(207, 227, 238)`
+ *  — every engine normalizes it, jsdom included. Accepting only hex would make
+ *  this return `null` for essentially every real layer, and the pattern would
+ *  then drop the background rect and paint the hatch over bare nothing,
+ *  discarding the colour that says which material the filling is. */
+function fillLightness(value: string): number | null {
+  const raw = (value || "").trim();
+  let rgb: number[] | null = null;
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(raw);
+  if(hex){
+    const h = hex[1].length === 3 ? hex[1].split("").map((c) => c + c).join("") : hex[1];
+    rgb = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
+  }else{
+    const fn = /^rgba?\(\s*([0-9.]+)[\s,]+([0-9.]+)[\s,]+([0-9.]+)/i.exec(raw);
+    if(fn) rgb = [1, 2, 3].map((i) => Number(fn[i]) / 255);
+  }
+  if(!rgb || rgb.some((c) => !Number.isFinite(c))) return null;
+  return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+}
+
+/** Ensure `svg` holds a hatch pattern over `base` and return its id. One
+ *  pattern per underlying colour, created once and reused — the pattern paints
+ *  the original colour back underneath the lines, so a pre-existing amalgam
+ *  filling still reads as amalgam. */
+function ensureHatchPattern(svg: Any, base: string): string {
+  const doc = svg.ownerDocument || document;
+  const NS = "http://www.w3.org/2000/svg";
+  const key = (base || "none").replace(/[^a-z0-9]/gi, "") || "none";
+  const id = `odon-preexist-${key}`;
+  if(svgGetById(svg, id)) return id;
+  let defs = svg.querySelector("defs");
+  if(!defs){
+    defs = doc.createElementNS(NS, "defs");
+    svg.insertBefore(defs, svg.firstChild);
+  }
+  const light = fillLightness(base);
+  const line = light !== null && light < 0.5 ? "#f2f5f8" : "#1e2a3a";
+  const pattern = doc.createElementNS(NS, "pattern");
+  pattern.setAttribute("id", id);
+  pattern.setAttribute("patternUnits", "userSpaceOnUse");
+  pattern.setAttribute("width", String(PREEXIST_PITCH));
+  pattern.setAttribute("height", String(PREEXIST_PITCH));
+  pattern.setAttribute("patternTransform", "rotate(45)");
+  if(light !== null){
+    const bg = doc.createElementNS(NS, "rect");
+    bg.setAttribute("width", String(PREEXIST_PITCH));
+    bg.setAttribute("height", String(PREEXIST_PITCH));
+    bg.setAttribute("fill", base);
+    pattern.appendChild(bg);
+  }
+  const bar = doc.createElementNS(NS, "rect");
+  bar.setAttribute("width", String(PREEXIST_STROKE));
+  bar.setAttribute("height", String(PREEXIST_PITCH));
+  bar.setAttribute("fill", line);
+  bar.setAttribute("fill-opacity", PREEXIST_LINE_OPACITY);
+  pattern.appendChild(bar);
+  defs.appendChild(pattern);
+  return id;
+}
+
+/** Restore every hatched shape to its captured base fill and drop the marker.
+ *  Runs FIRST on every {@link applyPreExistingStyling} call — symmetric, so
+ *  archiving a correction, or a finding replaced under our care, leaves no
+ *  stray hatch behind. */
+function clearPreExistingStyling(svg: Any){
+  const marked = svg.querySelectorAll ? svg.querySelectorAll('[data-preexisting="1"]') : [];
+  for(const el of Array.from(marked) as Any[]){
+    if(el.getAttribute("data-base-pfill") !== null){ el.style.fill = el.getAttribute("data-base-pfill") || ""; }
+    el.removeAttribute("data-preexisting");
+  }
+}
+
+/** Hatch one finding layer: every shape under it captures its base fill ONCE
+ *  (`data-base-pfill`, the capture-once pattern SP12's discoloration tint and
+ *  the proposed styling both follow, so a reused node's second render cannot
+ *  capture an already-hatched value as "base") and is repainted with a pattern
+ *  built over that same colour. */
+function markPreExisting(svg: Any, layer: Any){
+  const shapes = [layer, ...Array.from(layer.querySelectorAll?.(PREEXIST_SHAPES) ?? [])] as Any[];
+  for(const el of shapes){
+    if(!el.style || !PREEXIST_SHAPES.includes(el.tagName?.replace(/^.*:/, "").toLowerCase())) continue;
+    if(el.getAttribute("data-preexisting") === "1") continue;
+    if(el.getAttribute("data-base-pfill") === null) el.setAttribute("data-base-pfill", el.style.fill || "");
+    const base = el.getAttribute("data-base-pfill") || "";
+    el.style.fill = `url(#${ensureHatchPattern(svg, base)})`;
+    el.setAttribute("data-preexisting", "1");
+  }
+}
+
+/** The layers a HEALTHY tooth already draws, per template and position. They
+ *  are anatomy, not findings, so hatching them would hatch the whole tooth —
+ *  the one thing that would make the marking unreadable. Cached because the
+ *  answer depends only on the drawing and the position, never on the chart. */
+const healthyLayerCache = new Map<string, Set<string>>();
+
+function healthyLayerIds(toothNo: Any, svg: Any): Set<string> {
+  const key = `${svg.getAttribute?.("data-tooth-template") ?? "?"}|${toothNo}`;
+  const hit = healthyLayerCache.get(key);
+  if(hit) return hit;
+  const clone = svg.cloneNode(true);
+  applyStateToSvgSingle(toothNo, clone, drawnState(clone, defaultState()));
+  const ids = new Set(collectActiveLayers(clone).map((l) => l.id));
+  healthyLayerCache.set(key, ids);
+  return ids;
+}
+
+/** Hatch the layers of `svg` that were ALREADY active in the baseline
+ *  examination — what the patient arrived with — having excluded the anatomy a
+ *  healthy tooth draws anyway. `svg` has already been painted with the active
+ *  chart's state by the caller (see `applyStateToSvg`). Always resets first. */
+function applyPreExistingStyling(toothNo: Any, svg: Any){
+  clearPreExistingStyling(svg);
+  if(chartMode !== "status") return;      // Plan mode: the dashed channel owns the tooth
+  const base = baselineToothState(toothNo);
+  if(!base) return;                       // no examination archived: nothing to derive from
+  const nowIds = collectActiveLayers(svg).map((l) => l.id);
+  const clone = svg.cloneNode(true);
+  applyStateToSvgSingle(toothNo, clone, drawnState(clone, base));
+  const baseIds = new Set(collectActiveLayers(clone).map((l) => l.id));
+  const healthy = healthyLayerIds(toothNo, svg);
+  for(const id of nowIds){
+    if(!baseIds.has(id) || healthy.has(id)) continue;
+    const el = svgGetById(svg, id);
+    if(el) markPreExisting(svg, el);
+  }
+}
+
+/** TEST-ONLY sibling of {@link __applyProposedStylingForTest} for the
+ *  pre-existing hatch. Reads the module's live archive and `chartMode`,
+ *  exactly as the real `applyStateToSvg` roots loop does. Not part of the
+ *  public API. */
+export function __applyPreExistingStylingForTest(toothNo: Any, svg: Any): void {
+  applyPreExistingStyling(toothNo, svg);
+}
+
 /** Parsed tooth templates, module-scoped so a tile can be re-mounted from a
  *  different drawing after it was built (see `syncToothTemplate`). */
 const tplCache = new Map<number, Any>();
@@ -3326,6 +3597,7 @@ function applyStateToSvg(toothNo: Any){
   for(const svg of roots){
     applyStateToSvgSingle(toothNo, svg, drawnState(svg, toothState.get(toothNo)));
     applyProposedStyling(toothNo, svg); // R2-C Task 1: dashed+tint plan-only layers (Plan mode only)
+    applyPreExistingStyling(toothNo, svg); // odontogram-ap7: hatch what the patient arrived with (Status mode only)
   }
   applyPluginOverlays(toothNo);
   updateToothTooltip(toothNo);
@@ -6954,6 +7226,146 @@ export function getPlanChanges(): PlanChange[] {
     }
   }
   return out;
+}
+
+// ---- Bead odontogram-ap7: what the patient arrived with ----
+//
+// Whether a crown, a filling or a caries lesion was already there at intake is
+// a liability and documentation question, and until now the chart could not
+// answer it: a finding entered at the first visit and one entered three years
+// later looked identical.
+//
+// It is DERIVED, never stored. Bead odontogram-2vd already archives dated
+// examinations, so "pre-existing" is a comparison against the earliest one —
+// which means nothing new to serialize, no payload bump, no FHIR mapping, and
+// no second record that could drift out of agreement with the archive.
+//
+// The comparison is against the STATUS chart explicitly, never the active-chart
+// alias: an examination records what was OBSERVED, and provenance is a fact
+// about the past that a proposal cannot change.
+
+/** The examination every finding is judged against — the EARLIEST archived
+ *  one, since that is the mouth as the patient brought it. `null` when nothing
+ *  has been archived, which is simply "this case has no baseline yet" and not
+ *  an error: every derivation below then reports nothing at all. */
+export function getBaselineExamination(): ExaminationContext | null {
+  return examinations.length > 0 ? { ...examinations[0].examination } : null;
+}
+
+/** The baseline's record for one tooth, hydrated into a comparable state. A
+ *  tooth absent from the baseline resolves to `defaultState()` — the same
+ *  fallback `getPlanChanges` uses — so a tooth first charted after intake
+ *  compares against the clinical default rather than throwing. */
+function baselineToothState(toothNo: number): Any | null {
+  if(examinations.length === 0) return null;
+  const raw = examinations[0].teeth[String(toothNo)];
+  return raw ? hydrateState(deepCopyJson(raw)) : defaultState();
+}
+
+/** A tooth's filled surfaces / caried surfaces as ONE compact label each, in
+ *  the same "summary-level, never per-surface" shape `plaqueSummaryLabel`
+ *  already uses for the diff. Tooth-independent letters (`surfaceLetter` with
+ *  no tooth number) because a `DIFF_AXES`-shaped label only ever sees a state. */
+function surfaceSetLabel(surfaces: Iterable<string> | undefined, strip = ""): string {
+  const seen = new Set<string>();
+  for(const raw of surfaces ?? []) seen.add(strip ? String(raw).replace(strip, "") : String(raw));
+  if(seen.size === 0) return t("planChange.none");
+  return SUMMARY_SURFACE_ORDER.filter((s) => seen.has(s)).map((s) => surfaceLetter(s)).join(", ");
+}
+
+/**
+ * The axes provenance is judged over: the curated treatment-plan diff, PLUS
+ * the two findings it does not carry.
+ *
+ * `DIFF_AXES` is deliberately left alone — it answers "what does the plan
+ * change", where a filling and a caries lesion are not treatment-plan axes.
+ * Provenance asks a different question, and the two findings a clinician is
+ * most often asked about years later are exactly a filling and a caries
+ * lesion, alongside the crown. Extending `DIFF_AXES` in place would silently
+ * change the "What changes" box; appending here changes nothing else.
+ */
+const PROVENANCE_AXES: { key: string; labelKey: string; label: (s: Any) => string }[] = [
+  ...DIFF_AXES,
+  {
+    key: "fillings", labelKey: "planChange.axis.fillings",
+    label: (s) => surfaceSetLabel((s.fillingSurfaceMaterials as Map<string, string> | undefined)?.keys()),
+  },
+  {
+    key: "caries", labelKey: "planChange.axis.caries",
+    label: (s) => surfaceSetLabel(s.caries as Set<string> | undefined, "caries-"),
+  },
+];
+
+/** Whether `label` says an axis carries an actual finding, judged against what
+ *  that axis reads on a healthy default tooth.
+ *
+ *  The `planChange.none` sentinel alone is not enough, and getting this wrong
+ *  is not subtle: `presence` reads "Tooth" and `substrate` reads "natural" on
+ *  an untouched tooth, so a sentinel test would report every healthy tooth in
+ *  the mouth as carrying two pre-existing findings. Deriving the neutral value
+ *  from `defaultState()` instead means a newly-added axis needs no entry in a
+ *  second table that could fall behind. */
+function axisCarriesFinding(axis: { label: (s: Any) => string }, label: string): boolean {
+  return label !== axis.label(defaultState());
+}
+
+/**
+ * The treatment axes of `toothNo` that carry a finding the patient ARRIVED
+ * with: recorded in the baseline examination and unchanged since.
+ *
+ * An axis sitting at the value a healthy tooth shows is not a pre-existing
+ * finding, it is the absence of one, so it never appears here (see
+ * {@link axisCarriesFinding}). Returns `[]` when no examination has been
+ * archived.
+ *
+ * Pure and read-only: never mutates a chart, never touches the DOM, never
+ * renders.
+ */
+export function getPreExistingAxes(toothNo: number): string[] {
+  const base = baselineToothState(toothNo);
+  if(!base) return [];
+  const now = charts.status.get(toothNo) ?? defaultState();
+  const out: string[] = [];
+  for(const axis of PROVENANCE_AXES){
+    const then = axis.label(base);
+    if(!axisCarriesFinding(axis, then)) continue;   // nothing was there to arrive with
+    if(axis.label(now) === then) out.push(axis.key);
+  }
+  return out;
+}
+
+/**
+ * Everything that has CHANGED since the baseline examination, in the same
+ * shape and stable tooth-then-axis order as {@link getPlanChanges} — one entry
+ * per tooth per axis, `from` being the baseline's value and `to` today's.
+ *
+ * This is the complement of {@link getPreExistingAxes}: what was found or done
+ * under our care. Returns `[]` when no examination has been archived.
+ */
+export function getChangesSinceBaseline(): PlanChange[] {
+  if(examinations.length === 0) return [];
+  const out: PlanChange[] = [];
+  for(const toothNo of ALL_TEETH){
+    const base = baselineToothState(toothNo) as Any;
+    const now = charts.status.get(toothNo) ?? defaultState();
+    for(const axis of PROVENANCE_AXES){
+      const from = axis.label(base);
+      const to = axis.label(now);
+      if(from !== to) out.push({ toothNo, axis: axis.key, from, to });
+    }
+  }
+  return out;
+}
+
+/**
+ * Whether `toothNo` carries any finding the patient arrived with. The cheap
+ * question the tooltip and the whole-mouth summary ask before spending a full
+ * axis walk, and the one `odontogram-im1` needs: an implant present at the
+ * baseline arrived with the patient, so an empty implant product on it is a
+ * complete record rather than a gap.
+ */
+export function isToothPreExisting(toothNo: number): boolean {
+  return getPreExistingAxes(toothNo).length > 0;
 }
 
 // ---- SP-perio P1 Task 1: periodontal data-core public API ----
