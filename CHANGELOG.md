@@ -9,6 +9,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **A filling that reaches the neck can say so — without becoming a second
+  surface.** (odontogram-wxt) The surface vocabulary has five entries, and
+  nothing distinguished a vestibular filling from a vestibular filling that
+  extends into the cervical region.
+
+  The modelling question is the whole feature, and BEMA settles it: the cervical
+  region is **not** a surface for fee purposes. The four or five regular
+  surfaces determine the surface count and therefore the position tier
+  (13a–d / 13e–h); the cervix is recorded as a **suffix on an existing
+  surface** — "vz"/"47" vestibular including the cervix, "lz"/"57" lingual.
+  A sixth surface would report "multi-surface" where the truth is
+  "single-surface with a cervical marker". So `cervicalSurfaces` is a
+  membership set over the vestibular and oral surfaces, never a surface value,
+  and the new `getFillingSurfaceCount()` — the number a fee mapping would
+  consume — reads `fillingSurfaceMaterials` and nothing else. A vestibular
+  filling marked as reaching the neck counts **one**.
+
+  There is no fee effect, and that is the point: the marker is documentation
+  and justification. On a repeat filling it is what shows that no treatment
+  error is implied, and it carries weight for more-than-three-surface fillings,
+  incisal corner build-ups, and circumstances such as bruxism or pre-existing
+  disease.
+
+  It qualifies whichever finding the surface carries — a filling, a caries
+  lesion, or both — so it is authored in the one popup both the caries cross
+  and the filling cross open, offered only once the surface actually carries
+  something. The cell then shows the BEMA suffix letter in its corner. It is
+  read back in the tooth tooltip and, in the whole-mouth summary, on the line
+  of the finding it qualifies (never on both at once).
+
+  **Nothing is drawn on the chart, and that is a decision rather than an
+  omission.** The side view has no lingual layer at all — the oral surface
+  exists only in the occlusal view — so a marker drawn for a vestibular
+  cervical filling and structurally impossible for an oral one would read as
+  "no oral cervical involvement". A marker that is present for one surface and
+  unavailable for the other is worse than none, and the finding's home is the
+  written record anyway. SVG-fingerprint parity is therefore byte-identical.
+
+  It travels the legacy FHIR dialect as one Observation with a per-surface
+  boolean component — the surface is the component code and the marker its
+  value, which is exactly the "suffix on a surface" relationship — and round
+  trips. The canonical `dental-de` dialect gets no code for it: the IG's
+  surface value set defines none, and its cervical concepts sit on
+  `GingivaRecessionDE`, which describes the gingiva rather than a restoration
+  reaching the neck. The marker is reported at the boundary instead, because
+  the sourcing rule forbids minting one. Payload **2.23 → 2.24**, additive and
+  omit-when-empty.
+
+  Deliberately out of scope: a BEMA position mapping or any fee calculation
+  (this delivers the charting attribute such a mapping would need; the mapping
+  itself lives outside this engine), GOZ, whose cervical problem runs through a
+  different mechanism entirely, and root caries — `rootCaries` describes caries
+  **on** the root, not a filling involving the neck, and the two must not be
+  conflated.
+
 - **Which implant is in the tooth.** (odontogram-im1) `toothSelection: implant`
   says an implant is there; it does not say which one, and the two are different
   assertions. A tooth may now carry an `implantProduct` — manufacturer, system,

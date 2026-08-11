@@ -363,6 +363,11 @@ function defaultState(){
     rootCaries: "none", // none | active | arrested | active-cavitated
     radiographicDepth: new Map(), // surface -> none | E1 | E2 | D1 | D2 | D3
     fillingDefect: new Map(), // surface -> none | marginal | fracture | wear (on a filled surface)
+    // Bead odontogram-wxt: the surfaces whose finding — a filling, a caries
+    // lesion, or both — extends into the cervical region. A MEMBERSHIP set over
+    // buccal/lingual, never a sixth surface: the marker qualifies a surface, it
+    // does not add one, so getFillingSurfaceCount() is untouched by it.
+    cervicalSurfaces: new Set(), // subset of { buccal, lingual }
     // SP8 Task 1 foundation, wired up (render + migration) in Task 3: implant-only
     // peri-implant disease axis. none | mucositis | peri-implantitis-mild |
     // peri-implantitis-moderate | peri-implantitis-severe.
@@ -2356,6 +2361,18 @@ export function applyFillingDefect(map: Map<string, string>, surface: string, va
   else map.delete(surface);
 }
 
+/** Bead odontogram-wxt: set/clear the cervical marker on one surface of an
+ *  ALREADY-GATED state object — the write half of {@link setCervicalInvolvement},
+ *  used by the popup, which runs inside `applyToSelected`'s batch gate and must
+ *  not gate a second time. Silently ignores a surface the cervix does not
+ *  border. Extracted for unit-testing the surface-write path. */
+export function applyCervicalInvolvement(state: Any, surface: string, involved: boolean): void {
+  if(!VALID_CERVICAL_SURFACES.has(surface)) return;
+  if(!state.cervicalSurfaces) state.cervicalSurfaces = new Set();
+  if(involved) state.cervicalSurfaces.add(surface);
+  else state.cervicalSurfaces.delete(surface);
+}
+
 // ---- SP4 Task 5: pulp/apical/resorption diagnosis authoring ----
 export type PulpDetailLevel = "simple" | "aae" | "latin";
 
@@ -3402,6 +3419,7 @@ function __plainStateForTest(s: Any): Record<string, unknown> {
     fillingSurfaceMaterials: Object.fromEntries(s.fillingSurfaceMaterials ?? []),
     cariesSeverity: Object.fromEntries(s.cariesSeverity ?? []),
     fillingDefect: Object.fromEntries(s.fillingDefect ?? []),
+    cervicalSurfaces: Array.from(s.cervicalSurfaces ?? []),
     mods: Array.from(s.mods ?? []),
   };
 }
@@ -3648,6 +3666,17 @@ function getStateSummary(toothNo: number): string[]{
         summary.push(`${t("fillingDefect.label")} (${summarySurfaceLetter(surf, toothNo)}: ${t("fillingDefect." + val)})`);
       }
     }
+  }
+
+  // Bead odontogram-wxt: cervical involvement, gated on the SAME predicate as
+  // the control — the surface must still carry the filling or the caries the
+  // marker qualifies. Named as one line over both surfaces rather than one
+  // line each, because it is one finding about the tooth's neck.
+  if(state.cervicalSurfaces && state.cervicalSurfaces.size > 0){
+    const surfaces = SUMMARY_SURFACE_ORDER
+      .filter((surf) => state.cervicalSurfaces.has(surf) && cervicalInvolvementApplies(state, surf))
+      .map((surf) => summarySurfaceLetter(surf, toothNo));
+    if(surfaces.length) summary.push(`${t("cervical.label")} (${surfaces.join(", ")})`);
   }
 
   // Caries (+ SP9 coarse severity qualifier)
@@ -3959,6 +3988,37 @@ function syncFillingDefectIndicator(cell: Element, state: Any): void {
  *  filling-defect indicator. Not part of the public API. */
 export function __syncFillingDefectIndicatorForTest(cell: Element, state: Record<string, unknown>): void {
   syncFillingDefectIndicator(cell, state as Any);
+}
+
+/** Bead odontogram-wxt: mark ONE `.surface-cell` as carrying the cervical
+ *  marker, via a `data-cervical` attribute CSS renders as the BEMA suffix
+ *  letter. Serves the caries cross and the filling cross alike — a caries
+ *  checkbox's value is `caries-{surface}`, a filling checkbox's is the bare
+ *  surface, so the prefix is stripped rather than assumed away.
+ *
+ *  The attribute is set only while the marker APPLIES (see
+ *  `cervicalInvolvementApplies`), so clearing the last filling and the last
+ *  caries lesion off a surface removes the badge even though the stored
+ *  membership survives — the same display-gates-on-the-control's-predicate
+ *  policy `crownLeakage` follows. This lives in the panel DOM, never in
+ *  `__renderActiveLayers`, so it is outside the SVG fingerprint entirely. */
+function syncCervicalIndicator(cell: Element, state: Any): void {
+  const c = cell.querySelector("input[type=checkbox]") as HTMLInputElement | null;
+  if(!c) return;
+  const surface = String(c.value).replace(/^caries-/, "");
+  const on = !!state.cervicalSurfaces?.has(surface) && cervicalInvolvementApplies(state, surface);
+  if(on) cell.setAttribute("data-cervical", CERVICAL_MARKER);
+  else cell.removeAttribute("data-cervical");
+}
+
+/** The letter BEMA writes for the cervical suffix ("vz"/"lz"). Held as a
+ *  constant because it is a citation, not a style choice. */
+const CERVICAL_MARKER = "z";
+
+/** TEST-ONLY sibling of {@link __syncFillingDefectIndicatorForTest} for the
+ *  cervical marker. Not part of the public API. */
+export function __syncCervicalIndicatorForTest(cell: Element, state: Record<string, unknown>): void {
+  syncCervicalIndicator(cell, state as Any);
 }
 
 /** A minimal shape covering what {@link subcariesLettersForTooth} and
@@ -4429,6 +4489,8 @@ function syncControlsFromState(state: Any){
   // syncSurfaceDepthIndicator())
   $$("#cariesChecks input[type=checkbox], #cariesSubcrownRow input[type=checkbox]").forEach(c => c.checked = state.caries.has(c.value));
   $$("#cariesChecks .surface-cell").forEach(cell => syncSurfaceDepthIndicator(cell, state));
+  // Bead odontogram-wxt: the cervical marker badge, on the caries cross.
+  $$("#cariesChecks .surface-cell").forEach(cell => syncCervicalIndicator(cell, state));
 
   // Depth selector at the top sets the DEFAULT depth for newly tapped surfaces.
   // SP5 Task 5: the whole visual caries-depth UI is gated by `cariesDepthEnabled`.
@@ -4458,6 +4520,8 @@ function syncControlsFromState(state: Any){
   $$("#fillingSurfaceChecks .surface-cell").forEach(cell => syncFillingSubcariesIndicator(cell, state));
   // SP10 Task 3: structural filling-defect dark-border indicator (LEFT side).
   $$("#fillingSurfaceChecks .surface-cell").forEach(cell => syncFillingDefectIndicator(cell, state));
+  // Bead odontogram-wxt: the same cervical marker badge, on the filling cross.
+  $$("#fillingSurfaceChecks .surface-cell").forEach(cell => syncCervicalIndicator(cell, state));
 
   // disable logic in UI
   const hasCrown = state.restorationType !== "none";
@@ -5384,6 +5448,19 @@ function showCariesDepthPopup(surface: string, anchor: HTMLElement, toothNo?: nu
   addGroup("caries.radiographicLabel", radiographicDepthOptions(), active?.radiographicDepth?.get(surface) ?? "none", (value)=>{
     applyToSelected((s)=>{ applyRadiographicDepth(s.radiographicDepth, surface, String(value)); });
   });
+  // Bead odontogram-wxt: cervical involvement. Authored HERE, in the one popup
+  // both the caries cell and the filling cell open, because the marker sits on
+  // the SURFACE and qualifies whichever of the two the surface carries. Offered
+  // only on the vestibular/oral surfaces, and only once the surface actually
+  // carries a finding — the same predicate the setter enforces.
+  if(active && cervicalInvolvementApplies(active, surface)){
+    addGroup("cervical.label", [
+      { value: "no", label: t("cervical.no") },
+      { value: "yes", label: t("cervical.yes"), title: t("cervical.hint") },
+    ], active.cervicalSurfaces?.has(surface) ? "yes" : "no", (value)=>{
+      applyToSelected((s: Any)=>{ applyCervicalInvolvement(s, surface, value === "yes"); });
+    });
+  }
 
   document.body.appendChild(popup);
   // Position below-right of the indicator, clamped to the viewport.
@@ -5850,6 +5927,11 @@ function serializeState(s: Any){
     rootCaries: s.rootCaries,
     radiographicDepth: Object.fromEntries(s.radiographicDepth || new Map()),
     fillingDefect: Object.fromEntries(s.fillingDefect || new Map()),
+    // Bead odontogram-wxt: omitted ENTIRELY when no surface carries the marker,
+    // the same omit-when-empty convention as perio/furcation/plaque below — a
+    // chart that never records cervical involvement stays byte-identical apart
+    // from the version field (payload 2.24).
+    ...((s.cervicalSurfaces?.size ?? 0) > 0 ? { cervicalSurfaces: Array.from(s.cervicalSurfaces) } : {}),
     // SP-perio P1 Task 1: omitted ENTIRELY when no site is charted (mirrors
     // the customStates/note pattern below) — a no-perio tooth/payload stays
     // byte-identical to its pre-perio serialization.
@@ -5956,6 +6038,15 @@ export const VALID_CARIES_SEVERITY = new Set([0, 1, 2, 3, 4, 5, 6]);
 export const VALID_RADIOGRAPHIC_DEPTH = new Set(["none", "E1", "E2", "D1", "D2", "D3"]);
 export const VALID_FILLING_DEFECT = new Set(["none", "marginal", "fracture", "wear"]);
 export const VALID_FILLING_DEFECT_SET = new Set(["marginal", "fracture", "wear"]); // non-none, valid stored values
+/** Bead odontogram-wxt: the surfaces on which cervical involvement is a
+ *  meaningful statement. The cervix is NOT a surface of its own — it is a
+ *  MARKER on the vestibular or oral surface (BEMA writes it as the suffix
+ *  "z"/"7": "vz"/"47", "lz"/"57"). Modelling it as a sixth surface would
+ *  inflate the surface count and so the position tier, which is exactly the
+ *  error this set exists to prevent. Mesial, distal and occlusal are absent
+ *  deliberately: a proximal box already reaches the cervical third by
+ *  definition, and an occlusal cavity cannot reach the neck at all. */
+export const VALID_CERVICAL_SURFACES = new Set(["buccal", "lingual"]);
 // SP-perio P2b Task 2: the union of every entrance value furcationEntrances()
 // can ever return, across all tooth positions — used by hydrateState to
 // validate a raw payload's `furcation` keys generically (hydrateState has no
@@ -6268,6 +6359,11 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
       if(VALID_FILLING_SURFACES.has(surf) && typeof val === "string" && VALID_FILLING_DEFECT_SET.has(val)) s.fillingDefect.set(surf, val);
     }
   }
+  // Bead odontogram-wxt: cervical involvement (additive; legacy payloads have
+  // none). Validated against VALID_CERVICAL_SURFACES, not the full surface set:
+  // a hand-edited payload claiming an occlusal cervix is dropped rather than
+  // stored, because there is no control that could ever author it.
+  s.cervicalSurfaces = filterSet(raw.cervicalSurfaces, VALID_CERVICAL_SURFACES);
   s.fillingMaterial = validateEnum(raw.fillingMaterial, VALID_FILLING_MATERIAL, s.fillingMaterial);
   s.fillingSurfaces = filterSet(raw.fillingSurfaces, VALID_FILLING_SURFACES);
   s.fillingSurfaceMaterials = new Map();
@@ -7063,6 +7159,89 @@ export function getToothPlaque(toothNo: number): string[] {
   const plaque = s?.plaque as Set<string> | undefined;
   if(!plaque || plaque.size === 0) return [];
   return Array.from(plaque);
+}
+
+// ---- Bead odontogram-wxt: cervical involvement of a filling or a caries
+// lesion. The clinical rule this models is BEMA's: the cervical region is NOT
+// a surface for fee purposes. The four or five regular surfaces determine the
+// surface count and therefore the position tier (13a-d / 13e-h); the cervix is
+// recorded as a SUFFIX on an existing surface ("vz"/"47", "lz"/"57"). So a
+// single-surface vestibular filling that reaches the neck stays a
+// SINGLE-surface filling, and the whole point of this axis is that it cannot
+// change that number — see getFillingSurfaceCount() below, which is the count
+// such a mapping consumes and which never reads this set.
+//
+// It is documentation and justification, not a fee item: on a repeat filling
+// it is what shows that no treatment error is implied, and it carries weight
+// for more-than-three-surface fillings, incisal corner build-ups and
+// circumstances such as bruxism or pre-existing disease.
+
+/** Whether cervical involvement is a meaningful statement about `surface` on
+ *  this tooth: the surface must be one the cervix borders (vestibular/oral)
+ *  AND must actually carry a finding — a filling, a caries lesion, or both.
+ *  ONE predicate, used by the control, the tooltip and the whole-mouth summary
+ *  alike, so a tolerantly-imported marker on a bare surface can never surface
+ *  somewhere the control itself refuses to show it (the `crownLeakage`
+ *  precedent). */
+function cervicalInvolvementApplies(state: Any, surface: string): boolean {
+  if(!state || !VALID_CERVICAL_SURFACES.has(surface)) return false;
+  return !!state.fillingSurfaceMaterials?.has(surface) || !!state.caries?.has(`caries-${surface}`);
+}
+
+/** TEST-ONLY seam over {@link cervicalInvolvementApplies}, so the gate can be
+ *  exercised against a hand-built state without a live grid. */
+export function __cervicalInvolvementAppliesForTest(state: Record<string, unknown>, surface: string): boolean {
+  return cervicalInvolvementApplies(state as Any, surface);
+}
+
+/** The surfaces of `toothNo` whose finding extends into the cervical region,
+ *  as a plain array in the canonical surface order. Never aliases live state.
+ *  Returns only surfaces the marker still APPLIES to (see
+ *  {@link cervicalInvolvementApplies}) — a stored marker on a surface that has
+ *  since lost its filling and its caries is dormant, not reported. */
+export function getCervicalSurfaces(toothNo: number): string[] {
+  const s = toothState.get(toothNo);
+  const set = s?.cervicalSurfaces as Set<string> | undefined;
+  if(!set || set.size === 0) return [];
+  return SUMMARY_SURFACE_ORDER.filter((surf) => set.has(surf) && cervicalInvolvementApplies(s, surf));
+}
+
+/** Record (or clear) cervical involvement on one surface of one tooth.
+ *
+ *  A silent no-op on any surface outside {@link VALID_CERVICAL_SURFACES}, and
+ *  on a surface that carries neither a filling nor caries — there is nothing
+ *  for the marker to qualify. The guards run BEFORE the DS-1 gate, so a
+ *  rejected call marks nothing plan-edited and fires no state-change
+ *  notification (the `setPeriImplantPlaque` precedent). */
+export function setCervicalInvolvement(toothNo: number, surface: string, involved: boolean): void {
+  if(!VALID_CERVICAL_SURFACES.has(surface)) return;
+  let s = toothState.get(toothNo);
+  if(!s){ s = defaultState(); toothState.set(toothNo, s); }
+  if(!cervicalInvolvementApplies(s, surface)) return;
+  gateToothEdit(toothNo, () => {
+    const set = s.cervicalSurfaces as Set<string>;
+    if(involved){
+      if(!set.has(surface)){ set.add(surface); notifyStateChange(); return true; }
+    }else{
+      if(set.has(surface)){ set.delete(surface); notifyStateChange(); return true; }
+    }
+    return false;
+  });
+}
+
+/** How many surfaces the tooth's direct restoration covers — the number a
+ *  BEMA/GOZ position mapping would consume to pick a tier.
+ *
+ *  It reads `fillingSurfaceMaterials` and NOTHING else. That is the assertion,
+ *  not an implementation detail: a vestibular filling marked as reaching the
+ *  cervix counts ONE, exactly as it did before the marker existed. The mapping
+ *  itself is deliberately out of scope and out of this engine (CLAUDE.md: no
+ *  dependencies on external dental systems); this is the charting figure such
+ *  a mapping needs. */
+export function getFillingSurfaceCount(toothNo: number): number {
+  const s = toothState.get(toothNo);
+  const fsm = s?.fillingSurfaceMaterials as Map<string, string> | undefined;
+  return fsm ? fsm.size : 0;
 }
 
 // ---- SP-perio PG-D Task 1: Silness-Löe Plaque Index (PI) + Löe-Silness
@@ -10506,7 +10685,16 @@ export function getOdontogramSummary(): OdontogramSummary {
       if(secondary.length) parts.push(secondary.join(", ") + " - " + t("toothInfo.secondary"));
       if(parts.length){
         const sev = cariesSeverityTierLabel(s);
-        caries.push(`${lbl(toothNo)} (${parts.join("; ")})${sev ? " – " + sev : ""}`);
+        // Bead odontogram-wxt: a caries surface that reaches the neck says so
+        // here. Only surfaces WITHOUT a filling — a filled one is reported on
+        // the Fillings line below, and one finding must not be qualified twice.
+        const cerv = SUMMARY_SURFACE_ORDER
+          .filter((surface) => s.cervicalSurfaces?.has(surface)
+            && s.caries.has("caries-" + surface)
+            && !s.fillingSurfaceMaterials?.has(surface))
+          .map((surface) => summarySurfaceLetter(surface, toothNo));
+        const cervSuffix = cerv.length ? ` – ${t("cervical.label")}: ${cerv.join(", ")}` : "";
+        caries.push(`${lbl(toothNo)} (${parts.join("; ")})${sev ? " – " + sev : ""}${cervSuffix}`);
       }
     }
 
@@ -10548,7 +10736,15 @@ export function getOdontogramSummary(): OdontogramSummary {
         // names itself (toothInfo.secondary) on the Caries line — a bare
         // "surface: type" suffix read as generic filling info, not a defect.
         const suffix = defects.length ? ` – ${t("fillingDefect.label")}: ${defects.join(", ")}` : "";
-        fillings.push(`${lbl(toothNo)} (${letters.join(", ")})${suffix}`);
+        // Bead odontogram-wxt: the cervical marker rides the filling it
+        // qualifies, exactly as BEMA's "vz"/"lz" suffix rides the surface —
+        // and note that `letters` above, the surface COUNT a fee mapping
+        // reads, is built without it.
+        const cerv = SUMMARY_SURFACE_ORDER
+          .filter((surface) => s.cervicalSurfaces?.has(surface) && s.fillingSurfaceMaterials.has(surface))
+          .map((surface) => summarySurfaceLetter(surface, toothNo));
+        const cervSuffix = cerv.length ? ` – ${t("cervical.label")}: ${cerv.join(", ")}` : "";
+        fillings.push(`${lbl(toothNo)} (${letters.join(", ")})${suffix}${cervSuffix}`);
       }
     }
 

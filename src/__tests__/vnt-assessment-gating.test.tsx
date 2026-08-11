@@ -164,7 +164,7 @@ describe("odontogram-vnt AC2: hydration/import tolerance is unchanged", () => {
     expect(getToothAssessments(16)).toEqual({ "pd:MB": "unmeasurable" });
 
     const payload = __collectExportPayloadForTest();
-    expect(payload.version).toBe("2.23");
+    expect(payload.version).toBe("2.24");
     expect(payload.teeth["21"].assessment).toEqual({ "pd:MB": "unmeasurable" });
   });
 });

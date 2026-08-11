@@ -758,6 +758,18 @@ select:focus{
 .surf-defect.has-defect{border:2px solid #2e3192; padding:1px}
 .surf-defect.has-defect i{background:#f5ff15; box-shadow:0 0 0 1px #2e3192}
 
+/* Bead odontogram-wxt: cervical involvement. A suffix letter on the surface,
+   never a cell of its own — the badge sits in the cell's bottom-right corner
+   the way BEMA writes "vz"/"lz" after the surface, so it reads as qualifying
+   the surface rather than as a sixth one. Purely a panel affordance: the
+   marker is deliberately not drawn on the chart (see the bead's render
+   decision), and this lives outside the SVG fingerprint entirely. */
+.surface-cross .surface-cell[data-cervical]::after{
+  content:attr(data-cervical); position:absolute; right:5px; bottom:4px;
+  font-size:10px; font-weight:700; line-height:1; font-style:italic;
+  color:#2e3192; opacity:.85; pointer-events:none;
+}
+
 /* Caries depth popup */
 .odon-depth-popup{position:fixed; z-index:130; background:var(--panel); border:1px solid var(--line); border-radius:12px; box-shadow:0 12px 24px rgba(30,42,58,.18); padding:6px; display:flex; flex-direction:column; gap:4px; min-width:150px}
 /* SP16 Task 1: the filling-defect popup's option buttons live in a plain

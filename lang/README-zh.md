@@ -166,6 +166,7 @@ export default function OdontogramClient() {
 - 🎚️ 三项龋齿粒度设置（`secondaryCariesMode`、`rootCariesMode`、`radiographicDepthMode`）以及一个 `cariesDepthEnabled` 开关，可将每种量表折叠为更简化的选择视图，而不丢失已存储的数值
 - 🩹 充填面板中的继发龋摘要行：在充填控件下方列出任何已选中且带有继发龋的牙齿及其牙面（例如“36 号牙（O 面）的充填体上记录有继发龋。”）
 - 🪛 每个牙面的充填缺陷（`fillingDefect`：无 / 边缘 / 折裂 / 磨损），针对直接修复体，独立于继发龋——通过充填卡片上的按牙面指示器记录（与龋齿深度指示器呼应，其选项列表纵向排列），在图表上渲染，并以明确的标签形式显示在提示信息和全口充填摘要中（例如“36（O）– 充填缺陷：O：边缘”），与继发龋在龋齿行中的标注方式一致；充填卡片还会为任何已选中且记录有充填缺陷的牙齿显示提示说明（例如“36 号牙记录有充填缺陷。”），与现有的继发龋提示说明并列
+- 🦷🔻 充填体或龋损的牙颈部受累（`cervicalSurfaces`：唇/颊面与舌/腭面之上的集合）——牙颈部**不是**第六个牙面，而是既有牙面上的标记（BEMA 写作后缀“vz”/“lz”），因此它绝不改变位置等级所读取的面数（`getFillingSurfaceCount()`）；在龋齿十字与充填十字打开的同一个牙面弹窗中记录，在牙面单元格上以后缀字母标示，并显示在提示信息以及全口摘要中所限定的那条发现行上。刻意不在图表上绘制——侧面视图根本没有舌面图层
 - 🦷💥 按临床病因和部位分类的牙齿磨耗（`wearEdge`：无 / 磨耗（attrition）/ 酸蚀（erosion），切端/咬合面；`wearCervical`：无 / 磨损（abrasion）/ 楔状缺损（abfraction）/ 酸蚀（erosion），颈部）——取代原有的两个开关式磨牙症磨耗标志；通过磨耗行的两个下拉菜单记录，复用现有的磨耗美术效果，并在提示信息和新的全口“磨耗”摘要区域中显示
 - 🎨 按病因分类的牙齿变色（`discoloration`：无 / 四环素 / 氟斑牙 / 死髓 / 外源性 / 其他），适用于恒牙和乳牙——当牙齿无修复体且为天然基质时，为所显示的天然牙冠着上代表性颜色；在提示信息和新的全口“变色”摘要区域中显示；与充填缺陷及磨耗一起，完善了表面与结构性状况这一整套指标
 - ✏️ 前牙（切牙/尖牙）在整个界面中（选择器、弹窗、摘要）将其咬合面标注为“切端（incisal）”；存储的牙面键仍为 `occlusal`
@@ -360,6 +361,9 @@ export default function OdontogramClient() {
 
 **充填缺陷**（`fillingDefect`；按牙面，独立于继发龋的直接修复体发现——限定于 `fillingSurfaceMaterials` 中存在的牙面；渲染 `defect-{surface}` 美术层）：
 `none`、`marginal`（边缘）、`fracture`（折裂）、`wear`（磨损）
+
+**牙颈部受累**（`cervicalSurfaces`；`buccal`/`lingual` 之上的集合，限定于承载充填体、龋损或两者的牙面——无美术图层，刻意不绘制）：
+`buccal`、`lingual` —— 牙面上的标记，绝非独立牙面：`getFillingSurfaceCount()` 不受其影响
 
 **正畸**（`orthoAppliance`、`orthoDrift`、`orthoVertical`、`orthoRotation`；按牙位，限定于现有天然牙——恒牙或乳牙）：
 `orthoAppliance`：`none`、`bracket`（托槽）、`band`（带环）——`orthoDrift`：`none`、`mesial`（近中）、`distal`（远中）——`orthoVertical`：`none`、`extrusion`（伸长，向上箭头图标）、`intrusion`（压低，向下箭头图标）——`orthoRotation`：布尔值
@@ -748,6 +752,7 @@ npm run docs           # 在 docs/ 目录生成 TypeDoc 文档
 - `fillingSurfaces` - 已充填的牙面
 - `fillingSurfaceMaterials` - 按牙面记录的充填材料（混合充填，例如颊侧银汞合金 + 远中复合树脂）
 - `fillingDefect` - 按牙面记录的充填缺陷（none/marginal/fracture/wear），限定于已充填牙面，独立于继发龋
+- `cervicalSurfaces` - 其充填体或龋损延伸至牙颈部的牙面（buccal/lingual）；是牙面上的标记，而非第六个牙面
 - `pulpDx` - AAE 牙髓诊断（normal/reversible-pulpitis/irreversible-pulpitis/necrosis）；可复性牙髓炎渲染为简化图标
 - `pulpLatin` - 实用拉丁文牙髓亚型（仅当 `pulpDetailLevel` 为 `latin` 时由牙髓选择器显示）
 - `apicalDx` - 驱动根尖周图标的根尖诊断

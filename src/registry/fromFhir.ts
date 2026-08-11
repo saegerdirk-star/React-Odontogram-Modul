@@ -102,6 +102,18 @@ export function parseFhirBundleFromRegistry(bundle: unknown): OdontogramExportPa
         if (Object.keys(vals).length) rec.fillingDefect = vals;
         continue;
       }
+      // Bead odontogram-wxt: cervical involvement, a per-surface boolean. Only
+      // an explicit `true` restores the marker — an absent or false component
+      // means the surface does not reach the neck, never "unknown".
+      if (findingCode === "cervical-involvement") {
+        const surfaces: string[] = [];
+        for (const c of res.component ?? []) {
+          const surf = localCode(c.code);
+          if (surf && c.valueBoolean === true) surfaces.push(surf);
+        }
+        if (surfaces.length) rec.cervicalSurfaces = surfaces;
+        continue;
+      }
 
       const axis = BY_FINDING[findingCode];
       if (!axis) continue;

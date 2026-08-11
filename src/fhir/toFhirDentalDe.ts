@@ -540,6 +540,23 @@ function reportUnprojected(ctx: BuildContext, fdi: string, rec: ToothRecord): vo
     if (typeof value !== "string" || !value || value === skip) continue;
     reportUnmapped(ctx, { tooth: fdi, field: String(field), value, reason });
   }
+  // Bead odontogram-wxt: cervical involvement. The IG's surface vocabulary —
+  // `ToothSurfacesCS` plus HL7 `FDI-surface`, the two systems `ToothSurfacesVS`
+  // includes — has no cervical code, and its cervical/root-surface concepts sit
+  // on `GingivaRecessionDE`, which asserts something about the GINGIVA rather
+  // than about a restoration reaching the neck. Emitting either would be a
+  // claim nobody verified, so the marker is reported at the boundary instead;
+  // the sourcing rule forbids minting a code for it.
+  const cervical = rec.cervicalSurfaces;
+  if (Array.isArray(cervical)) {
+    for (const surface of cervical) {
+      if (typeof surface !== "string" || !surface) continue;
+      reportUnmapped(ctx, {
+        tooth: fdi, field: "cervicalSurfaces", value: surface,
+        reason: "The IG's tooth-surface value set defines no cervical code, and its cervical concepts belong to GingivaRecessionDE, which describes the gingiva rather than a restoration extending into the neck.",
+      });
+    }
+  }
   const fsm = rec.fillingSurfaceMaterials;
   if (fsm && typeof fsm === "object") {
     for (const [surface, material] of Object.entries(fsm)) {
