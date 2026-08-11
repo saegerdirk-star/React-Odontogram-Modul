@@ -1578,12 +1578,10 @@ export function buildSurfaceCross(container: Any, items: Any, onToggle: Any){
 }
 
 function buildSelect(selectEl: Any, options: Any, onChange: Any){
-  selectEl.innerHTML = "";
-  for(const opt of options){
-    const o = el("option", { value: opt.value, text: opt.label });
-    if(opt.title) o.title = opt.title;
-    selectEl.appendChild(o);
-  }
+  // Same grouping as setSelectOptions, which rebuilds this element on every
+  // tooth change - if only one of the two grouped, the list would regroup the
+  // first time a tooth was clicked.
+  setSelectOptions(selectEl, options, options[0]?.value);
   selectEl.addEventListener("change", (e)=>onChange((e.target as HTMLSelectElement).value));
 }
 
@@ -1838,12 +1836,31 @@ function updateAllToothTileNumbers(){
   }
 }
 
+// An option may carry a `group`; consecutive options sharing one are wrapped in
+// an <optgroup>. The restoration dropdown is 32 entries deep on a molar, and
+// flat it hid what it contained - a dentist looking for a gold inlay found
+// eight crowns, eight bridge units and gave up before reading to entry
+// nineteen. Grouping is presentation only: every `value` is unchanged, so the
+// change handler, the state model and the payload know nothing about it.
 function setSelectOptions(selectEl: Any, options: Any, value: Any){
   if(!selectEl) return;
   selectEl.innerHTML = "";
+  let group: Any = null;
+  let groupLabel: string | null = null;
   for(const opt of options){
     const o = el("option", { value: opt.value, text: opt.label });
     if(opt.title) o.title = opt.title;
+    if(opt.group){
+      if(opt.group !== groupLabel){
+        group = el("optgroup", { label: opt.group });
+        groupLabel = opt.group;
+        selectEl.appendChild(group);
+      }
+      group.appendChild(o);
+      continue;
+    }
+    group = null;
+    groupLabel = null;
     selectEl.appendChild(o);
   }
   if(options.some(o => o.value === value)){
@@ -1902,14 +1919,20 @@ function getRestorationOptions(view: "front" | "occlusal", ctx: { isImplant?: bo
     if(o.prosthesis){
       return {
         value: `prosthesis|${o.prosthesis}`,
-        label: `${t(o.prefixKey ?? "restoration.prefix.removable")}: ${t(PROSTHESIS_SUMMARY_KEY[o.prosthesis] ?? o.prosthesis)}`,
+        group: t(o.prefixKey ?? "restoration.prefix.removable"),
+        label: t(PROSTHESIS_SUMMARY_KEY[o.prosthesis] ?? o.prosthesis),
       };
     }
+    if(o.restorationType === "none"){
+      return { value: `${o.restorationType}|${o.restorationMaterial}`, label: t(o.labelKey) };
+    }
+    // The restoration TYPE becomes the group heading and leaves the option
+    // itself carrying only the material, so a group reads "Fixed: Inlay" over
+    // "gold / e.max / zirconia" instead of five lines each repeating "Inlay".
     return {
       value: `${o.restorationType}|${o.restorationMaterial}`,
-      label: o.restorationType === "none"
-        ? t(o.labelKey)
-        : `${t(o.prefixKey ?? "restoration.prefix.fixed")}: ${t(o.typeLabelKey ?? "")} – ${t(o.materialLabelKey ?? "")}`,
+      group: `${t(o.prefixKey ?? "restoration.prefix.fixed")}: ${t(o.typeLabelKey ?? "")}`,
+      label: t(o.materialLabelKey ?? ""),
     };
   });
 }

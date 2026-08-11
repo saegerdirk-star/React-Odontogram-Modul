@@ -31,6 +31,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The restoration dropdown is grouped by type.** It is 32 entries deep on a
+  molar and was flat, so it hid what it contained: a dentist looking for a gold
+  inlay met eight crowns and eight bridge units and gave up before reaching entry
+  nineteen. The entries are now wrapped in `<optgroup>`s — *Fixed: Crown*,
+  *Fixed: Bridge unit*, *Fixed: Inlay*, *Fixed: Onlay*, *Fixed: Veneer*,
+  *Removable* — and each option carries only its material, since the group
+  heading already names the type. Presentation only: every option `value` is
+  unchanged, so the change handler, the state model and the payload know nothing
+  about it.
+
 - **An MO, OD or MOD filling is drawn as one restoration.** (odontogram-9cl)
   Each surface is its own layer and its own authored shape, and the shapes had
   been drawn independently: charting MOD lit three of them and the chart showed
