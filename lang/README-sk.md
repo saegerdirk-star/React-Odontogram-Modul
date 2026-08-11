@@ -607,6 +607,10 @@ startExamination({ effectiveDateTime: "2027-01-15" });
 - Každé identifikačné pole je nepriehľadný reťazec vo vlastníctve hostiteľskej aplikácie, ktorý
   komponent uloží a vráti, ale nikdy neinterpretuje. Dokumenty spred verzie payloadu 2.21 ich
   neobsahujú a načítajú sa nezmenené.
+- **To, s čím pacient prišiel, sa odvodzuje z tohto archívu, nikdy sa neukladá.** Ošetrenie prítomné pri NAJSTARŠOM archivovanom vyšetrení sa kreslí **šrafovane**. `getBaselineExamination()`, `getPreExistingAxes(toothNo)`, `getChangesSinceBaseline()`, `isToothPreExisting(toothNo)`.
+- Šrafovanie označuje **prácu, nikdy zub a nikdy chorobu** — výplne, koreňové výplne a čapy, resekcia hrotu, pečatenie fisúr. Koreňový zvyšok alebo implantát je zub, nie práca; kaz, zubný kameň a parodontálne nálezy sú choroba.
+- **Vstupné vyšetrenie sa dá opraviť**: `beginBaselineCorrection()`, `commitBaselineCorrection()`, `cancelBaselineCorrection()`. Zámerne bez prepisu na jednotlivý zub.
+- **Importovaný graf bez vlastného archívu sa stane vstupným vyšetrením** (menu importu, predvolene zapnuté). Dokument s vlastným archívom si ho ponechá.
 
 Parodontálna karta ukladá nálezy, nie samotný akt vyšetrenia, takže "sondované, bez krvácania"
 a "nikto nesondoval" vyzerali rovnako. Každá dotknutá os (PD, GM, BOP, hnisanie, pohyblivosť,

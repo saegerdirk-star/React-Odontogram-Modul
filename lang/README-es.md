@@ -613,6 +613,10 @@ startExamination({ effectiveDateTime: "2027-01-15" });
 - Cada campo de identidad es una cadena opaca, propiedad de la aplicación anfitriona, que el
   componente guarda y devuelve pero nunca interpreta. Los documentos anteriores a la versión de
   payload 2.21 no llevan nada de esto y se cargan sin cambios.
+- **Lo que el paciente trajo consigo se deriva de ese archivo, nunca se almacena.** El trabajo restaurador presente en la exploración archivada MÁS ANTIGUA se dibuja **rayado**, de modo que una corona con la que llegó el paciente no se confunde con una colocada después. `getBaselineExamination()`, `getPreExistingAxes(toothNo)`, `getChangesSinceBaseline()`, `isToothPreExisting(toothNo)`.
+- El rayado marca **trabajo, nunca el diente ni la enfermedad** — restauraciones, obturaciones directas, obturaciones de conducto y postes, apicectomía, sellado de fisuras. Un resto radicular o un implante es un diente, no trabajo; caries, cálculo y los hallazgos periodontales son enfermedad.
+- La **exploración inicial es corregible**: `beginBaselineCorrection()`, `commitBaselineCorrection()`, `cancelBaselineCorrection()`. Deliberadamente no hay anulación por diente.
+- Un **odontograma importado sin archivo propio se convierte en la exploración inicial** (menú de importación, activado por defecto). Un documento que trae su propio archivo lo conserva.
 
 El registro periodontal guarda hallazgos, no el acto de mirar, así que "sondado, sin sangrado"
 y "nadie lo sondó" resultaban idénticos. Cada eje afectado (PD, GM, BOP, supuración,

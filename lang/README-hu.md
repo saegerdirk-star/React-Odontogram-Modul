@@ -610,6 +610,10 @@ startExamination({ effectiveDateTime: "2027-01-15" });
 - Minden azonosító mező átlátszatlan, a gazdaalkalmazás tulajdonában lévő szöveg, amelyet a
   komponens tárol és visszaad, de soha nem értelmez. A 2.21-es payload előtti dokumentumok
   nem tartalmaznak ilyet, és változatlanul betöltődnek.
+- **Amit a beteg magával hozott, ebből az archívumból származik, sosem tárolt adat.** A LEGKORÁBBI archivált vizsgálatkor meglévő fogászati munka **sraffozva** jelenik meg, így a hozott korona nem téveszthető össze az általunk készítettel. Semmi új nem kerül szerializálásra. `getBaselineExamination()`, `getPreExistingAxes(toothNo)`, `getChangesSinceBaseline()`, `isToothPreExisting(toothNo)`.
+- A sraffozás **munkát jelöl, sosem a fogat és sosem a betegséget** — restaurációk, tömések, gyökértömések és csapok, gyökércsúcs-reszekció, barázdazárás. A gyökérmaradvány vagy az implantátum fog, nem munka; a caries, a fogkő és a parodontális leletek betegségek.
+- A **kiindulási lelet javítható**: `beginBaselineCorrection()`, `commitBaselineCorrection()`, `cancelBaselineCorrection()`. Szándékosan nincs fogankénti felülbírálás.
+- Egy **saját archívum nélkül importált lelet kiindulási lelet lesz** (import menü, alapértelmezetten bekapcsolva). A saját archívumot hozó dokumentum megtartja azt.
 
 A parodontális lap leleteket tárol, nem a vizsgálat tényét, így a "szondáztuk, nem vérzett"
 és a "senki nem szondázta" eddig egyformán nézett ki. Az érintett tengelyek (PD, GM, BOP,

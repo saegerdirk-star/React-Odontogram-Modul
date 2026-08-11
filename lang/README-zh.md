@@ -591,6 +591,10 @@ startExamination({ effectiveDateTime: "2027-01-15" });
 - 现状与计划仍然表示**同一次检查内的现状与建议**——计划图从来不是病史，也永远不属于快照。
 - 每个标识字段都是宿主应用拥有的不透明字符串：组件只存储与回传，从不解释。2.21 之前的载荷文档
   不含这些内容，仍按原样载入。
+- **患者初诊时已有的情况由该存档推导得出，从不存储。** 在最早存档检查中已存在的修复性治疗以**斜线填充**绘制。`getBaselineExamination()`、`getPreExistingAxes(toothNo)`、`getChangesSinceBaseline()`、`isToothPreExisting(toothNo)`。
+- 斜线填充标记的是**治疗，而非牙齿、也非疾病**——修复体、充填体、根管充填与桩、根尖切除、窝沟封闭。残根或种植体是牙齿而非治疗；龋齿、牙石与牙周所见是疾病。
+- **初诊检查可修正**：`beginBaselineCorrection()`、`commitBaselineCorrection()`、`cancelBaselineCorrection()`。刻意不提供逐牙覆盖。
+- **无自带存档的导入图表将成为初诊检查**（导入菜单，默认开启）。自带存档的文档保留其存档。
 
 牙周记录保存的是检查结果而非“看过”这件事，因此“探诊过、未出血”与“无人探诊”过去看起来完全相同。
 本次涉及的每个轴（PD、GM、BOP、溢脓、松动度、根分叉、菌斑、PI、GI、mPI、mBI、KG）现在都能表明属于哪一种：

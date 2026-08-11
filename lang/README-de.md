@@ -613,6 +613,10 @@ startExamination({ effectiveDateTime: "2027-01-15" });
 - Jedes Identitaetsfeld ist eine opake, der Host-Anwendung gehoerende Zeichenkette, die die
   Komponente speichert und zurueckgibt, aber nie interpretiert. Dokumente vor Payload-Version
   2.21 enthalten nichts davon und werden unveraendert geladen.
+- **Was der Patient mitgebracht hat, wird aus diesem Archiv abgeleitet, nie gespeichert.** Zahnärztliche Arbeit, die beim ÄLTESTEN archivierten Befund vorlag, wird **schraffiert** gezeichnet, damit eine mitgebrachte Krone nicht mit einer selbst gesetzten verwechselt wird. Nichts wird zusätzlich serialisiert: kein Payload-Sprung, keine FHIR-Zuordnung, keine zweite Aufzeichnung, die dem Archiv widersprechen könnte. `getBaselineExamination()`, `getPreExistingAxes(toothNo)`, `getChangesSinceBaseline()`, `isToothPreExisting(toothNo)`.
+- Die Schraffur markiert **Arbeit, nie den Zahn und nie die Krankheit** — Restaurationen, direkte Füllungen, Wurzelfüllungen und Stifte, WSR, Fissurenversiegelung. Ein Radix oder ein Implantat ist ein Zahn, keine Arbeit; Karies, Zahnstein und die parodontalen Befunde sind Krankheit. Die Ableitung bleibt breiter als die Zeichnung, Tooltip und Zusammenfassung melden weiterhin Zahnpräsenz, Substanz und Karies.
+- Der **Erstbefund ist korrigierbar**: `beginBaselineCorrection()` legt den heutigen Befund beiseite und lädt den Erstbefund, `commitBaselineCorrection()` archiviert ihn unter seiner eigenen Kennung und seinem Datum neu, `cancelBaselineCorrection()` verwirft die Korrektur. Bewusst kein Schalter pro Zahn — eine Aussage darüber, was der Patient mitbrachte, nicht eine zweite Notiz daneben.
+- Ein **importierter Befund ohne eigenes Archiv wird zum Erstbefund** (Import-Menü, „Dies ist der Erstbefund", standardmäßig an), denn so gelangt ein Fremdbefund normalerweise ins Programm. Ein Dokument, das sein eigenes Archiv mitbringt, behält es — ein Re-Import wird nie über das echte Aufnahmedatum des Patienten umdatiert.
 
 Die Parodontalkarte speichert Befunde, nicht den Akt des Untersuchens: "sondiert, keine
 Blutung" und "niemand hat sondiert" sahen bisher gleich aus. Jede betroffene Achse (PD, GM,

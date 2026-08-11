@@ -610,6 +610,10 @@ startExamination({ effectiveDateTime: "2027-01-15" });
 - Każde pole tożsamości to nieprzejrzysty ciąg znaków należący do aplikacji hosta, który
   komponent przechowuje i zwraca, lecz nigdy nie interpretuje. Dokumenty sprzed wersji ładunku
   2.21 nie zawierają tego i wczytują się bez zmian.
+- **To, z czym pacjent przyszedł, wywodzi się z tego archiwum, nigdy nie jest zapisywane.** Praca odtwórcza obecna w NAJSTARSZYM zarchiwizowanym badaniu jest rysowana **kreskowaniem**. `getBaselineExamination()`, `getPreExistingAxes(toothNo)`, `getChangesSinceBaseline()`, `isToothPreExisting(toothNo)`.
+- Kreskowanie oznacza **pracę, nigdy ząb i nigdy chorobę** — wypełnienia, wypełnienia kanałowe i wkłady, resekcja wierzchołka, lakowanie bruzd. Korzeń lub implant to ząb, nie praca; próchnica, kamień i wyniki periodontologiczne to choroba.
+- **Badanie wstępne można poprawić**: `beginBaselineCorrection()`, `commitBaselineCorrection()`, `cancelBaselineCorrection()`. Celowo bez nadpisania na pojedynczym zębie.
+- **Zaimportowany wykres bez własnego archiwum staje się badaniem wstępnym** (menu importu, domyślnie włączone). Dokument z własnym archiwum je zachowuje.
 
 Karta periodontologiczna zapisuje wyniki, a nie sam fakt badania, więc "zgłębnikowano, bez
 krwawienia" i "nikt nie zgłębnikował" wyglądały identycznie. Każda objęta oś (PD, GM, BOP,

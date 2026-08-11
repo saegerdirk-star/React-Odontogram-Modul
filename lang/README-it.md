@@ -612,6 +612,10 @@ startExamination({ effectiveDateTime: "2027-01-15" });
 - Ogni campo identificativo è una stringa opaca, di proprietà dell'applicazione ospite, che il
   componente memorizza e restituisce ma non interpreta mai. I documenti precedenti alla versione
   di payload 2.21 non ne contengono e si caricano invariati.
+- **Ciò che il paziente ha portato con sé è derivato da quell'archivio, mai memorizzato.** Il lavoro restaurativo presente nell'esame archiviato PIÙ VECCHIO è disegnato **tratteggiato**. `getBaselineExamination()`, `getPreExistingAxes(toothNo)`, `getChangesSinceBaseline()`, `isToothPreExisting(toothNo)`.
+- Il tratteggio marca **il lavoro, mai il dente e mai la malattia** — restauri, otturazioni dirette, otturazioni canalari e perni, apicectomia, sigillatura dei solchi. Un residuo radicolare o un impianto è un dente, non un lavoro; carie, tartaro e i reperti parodontali sono malattia.
+- L'**esame iniziale è correggibile**: `beginBaselineCorrection()`, `commitBaselineCorrection()`, `cancelBaselineCorrection()`. Deliberatamente nessuna sovrascrittura per dente.
+- Un **grafico importato senza archivio proprio diventa l'esame iniziale** (menu di importazione, attivo per impostazione predefinita). Un documento che porta il proprio archivio lo mantiene.
 
 La cartella parodontale registra i rilievi, non l'atto di guardare: "sondato, nessun
 sanguinamento" e "nessuno ha sondato" apparivano identici. Ogni asse interessato (PD, GM, BOP,

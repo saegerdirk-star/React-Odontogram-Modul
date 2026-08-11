@@ -240,6 +240,10 @@ startExamination({ effectiveDateTime: "2027-01-15" });
 - Chaque champ d'identité est une chaîne opaque appartenant à l'application hôte, que le composant
   stocke et restitue sans jamais l'interpréter. Les documents antérieurs à la version de charge
   2.21 n'en contiennent aucun et se chargent inchangés.
+- **Ce que le patient a apporté est dérivé de cette archive, jamais stocké.** Les soins restaurateurs présents lors de l'examen archivé LE PLUS ANCIEN sont dessinés **hachurés**. `getBaselineExamination()`, `getPreExistingAxes(toothNo)`, `getChangesSinceBaseline()`, `isToothPreExisting(toothNo)`.
+- La hachure marque **le travail, jamais la dent ni la maladie** — restaurations, obturations, obturations canalaires et tenons, apicectomie, scellement de sillons. Une racine résiduelle ou un implant est une dent, pas un travail ; carie, tartre et constats parodontaux sont une maladie.
+- L'**examen initial est corrigible** : `beginBaselineCorrection()`, `commitBaselineCorrection()`, `cancelBaselineCorrection()`. Délibérément aucun remplacement par dent.
+- Un **schéma importé sans archive propre devient l'examen initial** (menu d'import, activé par défaut). Un document apportant sa propre archive la conserve.
 
 Le relevé parodontal enregistre des constats, pas l'acte de regarder : « sondé, sans saignement »
 et « personne n'a sondé » se ressemblaient. Chaque axe concerné (PD, GM, BOP, suppuration,

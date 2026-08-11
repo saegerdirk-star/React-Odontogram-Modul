@@ -9732,8 +9732,35 @@ function resetActiveChartToStatusAfterImport(): void {
   toothState = charts.status;
 }
 
+// ---- Bead odontogram-ap7: an imported chart is somebody else's record ----
+//
+// A chart that arrives by import — JSON, FHIR, or a PDF from another program —
+// carries no archive of its own, yet from this practice's point of view every
+// finding in it is pre-existing by definition. That is also the NORMAL way a
+// chart enters the program, so leaving it underived would make the whole
+// marking useless for exactly the patients it matters most for.
+//
+// Dirk chose to ask rather than to decide silently (2026-08-11): the import
+// menu carries a checkbox, default ON. A session flag, never serialized — it
+// describes this import, not the document.
+let importAsBaseline = true;
+
+/** Whether the next import without an archive of its own is archived as the
+ *  initial examination. */
+export function getImportAsBaseline(): boolean { return importAsBaseline; }
+
+/** Set the "this import is the initial examination" choice. */
+export function setImportAsBaseline(value: boolean): void {
+  importAsBaseline = !!value;
+  notifyStateChange();
+}
+
 export function importStatus(data: Any){
   if(!data || typeof data !== "object") return;
+  // Read BEFORE hydrating: hydrateImportedCharts replaces `examinations` with
+  // whatever the document carries, so afterwards there is no way to tell an
+  // archive that came with the document from one this import just created.
+  const broughtItsOwnArchive = Array.isArray(data.examinations) && data.examinations.length > 0;
   hydrateImportedCharts(data);
   resetActiveChartToStatusAfterImport();
   // Full repaint-all — now guaranteed to draw the just-imported STATUS chart
@@ -9753,10 +9780,38 @@ export function importStatus(data: Any){
       setToggleButton($("#btnEdentulous"), edentulous);
     }
   }
+  // Bead odontogram-ap7. A document that brought its own archive keeps it —
+  // re-archiving would file today's date over somebody's real intake date, and
+  // a chart exported from this program and read back in is the commonest case
+  // of that. The rule resolves itself: our own exports carry the archive,
+  // a foreign chart does not.
+  adoptImportAsBaseline(broughtItsOwnArchive);
   updateSelectionFilterButtons();
   updateSelectionUI();
   notifyStateChange();
   syncChartModeUi();
+}
+
+/** Archive the just-imported chart as the initial examination, unless the
+ *  document brought an archive of its own or the choice is turned off.
+ *
+ *  Extracted so `importStatus` and its data-only test seam share ONE decision.
+ *  Deliberately NOT folded into `hydrateImportedCharts`, which every load goes
+ *  through — including `loadExamination` and the baseline-correction round
+ *  trip, where archiving would file a new examination in the middle of
+ *  correcting one. */
+function adoptImportAsBaseline(broughtItsOwnArchive: boolean): void {
+  if(!importAsBaseline || broughtItsOwnArchive) return;
+  captureExamination({ effectiveDateTime: todayIso() });
+}
+
+/** Today as `YYYY-MM-DD`. The imported chart's own examination date is
+ *  unknown — it is somebody else's record — so the date recorded is the day
+ *  this practice took it over, which is the honest claim. */
+function todayIso(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
 /** TEST-ONLY (R2-A Task 2 seam): exercise the DATA-ONLY import hydrate
@@ -9777,8 +9832,10 @@ export function __hydrateImportedChartsForTest(data: Any): void {
  *  part of the public API. */
 export function __importStatusForTest(data: Any): void {
   if(!data || typeof data !== "object") return;
+  const broughtItsOwnArchive = Array.isArray(data.examinations) && data.examinations.length > 0;
   hydrateImportedCharts(data);
   resetActiveChartToStatusAfterImport();
+  adoptImportAsBaseline(broughtItsOwnArchive);
 }
 
 /** Import a FHIR R4 Bundle (object or JSON string) produced by this module. */

@@ -613,6 +613,10 @@ startExamination({ effectiveDateTime: "2027-01-15" });
 - Every identity field is an opaque, host-owned string that the component stores and
   round-trips but never interprets. Documents written before payload 2.21 carry none of this
   and hydrate unchanged.
+- **What the patient arrived with is derived from that archive, never stored.** Restorative work present at the EARLIEST archived examination is drawn **hatched**, so a crown the patient came with cannot be confused with one placed since. Nothing new is serialized: no payload bump, no FHIR mapping, no second record that could drift out of agreement with the archive. `getBaselineExamination()`, `getPreExistingAxes(toothNo)`, `getChangesSinceBaseline()`, `isToothPreExisting(toothNo)`.
+- The hatch marks **work, never the tooth and never the disease** — restorations, direct fillings, endodontic fillings and pins, apicoectomy, fissure sealing. A radix or an implant is a tooth, not work; caries, calculus and the periodontal findings are disease. The derivation stays broader than the drawing, so the tooltip and summary still report presence, substrate and caries.
+- The **initial examination is correctable**: `beginBaselineCorrection()` stashes today's findings and loads the baseline, `commitBaselineCorrection()` re-archives it under its own id and date, `cancelBaselineCorrection()` discards the correction. There is deliberately no per-tooth override — one account of what the patient arrived with, not a second note beside it.
+- An **imported chart with no archive of its own becomes the initial examination** (import menu, "This is the initial examination", default on), because that is the normal way a foreign chart enters the program. A document that brought its own archive keeps it, so a re-import is never re-dated over the patient's real intake date.
 
 Periodontal charting stores findings, not the act of looking, so "probed, did not bleed" and
 "nobody probed" used to look identical. Every axis in scope (PD, GM, BOP, suppuration,

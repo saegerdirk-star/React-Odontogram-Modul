@@ -605,6 +605,10 @@ startExamination({ effectiveDateTime: "2027-01-15" });
 - Cada campo de identidade é uma string opaca, de propriedade da aplicação hospedeira, que o
   componente armazena e devolve mas nunca interpreta. Documentos anteriores à versão de payload
   2.21 não trazem nada disso e carregam sem alteração.
+- **O que o paciente trouxe consigo é derivado desse arquivo, nunca armazenado.** O trabalho restaurador presente no exame arquivado MAIS ANTIGO é desenhado **hachurado**. `getBaselineExamination()`, `getPreExistingAxes(toothNo)`, `getChangesSinceBaseline()`, `isToothPreExisting(toothNo)`.
+- A hachura marca **trabalho, nunca o dente e nunca a doença** — restaurações, obturações diretas, obturações de canal e pinos, apicectomia, selamento de fóssulas. Um resto radicular ou implante é dente, não trabalho; cárie, cálculo e os achados periodontais são doença.
+- O **exame inicial é corrigível**: `beginBaselineCorrection()`, `commitBaselineCorrection()`, `cancelBaselineCorrection()`. Deliberadamente sem sobreposição por dente.
+- Um **odontograma importado sem arquivo próprio torna-se o exame inicial** (menu de importação, ativado por padrão). Um documento que traz seu próprio arquivo o mantém.
 
 O registro periodontal guarda achados, não o ato de olhar, então "sondado, sem sangramento" e
 "ninguém sondou" pareciam idênticos. Cada eixo no escopo (PD, GM, BOP, supuração, mobilidade,

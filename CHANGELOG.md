@@ -9,6 +9,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **The chart can now say what the patient arrived with.** (odontogram-ap7)
+  A finding entered at the first visit and one entered three years later looked
+  identical, and which of the two a crown was is exactly the question asked
+  later. Restorative work present at the **initial examination** is now drawn
+  **hatched**, so a chart answers it at a glance.
+
+  **Derived, never stored.** The dated examination archive from odontogram-2vd
+  already knows the mouth as the patient brought it, so pre-existing is a
+  comparison against the earliest archived examination — nothing new to
+  serialize, no payload bump, no FHIR mapping, and no second record that could
+  drift out of agreement with the archive. It compares the **status** chart
+  explicitly: an examination records what was observed, and provenance is a
+  fact about the past that a proposal cannot change. New API:
+  `getBaselineExamination`, `getPreExistingAxes`, `getChangesSinceBaseline`,
+  `isToothPreExisting`.
+
+  **The hatch marks work, never the tooth and never the disease.** Its scope is
+  restorative: composed restorations, direct fillings, endodontic fillings and
+  pins, apicoectomy, fissure sealing — read off the existing registries rather
+  than typed out, so a restoration added later is covered without a second list
+  to maintain. A radix or an implant is a tooth, not work; caries, calculus and
+  the periodontal findings are disease, not something anyone placed. The
+  *derivation* stays broad — the tooltip, the summary and odontogram-im1's
+  "was this implant already there" question keep their answer. The chart
+  narrows, the record does not.
+
+  **The archive had no controls at all**, so this adds the missing card:
+  capture an examination, see the date every finding is judged against, and the
+  archive list with the baseline named.
+
+  **Correcting the initial examination.** A finding mis-charted at intake and
+  put right later would otherwise derive as "found under our care", which is
+  the opposite of the truth. The examination itself is correctable rather than
+  overridable per tooth: there should be one account of what the patient
+  arrived with, not a second note beside it that can contradict the first. The
+  round trip lives in the engine, not the UI, because `loadExamination`
+  replaces the live case — entering without stashing today's findings would
+  destroy them (`beginBaselineCorrection` / `commitBaselineCorrection` /
+  `cancelBaselineCorrection` / `isCorrectingBaseline`). Re-archiving passes the
+  examination's own id, so it keeps its identity and date: a correction of the
+  record, not a second examination.
+
+  **An imported chart is somebody else's record.** A chart arriving by import
+  carries no archive, yet from this practice's point of view everything in it
+  is pre-existing — and that is the normal way a chart enters the program. The
+  import menu therefore carries a **"This is the initial examination"**
+  checkbox, default on. The rule resolves itself: a document that brought its
+  own archive keeps it, so a chart exported from this program and read back in
+  is never re-dated over the patient's real intake date.
+
+  Archiving an examination now **repaints** the chart. It did not, so hatching
+  appeared only on teeth that happened to be edited afterwards — which reads as
+  an unreliable marking rather than as a missing repaint. A new baseline
+  changes what every tooth means, exactly as a chart-mode switch does.
+
+  Parity: the hatch goes through `style.fill`, which is in neither the SVG
+  fingerprint (id/opacity/class) nor `toothgen`'s frozen geometry digests, and
+  the pattern lives in `<defs>`, which the fingerprint walk skips. The pass is
+  gated on an archive existing and the parity fixtures archive none, so the
+  capture never runs it. No payload change.
+
 - **A filling that reaches the neck can say so — without becoming a second
   surface.** (odontogram-wxt) The surface vocabulary has five entries, and
   nothing distinguished a vestibular filling from a vestibular filling that
