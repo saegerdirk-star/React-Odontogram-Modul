@@ -247,7 +247,7 @@ export interface ExaminationSnapshotRecord {
 // position whose tooth has not erupted, distinct from "none", which means the
 // tooth is missing. Nothing wrote the value before, so an older document is
 // unaffected and needs no migration.
-export const PAYLOAD_VERSION = "2.22";
+export const PAYLOAD_VERSION = "2.23";
 
 /**
  * The UI-domain document (bead odontogram-3l1, AC2/AC4).

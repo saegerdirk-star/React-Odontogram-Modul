@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Which implant is in the tooth.** (odontogram-im1) `toothSelection: implant`
+  says an implant is there; it does not say which one, and the two are different
+  assertions. A tooth may now carry an `implantProduct` — manufacturer, system,
+  diameter, length, and the UDI from the packaging, which is read for its device
+  identifier, lot and expiry so nobody types those off a foil pouch.
+
+  **Nothing is required, and an empty record is complete.** Record it when the
+  practice places an implant; leave it open when the implant arrived with the
+  patient, because not every patient carries an implant passport. The engine
+  therefore never warns about an empty product: it cannot yet tell "we placed it
+  and did not record it" from "it was already there and is unknown", and telling
+  those apart is provenance — odontogram-ap7's axis, not a second flag grown
+  here.
+
+  API: `getImplantProduct` / `setImplantProduct` (silent no-op on a natural
+  tooth, guard before the DS-1 gate, mirroring the Mombelli indices) and
+  `getChartedImplantProducts`. The systems list writes itself from the charts —
+  there are hundreds of implant systems and nobody would maintain a catalogue,
+  so a system typed once is offered from then on and the list stays the
+  practice's own. Payload **2.22 → 2.23**, additive and omit-when-empty: a chart
+  that names no implant is byte-identical apart from the version. No render
+  change — which implant it is does not draw.
+
 ### Fixed
 
 - **A milk dentition no longer reports twelve missing teeth.** The primary

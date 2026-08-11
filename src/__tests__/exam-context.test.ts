@@ -67,7 +67,7 @@ describe("examination context", () => {
 
   it("serializes omit-when-empty under the top-level `examination` key at payload 2.21", () => {
     const empty = __collectExportPayloadForTest();
-    expect(empty.version).toBe("2.22");
+    expect(empty.version).toBe("2.23");
     expect(Object.prototype.hasOwnProperty.call(empty, "examination")).toBe(false);
     setExaminationContext({ id: "exam-1", effectiveDateTime: "2026-03-01" });
     const p = __collectExportPayloadForTest();

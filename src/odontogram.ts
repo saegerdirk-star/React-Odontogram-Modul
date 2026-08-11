@@ -9,6 +9,7 @@ import { buildFhirBundle } from "./fhir/toFhir";
 import { parseFhirBundle } from "./fhir/fromFhir";
 import type { FhirExportOptions, OdontogramDocument } from "./fhir/types";
 import { PAYLOAD_VERSION } from "./fhir/types";
+import { type ImplantProduct, normalizeImplantProduct, isEmptyImplantProduct } from "./implantProduct";
 import type { ExaminationSnapshotRecord } from "./fhir/types";
 export type { OdontogramDocument } from "./fhir/types";
 import { allClearLayers } from "./registry/svgLayers";
@@ -422,6 +423,13 @@ function defaultState(){
     // per-surface unlike pi/gi/perio above. `null` = not charted (never a
     // stored 0 vs "uncharted" ambiguity — see clampKg()/setKeratinizedWidth()).
     kg: null as number | null,
+    // odontogram-im1: WHICH implant is in the tooth, kept apart from the
+    // fact that one is there. `null` throughout, and it stays null: Dirk
+    // asked for it to be recorded when WE place an implant and to be
+    // allowed to stay open when the implant arrived with the patient - not
+    // every patient carries an implant passport. So nothing here is ever
+    // required, and an empty record is a legitimate, complete state.
+    implantProduct: null as ImplantProduct | null,
     // Bead odontogram-2vd: explicit ASSESSMENT status per periodontal axis (and
     // measurement point), for the cases the value itself cannot express —
     // assessed-normal (probed, did not bleed), unmeasurable (the point exists
@@ -5871,6 +5879,11 @@ function serializeState(s: Any){
     // tooth never touched by KG stays byte-identical (payload stays 2.15,
     // Task 1 already bumped it).
     ...(s.kg != null ? { kg: s.kg } : {}),
+    // odontogram-im1: omitted ENTIRELY when nothing is known about the
+    // product, same omit-when-empty convention as perio/furcation/kg above
+    // - a chart that never names an implant stays byte-identical apart
+    // from the version field.
+    ...(!isEmptyImplantProduct(s.implantProduct) ? { implantProduct: s.implantProduct } : {}),
     // SP-perio PG-C Task 2: cejVisibility/rootConcavity are emitted ONLY when set
     // (!== "none"), like the omit-when-empty perio fields above — a default tooth
     // stays byte-identical (payload bumped to 2.14). Both round-trip via
@@ -6521,6 +6534,14 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   // `clampKg` tolerates any input (non-numeric/out-of-range) and returns
   // null for it, same tolerant-hydrate policy as every other axis above.
   s.kg = clampKg(raw.kg);
+  // odontogram-im1. NOT implant-gated: hydrate is the tolerant path, as it
+  // is for the Mombelli indices - only the SETTER enforces that a product
+  // belongs to an implant. normalizeImplantProduct drops blanks and rereads
+  // the UDI, so a hand-edited payload cannot carry a lot number that
+  // disagrees with the carrier it came from.
+  s.implantProduct = raw.implantProduct && typeof raw.implantProduct === "object"
+    ? normalizeImplantProduct(raw.implantProduct as ImplantProduct)
+    : null;
   // Restore note
   if(typeof raw.note === "string") s.note = raw.note;
   // Restore plugin custom states (only for registered plugin IDs)
@@ -7206,6 +7227,60 @@ export function setKeratinizedWidth(toothNo: number, mm: number | null): void {
     if(s.kg === next) return false;
     s.kg = next; notifyStateChange(); return true;
   });
+}
+
+// ---- odontogram-im1: which implant is in the tooth ----------------------
+//
+// A separate assertion from the fact that one is there, and one the chart could
+// not make. See src/implantProduct.ts for the record and the UDI reader.
+//
+// Nothing here is ever required. Dirk's constraint (2026-08-11): record it when
+// WE place an implant, let it stay open when the implant arrived with the
+// patient, because not every patient carries an implant passport. An empty
+// record is therefore a COMPLETE state, not a gap — and the engine deliberately
+// does not warn about one, because it cannot yet tell the two empties apart.
+// Telling them apart needs provenance, which is odontogram-ap7's axis, not a
+// second flag grown here.
+
+/** Read a tooth's implant product from the active chart. `null` means nothing
+ *  is known about it — which is a legitimate answer, not a missing one. */
+export function getImplantProduct(toothNo: number): ImplantProduct | null {
+  const p = toothState.get(toothNo)?.implantProduct;
+  return p ? { ...p } : null;
+}
+
+/**
+ * Set/clear a tooth's implant product on the active chart.
+ *
+ * Silent no-op unless the tooth is an implant — the guard runs BEFORE the DS-1
+ * gate, mirroring the Mombelli indices, so a gated call on a natural tooth
+ * marks nothing and fires no state-change notification.
+ *
+ * The record is normalized on the way in: blanks are dropped, dimensions must
+ * be positive, and the UDI is re-read so lot and expiry always agree with the
+ * carrier they came from. A record that says nothing at all is stored as
+ * `null`, which is how it stays out of the payload.
+ */
+export function setImplantProduct(toothNo: number, product: ImplantProduct | null): void {
+  if(toothState.get(toothNo)?.toothSelection !== "implant") return;
+  let s = toothState.get(toothNo);
+  if(!s){ s = defaultState(); toothState.set(toothNo, s); }
+  const next = normalizeImplantProduct(product);
+  gateToothEdit(toothNo, () => {
+    if(JSON.stringify(s.implantProduct ?? null) === JSON.stringify(next)) return false;
+    s.implantProduct = next; notifyStateChange(); return true;
+  });
+}
+
+/** Every implant product charted in the active chart, for `knownSystems` —
+ *  the list of systems a practice actually places, which is what replaces a
+ *  catalogue nobody would maintain. */
+export function getChartedImplantProducts(): ImplantProduct[] {
+  const out: ImplantProduct[] = [];
+  for(const st of toothState.values()){
+    if(st?.implantProduct) out.push(st.implantProduct);
+  }
+  return out;
 }
 
 // ---- Bead odontogram-2vd: explicit assessment status --------------------
