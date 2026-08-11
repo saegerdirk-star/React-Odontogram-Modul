@@ -34,10 +34,10 @@
   ],
   "main": "./dist/odontogram.js",
   "module": "./dist/odontogram.js",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/odontogram.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/odontogram.d.ts",
       "import": "./dist/odontogram.js"
     },
     "./fhir": {

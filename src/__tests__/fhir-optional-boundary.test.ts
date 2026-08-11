@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { FhirExportOptions } from "../fhir/index";
 
@@ -30,6 +30,29 @@ describe("optional FHIR package boundary", () => {
     expect(source("src/fhir/index.ts")).toContain("buildFhirBundle");
     expect(source("vite.lib.config.ts")).toContain("fhir: path.resolve");
     expect(optionalFhirConsumerOptions.dialect).toBe("legacy");
+  });
+
+  it("ships declaration files for every package type entry", () => {
+    const packageJson = JSON.parse(source("package.json")) as {
+      types: string;
+      exports: Record<string, { types?: string }>;
+    };
+    const typeEntries = [
+      packageJson.types,
+      ...Object.values(packageJson.exports).flatMap((entry) => entry.types ? [entry.types] : []),
+    ];
+
+    for (const typeEntry of typeEntries) {
+      expect(existsSync(resolve(root, typeEntry))).toBe(true);
+    }
+  });
+
+  it("keeps document types and payload version in one source module", () => {
+    const adapterTypes = source("src/fhir/types.ts");
+
+    expect(adapterTypes).toContain('from "../document"');
+    expect(adapterTypes).not.toContain("export interface ToothRecord");
+    expect(adapterTypes).not.toContain("export const PAYLOAD_VERSION");
   });
 
   it("keeps commercial integration modules out of the package graph", () => {
