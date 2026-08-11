@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **An empty implant product is only a gap where the practice placed the
+  implant.** (odontogram-im1, completing what waited on odontogram-ap7) Two
+  empties look alike and are not alike: *we placed it and recorded nothing* is
+  an incomplete record, while *it was there when the patient came* is a
+  complete one. Not every patient carries an implant passport, so warning about
+  the second would be nagging about a fact.
+
+  Telling them apart needs to know who placed the implant, which is provenance
+  — now derived from the initial examination rather than stored a second time,
+  because two places recording "who found this" would drift.
+  `isImplantProductGap()` is the whole rule, and it stays **silent whenever
+  provenance is genuinely unknown**: with no examination archived there is no
+  baseline to judge against, and warning then would be a guess dressed as a
+  finding.
+
+  Surfaced as a hint inside the implant block, so it appears exactly where it
+  would be fixed. Nothing new is stored.
+
 - **What holds a removable denture to a natural tooth.** (odontogram-dma) A
   removable denture could be charted but nothing that HOLDS it: a natural
   abutment tooth was handed an empty prosthesis list, the attachment vocabulary

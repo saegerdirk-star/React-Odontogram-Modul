@@ -8150,8 +8150,46 @@ function syncImplantProduct(state: Any): void {
   const readout = $("#implantUdiReadout");
   if(readout) readout.textContent = bits.join("  ·  ");
 
+  // odontogram-im1 + ap7: say so only where an empty product is actually a gap.
+  const gapEl = $("#implantProductGap");
+  if(gapEl){
+    const gap = activeTooth != null && isImplantProductGap(activeTooth);
+    gapEl.classList.toggle("hidden", !gap);
+    if(gap) gapEl.textContent = t("implantProduct.gapHint");
+  }
+
   fillDatalist("#implantManufacturerList", (x)=>x.manufacturer);
   fillDatalist("#implantSystemList", (x)=>x.system);
+}
+
+/**
+ * Whether this tooth's implant product is a GAP worth surfacing — bead
+ * odontogram-im1's one remaining rule, and the reason it waited for
+ * odontogram-ap7.
+ *
+ * Two empties look alike and are not alike:
+ *
+ *   we placed it, nothing recorded      an INCOMPLETE record — show it
+ *   it came with the patient, unknown   a COMPLETE record — nothing is missing
+ *
+ * Not every patient carries an implant passport (Dirk), so an empty product on
+ * an implant the practice inherited is a fact, not an omission. Telling the
+ * two apart needs to know WHO placed it, which is provenance, and provenance
+ * is derived from the initial examination — never a second flag stored here,
+ * because two places recording "who found this" would drift.
+ *
+ * Silent whenever provenance is genuinely unknown: with no examination
+ * archived there is no baseline to judge against, and warning then would be a
+ * guess dressed as a finding. That is the same silence im1 kept before ap7
+ * existed, now conditioned on the archive rather than on the calendar.
+ */
+export function isImplantProductGap(toothNo: number): boolean {
+  if(!getBaselineExamination()) return false;         // provenance unknown
+  const s = toothState.get(toothNo);
+  if(s?.toothSelection !== "implant") return false;
+  if(!isEmptyImplantProduct(s.implantProduct)) return false;
+  // Present at intake => it arrived with the patient => complete as it stands.
+  return !getPreExistingAxes(toothNo).includes("presence");
 }
 
 /** Offer what this practice has already placed, gathered from the charts. */

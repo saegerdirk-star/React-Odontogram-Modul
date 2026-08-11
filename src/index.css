@@ -2378,3 +2378,7 @@ select:focus{
 /* FILLED, not stroked: a cast clasp tapers from the connector to the tip, and
    a stroke has one width from end to end. */
 .retention-overlay-clasp{fill:#1a1a1a; stroke:none}
+
+/* Bead odontogram-im1: an empty implant product is only a GAP where the
+   practice placed the implant. One the patient arrived with is complete. */
+.implant-product-gap{color:#b9770e; font-weight:600}

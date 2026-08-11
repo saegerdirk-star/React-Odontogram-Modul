@@ -1224,6 +1224,10 @@ export default function App({
                     <input id="implantUdi" type="text" autoComplete="off" />
                   </div>
                   <div id="implantUdiReadout" className="hint implant-product-readout"></div>
+                  {/* odontogram-im1: shown ONLY where an empty product is a
+                      gap — an implant this practice placed. One the patient
+                      arrived with is a complete record without any of it. */}
+                  <div id="implantProductGap" className="hint implant-product-gap hidden"></div>
                 </div>
               </div>
             </section>
