@@ -21,6 +21,16 @@ import {
   allRestorationLayers,
   type RestorationType, type RestorationMaterial,
 } from "./registry/restorations";
+// Bead odontogram-sjr: choosable restoration colours. Session state, like
+// perioViewMode and the other app-level flags — a practice preference, never
+// patient data, so it is deliberately NOT part of the export payload (Dirk).
+// The accepted consequence: a case exported here and opened elsewhere renders
+// in THAT practice's colours.
+import {
+  RESTORATION_PALETTE, applyRestorationPalette, getRestorationPalette as paletteValues,
+  setRestorationColourValue, resetRestorationPaletteValues, setRestorationPaletteValues,
+  restorationColour, paletteEntry,
+} from "./restorationPalette";
 // Bead odontogram-dma: retention gating + bar-span derivation, kept DOM-free.
 import {
   retentionOptions, retentionAllowed, detectBarSpans, retentionMark,
@@ -7424,6 +7434,60 @@ export function getPlanChanges(): PlanChange[] {
     }
   }
   return out;
+}
+
+// ---- Bead odontogram-sjr: choosable restoration colours ----
+
+/** The element the palette is written on: the component root, so a host that
+ *  mounts several odontograms is not forced to share one palette through
+ *  `document`. Falls back to the document element before the grid exists. */
+function paletteRoot(): { style: CSSStyleDeclaration } | null {
+  const grid = $("#toothGrid") as HTMLElement | null;
+  const root = (grid?.closest(".odon-root") as HTMLElement | null)
+    ?? (typeof document !== "undefined" ? document.documentElement : null);
+  return root as { style: CSSStyleDeclaration } | null;
+}
+
+/** Push the palette onto the DOM. Nothing else has to run: every restoration
+ *  fill in the assets reads its variable, so the cascade repaints. */
+function syncRestorationPalette(): void { applyRestorationPalette(paletteRoot()); }
+
+/** Every colour a practice can choose, in picker order, with the colour each
+ *  currently shows (chosen, else the shipped default). */
+export function getRestorationColours(): { key: string; value: string }[] {
+  return RESTORATION_PALETTE.map((e) => ({ key: e.key, value: restorationColour(e.key) }));
+}
+
+/** The colour `key` currently renders, chosen or shipped. */
+export function getRestorationColour(key: string): string { return restorationColour(key); }
+
+/** Choose a restoration colour, or clear it back to the shipped default with
+ *  `null`. A ramp material (e.max, metal-ceramic) keeps its lightness sweep
+ *  and takes only the hue — flattening a nine-stop ceramic ramp to one colour
+ *  would cost exactly what makes it read as ceramic. */
+export function setRestorationColour(key: string, hex: string | null): void {
+  if(!paletteEntry(key)) return;
+  if(!setRestorationColourValue(key, hex)) return;
+  syncRestorationPalette();
+  notifyStateChange();
+}
+
+/** Drop every choice; the chart returns to the shipped palette. */
+export function resetRestorationColours(): void {
+  if(!resetRestorationPaletteValues()) return;
+  syncRestorationPalette();
+  notifyStateChange();
+}
+
+/** The chosen colours, for a host that persists practice preferences. */
+export function getRestorationPalette(): Record<string, string> { return paletteValues(); }
+
+/** Restore a persisted palette. Tolerant: unknown keys and unparsable colours
+ *  are dropped rather than stored. */
+export function setRestorationPalette(next: Record<string, string> | null | undefined): void {
+  setRestorationPaletteValues(next);
+  syncRestorationPalette();
+  notifyStateChange();
 }
 
 // ---- Bead odontogram-dma: retention elements ----

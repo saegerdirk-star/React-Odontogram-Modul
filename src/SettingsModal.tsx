@@ -15,6 +15,11 @@ import type {
   PerioRowId,
   PerioIndexNameMode,
 } from "./odontogram";
+// Bead odontogram-sjr: the palette is engine state; the modal is its control
+// surface, so it reads and writes it directly rather than through SettingsState.
+import {
+  getRestorationColours, getRestorationPalette, setRestorationColour, resetRestorationColours,
+} from "./odontogram";
 
 /** Translation function signature (subset of `useI18n`'s `t`). */
 type TFn = (key: string, params?: Record<string, string | number>) => string;
@@ -249,6 +254,39 @@ function ToggleRow({
   );
 }
 
+/** Bead odontogram-sjr: one colour picker per restoration material, plus a
+ *  reset. Reads and writes the engine directly rather than threading fifteen
+ *  values through SettingsState — the palette is engine state, and the modal is
+ *  only its control surface. */
+function ColourTab({ t }: { t: (k: string, v?: Record<string, unknown>) => string }) {
+  const [, bump] = useState(0);
+  const colours = getRestorationColours();
+  const dirty = Object.keys(getRestorationPalette()).length > 0;
+  return (
+    <>
+      <p className="settings-desc">{t("settings.colours.desc")}</p>
+      <div className="settings-colour-grid">
+        {colours.map(({ key, value }) => (
+          <label key={key} className="settings-colour-row">
+            <input
+              type="color"
+              value={value}
+              aria-label={t("restColour." + key)}
+              onChange={(e) => { setRestorationColour(key, e.target.value); bump((n) => n + 1); }}
+            />
+            <span>{t("restColour." + key)}</span>
+          </label>
+        ))}
+      </div>
+      <button
+        className="btn btn-ghost btn-sm"
+        disabled={!dirty}
+        onClick={() => { resetRestorationColours(); bump((n) => n + 1); }}
+      >{t("settings.colours.reset")}</button>
+    </>
+  );
+}
+
 export const SETTINGS_TABS: SettingsTab[] = [
   {
     id: "general",
@@ -462,6 +500,16 @@ export const SETTINGS_TABS: SettingsTab[] = [
         />
       </>
     ),
+  },
+  {
+    // Bead odontogram-sjr: the 58n palette is the DEFAULT, not the only answer.
+    // Session state, never payload — a practice preference, not patient data.
+    // Appended rather than slotted in: the general -> panels -> toothDetails
+    // run is pinned by two tests, and a display preference has no claim to sit
+    // in front of the clinical tabs anyway.
+    id: "colours",
+    titleKey: "settings.tab.colours",
+    render: ({ t }) => <ColourTab t={t} />,
   },
 ];
 

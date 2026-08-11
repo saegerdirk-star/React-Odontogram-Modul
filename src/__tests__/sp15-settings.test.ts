@@ -163,6 +163,10 @@ describe("UI-2 Task 1: Periodontal settings tab", () => {
       "pulpa",
       "notes",
       "periodontal",
+      // Bead odontogram-sjr: restoration colours. Appended rather than slotted
+      // in, so the general -> panels -> toothDetails run the two tests above
+      // pin stays intact.
+      "colours",
     ]);
   });
 

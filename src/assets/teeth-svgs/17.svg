@@ -70,70 +70,70 @@
       <stop offset="1" stop-color="#f9ae94" data-active="1" />
       </linearGradient>
     <radialGradient id="toothgen-17-radial-gradient-16-2" cx="21.4" cy="18.5" fx="21.4" fy="18.5" r="14.8" gradientTransform="matrix(1,0,0,1.52870,0,1.03800) translate(0 70.4) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
-      <stop offset="0" stop-color="#feff5f" data-active="1" />
-      <stop offset="0" stop-color="#f9fc60" data-active="1" />
-      <stop offset=".2" stop-color="#edf564" data-active="1" />
-      <stop offset=".4" stop-color="#d8ea6b" data-active="1" />
-      <stop offset=".5" stop-color="#bbd975" data-active="1" />
-      <stop offset=".6" stop-color="#95c482" data-active="1" />
-      <stop offset=".8" stop-color="#68ab91" data-active="1" />
-      <stop offset=".9" stop-color="#328da3" data-active="1" />
-      <stop offset="1" stop-color="#0071b5" data-active="1" />
+      <stop offset="0" stop-color="var(--odon-rest-metal-ceramic-0, #feff5f)" data-active="1" />
+      <stop offset="0" stop-color="var(--odon-rest-metal-ceramic-1, #f9fc60)" data-active="1" />
+      <stop offset=".2" stop-color="var(--odon-rest-metal-ceramic-2, #edf564)" data-active="1" />
+      <stop offset=".4" stop-color="var(--odon-rest-metal-ceramic-3, #d8ea6b)" data-active="1" />
+      <stop offset=".5" stop-color="var(--odon-rest-metal-ceramic-4, #bbd975)" data-active="1" />
+      <stop offset=".6" stop-color="var(--odon-rest-metal-ceramic-5, #95c482)" data-active="1" />
+      <stop offset=".8" stop-color="var(--odon-rest-metal-ceramic-6, #68ab91)" data-active="1" />
+      <stop offset=".9" stop-color="var(--odon-rest-metal-ceramic-7, #328da3)" data-active="1" />
+      <stop offset="1" stop-color="var(--odon-rest-metal-ceramic-8, #0071b5)" data-active="1" />
       </radialGradient>
     <radialGradient id="toothgen-17-radial-gradient-16-3" cx="21.2" cy="21" fx="21.2" fy="21" r="15.8" gradientTransform="matrix(1,0,0,1.52870,0,1.03800) translate(0 70.4) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
-      <stop offset="0" stop-color="#feff5f" data-active="1" />
-      <stop offset="0" stop-color="#f9fc60" data-active="1" />
-      <stop offset=".2" stop-color="#edf564" data-active="1" />
-      <stop offset=".4" stop-color="#d8ea6b" data-active="1" />
-      <stop offset=".5" stop-color="#bbd975" data-active="1" />
-      <stop offset=".6" stop-color="#95c482" data-active="1" />
-      <stop offset=".8" stop-color="#68ab91" data-active="1" />
-      <stop offset=".9" stop-color="#328da3" data-active="1" />
-      <stop offset="1" stop-color="#0071b5" data-active="1" />
+      <stop offset="0" stop-color="var(--odon-rest-metal-ceramic-0, #feff5f)" data-active="1" />
+      <stop offset="0" stop-color="var(--odon-rest-metal-ceramic-1, #f9fc60)" data-active="1" />
+      <stop offset=".2" stop-color="var(--odon-rest-metal-ceramic-2, #edf564)" data-active="1" />
+      <stop offset=".4" stop-color="var(--odon-rest-metal-ceramic-3, #d8ea6b)" data-active="1" />
+      <stop offset=".5" stop-color="var(--odon-rest-metal-ceramic-4, #bbd975)" data-active="1" />
+      <stop offset=".6" stop-color="var(--odon-rest-metal-ceramic-5, #95c482)" data-active="1" />
+      <stop offset=".8" stop-color="var(--odon-rest-metal-ceramic-6, #68ab91)" data-active="1" />
+      <stop offset=".9" stop-color="var(--odon-rest-metal-ceramic-7, #328da3)" data-active="1" />
+      <stop offset="1" stop-color="var(--odon-rest-metal-ceramic-8, #0071b5)" data-active="1" />
       </radialGradient>
     <radialGradient id="toothgen-17-radial-gradient-16-4" cx="21.4" cy="18.5" fx="21.4" fy="18.5" r="14.8" gradientTransform="matrix(1,0,0,1.52870,0,1.03800) translate(0 70.4) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
-      <stop offset="0" stop-color="#fff" data-active="1" />
-      <stop offset="0" stop-color="#fdf3ea" data-active="1" />
-      <stop offset=".2" stop-color="#f9d8b9" data-active="1" />
-      <stop offset=".3" stop-color="#f5c18f" data-active="1" />
-      <stop offset=".4" stop-color="#f2ae6c" data-active="1" />
-      <stop offset=".6" stop-color="#f09f52" data-active="1" />
-      <stop offset=".7" stop-color="#ef953f" data-active="1" />
-      <stop offset=".9" stop-color="#ee8f33" data-active="1" />
-      <stop offset="1" stop-color="#ee8d30" data-active="1" />
+      <stop offset="0" stop-color="var(--odon-rest-emax-0, #fff)" data-active="1" />
+      <stop offset="0" stop-color="var(--odon-rest-emax-1, #fdf3ea)" data-active="1" />
+      <stop offset=".2" stop-color="var(--odon-rest-emax-2, #f9d8b9)" data-active="1" />
+      <stop offset=".3" stop-color="var(--odon-rest-emax-3, #f5c18f)" data-active="1" />
+      <stop offset=".4" stop-color="var(--odon-rest-emax-4, #f2ae6c)" data-active="1" />
+      <stop offset=".6" stop-color="var(--odon-rest-emax-5, #f09f52)" data-active="1" />
+      <stop offset=".7" stop-color="var(--odon-rest-emax-6, #ef953f)" data-active="1" />
+      <stop offset=".9" stop-color="var(--odon-rest-emax-7, #ee8f33)" data-active="1" />
+      <stop offset="1" stop-color="var(--odon-rest-emax-8, #ee8d30)" data-active="1" />
       </radialGradient>
     <radialGradient id="toothgen-17-radial-gradient-16-5" cx="21.2" cy="21" fx="21.2" fy="21" r="15.8" gradientTransform="matrix(1,0,0,1.52870,0,1.03800) translate(0 70.4) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
-      <stop offset="0" stop-color="#fff" data-active="1" />
-      <stop offset="0" stop-color="#fdf3ea" data-active="1" />
-      <stop offset=".2" stop-color="#f9d8b9" data-active="1" />
-      <stop offset=".3" stop-color="#f5c18f" data-active="1" />
-      <stop offset=".4" stop-color="#f2ae6c" data-active="1" />
-      <stop offset=".6" stop-color="#f09f52" data-active="1" />
-      <stop offset=".7" stop-color="#ef953f" data-active="1" />
-      <stop offset=".9" stop-color="#ee8f33" data-active="1" />
-      <stop offset="1" stop-color="#ee8d30" data-active="1" />
+      <stop offset="0" stop-color="var(--odon-rest-emax-0, #fff)" data-active="1" />
+      <stop offset="0" stop-color="var(--odon-rest-emax-1, #fdf3ea)" data-active="1" />
+      <stop offset=".2" stop-color="var(--odon-rest-emax-2, #f9d8b9)" data-active="1" />
+      <stop offset=".3" stop-color="var(--odon-rest-emax-3, #f5c18f)" data-active="1" />
+      <stop offset=".4" stop-color="var(--odon-rest-emax-4, #f2ae6c)" data-active="1" />
+      <stop offset=".6" stop-color="var(--odon-rest-emax-5, #f09f52)" data-active="1" />
+      <stop offset=".7" stop-color="var(--odon-rest-emax-6, #ef953f)" data-active="1" />
+      <stop offset=".9" stop-color="var(--odon-rest-emax-7, #ee8f33)" data-active="1" />
+      <stop offset="1" stop-color="var(--odon-rest-emax-8, #ee8d30)" data-active="1" />
       </radialGradient>
     <radialGradient id="toothgen-17-radial-gradient-16-6" cx="21.4" cy="-993.5" fx="21.4" fy="-993.5" r="9.1" gradientTransform="matrix(1,0,0,1.52870,0,1.03800) translate(0 -938.1) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
-      <stop offset="0" stop-color="#fff" data-active="1" />
-      <stop offset="0" stop-color="#fdf3ea" data-active="1" />
-      <stop offset=".2" stop-color="#f9d8b9" data-active="1" />
-      <stop offset=".3" stop-color="#f5c18f" data-active="1" />
-      <stop offset=".4" stop-color="#f2ae6c" data-active="1" />
-      <stop offset=".6" stop-color="#f09f52" data-active="1" />
-      <stop offset=".7" stop-color="#ef953f" data-active="1" />
-      <stop offset=".9" stop-color="#ee8f33" data-active="1" />
-      <stop offset="1" stop-color="#ee8d30" data-active="1" />
+      <stop offset="0" stop-color="var(--odon-rest-emax-0, #fff)" data-active="1" />
+      <stop offset="0" stop-color="var(--odon-rest-emax-1, #fdf3ea)" data-active="1" />
+      <stop offset=".2" stop-color="var(--odon-rest-emax-2, #f9d8b9)" data-active="1" />
+      <stop offset=".3" stop-color="var(--odon-rest-emax-3, #f5c18f)" data-active="1" />
+      <stop offset=".4" stop-color="var(--odon-rest-emax-4, #f2ae6c)" data-active="1" />
+      <stop offset=".6" stop-color="var(--odon-rest-emax-5, #f09f52)" data-active="1" />
+      <stop offset=".7" stop-color="var(--odon-rest-emax-6, #ef953f)" data-active="1" />
+      <stop offset=".9" stop-color="var(--odon-rest-emax-7, #ee8f33)" data-active="1" />
+      <stop offset="1" stop-color="var(--odon-rest-emax-8, #ee8d30)" data-active="1" />
       </radialGradient>
     <radialGradient id="toothgen-17-radial-gradient-16-7" cx="21" cy="-987.3" fx="21" fy="-987.3" r="14.1" gradientTransform="matrix(1,0,0,1.52870,0,1.03800) translate(0 -938.1) scale(1 -1)" gradientUnits="userSpaceOnUse" data-active="1">
-      <stop offset="0" stop-color="#fff" data-active="1" />
-      <stop offset="0" stop-color="#fdf3ea" data-active="1" />
-      <stop offset=".2" stop-color="#f9d8b9" data-active="1" />
-      <stop offset=".3" stop-color="#f5c18f" data-active="1" />
-      <stop offset=".4" stop-color="#f2ae6c" data-active="1" />
-      <stop offset=".6" stop-color="#f09f52" data-active="1" />
-      <stop offset=".7" stop-color="#ef953f" data-active="1" />
-      <stop offset=".9" stop-color="#ee8f33" data-active="1" />
-      <stop offset="1" stop-color="#ee8d30" data-active="1" />
+      <stop offset="0" stop-color="var(--odon-rest-emax-0, #fff)" data-active="1" />
+      <stop offset="0" stop-color="var(--odon-rest-emax-1, #fdf3ea)" data-active="1" />
+      <stop offset=".2" stop-color="var(--odon-rest-emax-2, #f9d8b9)" data-active="1" />
+      <stop offset=".3" stop-color="var(--odon-rest-emax-3, #f5c18f)" data-active="1" />
+      <stop offset=".4" stop-color="var(--odon-rest-emax-4, #f2ae6c)" data-active="1" />
+      <stop offset=".6" stop-color="var(--odon-rest-emax-5, #f09f52)" data-active="1" />
+      <stop offset=".7" stop-color="var(--odon-rest-emax-6, #ef953f)" data-active="1" />
+      <stop offset=".9" stop-color="var(--odon-rest-emax-7, #ee8f33)" data-active="1" />
+      <stop offset="1" stop-color="var(--odon-rest-emax-8, #ee8d30)" data-active="1" />
       </radialGradient>
     </defs>
   <g id="base" data-active="1">

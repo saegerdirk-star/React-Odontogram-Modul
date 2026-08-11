@@ -9,6 +9,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Restoration colours are choosable.** (odontogram-sjr) The palette
+  odontogram-58n shipped becomes the DEFAULT, not the only answer. Settings
+  gains a **Colours** tab with one picker per material and a reset.
+
+  **No JavaScript in the render path.** Every restoration fill in the generated
+  assets now reads `fill: var(--odon-rest-gold, #e0a80d)`, so choosing a colour
+  is setting a custom property and the cascade repaints. An unconfigured chart
+  is byte-identical to before, because nothing is written and every fallback is
+  the shipped colour — and an entry with no choice REMOVES its properties
+  rather than writing the default back, so a reset leaves nothing behind.
+
+  **Keyed on layer id, never on the hex**, which is what keeps the two
+  collisions 58n reported separable rather than welding them together: GIC
+  shares `#f9ae94` with the denture base, and a metal crown shares `#0051bf`
+  with a telescopic one. Same defaults, separate variables — the collision
+  becomes the practice's to keep or resolve.
+
+  **e.max and metal-ceramic are not one colour but a nine-stop ramp**, and the
+  lightness sweep across it is what makes them read as ceramic rather than as a
+  flat blob. Picking a colour re-hues the ramp and keeps that sweep: the
+  near-white end stays near-white, the darkening stays monotone, and only the
+  hue moves. The lighter anterior telescope connector is derived from the
+  posterior tone the same way, so one picker drives both and a deliberate
+  contrast is not lost.
+
+  Measuring for this settled the drifts. Amalgam was `#a0a0a0` on the four
+  occlusal templates against `#aaa` elsewhere — the same material with two
+  colours — and the same split turned up on `telescope-crown-inside`, plus
+  `#fffffb` against `#fff` on the temporary bridge connector and three
+  near-identical metal-ceramic ramps. All unified.
+
+  **A practice preference, not patient data**, so it is session state like the
+  perio view flags and deliberately NOT part of the export payload. The
+  consequence is accepted rather than discovered: a case exported here and
+  opened elsewhere renders in THAT practice's colours. `getRestorationPalette`
+  / `setRestorationPalette` let a host persist it.
+
 - **An empty implant product is only a gap where the practice placed the
   implant.** (odontogram-im1, completing what waited on odontogram-ap7) Two
   empties look alike and are not alike: *we placed it and recorded nothing* is

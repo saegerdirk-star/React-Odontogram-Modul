@@ -2382,3 +2382,8 @@ select:focus{
 /* Bead odontogram-im1: an empty implant product is only a GAP where the
    practice placed the implant. One the patient arrived with is complete. */
 .implant-product-gap{color:#b9770e; font-weight:600}
+
+/* Bead odontogram-sjr: the restoration colour pickers. */
+.settings-colour-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:8px 14px; margin:10px 0 14px}
+.settings-colour-row{display:flex; align-items:center; gap:9px; font-size:13px; cursor:pointer}
+.settings-colour-row input[type="color"]{inline-size:34px; block-size:26px; padding:0; border:1px solid var(--line); border-radius:6px; background:none; cursor:pointer}
