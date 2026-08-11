@@ -2352,3 +2352,23 @@ select:focus{
 .dropdown-check{display:flex; align-items:center; gap:8px; padding:8px 12px; cursor:pointer; font-size:13px; border-top:1px solid var(--line)}
 .dropdown-check input{margin:0}
 .dropdown-hint{margin:0; padding:0 12px 8px; font-size:11px; line-height:1.35; color:var(--muted); max-width:280px}
+
+/* Bead odontogram-dma: retention elements.
+   The tile marker is charly's own shorthand rather than invented artwork —
+   no template carries a clasp or an attachment, and a drawing nobody verified
+   would be worse than a notation Dirk already reads. It lives on the tile
+   <div>, never in the SVG, so it is outside the fingerprint entirely. */
+.tooth-tile[data-retention]::after{
+  content:attr(data-retention); position:absolute; left:50%; transform:translateX(-50%);
+  font-size:10px; font-weight:700; line-height:1; letter-spacing:.02em;
+  color:#5b3a8e; background:rgba(91,58,142,.10); border-radius:4px; padding:1px 4px;
+  pointer-events:none; white-space:nowrap;
+}
+.tooth-tile.upper-row[data-retention]::after{ bottom:2px }
+.tooth-tile.lower-row[data-retention]::after{ top:2px }
+.tooth-tile.occl-view[data-retention]::after{ display:none }
+
+/* The derived bar. Its own overlay, but the same tile geometry the bridge
+   saddle reads, so the two cannot drift apart. */
+#toothGrid > svg.retention-overlay{position:absolute; inset:0; pointer-events:none; z-index:3}
+.retention-overlay-bar{fill:#8e7cc3; stroke:#4a3b6b; stroke-width:.75}

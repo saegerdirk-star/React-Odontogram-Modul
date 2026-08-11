@@ -24,7 +24,7 @@ import {
 // Bead odontogram-dma: retention gating + bar-span derivation, kept DOM-free.
 import {
   retentionOptions, retentionAllowed, detectBarSpans, retentionMark,
-  isTelescopeRetention, hasRetention,
+  isTelescopeRetention, hasRetention, computeRetentionBars,
   type RetentionValue,
 } from "./retention";
 import {
@@ -1583,6 +1583,50 @@ function bridgeStateFor(toothNo: number): BridgeToothState | undefined {
 function updateBridgeOverlay(){
   const grid = $("#toothGrid") as HTMLElement | null;
   renderBridgeOverlay({ grid, getState: bridgeStateFor, materialColor: defaultMaterialColor });
+  updateRetentionBarOverlay(grid);
+}
+
+/** Bead odontogram-dma: (re)draw the derived bar (Steg) over `#toothGrid`.
+ *
+ *  Its own overlay `<svg>`, but the SAME tile geometry the bridge saddle reads
+ *  (`tileRectFor`), so the two can never drift apart — one source for where a
+ *  tile is, two things drawn on it. Idempotent: cleared and redrawn on every
+ *  call, and it creates nothing while no bar is charted. */
+function updateRetentionBarOverlay(grid: HTMLElement | null){
+  if(!grid) return;
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  let overlay = grid.querySelector(":scope > svg.retention-overlay") as SVGSVGElement | null;
+  const spans = detectBarSpans([UPPER_ARCH, LOWER_ARCH], (tn) => toothState.get(tn));
+  if(spans.length === 0){
+    if(overlay){ while(overlay.firstChild) overlay.removeChild(overlay.firstChild); }
+    return;
+  }
+  const gridRect = grid.getBoundingClientRect();
+  const bars = computeRetentionBars(spans, (tn) => tileRectFor(grid, gridRect, tn));
+  if(!overlay){
+    overlay = document.createElementNS(SVG_NS, "svg");
+    overlay.setAttribute("class", "retention-overlay");
+    overlay.setAttribute("aria-hidden", "true");
+    grid.appendChild(overlay);
+  }
+  while(overlay.firstChild) overlay.removeChild(overlay.firstChild);
+  const W = Math.max(1, Math.round(gridRect.width));
+  const H = Math.max(1, Math.round(gridRect.height));
+  overlay.setAttribute("width", String(W));
+  overlay.setAttribute("height", String(H));
+  overlay.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  for(const bar of bars){
+    const rect = document.createElementNS(SVG_NS, "rect");
+    rect.setAttribute("class", "retention-overlay-bar");
+    rect.setAttribute("x", String(bar.x));
+    rect.setAttribute("y", String(bar.y));
+    rect.setAttribute("width", String(bar.width));
+    rect.setAttribute("height", String(bar.height));
+    const r = Math.min(bar.height / 2, bar.width / 2);
+    rect.setAttribute("rx", String(r));
+    rect.setAttribute("ry", String(r));
+    overlay.appendChild(rect);
+  }
 }
 
 // ---- Bridge overlay resize handling ----
@@ -3666,7 +3710,32 @@ function applyStateToSvg(toothNo: Any){
     applyPreExistingStyling(toothNo, svg); // odontogram-ap7: hatch what the patient arrived with (Status mode only)
   }
   applyPluginOverlays(toothNo);
+  updateToothRetentionMark(toothNo);
   updateToothTooltip(toothNo);
+}
+
+/** Bead odontogram-dma: put the retention element on the tile in charly's own
+ *  notation. There is no clasp or attachment artwork in any template, and
+ *  inventing some would be a drawing nobody verified; the marker is honest and
+ *  reads the way Dirk's own records do. It is a `data-retention` attribute on
+ *  the tile `<div>` rendered by CSS, so it lives in the panel DOM and never
+ *  touches `__renderActiveLayers` — outside the SVG fingerprint entirely. */
+function updateToothRetentionMark(toothNo: Any){
+  const tiles = toothTile.get(toothNo);
+  if(!tiles) return;
+  const state = toothState.get(toothNo);
+  const mark = state ? retentionMark(state, state.retentionSide ?? "none") : "";
+  for(const tile of tiles){
+    if(!tile?.setAttribute) continue;
+    if(mark) tile.setAttribute("data-retention", mark);
+    else tile.removeAttribute("data-retention");
+  }
+}
+
+/** TEST-ONLY seam over {@link updateToothRetentionMark}. Not part of the
+ *  public API. */
+export function __updateToothRetentionMarkForTest(toothNo: number): void {
+  updateToothRetentionMark(toothNo);
 }
 
 /** Collect, IN DOCUMENT ORDER (not sorted — order captures z-order/re-parenting),
@@ -5008,6 +5077,25 @@ function syncControlsFromState(state: Any){
   // (mirrors the crownLeakage axis's appliesWhen in src/registry/axes.ts).
   const crownLeakageAllowed = !restorationRowCurrentlyHidden && (state.restorationType === "crown" || state.restorationType === "bridge");
   $("#crownLeakageRow").classList.toggle("hidden", !crownLeakageAllowed);
+  // Bead odontogram-dma: the retention row offers exactly what THIS tooth can
+  // carry — one predicate, shared with the setter, so the picker can never show
+  // an element the setter would drop. Hidden entirely on a tooth that can hold
+  // nothing (a gap, an implant, an un-erupted position).
+  const retentionChoices = retentionOptions(state);
+  const retentionAllowedHere = retentionChoices.length > 1;
+  $("#retentionRow").classList.toggle("hidden", !retentionAllowedHere || isPlan);
+  if(retentionAllowedHere){
+    setSelectOptions($("#retentionSelect"),
+      retentionChoices.map((v) => ({ value: v, label: t("retention." + kebabToCamel(v)) })),
+      retentionAllowed(state, state.retention) ? state.retention : "none");
+    // The side only means something once an element engages one.
+    const sideEl = $("#retentionSideSelect") as HTMLSelectElement;
+    const hasElement = state.retention !== "none" && retentionAllowed(state, state.retention);
+    setSelectOptions(sideEl,
+      ["none", "mesial", "distal", "both"].map((v) => ({ value: v, label: t("retentionSide." + v) })),
+      hasElement ? (state.retentionSide ?? "none") : "none");
+    sideEl.disabled = !hasElement || readOnly;
+  }
 
   const extractionPlanRow = $("#extractionPlanRow");
   const brokenCrownRow = $("#brokenCrownRow");
@@ -10521,6 +10609,24 @@ function wireControls(){
   });
 
   // Crown leakage (marginal leakage on a crown/bridge restoration)
+  // Bead odontogram-dma: element and side are ONE finding, so both controls
+  // write through the same path — picking `none` clears the side with it.
+  $("#retentionSelect").addEventListener("change", (e)=>{
+    const value = String((e.target as HTMLSelectElement).value);
+    applyToSelected((s: Any)=>{
+      if(!retentionAllowed(s, value)) return;
+      s.retention = value;
+      if(value === "none") s.retentionSide = "none";
+    });
+    updateBridgeOverlay();
+  });
+  $("#retentionSideSelect").addEventListener("change", (e)=>{
+    const value = String((e.target as HTMLSelectElement).value);
+    applyToSelected((s: Any)=>{
+      if(s.retention === "none" || !retentionAllowed(s, s.retention)) return;
+      if(VALID_RETENTION_SIDE.has(value)) s.retentionSide = value;
+    });
+  });
   $("#crownLeakage").addEventListener("change", (e)=>{
     applyToSelected((s)=>{
       s.crownLeakage = (e.target as HTMLInputElement).checked;

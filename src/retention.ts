@@ -125,24 +125,95 @@ export function detectBarSpans(arches: number[][], getState: GetRetentionState):
   return spans;
 }
 
-/** charly's own shorthand, so the chart reads the way Dirk's records do:
- *  `<Kl` engages mesially, `Kl>` distally, `<Kl>` both. */
-const RETENTION_MARK: Record<string, string> = {
-  clasp: "Kl", attachment: "G", "bar-abutment": "St",
+/** charly's own shorthand, read off its finding keypad (screenshot, Dirk
+ *  2026-08-11) rather than paraphrased: the clasp is `<Kl` / `Kl>`, the
+ *  attachment `( G` / `G )`, and the bar is written `ste`.
+ *
+ *  The BRACKET SHAPE is part of the vocabulary, not decoration — angle for the
+ *  clasp, round for the attachment — which is why it is a per-element pair and
+ *  not one shared chevron. `ste` carries no bracket: a bar is not a thing that
+ *  engages one side of one tooth, it runs between abutments, and its side is
+ *  the span (see `detectBarSpans`). */
+const RETENTION_MARK: Record<string, { mark: string; open: string; close: string }> = {
+  clasp: { mark: "Kl", open: "<", close: ">" },
+  attachment: { mark: "G", open: "( ", close: " )" },
+  "bar-abutment": { mark: "ste", open: "", close: "" },
 };
 
 /**
- * The tile marker for a tooth's retention element — charly's notation, with
- * the engaged side as the chevrons around it. Returns `""` when the tooth
+ * The tile marker for a tooth's retention element, in charly's notation with
+ * the engaged side as the bracket around it. Returns `""` when the tooth
  * carries no element (or one its own state does not allow).
  */
 export function retentionMark(state: RetentionStateLike | undefined, side: string): string {
   const value = state?.retention;
   if(!value || value === "none" || !retentionAllowed(state, value)) return "";
-  const mark = RETENTION_MARK[value];
-  if(!mark) return "";
-  if(side === "mesial") return `<${mark}`;
-  if(side === "distal") return `${mark}>`;
-  if(side === "both") return `<${mark}>`;
+  const spec = RETENTION_MARK[value];
+  if(!spec) return "";
+  const { mark, open, close } = spec;
+  if(!open) return mark;                              // the bar takes no bracket
+  if(side === "mesial") return `${open}${mark}`;
+  if(side === "distal") return `${mark}${close}`;
+  if(side === "both") return `${open}${mark}${close}`;
   return mark;
+}
+
+// ---------------------------------------------------------------------------
+// The bar as it is DRAWN
+// ---------------------------------------------------------------------------
+//
+// A bar is not a property of one tooth, it connects them — the same shape the
+// bridge overlay already has, so it borrows that geometry rather than growing a
+// second one. Two things differ, both clinical:
+//
+//   - it rides HIGHER than a bridge saddle, because a bar sits at the gingival
+//     margin between the abutments rather than replacing a crown;
+//   - it is drawn as ONE run from the first abutment to the last, so the gap it
+//     spans reads as a bar and not as a row of separate pieces.
+
+/** A tile's box in grid-relative coordinates, as `bridgeOverlay` reports it. */
+export interface RetentionRect { x: number; y: number; width: number; height: number }
+
+/** A single bar to draw, in grid-relative coordinates. */
+export interface RetentionBar { x: number; y: number; width: number; height: number }
+
+/** Where the bar sits down the tile, as a fraction of tile height. Higher than
+ *  the bridge saddle's 0.72: a bar sits at the gingival margin, not where a
+ *  crown would be. Mirrored about the tile mid-line for the lower arch, exactly
+ *  as `SADDLE_Y_FRACTION_LOWER` does. */
+export const BAR_Y_FRACTION = 0.62;
+/** Bar thickness as a fraction of tile height. */
+export const BAR_THICKNESS = 0.055;
+
+/**
+ * Compute one bar per span, running from the first abutment's centre to the
+ * last's — NOT one piece per inter-tile gap. A bar crossing an edentulous space
+ * drawn gap-by-gap would break at every tile boundary, which is exactly the
+ * failure `detectBridgeSpans` exists to prevent for bridges.
+ *
+ * Guards mirror `computeBridgeBars`: a missing or zero-sized tile (occlusal
+ * view, collapsed arch) is skipped rather than throwing, and a non-positive
+ * width is skipped too.
+ */
+export function computeRetentionBars(
+  spans: number[][],
+  rectFor: (toothNo: number) => RetentionRect | null,
+): RetentionBar[] {
+  const bars: RetentionBar[] = [];
+  for(const span of spans){
+    const rects = span.map(rectFor).filter((r): r is RetentionRect => !!r && r.width > 0 && r.height > 0);
+    if(rects.length < 2) continue;
+    const isLower = span[0] >= 31;
+    const yFraction = isLower ? 1 - BAR_Y_FRACTION : BAR_Y_FRACTION;
+    const xs = rects.map((r) => r.x + r.width / 2);
+    const x0 = Math.min(...xs);
+    const x1 = Math.max(...xs);
+    const width = x1 - x0;
+    if(width <= 0) continue;
+    const ref = rects[0];
+    const height = ref.height * BAR_THICKNESS;
+    const midY = ref.y + ref.height * yFraction;
+    bars.push({ x: x0, y: midY - height / 2, width, height });
+  }
+  return bars;
 }

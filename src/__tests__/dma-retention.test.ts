@@ -190,9 +190,18 @@ describe("the tile marker follows charly's own notation", () => {
     expect(retentionMark(clasp, "none")).toBe("Kl");
   });
 
-  it("names the attachment and the bar", () => {
-    expect(retentionMark({ ...CROWNED, retention: "attachment" }, "none")).toBe("G");
-    expect(retentionMark({ ...CROWNED, retention: "bar-abutment" }, "none")).toBe("St");
+  it("gives the attachment its own bracket shape — round, not angle", () => {
+    // The bracket is part of charly's vocabulary, not decoration: `<Kl` vs `( G`.
+    expect(retentionMark({ ...CROWNED, retention: "attachment" }, "mesial")).toBe("( G");
+    expect(retentionMark({ ...CROWNED, retention: "attachment" }, "distal")).toBe("G )");
+    expect(retentionMark({ ...CROWNED, retention: "attachment" }, "both")).toBe("( G )");
+  });
+
+  it("writes the bar the way charly does, and without a side bracket", () => {
+    // A bar does not engage one side of one tooth; it runs between abutments,
+    // and its "side" is the span.
+    expect(retentionMark({ ...CROWNED, retention: "bar-abutment" }, "none")).toBe("ste");
+    expect(retentionMark({ ...CROWNED, retention: "bar-abutment" }, "both")).toBe("ste");
   });
 
   it("shows nothing for an element the tooth cannot carry", () => {

@@ -1001,6 +1001,16 @@ export default function App({
                 <span>{t("restoration.label")}</span>
                 <select id="restorationSelect"></select>
               </div>
+              {/* Bead odontogram-dma: what holds a removable denture to this
+                  tooth. Its own row rather than more entries in the restoration
+                  dropdown: a clasp is not a restoration, and it sits on teeth
+                  that carry none. Hidden by syncControlsFromState on a tooth
+                  that can hold nothing. */}
+              <div id="retentionRow" className="row hidden">
+                <span>{t("retention.label")}</span>
+                <select id="retentionSelect"></select>
+                <select id="retentionSideSelect"></select>
+              </div>
               <label id="crownLeakageRow" className="row hidden">
                 <input type="checkbox" id="crownLeakage" />
                 <span>{t("crownLeakage.label")}</span>
