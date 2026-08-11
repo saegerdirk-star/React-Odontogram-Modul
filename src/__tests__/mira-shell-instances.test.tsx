@@ -6,7 +6,7 @@
 // module singleton.
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { render, cleanup, waitFor } from "@testing-library/react";
+import { render, cleanup, waitFor, act } from "@testing-library/react";
 import OdontogramShell from "../App";
 import {
   createOdontogramSession,
@@ -48,7 +48,26 @@ describe("odontogram-3l1 AC2: two mounted odontograms", () => {
   beforeEach(() => {
     __resetChartStateForTest();
   });
-  afterEach(() => {
+  // Bead odontogram-xtj. The engine mounts its tooth grid ASYNCHRONOUSLY — it
+  // fetches a template per tooth — so a test that returns synchronously leaves
+  // that work in flight, and its state updates land while the NEXT test is
+  // running. That is what the "not wrapped in act(...)" wall in this file was,
+  // and it explains the shape of the flake exactly: the LAST test here failed
+  // under full-suite load and passed alone, because alone it inherits nothing.
+  //
+  // Letting the pending work settle INSIDE act before unmounting costs a tick
+  // and weakens no assertion. It is the isolation the file always needed, not
+  // a wait bolted onto the assertion that happened to fail.
+  afterEach(async () => {
+    // Wait for the real signal rather than a guessed number of milliseconds:
+    // the grid has its tiles once every template has arrived, and that is
+    // precisely when the in-flight updates stop coming.
+    if(document.querySelector("#toothGrid")){
+      await waitFor(() => {
+        expect(document.querySelectorAll("#toothGrid .tooth-tile").length).toBeGreaterThan(0);
+      }, { timeout: 4000 });
+    }
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
     cleanup();
   });
 
