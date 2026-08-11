@@ -697,6 +697,129 @@ def spread_roots_xmap(
     return fn
 
 
+def converge_roots_layers(
+    txt: str,
+    cx: float,
+    apex: float,
+    cej: float,
+    factor: float,
+    knee: float = 0.55,
+):
+    """Pull the roots together on the TOOTH layers only.
+
+    `spread_roots_xmap` is returned to `build_one` as a whole-template x-map, so
+    it reaches gum and bone as well. That is right when roots splay around a
+    developing germ - the socket moves with them - but wrong here: converging
+    the roots of an upper premolar to show its buccal aspect must not pinch the
+    gum band, which visibly narrowed the whole tile when it did.
+
+    So the same map is applied through the registered tooth and canal layers
+    instead, and everything around the tooth stays where it was.
+    """
+
+    fn = spread_roots_xmap(cx, apex, cej, factor, hook=0.0, knee=knee)
+    changed: list[str] = []
+    stack: list[str] = []
+
+    def allowed(el_id: str) -> bool:
+        names = [el_id] + stack
+        return any(n.startswith(p) for n in names if n for p in PALATAL_ROOT_LAYERS)
+
+    def repl(m):
+        head, attrs = m.group(1), m.group(2)
+        if head == "g":
+            if attrs.rstrip().endswith("/"):
+                return m.group(0)
+            idm = re.search(r'\sid="([^"]+)"', attrs)
+            stack.append(idm.group(1) if idm else "")
+            return m.group(0)
+        if head == "/g":
+            if stack:
+                stack.pop()
+            return m.group(0)
+        dm = re.search(r'\sd="([^"]+)"', attrs)
+        if not dm:
+            return m.group(0)
+        idm = re.search(r'\sid="([^"]+)"', attrs)
+        el_id = idm.group(1) if idm else ""
+        if not allowed(el_id):
+            return m.group(0)
+        warped = svgpath.warp_path_d(dm.group(1), fn)
+        changed.append(el_id or f"(in {stack[-1] if stack else '?'})")
+        attrs2 = attrs.replace(dm.group(0), f' d="{warped}"', 1)
+        return f"<{head}{attrs2}>"
+
+    out = re.sub(r"<(path|polygon|g|/g)([^>]*?)>", repl, txt)
+    return out, changed
+
+
+def shorten_one_root_layers(
+    txt: str,
+    cx: float,
+    apex: float,
+    furc: float,
+    amount: float,
+    band: float = 1.6,
+):
+    """Pull ONE of the two root tips down, on the tooth layers only.
+
+    The convergence alone leaves two tips at the same height, which reads as a
+    tooth with a slit rather than as one root standing in front of another. A
+    structure further from the viewer also ends higher up the picture; dropping
+    the palatal tip is what turns the pair into depth.
+
+    Applied to the half on the palatal side of `cx` and blended across a `band`
+    either side of it, so the contour is eased rather than stepped where the two
+    halves meet.
+    """
+
+    span = furc - apex
+    if span <= 0:
+        raise ValueError("the furcation must sit occlusal to the apex")
+
+    def fn(x: float, y: float):
+        if y >= furc:
+            return (x, y)
+        t = (x - cx) / band
+        w = 0.0 if t <= -1.0 else (1.0 if t >= 1.0 else (t + 1.0) / 2.0)
+        w = w * w * (3.0 - 2.0 * w)
+        depth = min(1.0, (furc - y) / span)
+        return (x, y + (furc - y) * amount * w * depth)
+
+    changed: list[str] = []
+    stack: list[str] = []
+
+    def allowed(el_id: str) -> bool:
+        names = [el_id] + stack
+        return any(n.startswith(p) for n in names if n for p in PALATAL_ROOT_LAYERS)
+
+    def repl(m):
+        head, attrs = m.group(1), m.group(2)
+        if head == "g":
+            if attrs.rstrip().endswith("/"):
+                return m.group(0)
+            idm = re.search(r'\sid="([^"]+)"', attrs)
+            stack.append(idm.group(1) if idm else "")
+            return m.group(0)
+        if head == "/g":
+            if stack:
+                stack.pop()
+            return m.group(0)
+        dm = re.search(r'\sd="([^"]+)"', attrs)
+        if not dm:
+            return m.group(0)
+        idm = re.search(r'\sid="([^"]+)"', attrs)
+        el_id = idm.group(1) if idm else ""
+        if not allowed(el_id):
+            return m.group(0)
+        changed.append(el_id or f"(in {stack[-1] if stack else '?'})")
+        attrs2 = attrs.replace(dm.group(0), f' d="{svgpath.warp_path_d(dm.group(1), fn)}"', 1)
+        return f"<{head}{attrs2}>"
+
+    out = re.sub(r"<(path|polygon|g|/g)([^>]*?)>", repl, txt)
+    return out, changed
+
+
 def palatal_root_subpaths(
     txt: str,
     cx: float,
@@ -897,3 +1020,21 @@ def clamp_lumen_apex(txt: str, apex: float, margin: float = 1.0):
         return svgpath.warp_path_d(d, lambda x, y: (x, y_bot - (y_bot - y) * k))
 
     return _lumen_paths(txt, handler)
+
+
+def crossings_at(d: str, y: float) -> list[float]:
+    """Sorted x of every place the outline of ``d`` crosses the line ``y``.
+
+    Lives here because this is where the adaptive flattening lives. Walking the
+    command list and taking each segment's ENDPOINT instead measures a polygon
+    through the Bezier anchors, which cost the molars a third of their measured
+    width before it was found (odontogram-5ca).
+    """
+    xs = []
+    for sub in _polylines(d):
+        for (ax, ay), (bx, by) in zip(sub, sub[1:]):
+            if (ay <= y < by) or (by <= y < ay):
+                t = (y - ay) / (by - ay)
+                xs.append(ax + t * (bx - ax))
+    xs.sort()
+    return xs

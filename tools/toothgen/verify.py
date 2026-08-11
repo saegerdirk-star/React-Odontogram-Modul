@@ -107,33 +107,76 @@ def lumen_extremes(txt: str, base_d: str, apex: float, cej: float):
 # attributes on all nine templates, which is an intended, reviewed correction,
 # not drift. The previous set was captured on 2026-08-09 from
 # origin/feat/tooth-anatomy-9-templates and is recorded in that bead.
+# Re-taken on 2026-08-11 for odontogram-3y9: `root_frac` on all nine permanent
+# templates is now Dirk's reading off the Odontographie plates, and the two
+# display constants changed with it - `ROOT_DISPLAY_SCALE` 0.60 -> 0.75 (less
+# root compression, as he asked) and the new `LENGTH_SPREAD` 0.45. Both move
+# geometry on every template, primary ones included, and both are intended,
+# reviewed corrections rather than drift. `OCCL_MARGIN` went 7.5 -> 8.0 in the
+# same change because the longer crown region pushed gum past the old viewBox
+# bottom. The previous set was taken on 2026-08-10 and is recorded below.
+# Re-taken on 2026-08-11 for odontogram-qyc: `gum-base` and `bone-base` are no
+# longer warped out of the source drawings, they are DRAWN by tools/toothgen/
+# gum.py in each template's final coordinates. That was the only way to make the
+# gingiva read as one line across the arch - a papilla is shared between two
+# teeth, and two hand-drawn halves have no way to agree on its height. The same
+# change levels the bone block and absorbs the viewBox rounding into the shift,
+# so the occlusal plane lands exactly OCCL_MARGIN above the written bottom;
+# both move geometry on every template. Intended, reviewed corrections. SVG
+# fingerprint parity is byte-identical throughout - the fingerprint reads id,
+# opacity and class, never geometry.
+# 31 and 71 re-taken again the same day: the lower incisors now stand in a 31 px
+# column instead of 44, so their gum papilla moves with the joint. That change
+# is what puts the lower canine in the embrasure between the upper lateral and
+# the upper canine, which is where the mouth puts it.
+# Re-taken TWICE on 2026-08-11 for odontogram-5ca. First, `width_frac` was set
+# from the standard mean mesiodistal crown diameters, since the values it had
+# carried no source and did not agree with each other. Then the measurement the
+# generator fits those targets against turned out to be broken: it flattened
+# the outline through the Bezier ANCHORS instead of the curve, so a molar read
+# 24.6 units wide where it is 40.0, and the templates drawn with the longest
+# curves - the premolars and molars - had been scaled up by a third to make
+# that undersized number match. Both are intended, reviewed corrections. Every
+# template scales horizontally, so every digest moves.
+# Re-taken again on 2026-08-11 for odontogram-3y9: LENGTH_SPREAD 0.45 -> 0.30.
+# The apex line was still 15.1 px ragged, essentially all of it the canine
+# standing proud of the second molars; at 0.30 it is 9.6 px and the canine is
+# still visibly the longest tooth, which is what "almost equal" asked for. One
+# constant, every template's length moves. Intended, reviewed correction.
+# Re-taken on 2026-08-11 for odontogram-9cl: the mesial and distal filling
+# shapes are stretched until they meet the occlusal one, so MO/OD/MOD reads as
+# one restoration instead of three blobs. Only the four direct-filling layers
+# move, and only on the proximal surfaces. Intended, reviewed correction.
 AUTHORED_GEOMETRY_SHA256 = {
-    "11": "5403961a7985b751261a0e0429eff97619e51534d46d8fb078bbecd0fa10482e",
-    "12": "58e0d706d419ab08413afb5d9ab5e705d5574f4b95b7628567431de00bc9ddde",
-    "13": "9d8869b7692c2f0b489997873d6111cb39e142199b5b0e51fedf048584258e5d",
-    "14": "810e488c0973a1c04474cd243b921cfc23b75194bdf5fc184ef90ef3d0b72ebd",
+    "11": "c2de41b27659c7c96efc089f9c77b2aa73a34e145e8b3643ae21105187c7760b",
+    "12": "6941ca26f1950f6320596ec9462cd64bcfdfc3f4d983b4f43ee86fa033d3391c",
+    "13": "0bc25f854fb66c10f27a1ed0c9ffbb7c92c1590e241ccb31c8dfcadb3417d23a",
+    # Re-taken for odontogram-1c0 on 2026-08-11: tpl 14 is drawn from BUCCAL
+    # now - the two roots converge and the palatal tip drops - instead of the
+    # proximal aspect the source draws. Intended, reviewed correction.
+    "14": "a7dea116afe014eee02f6e33475289a2307ada697da1356aabe87ec85faec496",
     # Re-taken again on 2026-08-10 for odontogram-ay4: template 15's root is
     # grafted from source 13 instead of converted from source 14's two roots.
-    "15": "9571e1a8855110f8b191588261bc366b676efaf9d8fc7179f2bc9f79f010bf7d",
-    "16": "dccdd2fea0b80a5afdc74e034b79dfa0a08151d8ff5ca4d2c8cdb952e5202786",
-    "17": "57cdc697a16a578ef4d566d6a18d02c472ce48a263d10bbdf7b71c0a99e1a9f6",
-    "31": "4a10c5642fd72352dcf13c95d7f50a1ecf0a8b026661d6bb435a03a21d193e33",
-    "46": "fba5d08ec2aedf3fcc2ae63bf321b6f6d0d97ffb97da53150089edd79cf30976",
+    "15": "ec51fc299adea9d3fd806acd003371ca2273a3ed401f6a6f34808a45ab12f009",
+    "16": "4b3f9e27054fef0a36fa85afabc4e62e0e9581f06c0cf8d4fa75240b42ea7b7e",
+    "17": "f8eb00f0078aeafe213b58f2df496dfefad4d7ed832e4d0347799e571f68beba",
+    "31": "de34279c6530fcce36a16002a160b73073f5078a7922061e6fd1b8cf61d0eec7",
+    "46": "b76ddc8212ef1211452e9b83f9b44707fa70f30e2a056dd7aef87ff0fa634321",
     # Primary dentition, taken on 2026-08-10 after Dirk read the rendered
     # dentition in the running chart and accepted it. Until then these eight
     # were deliberately unfrozen, which the digest check reports as a state
     # rather than a fault - a drawing does not have to pass a digest before it
     # may exist, it has to pass the dentist (odontogram-0ak, odontogram-e0a).
-    "51": "170b6a615d3ca51a97e505c36bf13c62bfa24726c77710c4c0f992d1948a6450",
-    "52": "39eaf927f97c309bde9e72221c630c28f43661775f350d928cf833f2956c1b24",
-    "53": "5867d6a1beede3af9117259600836af09680092151a835169c4b35006d38a3d6",
+    "51": "a4bb53e56d46182ff145492e17e402d3eeba4c5a954867b34e68c601b46ea4f7",
+    "52": "76ea437a92e1e7ac6d89eac6f72201433823f0599e21679fad19f17f2bd180a7",
+    "53": "7b55004551a17a9633b8e2073a7ce8cd058be7a809c553a0e00ce79c5dab7eb8",
     # 54 re-taken after Bild 91 moved its cervix from 38% to 31% of tooth height.
-    "54": "01afa84746564595f1f497fefa85c43639a081f9f601c0cacf203178ca87e999",
+    "54": "d9d66b5f73c4a2f9675a73e22330ba094cab4d2f225614c137a36194caa8f803",
     # 55 re-taken after Bild 92 moved its cervix from 40% to 38%.
-    "55": "038dc7e49d907ab6fe34c23a81a60ca919ffa309a3aee02f6793a55f8f2dce58",
-    "71": "3d53cfc33d349031cea75a5bc6fbcc539aa6e116a40a7565905688ed24795664",
-    "74": "6e2d2ccc0c42617d29d3d0ae2d9c4dc40ac5b579b82506a673c6c0fe921c6e8b",
-    "75": "f12d024b5de3ce8a9a096ab2488c0382a31f849d03003b83fee298ec60c04d46",
+    "55": "751b772350e992d8279e54629d6a397e0bf6454bf9419deb5c70d73c4812e83f",
+    "71": "40cf7ddf728b54b8b2d1e999f563a1228c5292a5a2e23b831b232728090fea13",
+    "74": "8b5b302da7e179d62f71d0fe8a8043c012e7c1d5c017ddfbd81ff39a85e8bb9a",
+    "75": "3b373abc2c372bb47dc1ae40661aa17c9a42ddd2c2b9846481141bfccc8e1327",
 }
 
 GEOMETRY_ATTRIBUTES = (
@@ -277,6 +320,115 @@ def check_occlusal(out_dir: Path, failures: list[str]) -> None:
                 f"{spec.key}: {txt.count('display: none')} hidden defaults against "
                 f"the drawing's {src.count('display: none')}"
             )
+
+
+INDEX_CSS = ASSETS.parents[1] / "index.css"
+
+
+def check_columns(specs, failures):
+    """`ToothSpec.col_px` has to name a column the grid actually has.
+
+    The gum puts its papilla half a column plus half a gap from the tooth's
+    centre, which is what makes two neighbours peak on the same point without
+    either knowing the other (see tools/toothgen/gum.py). That only holds while
+    the number in the spec is the number in the stylesheet, and nothing else
+    ties the two together - so widening a column in src/index.css and leaving
+    the spec alone would silently walk every papilla off its joint. This is the
+    check that says so.
+    """
+    try:
+        css = INDEX_CSS.read_text()
+    except OSError:
+        failures.append(f"cannot read {INDEX_CSS}")
+        return
+    # Both arches, because they no longer have the same columns: the lower
+    # incisors stand in 31 px where the upper ones stand in 44.
+    decls = re.findall(r"grid-template-columns:([^;]+);", css, re.S)
+    if not decls:
+        failures.append("grid-template-columns not found in src/index.css")
+        return
+    have = {
+        float(v)
+        for d in decls
+        for v in re.findall(r"minmax\([^,]+,\s*([\d.]+)px\)", d)
+    }
+    if not have:
+        failures.append("no minmax() columns found in src/index.css")
+        return
+    print(f"\nGrid columns in src/index.css: {sorted(have)}")
+    for s in specs:
+        if s.col_px not in have:
+            failures.append(
+                f"{s.key}: col_px {s.col_px:g} is not a column the grid has "
+                f"({sorted(have)}); the papilla would miss the joint"
+            )
+
+
+# Adjacent filling surfaces that a clinician charts as ONE restoration. MO, OD
+# and MOD are cut through the occlusal surface, so the proximal box and the
+# occlusal part are one piece of material and have to be drawn as one shape.
+FILLING_PAIRS = (("mesial", "occlusal"), ("occlusal", "distal"))
+
+
+def _segments(d: str):
+    return [
+        (a, b) for sub in roots._polylines(d) for a, b in zip(sub, sub[1:])
+    ]
+
+
+def _crosses(p1, p2, p3, p4) -> bool:
+    def side(a, b, c):
+        return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+
+    d1, d2 = side(p3, p4, p1), side(p3, p4, p2)
+    d3, d4 = side(p1, p2, p3), side(p1, p2, p4)
+    return ((d1 > 0) != (d2 > 0)) and ((d3 > 0) != (d4 > 0))
+
+
+def _inside(pt, segs) -> bool:
+    x, y = pt
+    n = 0
+    for (ax, ay), (bx, by) in segs:
+        if (ay > y) != (by > y):
+            t = (y - ay) / (by - ay)
+            if ax + t * (bx - ax) > x:
+                n += 1
+    return n % 2 == 1
+
+
+def shapes_meet(d1: str, d2: str) -> bool:
+    """Do two filled outlines share any point - i.e. is their union ONE region?
+
+    Exact for these shapes and free of dependencies: two filled regions overlap
+    exactly when their outlines cross, or when one lies wholly inside the other.
+    Deliberately NOT an area or a bounding-box test - the shapes this was
+    written for had overlapping bounding boxes for years while missing each
+    other entirely, and a guard that does not measure what the clinician looks
+    at passes while the drawing gets worse (odontogram-9cl).
+    """
+    s1, s2 = _segments(d1), _segments(d2)
+    for a, b in s1:
+        for c, e in s2:
+            if _crosses(a, b, c, e):
+                return True
+    return _inside(s1[0][0], s2) or _inside(s2[0][0], s1)
+
+
+def check_fillings(out_dir: Path, failures):
+    """Every MO and OD pair, on every template, must be one connected shape."""
+    for f in sorted(out_dir.glob("*.svg")):
+        txt = f.read_text()
+        for a, b in FILLING_PAIRS:
+            da = re.search(rf'<path id="filling-composite-{a}" d="([^"]+)"', txt)
+            db = re.search(rf'<path id="filling-composite-{b}" d="([^"]+)"', txt)
+            if not da or not db:
+                continue
+            if not shapes_meet(da.group(1), db.group(1)):
+                failures.append(
+                    f"{f.stem}: filling {a[0].upper()}{b[0].upper()} is two "
+                    f"separate shapes; it has to read as one restoration"
+                )
+
 
 
 def main(argv):
@@ -484,6 +636,8 @@ def main(argv):
             failures.append(f"{s.key}: authored geometry changed")
 
     check_occlusal(out_dir, failures)
+    check_fillings(out_dir, failures)
+    check_columns(specs, failures)
 
     if occl_offsets:
         vals = [v for _, v in occl_offsets]

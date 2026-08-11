@@ -139,6 +139,24 @@ export function buildFhirBundleFromRegistry(payload: OdontogramExportPayload, op
         entries.push({ resource: obs });
       }
     }
+    // Bead odontogram-wxt: cervical involvement. One Observation carrying a
+    // per-surface boolean component — the surface is the component code and the
+    // marker is its value, which is precisely the "suffix on a surface"
+    // relationship BEMA states and the reason it is not a surface code of its
+    // own. A consumer counting surfaces reads `fillingSurfaces`; this
+    // Observation cannot inflate that count.
+    const cervical = rec.cervicalSurfaces;
+    if (Array.isArray(cervical) && cervical.length) {
+      const surfaces = cervical.filter((s): s is string => typeof s === "string" && s.length > 0);
+      if (surfaces.length) {
+        const obs = baseObservation(subjectRef, tooth, findingConcept("cervical-involvement", "Cervical involvement"));
+        obs.component = surfaces.map((surf) => ({
+          code: valueConcept("fillingSurfaces", surf),
+          valueBoolean: true,
+        }));
+        entries.push({ resource: obs });
+      }
+    }
     if (typeof rec.note === "string" && rec.note.trim().length > 0) {
       const noteObs = baseObservation(subjectRef, tooth, findingConcept("tooth-note", "Tooth note"));
       noteObs.note = [{ text: rec.note }];

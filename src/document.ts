@@ -82,6 +82,13 @@ export interface ToothRecord {
   // SP10 Task 1: per-surface filling-defect scalar map (none/marginal/fracture/wear),
   // modeled the same way as `radiographicDepth` above.
   fillingDefect?: Record<string, string>;
+  // Bead odontogram-wxt: the surfaces whose finding — a filling, a caries
+  // lesion, or both — extends into the cervical region (payload >=2.24).
+  // A MEMBERSHIP list over buccal/lingual, present only when non-empty. It is
+  // deliberately NOT a sixth surface: the cervix is a marker on an existing
+  // surface (BEMA's "vz"/"lz" suffix), so it must never be counted into
+  // `fillingSurfaceMaterials`, which is what a position tier reads.
+  cervicalSurfaces?: string[];
   // SP-perio P1 Task 1: per-site periodontal probing data (payload >=2.12).
   // Present only when at least one of the 6 sites (PERIO_SITES in
   // odontogram.ts) is charted — omitted entirely otherwise. `pd` (probing
@@ -163,7 +170,11 @@ export interface ExaminationSnapshotRecord {
 
 /** The payload/document version this engine writes. Readers accept earlier versions. */
 // 2.22 (odontogram-8vu): additive `not-erupted` tooth selection; no migration.
-export const PAYLOAD_VERSION = "2.22";
+// 2.24 (odontogram-wxt): additive - `cervicalSurfaces`, the surfaces whose
+// filling or caries lesion extends into the cervical region. Omitted entirely
+// when empty, so a document that never records it is byte-identical apart from
+// this version string, and an older document needs no migration.
+export const PAYLOAD_VERSION = "2.24";
 
 /**
  * The UI-domain document (bead odontogram-3l1, AC2/AC4): a versioned,

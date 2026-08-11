@@ -51,6 +51,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "prototype:kfo": "vite --open '/prototypes/kfo-view/?variant=A'",
     "build": "tsc -b && vite build",
     "build:lib": "vite build --config vite.lib.config.ts",
     "verify:lib-artifacts": "node tools/verify-library-artifacts.mjs",

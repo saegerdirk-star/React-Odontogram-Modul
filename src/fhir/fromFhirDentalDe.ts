@@ -25,6 +25,8 @@ import {
   GLICKMAN_FURCATION_SYSTEM, LOINC_SYSTEM, PA_BEFUND_TYPE_SYSTEM,
   PERIO_LOINC, PERIODONTAL_INDEX, PA_BEFUND, perioSiteFromCode, glickmanGradeFromCode,
   ODONTO_COMPONENT, VERIFIED_SCT, fromFdiSurface,
+  DENTAL_DE_IMPLANT_DEVICE_PROFILE, DENTAL_DE_IMPLANT_PROPERTY_SYSTEM,
+  FDI_TOOTH_NUMBER_EXT_URL, IMPLANT_PROPERTY,
 } from "./dentalDeCodesystems";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -65,6 +67,12 @@ export function isDentalDeResource(res: unknown): boolean {
   const r = res as {
     resourceType?: string; meta?: { profile?: unknown }; code?: unknown; component?: Any[];
   } | undefined;
+  // odontogram-im1: the implant's own identity is a Device, not an Observation.
+  // Reading it back is what keeps a product from being lost on a round trip.
+  if (r?.resourceType === "Device") {
+    const prof = Array.isArray(r.meta?.profile) ? (r.meta!.profile as string[]) : [];
+    return prof.includes(DENTAL_DE_IMPLANT_DEVICE_PROFILE);
+  }
   if (!r || r.resourceType !== "Observation") return false;
   const profiles = Array.isArray(r.meta?.profile) ? (r.meta!.profile as string[]) : [];
   if (
@@ -302,6 +310,67 @@ function applyPeriodontalResource(rec: ToothRecord, components: Any[]): void {
 }
 
 /** Apply one canonical resource to the accumulating tooth records. */
+
+/**
+ * Read a `DentalImplantDE` Device back onto its tooth (odontogram-im1).
+ *
+ * The position comes from `FdiToothNumberExt`, not from a bodySite - a Device
+ * has none. Nothing here is required: a Device with only the placeholder
+ * identifier says an implant is present and nothing more, which is a complete
+ * record for one that arrived with the patient, so it sets `toothSelection`
+ * and leaves the product absent.
+ *
+ * The DERIVED fields are not read back from where they were written twice.
+ * `lotNumber` and `expirationDate` are re-read from the carrier by the engine's
+ * own normalizer, exactly as the recession/margin rule works in this dialect:
+ * two elements must never write one field.
+ */
+function applyImplantDevice(teeth: Record<string, ToothRecord>, dev: Any): void {
+  const ext = (Array.isArray(dev.extension) ? dev.extension : [])
+    .find((e: Any) => e?.url === FDI_TOOTH_NUMBER_EXT_URL);
+  const fdi = typeof ext?.valueCode === "string" ? ext.valueCode : undefined;
+  if (!fdi) return;
+  const slot = slotForPrimaryFdi(fdi);
+  const key = slot === null ? fdi : String(slot);
+  const rec = (teeth[key] ??= {});
+  rec.toothSelection = "implant";
+
+  const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
+  const product: Any = {};
+  const manufacturer = str(dev.manufacturer);
+  if (manufacturer) product.manufacturer = manufacturer;
+  const system = str(dev.modelNumber)
+    ?? str((Array.isArray(dev.deviceName) ? dev.deviceName[0]?.name : undefined));
+  if (system) product.system = system;
+
+  const carrier = Array.isArray(dev.udiCarrier) ? dev.udiCarrier[0] : undefined;
+  const udi = str(carrier?.carrierHRF);
+  if (udi) product.udi = udi;
+  const di = str(carrier?.deviceIdentifier);
+  if (di) product.deviceIdentifier = di;
+  // Only where the carrier does not supply them - otherwise the normalizer's
+  // re-read is the single source and these would be a second writer.
+  if (!udi) {
+    const lot = str(dev.lotNumber);
+    if (lot) product.lot = lot;
+    const expiry = str(dev.expirationDate);
+    if (expiry) product.expiry = expiry;
+  }
+  const serial = str(dev.serialNumber);
+  if (serial) product.serial = serial;
+
+  for (const prop of Array.isArray(dev.property) ? dev.property : []) {
+    const code = codeIn(prop?.type, DENTAL_DE_IMPLANT_PROPERTY_SYSTEM);
+    const q = Array.isArray(prop?.valueQuantity) ? prop.valueQuantity[0] : prop?.valueQuantity;
+    const value = typeof q?.value === "number" && Number.isFinite(q.value) ? q.value : undefined;
+    if (value === undefined) continue;
+    if (code === IMPLANT_PROPERTY.diameter) product.diameterMm = value;
+    if (code === IMPLANT_PROPERTY.length) product.lengthMm = value;
+  }
+
+  if (Object.keys(product).length > 0) (rec as Any).implantProduct = product;
+}
+
 export function applyDentalDeResource(
   teeth: Record<string, ToothRecord>,
   res: unknown,
@@ -311,6 +380,10 @@ export function applyDentalDeResource(
     code?: unknown; bodySite?: unknown; valueCodeableConcept?: unknown;
     component?: Any[]; note?: Array<{ text?: unknown }>;
   };
+  if ((res as Any)?.resourceType === "Device") {
+    applyImplantDevice(teeth, res as Any);
+    return;
+  }
   const coded = codeIn(r.bodySite, DENTAL_DE_FDI_SYSTEM);
   if (!coded) return;
   // A deciduous tooth is charted in its successor's slot here but leaves as its

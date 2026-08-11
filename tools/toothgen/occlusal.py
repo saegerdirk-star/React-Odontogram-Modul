@@ -24,7 +24,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import roots  # noqa: E402
+import roots
+import fillings  # noqa: E402
 from build import ASSETS, SOURCE, rewrite_svg, namespace_paint_servers  # noqa: E402
 
 
@@ -91,6 +92,50 @@ def outline_extent(txt: str):
     return max(xs) - min(xs), max(ys) - min(ys), (min(xs) + max(xs)) / 2
 
 
+def connect_fillings(txt: str) -> str:
+    """Join each proximal filling to the occlusal one. See fillings.py.
+
+    Seen from above the box grows toward the middle of the tooth, so the axis is
+    x - mesial toward -x, distal toward +x - where on the side view it is y.
+    That is the only difference; the stretch itself is the same code.
+    """
+    band = re.search(r'<path id="filling-composite-occlusal" d="([^"]+)"', txt)
+    # tooth-base is not written as `<path id=... d=...>` in these sources, so it
+    # is located the same way outline_extent already does it rather than by a
+    # regex that happens to fit the filling layers.
+    i = txt.find('id="tooth-base"')
+    base = re.search(r'\sd="([^"]+)"', txt[i : i + 6000]) if i >= 0 else None
+    if not band or not base:
+        return txt
+    pts = [p for sub in roots._polylines(base.group(1)) for p in sub]
+    x_lo, x_hi = min(p[0] for p in pts), max(p[0] for p in pts)
+    # `edge` is the edge the box grows TOWARD, so it is the far side of the
+    # tooth in the direction of the stretch, not the side the shape starts on.
+    for surf, sign, edge in (("mesial", -1.0, x_lo), ("distal", 1.0, x_hi)):
+        m = re.search(rf'<path id="filling-composite-{surf}" d="([^"]+)"', txt)
+        if not m:
+            continue
+        # No contour-following here, deliberately. On the side view the crown
+        # narrows gently toward the cusp tips and a box that grows occlusally
+        # should narrow with it. Seen from ABOVE the outline is a rounded lobe:
+        # a proximal box moved toward the centre would be scaled up by how much
+        # taller the tooth is there, and it ballooned sixteen units outside the
+        # contour when it was. A box keeps its buccolingual extent.
+        new = fillings.stretch_to_band(
+            m.group(1), band.group(1), edge, None, axis="x", sign=sign
+        )
+        if new is None or new == m.group(1):
+            continue
+        for mat in fillings.MATERIALS:
+            txt = re.sub(
+                rf'(<path id="filling-{mat}-{surf}" d=")[^"]+(")',
+                lambda mm: mm.group(1) + new + mm.group(2),
+                txt,
+                count=1,
+            )
+    return txt
+
+
 def build_one(spec: OcclSpec, out_dir: Path, dry: bool) -> None:
     txt = (SOURCE / f"{spec.src}.svg").read_text()
     w, h, cx = outline_extent(txt)
@@ -104,6 +149,7 @@ def build_one(spec: OcclSpec, out_dir: Path, dry: bool) -> None:
         return (cx + (x - cx) * k, y)
 
     out = rewrite_svg(txt, fn, lambda y: y, vb_new)
+    out = connect_fillings(out)
     out = namespace_paint_servers(out, spec.key)
 
     got_w, got_h, _ = outline_extent(out)

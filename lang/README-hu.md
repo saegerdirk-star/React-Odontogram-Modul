@@ -164,6 +164,7 @@ Vagy töltsd be egy kizárólag kliensoldali dinamikus importtal: `dynamic(() =>
 - 🎚️ Három szuvasodás-részletezettségi beállítás (`secondaryCariesMode`, `rootCariesMode`, `radiographicDepthMode`), valamint egy `cariesDepthEnabled` kapcsoló, amelyek mindegyike egyszerűbb választó nézetre egyszerűsíti a saját skáláját a tárolt érték elvesztése nélkül
 - 🩹 Subcaries-összegző sor a tömés panelen: a tömés vezérlők alatt felsorolja a kijelölt fogak közül azokat, amelyeken szekunder caries van, a felületeikkel együtt (pl. "36 (O) tömése mellett subcaries van beállítva.")
 - 🪛 Felületenkénti tömésdefektus (`fillingDefect`: none / marginal / fracture / wear) közvetlen restaurációkon, függetlenül a szekunder caries-tól — a Tömések kártyán egy felületenkénti jelzővel rögzíthető (a caries-mélység jelzőt tükrözve, opciólistája függőlegesen egymás alatt), megjelenik a diagramon, valamint a tooltipben és a teljes szájüreg tömés-összegzésben explicit felirattal (pl. "36 (O) – Tömésdefektus: O: marginális"), ugyanúgy, ahogy a szekunder caries is fel van tüntetve a Caries soron; a Tömések kártya emellett egy figyelmeztető megjegyzést is mutat minden olyan kijelölt fogra, amelyen tömésdefektus van rögzítve (pl. "36-on tömésdefektus van rögzítve."), a meglévő subcaries figyelmeztető megjegyzéssel párhuzamosan
+- 🦷🔻 Tömés vagy kariogén lézió nyaki érintettsége (`cervicalSurfaces`: halmaz a vesztibuláris és az orális felszín felett) — a fognyaki régió **nem** hatodik felszín, hanem jelölés egy meglévőn (a BEMA „vz"/„lz" utótagként írja), ezért soha nem változtatja meg a felszínszámot, amelyet egy tételbesorolás olvas (`getFillingSurfaceCount()`); ugyanabban a felszín-felugróban rögzítik, amelyet a caries- és a tömés-kereszt nyit meg, a felszín-cellán az utótagbetűvel jelölve, és megjelenik a tooltipben, valamint a teljes fogazat összefoglalójában annak a leletnek a sorában, amelyet minősít. Szándékosan nincs a fogtérképre rajzolva — az oldalnézetnek egyáltalán nincs linguális rétege
 - 🦷💥 Fogkopás klinikai ok és hely szerint típusolva (`wearEdge`: none / attrition / erosion, metszőéli/rágófelszíni; `wearCervical`: none / abrasion / abfraction / erosion, cervikális) — felváltja a korábbi két be/ki bruxizmus-kopás jelzőt; két legördülő menüvel rögzíthető a kopás sorban, az eddigi kopás-grafikát használja, és megjelenik a tooltipben, valamint egy új, teljes szájüregre vonatkozó "Kopás" összegző szekcióban
 - 🎨 Fogelszíneződés ok szerint (`discoloration`: none / tetracycline / fluorosis / nonvital / extrinsic / other) maradó és tejfogakon — a megjelenő természetes koronát egy jellemző színnel árnyalja, ha a fogon nincs pótlás és a szubsztrátuma természetes; megjelenik a tooltipben és egy új, teljes szájüregre vonatkozó "Elszíneződés" összegző szekcióban; a tömésdefektusok és a kopás mellett kiegészíti a felszíni és strukturális állapotok körét
 - ✏️ A frontfogak (metszőfogak/szemfogak) a teljes felületen "metszőéli"-ként ("incisal") jelölik a rágófelszínüket (választó, felugró ablak, összegzések); a tárolt felület-kulcs továbbra is `occlusal` marad
@@ -358,6 +359,9 @@ Az `endo` és a `pulpDx` egyetlen összevont "Pulpa / Endo státusz" `<select>` 
 
 **Tömésdefektus** (`fillingDefect`; felületenként, közvetlen restauráció lelet, függetlenül a szekunder caries-tól — feltétele, hogy a felület szerepeljen a `fillingSurfaceMaterials`-ban; a `defect-{surface}` grafikai réteget rendereli):
 `none`, `marginal`, `fracture`, `wear`
+
+**Nyaki érintettség** (`cervicalSurfaces`; halmaz a `buccal`/`lingual` felett, csak olyan felszínen, amely tömést, kariogén léziót vagy mindkettőt hordoz — nincs grafikai réteg, szándékosan nincs rajzolva):
+`buccal`, `lingual` — jelölés a felszínen, soha nem önálló felszín: a `getFillingSurfaceCount()` érintetlen marad
 
 **Ortodoncia** (`orthoAppliance`, `orthoDrift`, `orthoVertical`, `orthoRotation`; fogankénti, feltétele egy meglévő természetes fog — maradó vagy tej):
 `orthoAppliance`: `none`, `bracket`, `band` — `orthoDrift`: `none`, `mesial`, `distal` — `orthoVertical`: `none`, `extrusion` (felfelé mutató nyíl jelölés), `intrusion` (lefelé mutató nyíl jelölés) — `orthoRotation`: logikai
@@ -775,6 +779,7 @@ Az export egy JSON fájlt hoz létre (`2.20` verziójú; az importálás tovább
 - `fillingSurfaces` - tömött felületek
 - `fillingSurfaceMaterials` - felületenkénti tömőanyag (vegyes tömések, pl. bukkális amalgám + disztális kompozit)
 - `fillingDefect` - felületenkénti tömésdefektus (none/marginal/fracture/wear), feltétele egy tömött felület, függetlenül a szekunder caries-tól
+- `cervicalSurfaces` - azok a felszínek, amelyek tömése vagy kariogén léziója a fognyaki régióba terjed (buccal/lingual); jelölés a felszínen, nem hatodik felszín
 - `pulpDx` - AAE pulpa diagnózis (normal/reversible-pulpitis/irreversible-pulpitis/necrosis); a reversible-pulpitis csökkentett méretű jelölést jelenít meg
 - `pulpLatin` - gyakorlati latin pulpa altípus (a pulpa választó csak akkor jeleníti meg, ha a `pulpDetailLevel` értéke `latin`)
 - `apicalDx` - apikális diagnózis, amely meghatározza a periapikális jelölést

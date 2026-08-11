@@ -164,6 +164,7 @@ Or load it with a client-only dynamic import: `dynamic(() => import("./Odontogra
 - 🎚️ Three caries granularity settings (`secondaryCariesMode`, `rootCariesMode`, `radiographicDepthMode`) plus a `cariesDepthEnabled` toggle, collapsing each scale to a simpler picker view without losing the stored value
 - 🩹 Fillings-panel subcaries summary line: lists any selected tooth with recurrent caries and its surfaces below the filling controls (e.g. "36 (O) has subcaries set on its filling.")
 - 🪛 Per-surface filling defects (`fillingDefect`: none / marginal / fracture / wear) on direct restorations, independent of recurrent caries — authored via a per-surface indicator on the Fillings card (mirroring the caries-depth indicator, its option list stacked vertically), rendered on the chart, and shown in the tooltip and the whole-mouth fillings summary with an explicit label (e.g. "36 (O) – Filling defect: O: marginal"), the same way recurrent caries is labeled on the Caries line; the Fillings card also shows a hint note for any selected tooth with a recorded filling defect (e.g. "36 has a filling defect recorded."), parallel to the existing subcaries hint note
+- 🦷🔻 Cervical involvement of a filling or a caries lesion (`cervicalSurfaces`: a membership set over the vestibular and oral surfaces) — the cervical region is **not** a sixth surface but a marker on an existing one (BEMA writes it as the suffix "vz"/"lz"), so it never changes the surface count a position tier reads (`getFillingSurfaceCount()`); authored in the same per-surface popup the caries and filling crosses open, badged on the surface cell with the suffix letter, and shown in the tooltip and on the whole-mouth line of the finding it qualifies. Deliberately not drawn on the chart — the side view has no lingual layer at all, so a marker available for one surface and structurally impossible for the other would read as "no oral involvement"
 - 🦷💥 Tooth wear typed by clinical cause and location (`wearEdge`: none / attrition / erosion, incisal/occlusal; `wearCervical`: none / abrasion / abfraction / erosion, cervical) — replacing the two on/off bruxism-wear flags; authored via two dropdowns on the wear row, reuses the existing wear artwork, and shown in the tooltip and a new whole-mouth "Wear" summary section
 - 🎨 Tooth discoloration by cause (`discoloration`: none / tetracycline / fluorosis / nonvital / extrinsic / other) on permanent and milk teeth — tints the shown natural crown a representative colour when the tooth has no restoration and natural substrate; shown in the tooltip and a new whole-mouth "Discoloration" summary section; completes the surface & structural conditions set alongside filling defects and wear
 - ✏️ Anterior teeth (incisors/canines) label their occlusal surface "incisal" throughout the UI (picker, popup, summaries); the stored surface key stays `occlusal`
@@ -358,6 +359,9 @@ Or load it with a client-only dynamic import: `dynamic(() => import("./Odontogra
 
 **Filling defect** (`fillingDefect`; per surface, direct-restoration finding independent of recurrent caries — gated to surfaces present in `fillingSurfaceMaterials`; renders the `defect-{surface}` artwork layer):
 `none`, `marginal`, `fracture`, `wear`
+
+**Cervical involvement** (`cervicalSurfaces`; a membership set over `buccal`/`lingual`, gated to a surface that carries a filling, a caries lesion, or both — no artwork layer, deliberately not drawn):
+`buccal`, `lingual` — a marker on the surface, never a surface of its own: `getFillingSurfaceCount()` is untouched by it
 
 **Orthodontics** (`orthoAppliance`, `orthoDrift`, `orthoVertical`, `orthoRotation`; per-tooth, gated on a present natural tooth — permanent or milk):
 `orthoAppliance`: `none`, `bracket`, `band` — `orthoDrift`: `none`, `mesial`, `distal` — `orthoVertical`: `none`, `extrusion` (arrow-up glyph), `intrusion` (arrow-down glyph) — `orthoRotation`: boolean
@@ -776,6 +780,7 @@ The export creates a JSON file (version `2.20`; imports also accept legacy `1.4`
 - `fillingSurfaces` - filled surfaces
 - `fillingSurfaceMaterials` - per-surface filling material (mixed fillings, e.g. buccal amalgam + distal composite)
 - `fillingDefect` - per-surface filling defect (none/marginal/fracture/wear), filled-surface-gated, independent of recurrent caries
+- `cervicalSurfaces` - the surfaces whose filling or caries lesion extends into the cervical region (buccal/lingual); a marker on the surface rather than a sixth surface
 - `pulpDx` - AAE pulp diagnosis (normal/reversible-pulpitis/irreversible-pulpitis/necrosis); reversible-pulpitis renders a reduced glyph
 - `pulpLatin` - practical-Latin pulp subtype (shown by the pulp picker only when `pulpDetailLevel` is `latin`)
 - `apicalDx` - apical diagnosis driving the periapical glyph

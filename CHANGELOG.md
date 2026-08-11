@@ -7,6 +7,108 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **A filling that reaches the neck can say so — without becoming a second
+  surface.** (odontogram-wxt) The surface vocabulary has five entries, and
+  nothing distinguished a vestibular filling from a vestibular filling that
+  extends into the cervical region.
+
+  The modelling question is the whole feature, and BEMA settles it: the cervical
+  region is **not** a surface for fee purposes. The four or five regular
+  surfaces determine the surface count and therefore the position tier
+  (13a–d / 13e–h); the cervix is recorded as a **suffix on an existing
+  surface** — "vz"/"47" vestibular including the cervix, "lz"/"57" lingual.
+  A sixth surface would report "multi-surface" where the truth is
+  "single-surface with a cervical marker". So `cervicalSurfaces` is a
+  membership set over the vestibular and oral surfaces, never a surface value,
+  and the new `getFillingSurfaceCount()` — the number a fee mapping would
+  consume — reads `fillingSurfaceMaterials` and nothing else. A vestibular
+  filling marked as reaching the neck counts **one**.
+
+  There is no fee effect, and that is the point: the marker is documentation
+  and justification. On a repeat filling it is what shows that no treatment
+  error is implied, and it carries weight for more-than-three-surface fillings,
+  incisal corner build-ups, and circumstances such as bruxism or pre-existing
+  disease.
+
+  It qualifies whichever finding the surface carries — a filling, a caries
+  lesion, or both — so it is authored in the one popup both the caries cross
+  and the filling cross open, offered only once the surface actually carries
+  something. The cell then shows the BEMA suffix letter in its corner. It is
+  read back in the tooth tooltip and, in the whole-mouth summary, on the line
+  of the finding it qualifies (never on both at once).
+
+  **Nothing is drawn on the chart, and that is a decision rather than an
+  omission.** The side view has no lingual layer at all — the oral surface
+  exists only in the occlusal view — so a marker drawn for a vestibular
+  cervical filling and structurally impossible for an oral one would read as
+  "no oral cervical involvement". A marker that is present for one surface and
+  unavailable for the other is worse than none, and the finding's home is the
+  written record anyway. SVG-fingerprint parity is therefore byte-identical.
+
+  It travels the legacy FHIR dialect as one Observation with a per-surface
+  boolean component — the surface is the component code and the marker its
+  value, which is exactly the "suffix on a surface" relationship — and round
+  trips. The canonical `dental-de` dialect gets no code for it: the IG's
+  surface value set defines none, and its cervical concepts sit on
+  `GingivaRecessionDE`, which describes the gingiva rather than a restoration
+  reaching the neck. The marker is reported at the boundary instead, because
+  the sourcing rule forbids minting one. Payload **2.23 → 2.24**, additive and
+  omit-when-empty.
+
+  Deliberately out of scope: a BEMA position mapping or any fee calculation
+  (this delivers the charting attribute such a mapping would need; the mapping
+  itself lives outside this engine), GOZ, whose cervical problem runs through a
+  different mechanism entirely, and root caries — `rootCaries` describes caries
+  **on** the root, not a filling involving the neck, and the two must not be
+  conflated.
+
+- **Which implant is in the tooth.** (odontogram-im1) `toothSelection: implant`
+  says an implant is there; it does not say which one, and the two are different
+  assertions. A tooth may now carry an `implantProduct` — manufacturer, system,
+  diameter, length, and the UDI from the packaging, which is read for its device
+  identifier, lot and expiry so nobody types those off a foil pouch.
+
+  **Nothing is required, and an empty record is complete.** Record it when the
+  practice places an implant; leave it open when the implant arrived with the
+  patient, because not every patient carries an implant passport. The engine
+  therefore never warns about an empty product: it cannot yet tell "we placed it
+  and did not record it" from "it was already there and is unknown", and telling
+  those apart is provenance — odontogram-ap7's axis, not a second flag grown
+  here.
+
+  It is authored in its own block under the peri-implant status, shown only
+  when the tooth is an implant. Manufacturer and system are free text with a
+  suggestion list gathered from what the practice has already placed — there
+  are hundreds of implant systems and nobody would maintain a catalogue, so
+  none is kept. Typing or scanning a UDI shows the lot and expiry it yielded,
+  so a scan visibly does something.
+
+  **It reaches FHIR**, and needed nothing invented to get there: `DentalImplantDE`
+  already defines `manufacturer`, `lotNumber`, `expirationDate`, `serialNumber`,
+  `modelNumber`, `deviceName` and `udiCarrier`, and slices `Device.property`
+  into `diameter` and `length` as millimetre Quantities — both mustSupport,
+  with their own published `DentalImplantPropertyCS`. The engine had been
+  sending a Device with nothing in it but a placeholder identifier.
+
+  The Device is now emitted for **every** charted implant. It used to be minted
+  inside the peri-implant builder, so an implant with no peri-implant
+  measurement produced no Device at all — and in an initial examination that is
+  the commonest implant there is. The Device asserts *that* an implant is
+  present, which is true whether or not the practice knows which one; the
+  identity fields are then simply absent, and an omitted `lotNumber` says
+  nothing false. The canonical reader takes it back, so a round trip keeps it.
+
+  API: `getImplantProduct` / `setImplantProduct` (silent no-op on a natural
+  tooth, guard before the DS-1 gate, mirroring the Mombelli indices) and
+  `getChartedImplantProducts`. The systems list writes itself from the charts —
+  there are hundreds of implant systems and nobody would maintain a catalogue,
+  so a system typed once is offered from then on and the list stays the
+  practice's own. Payload **2.22 → 2.23**, additive and omit-when-empty: a chart
+  that names no implant is byte-identical apart from the version. No render
+  change — which implant it is does not draw.
+
 ### Fixed
 
 - **A milk dentition no longer reports twelve missing teeth.** The primary
@@ -28,6 +130,279 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   emitting nothing would be worse, since an absent record hydrates back to a
   permanent tooth. Payload **2.21 → 2.22**, additive: nothing wrote the value
   before, so an older document needs no migration.
+
+### Changed
+
+- **Restoration colours name the material.** (odontogram-58n) A direct composite
+  filling and a zirconia inlay were **exactly the same colour**, `#feffbf` — one
+  is a filling and the other is lab work, and the chart could not tell them
+  apart. Gold sat in the same yellow family, so yellow meant composite, zirconia
+  *and* gold. Two further exact collisions were found while measuring: a GIC
+  filling shared salmon with the denture saddle, and a metal crown shares blue
+  with a telescopic one.
+
+  The palette follows the material now, on the scheme Dirk gave: **gold reads
+  gold**, and the **plastics are one green family separated by lightness** —
+  direct composite dark, laboratory composite mid, the acrylic tooth of a
+  removable denture light. Zirconia moves to a cool ceramic white.
+
+  That last one also settles the bead's open question. "Replaced teeth in
+  acrylic" needed no new material value after all: a removable denture's
+  replacement tooth is its own layer (`prosthesis-crown`), so it takes the light
+  green directly, and `restorationMaterial` is untouched. The saddle stays
+  gum-coloured, which is what a denture base is.
+
+  A colour change is parity-safe and digest-neutral by construction — the SVG
+  fingerprint records id, opacity and class, and the frozen geometry digests
+  hash geometry plus only geometry-bearing style properties. `fill` is in
+  neither, and the full suite confirms it.
+
+- **The ceramic and composite materials are named by their material class.**
+  Two of the eight restoration materials were brand names and nothing else —
+  `emax` and `gradia` — so a dentist looking for a ceramic inlay or a composite
+  inlay found neither word anywhere in the picker and reported both as missing.
+  They read *Lithium disilicate* and *Laboratory composite* now, in all twelve
+  languages — the same class names the canonical `dental-de` `DentalMaterialCS`
+  carries (`lithiumdisilikat`, `komposit`), so the label names what the export
+  names. The product name is deliberately **not** in the label: which
+  product was used is a separate assertion from what class of material it is,
+  and a finding that travels to a colleague, an insurer or a FHIR consumer
+  carries the class.
+
+  This also closes the "composite inlay cannot be recorded" half of
+  odontogram-00a. It could: `gradia` **is** an indirect laboratory composite,
+  and the engine already knew it — `codesystems.ts` exports it as *Indirect
+  composite (Gradia)* and the canonical `dental-de` dialect maps it to
+  `komposit`. The material was recordable, exportable and correctly typed; only
+  its label kept that secret. No new material value, no payload change, no
+  migration.
+
+- **The restoration dropdown is grouped by type.** It is 32 entries deep on a
+  molar and was flat, so it hid what it contained: a dentist looking for a gold
+  inlay met eight crowns and eight bridge units and gave up before reaching entry
+  nineteen. The entries are now wrapped in `<optgroup>`s — *Fixed: Crown*,
+  *Fixed: Bridge unit*, *Fixed: Inlay*, *Fixed: Onlay*, *Fixed: Veneer*,
+  *Removable* — and each option carries only its material, since the group
+  heading already names the type. Presentation only: every option `value` is
+  unchanged, so the change handler, the state model and the payload know nothing
+  about it.
+
+- **An MO, OD or MOD filling is drawn as one restoration.** (odontogram-9cl)
+  Each surface is its own layer and its own authored shape, and the shapes had
+  been drawn independently: charting MOD lit three of them and the chart showed
+  three separate blobs with tooth between them. Measured, every adjacent pair on
+  every template and every material was **two** connected regions — not a seam
+  that overlapped too little, but shapes that missed each other entirely, while
+  their bounding boxes overlapped and made it look fine to any box-based check.
+
+  The mesial and distal shapes are now stretched toward the occlusal one until
+  they meet it, anchored at the far end — which on a side view is the floor of
+  the box and must not move. That is what the cavity itself does: a proximal box
+  on a posterior tooth is cut *through* the occlusal surface, and a mesial plus
+  incisal restoration on an anterior tooth is a class IV, which is also one
+  restoration. On the side view the stretch follows the crown as it narrows
+  toward the cusp tips, so the overhang past the contour is what it always was,
+  to within a tenth of a unit on every template.
+
+  Both views and all four direct materials, permanent and primary. The state
+  model is untouched — `fillingSurfaceMaterials` stays a per-surface map,
+  because the surfaces are what a clinician charts and what FHIR carries; only
+  the drawing changed. Parity byte-identical.
+
+  `verify.py` gains a guard that fails when an MO or OD pair stops being one
+  connected shape. It tests whether the two outlines actually share a point,
+  not whether their areas or boxes overlap — the defect it was written for
+  survived years of box-shaped agreement.
+
+- **The apex line reads even, with the canine still the longest tooth.**
+  `LENGTH_SPREAD` 0.45 → 0.30. Every crown tip already sat on one line; the
+  APICAL ends did not, and the 15.1 px of raggedness was essentially one tooth —
+  the canine standing proud of the second molars. It is 9.6 px now, and the
+  canine is still visibly longest, which is what "almost equal" asked for.
+
+  The constant is a display decision and is documented as one: it pulls every
+  tooth's length toward the mean without touching `length_rel`, which stays the
+  measured proportion. `CEJ_Y` and `IMPLANT_CEJ_Y` in `src/perioGraphic.ts` move
+  with it, and the periodontal chart is unaffected in what it measures — its mm
+  grid is its own scale and the restored roots still run well past 15 mm, so a
+  deep pocket lands on drawn root. Parity byte-identical.
+
+- **Crown widths follow the mesiodistal diameters they are meant to, and the
+  generator can now measure a width.** Two defects, one behind the other.
+
+  `width_frac` — the tooth's crown width as a fraction of its own length — was
+  the one anatomical value in the generator that carried no source. It is now
+  set from the standard mean mesiodistal crown diameters (Wheeler / Ash &
+  Nelson), averaged over the positions each template serves and recorded in full
+  in `tools/toothgen/spec.py`. Unlike `root_frac` and `length_rel` these are
+  **not** read off the Odontographie plates: measuring a width automatically off
+  those pages was attempted and abandoned, because it returned a fragment for
+  one template and a clipped specimen for another.
+
+  Fitting those targets then exposed the second defect. The generator measured a
+  width by flattening the outline through the **Bézier anchors** rather than the
+  curve, so a molar read 24.6 units wide where it is 40.0 — and every template
+  had been scaled up to make that undersized number match. The error was largest
+  exactly where the outline curves most between anchors, which is why the
+  premolars and molars had come out about a third too wide while the incisors
+  were close to right, and why it looked from the bounding boxes as though the
+  posterior roots were splayed. `_crossings` now flattens through the same
+  adaptive subdivision the rest of the generator uses, and `crown_width` (full
+  extent, for a crown) is separated from `silhouette_width` (tooth material, for
+  asking how wide the root holding a canal is).
+
+  With both fixed, **every contact in the mouth is 9 to 11 px** — anterior and
+  posterior, upper and lower — because each column is now simply its own tooth
+  plus 6 px, one rule for all thirty-two positions. Rendering only; parity
+  byte-identical.
+
+- **The lower canine stands where the mouth puts it.** The two arches shared one
+  column list, so every tooth sat directly above its antagonist — and a lower
+  incisor is drawn 22.5 px wide against the upper central's 36.6. In a 44 px
+  column that left the lower front standing 25 px apart while the upper front
+  stood 11 px apart, and it put 43 and 13 on the same vertical, which the mouth
+  never does.
+
+  Each arch is its own grid now. The only difference between the two column
+  lists is the four incisor columns, 44 px above and 31 px below, which closes
+  the lower front to the same ~11 px the rest of that arch has. The rest follows
+  on its own: four columns narrower by 13 px make the lower arch 52 px narrower,
+  so centred it sits 26 px in on each side, and the tip of 43/33 comes to rest in
+  the embrasure between the upper lateral incisor and the upper canine — the
+  Class I canine relationship, arrived at by closing contacts rather than by
+  being drawn in. Measured on the running chart: 43's centre at 565 px, the
+  13/12 embrasure spanning 561 to 575.
+
+  The 44 px touch-target floor is deliberately broken for those four columns. At
+  31 px wide and a full row tall the tile is still well over the 24 × 24 px
+  WCAG 2.5.8 asks for, and a lower incisor that is not 31 px wide is not a lower
+  incisor. The tiles keep their ARIA option roles: each arch wrapper is
+  `role="presentation"`, so the listbox still owns them directly.
+
+- **The gingiva is one line across the arch.** Once the row closed up at the
+  contact points the gum stopped being hidden by the gaps between the teeth and
+  read as a row of separate red flames. The cause was not that the shapes failed
+  to reach each other — measured, neighbouring gum outlines overlap by 2 to 21 px.
+  The break was vertical: every template carried its own hand-drawn gum, each one
+  correct on its own, and a papilla is *shared* between two teeth. Two halves
+  coming from two different drawings have no way to agree on its height.
+
+  Warping the drawn outlines into agreement was tried twice and does not work; a
+  hand-drawn gum is almost entirely long cubics, and the ones carrying the
+  papilla are exactly the ones a shift by x deforms. So `gum-base` and
+  `bone-base` are now **drawn** by the generator (`tools/toothgen/gum.py`) in
+  each template's final coordinates instead of warped out of the sources. The
+  crest is one level line, the free gingival margin still dips to each tooth's
+  own cervix, and the papillae land at one height because each template puts its
+  peak half a column plus half a grid gap from its own centre — two neighbours
+  therefore agree on the joint without either knowing which tooth it stands next
+  to. `ToothSpec.col_px` records that column width, and `verify.py` now checks it
+  against `grid-template-columns` in `src/index.css`, because nothing else ties
+  the two together.
+
+  Three alignment defects surfaced with it and are fixed: the tile SVG clipped at
+  its viewBox (`overflow: visible`, so the drawing can bridge the 7 px the molar
+  tiles stand apart), the viewBox height was rounded to one decimal *after* the
+  occlusal plane was positioned from the bottom, and the CSS width and height per
+  template were rounded to whole pixels independently, which gave each template a
+  slightly different scale. Every shared line across the arch was stepping on all
+  three.
+
+  Rendering only — SVG-fingerprint parity is byte-identical, since the
+  fingerprint reads id, opacity and class and never geometry. No payload, state
+  or API change.
+
+- **Tooth 14 is drawn from buccal like every other tooth.** The source template
+  draws the two roots of the upper first premolar side by side, which can only
+  be the *proximal* aspect: those roots separate bucco-palatally, along the line
+  of sight. Teeth 14 and 24 were therefore the one pair in the chart shown from
+  a different side of the mouth.
+
+  Seen from buccal the palatal root stands behind the buccal one. Two transforms
+  produce that, both applied to the tooth and canal layers only: the roots are
+  pulled towards each other, and the palatal tip is dropped by a third of the
+  root's apical length — a structure further from the viewer ends higher up the
+  picture, which is what turns two prongs into depth. Restricting them to the
+  tooth matters: applied template-wide, the convergence pinched the gum band and
+  narrowed the whole tile.
+
+  No new layer and nothing appended, so the SVG-fingerprint parity is untouched.
+  An appended shape was tried first and cannot work — `tooth-base` is filled
+  *and* stroked, so a closed subpath always strokes its base line somewhere
+  across the tooth. The two roots are a notch in one contour rather than two
+  shapes, so moving that notch leaves nothing to hide.
+
+- **The arch closes up: teeth nearly meet at their contact points.** The grid
+  gave all sixteen columns the same width (`repeat(16, 1fr)`) around drawings
+  that are not the same width — a lower molar is drawn 65.5 px across, a lateral
+  incisor 31.6 px — so the leftover space piled up toward the midline. Adjacent
+  teeth stood 21 to 45 px apart, loosest exactly where contacts matter: the
+  lateral incisor had gaps on either side worth about 1.4× its own width.
+
+  Each column is now the widest tooth it has to hold plus 6 px, floored at 44 px
+  so the narrowest tile stays a usable touch target. Measured on the chart, the
+  gaps fell to **9–20 px** and the anterior segment from 43–45 px to 13–14 px.
+  Both arches still share the columns, so a tooth and its antagonist stay
+  aligned; that is why a column is sized by the wider of the two.
+
+  Two things had to follow. The SVG canvas is wider than the tooth it holds —
+  gum and bone are drawn wider than the crown, and on an incisor the tooth is
+  only about 59 % of its own canvas — so the canvas is now wider than its
+  column and must not shrink as a flex item, or the drawing scales down and the
+  teeth get *smaller* instead of closer. It overflows instead, and neighbouring
+  gum overlaps, which is what gum does. And the drawings now paint as one layer
+  above all tile chrome, because a tile's translucent background would otherwise
+  paint over its neighbour's overflow and punch white notches through the gum
+  band. Tile borders, hover and selection are unchanged.
+
+- **The teeth are drawn longer, and the row of apices is no longer ragged.**
+  Two changes that look like one, kept apart on purpose because only the first
+  is a matter of fact.
+
+  The **root fractions are now measured**. Dirk read all nine permanent
+  templates off the Odontographie plates — view a, mid-facial, counted in cells
+  of the plate's own Linienraster — and the readings corrected two inversions
+  the table had carried: the canine held a *lower* root fraction than the
+  central incisor (0.60 against 0.62) where the plates give 0.642 against
+  0.593, and the lower molar a lower one than the lower incisor (0.62 against
+  0.68) where the plates give 0.680 against 0.640. The same counts independently
+  confirm `length_rel`, agreeing to within 0.02 on six of nine templates, which
+  is what established the Linienraster as one scale across an archive of
+  photographs taken at different distances.
+
+  The **apex line is a decision, not a correction**. Modelling the measured
+  values showed the ragged apex line is not a defect: it *is* the anatomy — the
+  canine really is about 14 % longer than the central incisor and 37 % longer
+  than the second molar, and correcting the anatomy moved the spread by 3 px out
+  of 33. An even apex line can therefore only be chosen, so it is chosen in the
+  open: a new `LENGTH_SPREAD` (0.45) compresses the length *differences* between
+  tooth classes toward their mean, per dentition, instead of anyone quietly
+  editing `length_rel`.
+
+  With `ROOT_DISPLAY_SCALE` raised 0.60 → 0.75, the measured result on the chart
+  is teeth 9–20 % taller (the second molar gains the most, 84.8 → 101.7 px), the
+  apex spread halved from 32.7 px to 15.4 px, the occlusal plane still on one
+  line, and the canine still visibly the longest tooth. **Tooth widths are
+  unchanged** — the length decision divides itself back out of `width_frac`, so
+  a vertical choice cannot silently make the canine narrow and the molars wide.
+
+  `src/perioGraphic.ts` follows in the same change, as it must:
+  `ROOT_RESTORE_SCALE` stays the reciprocal (1/0.75), and `CANINE_ROOT_SCALE`
+  is retired to 1.0 — it existed only to compensate for the canine root the
+  templates used to under-state, and keeping it would re-impose that error in
+  the one view where root length is actually read.
+
+  SVG-fingerprint parity is unaffected (no layer added, removed or re-keyed);
+  the frozen generator digests are re-taken, which is what they are for.
+
+- **A telescope crown now reads as a double crown.** Primary and secondary crown
+  were drawn as two filled shapes sharing an edge, so at chart size the pair
+  merged into one blue cap with a grey centre — the very thing that distinguishes
+  a telescope from a single crown was the one thing not visible. The inner crown
+  carries a fine white outline under a `paint-order: stroke`, which puts the
+  separating line *inside* the outer crown's blue band instead of widening the
+  tooth. Style only: no geometry moved, so the frozen generator digests and the
+  SVG fingerprints are unchanged (neither records `stroke` or `paint-order`).
 
 ### Added
 

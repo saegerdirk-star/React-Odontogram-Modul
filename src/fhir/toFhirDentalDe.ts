@@ -34,7 +34,7 @@ import {
   toFdiSurface, restorationTypeCode, restorationMaterialCode,
   rootCariesSct, resorptionSct, apicalDxSct, restorationStatusSct,
 } from "./dentalDeCodesystems";
-import { buildDentalDePerioEntries, type DentalDePerioContext } from "./toFhirDentalDePerio";
+import { buildDentalDePerioEntries, buildImplantDevice, type DentalDePerioContext } from "./toFhirDentalDePerio";
 import { primaryFdiForSlot } from "../utils/numbering";
 import type { CariesObservationDEProfileRaw } from "./generated/de-cognovis-fhir-dental/profiles/Observation_CariesObservationDE";
 
@@ -543,6 +543,23 @@ function reportUnprojected(ctx: BuildContext, fdi: string, rec: ToothRecord): vo
     if (typeof value !== "string" || !value || value === skip) continue;
     reportUnmapped(ctx, { tooth: fdi, field: String(field), value, reason });
   }
+  // Bead odontogram-wxt: cervical involvement. The IG's surface vocabulary —
+  // `ToothSurfacesCS` plus HL7 `FDI-surface`, the two systems `ToothSurfacesVS`
+  // includes — has no cervical code, and its cervical/root-surface concepts sit
+  // on `GingivaRecessionDE`, which asserts something about the GINGIVA rather
+  // than about a restoration reaching the neck. Emitting either would be a
+  // claim nobody verified, so the marker is reported at the boundary instead;
+  // the sourcing rule forbids minting a code for it.
+  const cervical = rec.cervicalSurfaces;
+  if (Array.isArray(cervical)) {
+    for (const surface of cervical) {
+      if (typeof surface !== "string" || !surface) continue;
+      reportUnmapped(ctx, {
+        tooth: fdi, field: "cervicalSurfaces", value: surface,
+        reason: "The IG's tooth-surface value set defines no cervical code, and its cervical concepts belong to GingivaRecessionDE, which describes the gingiva rather than a restoration extending into the neck.",
+      });
+    }
+  }
   const fsm = rec.fillingSurfaceMaterials;
   if (fsm && typeof fsm === "object") {
     for (const [surface, material] of Object.entries(fsm)) {
@@ -630,6 +647,15 @@ export function buildDentalDeBundle(
 
     for (const obs of cariesObservations(ctx, fdi, rec)) entries.push({ resource: obs });
     for (const obs of extraFindings(ctx, fdi, rec)) entries.push({ resource: obs });
+    // odontogram-im1: the implant's own identity, emitted for EVERY charted
+    // implant. It used to be minted inside the peri-implant builder, so an
+    // implant with no peri-implant measurement produced no Device at all - and
+    // in an initial examination that is the commonest implant there is. The
+    // Device asserts THAT an implant is present, which is true whether or not
+    // the practice knows which one.
+    if (rec.toothSelection === "implant") {
+      entries.push(buildImplantDevice(perioCtx, fdi, rec) as NonNullable<Bundle["entry"]>[number]);
+    }
     for (const entry of buildDentalDePerioEntries(perioCtx, fdi, rec)) {
       entries.push(entry as NonNullable<Bundle["entry"]>[number]);
     }

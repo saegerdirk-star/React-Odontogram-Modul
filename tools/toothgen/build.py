@@ -17,6 +17,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import svgpath  # noqa: E402
 import roots  # noqa: E402
 import graft  # noqa: E402
+import gum  # noqa: E402
+import fillings  # noqa: E402
 from spec import (  # noqa: E402
     PRIMARY_PULP_SCALE,
     PRIMARY_ROOT_SPREAD,
@@ -78,42 +80,47 @@ def content_bbox(txt: str):
     return (x0, y0, x1, y1)
 
 
-def silhouette_width(d: str, y: float) -> float:
+def _crossings(d: str, y: float) -> list[float]:
+    """Sorted x of every place the outline crosses the horizontal line ``y``.
 
-    cmds = svgpath.subdivide_for_warp(
-        svgpath.to_absolute(d), lambda a, b: (a, b * 1.0001), tol=0.01
-    )
-    pts = []
-    cur = (0.0, 0.0)
-    start = (0.0, 0.0)
-    subs = []
-    for cmd, a in cmds:
-        if cmd == "M":
-            if len(pts) > 1:
-                subs.append(pts)
-            cur = (a[0], a[1])
-            start = cur
-            pts = [cur]
-        elif cmd == "Z":
-            if len(pts) > 1:
-                pts.append(start)
-                subs.append(pts)
-            pts = [start]
-            cur = start
-        else:
-            p = (a[-2], a[-1])
-            pts.append(p)
-            cur = p
-    if len(pts) > 1:
-        subs.append(pts)
-    xs = []
-    for sub in subs:
-        for (ax, ay), (bx, by) in zip(sub, sub[1:]):
-            if (ay <= y < by) or (by <= y < ay):
-                t = (y - ay) / (by - ay)
-                xs.append(ax + t * (bx - ax))
-    xs.sort()
+    Delegates to ``roots.crossings_at``, which flattens through the adaptive
+    subdivision. The obvious shortcut - walking the command list and taking
+    each segment's ENDPOINT - is what stood here, and it measures a polygon
+    through the Bezier anchors rather than the outline. On a molar, whose crown
+    bulges in the MIDDLE of long cubics, it read 24.6 units where the tooth is
+    40.0: a third of the width, gone. Every template was then scaled to make
+    that undersized number match its target, so the ones drawn with the longest
+    curves - the premolars and molars - came out about a third too wide, and it
+    looked like their roots were splayed, because the bounding box was the only
+    thing telling the truth (odontogram-5ca).
+    """
+    return roots.crossings_at(d, y)
+
+
+def silhouette_width(d: str, y: float) -> float:
+    """How much TOOTH the line at ``y`` passes through - material, not extent.
+
+    Pairs the crossings, so a line through a furcation counts the two roots and
+    not the gap between them. That is what "how wide is the root that has to
+    contain this canal" asks for. It is not what a crown width asks for, which
+    is why crown_width exists below.
+    """
+    xs = _crossings(d, y)
     return sum(xs[i + 1] - xs[i] for i in range(0, len(xs) - 1, 2))
+
+
+def crown_width(d: str, y: float) -> float:
+    """Mesial surface to distal surface at ``y`` - the outline's full extent.
+
+    The mesiodistal crown diameter is the greatest distance between the mesial
+    and the distal surface, so a fissure between two cusps - which lies INSIDE
+    the tooth - must not be subtracted from it. On the shipped templates the
+    crown outline is convex at every height the generator samples, so this and
+    silhouette_width agree there; they are kept apart because they answer
+    different questions and only one of them is a width.
+    """
+    xs = _crossings(d, y)
+    return (xs[-1] - xs[0]) if len(xs) >= 2 else 0.0
 
 
 def make_warp(
@@ -342,7 +349,20 @@ H_REF = 96.0
 PX_PER_UNIT = 1.62
 
 
-OCCL_MARGIN = 7.5
+# Distance from the occlusal plane to the viewBox bottom. It has to be the SAME
+# on every template - verify.py asserts it - because that is what puts every
+# tooth's occlusal plane on one line when the row is assembled.
+#
+# Raised from 7.5 on 2026-08-11: at ROOT_DISPLAY_SCALE 0.75 the crown region of
+# the warp is longer than at 0.60, and the gum drawn below the incisal edge
+# followed it past the old bottom by 0.29 on tpl 11.
+OCCL_MARGIN = 8.0
+
+
+# How far the palatal root tip is pulled down relative to the buccal one, as a
+# fraction of the distance from the furcation to the apex. Depth cue: the root
+# standing further from the viewer ends higher up the picture.
+PALATAL_TIP_DROP = 0.34
 
 
 def curve_extent(d: str):
@@ -351,6 +371,59 @@ def curve_extent(d: str):
     xs = [p[0] for p in pts]
     ys = [p[1] for p in pts]
     return min(xs), min(ys), max(xs), max(ys)
+
+
+def connect_fillings(txt: str, occl: float) -> str:
+    """Join each proximal filling shape to the occlusal one. See fillings.py."""
+
+    band = re.search(
+        r'<path id="filling-composite-occlusal" d="([^"]+)"', txt
+    )
+    if not band:
+        return txt
+    for surf in fillings.SURFACES:
+        m = re.search(rf'<path id="filling-composite-{surf}" d="([^"]+)"', txt)
+        if not m:
+            continue
+        new = fillings.stretch_to_band(
+            m.group(1), band.group(1), occl, tooth_base_d(txt), axis="y", sign=1.0
+        )
+        if new is None or new == m.group(1):
+            continue
+        # The four direct materials share ONE geometry per surface and differ
+        # only in fill, so the same stretch is written to all four.
+        for mat in fillings.MATERIALS:
+            txt = re.sub(
+                rf'(<path id="filling-{mat}-{surf}" d=")[^"]+(")',
+                lambda mm: mm.group(1) + new + mm.group(2),
+                txt,
+                count=1,
+            )
+    return txt
+
+
+def replace_gum(
+    txt: str,
+    occl: float,
+    cej: float,
+    cx: float,
+    neck_half: float,
+    col_px: float,
+) -> str:
+
+    for lid, d in (
+        ("bone-base", gum.bone_path(occl, cx, col_px)),
+        ("gum-base", gum.gum_path(occl, cej, cx, neck_half, col_px)),
+    ):
+        txt, n = re.subn(
+            rf'(<path id="{lid}" d=")[^"]+(")',
+            lambda m, d=d: m.group(1) + d + m.group(2),
+            txt,
+            count=1,
+        )
+        if n != 1:
+            raise SystemExit(f"{lid} not found")
+    return txt
 
 
 def source_root_count(base_d: str, apex: float, cej: float) -> int:
@@ -428,6 +501,21 @@ def build_one(s: ToothSpec, out_dir: Path, dry: bool, root_scale: float | None =
         root_note += f" +pulp {len(pulp_hit)}{capped} +spread"
         base_d = tooth_base_d(txt)
 
+    if s.root_converge != 1.0:
+        txt, hit_c = roots.converge_roots_layers(
+            txt, (bx0 + bx1) / 2, by0, cej, s.root_converge
+        )
+        furc_y = cej - (cej - by0) * s.furc_frac
+        txt, hit_s = roots.shorten_one_root_layers(
+            txt, (bx0 + bx1) / 2, by0, furc_y, PALATAL_TIP_DROP
+        )
+        root_note += (
+            f" +converge {s.root_converge:.2f} ({len(hit_c)} layers)"
+            f" +palatal tip -{PALATAL_TIP_DROP:.0%} ({len(hit_s)})"
+        )
+        base_d = tooth_base_d(txt)
+        bx0, by0, bx1, by1 = curve_extent(base_d)
+
     apex, inc = by0, by1
 
     d_length_rel, d_root_frac, d_width_frac = display_targets(s, root_scale)
@@ -440,7 +528,7 @@ def build_one(s: ToothSpec, out_dir: Path, dry: bool, root_scale: float | None =
 
     meas_d = svgpath.warp_path_d(base_d, merge_fn) if merge_fn else base_d
     w_src = max(
-        silhouette_width(meas_d, y)
+        crown_width(meas_d, y)
         for y in [inc - (inc - cej) * f for f in (0.2, 0.35, 0.5, 0.65, 0.8)]
     )
     w_dst = d_width_frac * total_new
@@ -458,7 +546,15 @@ def build_one(s: ToothSpec, out_dir: Path, dry: bool, root_scale: float | None =
         )
     top = min(ymap(cy0) - 1.0, new_occl - (total_new + 1.0))
 
-    shift = -top
+    # The viewBox is written to one decimal, so its height is rounded - and the
+    # occlusal plane is positioned FROM the bottom, which means that rounding
+    # walked the plane by up to 0.05 units per template. That was invisible
+    # while every tooth was an island; now that bone and gum draw one line
+    # across the arch it showed as a step at every joint. Absorb the rounding
+    # into the shift instead, so the plane lands exactly OCCL_MARGIN above the
+    # written bottom in every template.
+    h_vb = round(bottom - top, 1)
+    shift = -top + (h_vb - (bottom - top))
 
     def fn(x, y):
 
@@ -470,7 +566,7 @@ def build_one(s: ToothSpec, out_dir: Path, dry: bool, root_scale: float | None =
     def ymap_shift(y):
         return ymap(y) + shift
 
-    vb_new = (vb_old[0], 0.0, vb_old[2], bottom - top)
+    vb_new = (vb_old[0], 0.0, vb_old[2], h_vb)
 
     out = rewrite_svg(txt, fn, ymap_shift, vb_new)
 
@@ -484,10 +580,30 @@ def build_one(s: ToothSpec, out_dir: Path, dry: bool, root_scale: float | None =
     nb = curve_extent(re.search(r'<path id="tooth-base" d="([^"]+)"', out).group(1))
     n_apex, n_inc = nb[1], nb[3]
     n_cej = ymap_shift(cej)
+
+    # The gingiva is drawn here, not warped from the source. Two neighbouring
+    # halves of one papilla come from two different drawings and cannot agree
+    # on its height; a generated band can, because gum.py measures from the
+    # occlusal plane, which every template shares. See gum.py for the shape.
+    out = replace_gum(
+        out,
+        n_inc,
+        n_cej,
+        (nb[0] + nb[2]) / 2.0,
+        crown_width(
+            re.search(r'<path id="tooth-base" d="([^"]+)"', out).group(1),
+            n_cej + gum.MARGIN_DOWN,
+        )
+        / 2.0,
+        s.col_px,
+    )
+
+    out = connect_fillings(out, n_inc)
+
     got_root = (n_cej - n_apex) / (n_inc - n_apex)
     got_total = n_inc - n_apex
     got_w = max(
-        silhouette_width(
+        crown_width(
             re.search(r'<path id="tooth-base" d="([^"]+)"', out).group(1), y
         )
         for y in [n_inc - (n_inc - n_cej) * f for f in (0.2, 0.35, 0.5, 0.65, 0.8)]
@@ -574,7 +690,12 @@ def main():
     print("\n--- CSS (src/index.css) ---")
     for r in rows:
         print(
-            f".tooth-tile.tpl-{r['key']} .tooth-svg svg{{width:{r['px'][0]:.0f}px;height:{r['px'][1]:.0f}px}}"
+            # Two decimals, not whole pixels. Rounding the two sides
+            # independently gave each template a slightly different scale, and
+            # `preserveAspectRatio` then centred the shortfall - which moved the
+            # occlusal plane by up to half a pixel from tile to tile. Invisible
+            # per tooth; a step in every shared line across the arch.
+            f".tooth-tile.tpl-{r['key']} .tooth-svg svg{{width:{r['px'][0]:.2f}px;height:{r['px'][1]:.2f}px}}"
         )
     print("\n--- perioGraphic.ts: CEJ_Y (mirrored frame, finalY = h - rawY) ---")
     for r in rows:
