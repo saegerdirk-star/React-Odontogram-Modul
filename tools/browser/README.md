@@ -1,21 +1,21 @@
-# Browser-Messwerkzeug
+# Browser measuring tool
 
-`inspect.mjs` misst die **laufende** App über das Chrome DevTools Protocol.
+`inspect.mjs` measures the **running** app over the Chrome DevTools Protocol.
 
-Es ersetzt keinen Test. Es beantwortet die Fragen, die sich am Quelltext nicht
-entscheiden lassen, weil erst der Browser Layout, Transformationen und
-Ausrichtung auflöst. Zwei Fehler in der Zahnkarte wurden genau so gefunden — in
-beiden Fällen las sich der Quelltext richtig:
+It is not a substitute for a test. It answers the questions the source cannot
+settle, because only the browser resolves layout, transforms and orientation.
+Two chart bugs were found exactly this way — and in both cases the source read
+correctly:
 
-- die Kauebene des Unterkiefers lief nicht durch, weil die um 180° gedrehten
-  Kacheln unten bündig ausgerichtet waren und dadurch die Wurzelspitzen statt
-  der Schneidekanten fluchteten;
-- im Parodontal-Chart war je eine Zeile pro Kiefer auf dem Kopf, weil die
-  Spiegelung nach Ansicht statt nach Kiefer entschieden wurde.
+- the lower arch's occlusal plane did not run through, because the tiles rotated
+  by 180° were aligned flush at the bottom, so the root apices lined up instead
+  of the incisal edges;
+- in the periodontal chart one row per jaw was upside down, because the mirror
+  was decided per view instead of per jaw.
 
-Keine Abhängigkeiten: `fetch` und `WebSocket` sind seit Node 22 eingebaut.
+No dependencies: `fetch` and `WebSocket` have been built in since Node 22.
 
-## Voraussetzungen
+## Prerequisites
 
 ```sh
 npm run dev
@@ -25,16 +25,16 @@ npm run dev
   --window-size=1600,1300 http://localhost:5173/
 ```
 
-Ein anderer Endpunkt lässt sich über `CDP_ENDPOINT` setzen.
+A different endpoint can be set through `CDP_ENDPOINT`.
 
-## Kommandos
+## Commands
 
-| Kommando | Antwort |
+| Command | Answers |
 |---|---|
-| `orientation` | Zeigen die Wurzeln je Band nach cranial oder caudal, und passt das zum Kiefer? Endet mit Exit-Code 1, wenn ein Band falsch herum steht. |
-| `templates` | Welcher Zahn wird aus welchem Template gezeichnet — aus dem gerenderten DOM, nicht aus `TOOTH_TEMPLATE`. |
-| `labels` | Die Zeilenbeschriftungen beider Bögen (Oberkiefer „Palatal …", Unterkiefer „Lingual …"). |
-| `shot [datei] [selektor]` | Screenshot der Seite oder eines Elements. |
+| `orientation` | Do the roots of each band point cranially or caudally, and does that match the jaw? Exits 1 when a band is upside down. |
+| `templates` | Which tooth is drawn from which template — read off the rendered DOM, not off `TOOTH_TEMPLATE`. |
+| `labels` | The row labels of both arches (upper "Palatal …", lower "Lingual …"). |
+| `shot [file] [selector]` | Screenshot of the page or of one element. |
 
 ```sh
 node tools/browser/inspect.mjs orientation
@@ -42,13 +42,78 @@ node tools/browser/inspect.mjs templates
 node tools/browser/inspect.mjs shot arch.png "svg.perio-tooth-arch-buccal"
 ```
 
-## Zwei Fallen, die im Skript dokumentiert sind
+## Driving it by hand
 
-- **`getBoundingClientRect` berücksichtigt kein `clip-path`.** Seit die Wurzel im
-  Parodontal-Chart als zweite, geclippte Kopie gezeichnet wird, überdecken sich
-  die Rechtecke von Kronen- und Wurzelgruppe vollständig. `orientation` misst
-  deshalb an der mm-Rasterbeschriftung, die konstruktionsbedingt von der SZG zur
-  Wurzel hin läuft.
-- **`Page.captureScreenshot`'s `clip` rechnet in Dokument-Koordinaten**,
-  `getBoundingClientRect` in Fenster-Koordinaten. Ohne den Scroll-Versatz kommt
-  ein leeres Bild heraus.
+The four commands are the reliable part; most real measuring is a throwaway
+`.mjs` that opens the same socket and evaluates its own expressions. That is
+the intended use, and the traps below are all things that bite there.
+
+```js
+const targets = await (await fetch("http://localhost:9222/json/list")).json();
+const page = targets.find((t) => t.type === "page" && t.url.includes("5173"));
+const ws = new WebSocket(page.webSocketDebuggerUrl);
+// … send Runtime.evaluate over the socket
+```
+
+## Five traps, and every one of them has cost real time
+
+**1. `getBoundingClientRect` ignores `clip-path`.** Since the root in the
+periodontal chart is drawn as a second, clipped copy, the boxes of the crown and
+root groups overlap completely. `orientation` therefore measures off the mm-grid
+labels, which run from the CEJ toward the root by construction.
+
+**2. `Page.captureScreenshot`'s `clip` is in DOCUMENT coordinates**, while
+`getBoundingClientRect` returns viewport coordinates. Without adding the scroll
+offset you get an empty image.
+
+**3. A click lands where the element ISN'T if it is off-screen.** Coordinates
+from `getBoundingClientRect` are only clickable while the element is inside the
+viewport; a card scrolled out of view yields coordinates that hit whatever
+happens to be at that point instead, and the measurement reads as "the control
+does nothing". `scrollIntoView({ block: "center" })` first, re-read the rect
+afterwards, and refuse the click when it falls outside `innerWidth`/`innerHeight`
+rather than measuring silence:
+
+```js
+const b = JSON.parse(await evaluate(`(() => {
+  const e = document.querySelector(${JSON.stringify(sel)});
+  e.scrollIntoView({ block: "center" });
+  const r = e.getBoundingClientRect();
+  return JSON.stringify({ x: r.left + r.width / 2, y: r.top + r.height / 2,
+                          vw: innerWidth, vh: innerHeight });
+})()`));
+if (b.x < 0 || b.y < 0 || b.x > b.vw || b.y > b.vh) throw new Error("off-screen: " + sel);
+```
+
+**4. After a hot reload, Vite serves a SECOND module instance under `?t=…`.**
+Importing the bare path gives you a fresh module with its own charts: the calls
+appear to work and never reach the chart the app is showing. Import the URL the
+app itself loaded:
+
+```js
+await evaluate(`window.__O = import(
+  performance.getEntriesByType('resource').map(r => r.name)
+    .filter(n => /\/src\/odontogram\.ts/.test(n)).sort().pop()
+    || '/src/odontogram.ts')`);
+```
+
+**5. Synthetic DOM events are not a substitute for real input.** A `click()` on
+an `<input>` inside a `<label>` can toggle twice, and a `new MouseEvent` skips
+the pointer sequence some controls listen for. Use
+`Input.dispatchMouseEvent` (`mousePressed` then `mouseReleased`) for anything
+whose behaviour is under test; a plain `dispatchEvent(new Event("change"))` is
+fine for setting a `<select>`.
+
+## One more, outside the browser
+
+`npm run toothgen:build` does **not** rebuild the occlusal templates — they have
+their own script:
+
+```sh
+uv run tools/toothgen/occlusal.py
+```
+
+Editing a generator source and rebuilding only with `toothgen:build` therefore
+looks as though the change silently failed on the four `_occl` assets. It is the
+same class of mistake as the traps above: the measurement is right and the thing
+measured was never updated.
