@@ -88,6 +88,32 @@ class ToothSpec:
 # tpl 15 at +0.104, the GRAFTED template, whose length may have been set to
 # serve the graft rather than the plate; left alone here, noted in
 # odontogram-3y9.
+# `width_frac` is the tooth's MESIODISTAL CROWN WIDTH as a fraction of its own
+# length, and the rendered width comes out as `width_frac * length_rel *
+# size_scale * H_REF` - so the number below is an anatomical width-to-length
+# ratio, not a display choice.
+#
+# Corrected on 2026-08-11 (odontogram-t4c). The previous values carried no
+# source and were not consistent with each other: measured against the mean
+# mesiodistal crown diameters, the canine and both premolars came out about a
+# fifth too wide and the incisors about a seventh too narrow, which is why the
+# lower front looked sparse and the premolars overbearing. Unlike `root_frac`
+# and `length_rel`, these are NOT read off the Odontographie plates - measuring
+# a width automatically off those pages was tried and produced a fragment for
+# tpl 31 and a clipped specimen for tpl 46, the same failure mode that made the
+# cervical line unreadable (odontogram-3y9). They are the standard mean
+# mesiodistal crown diameters (Wheeler / Ash & Nelson), averaged over the
+# positions each template actually serves:
+#
+#   11  8.5    12  6.5    13  7.25 (7.5 upper / 7.0 lower)   14  7.0
+#   15  6.83 (6.5 upper / 7.0 lower)   16 10.0   17  8.75 (9.0 / 8.5 third)
+#   31  5.25 (5.0 central / 5.5 lateral)         46 10.5 (11.0 / 10.5 / 10.0)
+#   51  6.5    52  5.1    53  6.0    54  7.3    55  8.2
+#   71  4.15   74  7.7    75  9.9
+#
+# The scale is 3.049 units per mm, chosen so the whole permanent arch keeps the
+# width it had - the correction redistributes width between tooth classes, it
+# does not make the chart wider or narrower.
 SPECS: list[ToothSpec] = [
     ToothSpec(
         key="11",
@@ -96,7 +122,7 @@ SPECS: list[ToothSpec] = [
         source="Fig. 32a (p. 49)",
         src_template=11,
         root_frac=0.59,
-        width_frac=0.27,
+        width_frac=0.31,
         roots=1,
         length_rel=0.87,
         teeth=(11, 21),
@@ -108,7 +134,7 @@ SPECS: list[ToothSpec] = [
         source="Fig. 35a (p. 51)",
         src_template=11,
         root_frac=0.62,
-        width_frac=0.24,
+        width_frac=0.253,
         roots=1,
         length_rel=0.815,
         teeth=(12, 22),
@@ -121,7 +147,7 @@ SPECS: list[ToothSpec] = [
         source="Fig. 38a (p. 52)",
         src_template=11,
         root_frac=0.64,
-        width_frac=0.19,
+        width_frac=0.22,
         roots=1,
         length_rel=0.759,
         teeth=(31, 32, 41, 42),
@@ -134,7 +160,7 @@ SPECS: list[ToothSpec] = [
         source="Fig. 45a (p. 61)",
         src_template=13,
         root_frac=0.64,
-        width_frac=0.27,
+        width_frac=0.23,
         roots=1,
         length_rel=1.0,
         teeth=(13, 23, 33, 43),
@@ -147,7 +173,7 @@ SPECS: list[ToothSpec] = [
         source="Fig. 54a (p. 71)",
         src_template=14,
         root_frac=0.63,
-        width_frac=0.30,
+        width_frac=0.267,
         roots=2,
         length_rel=0.833,
         furc_frac=0.55,
@@ -162,7 +188,7 @@ SPECS: list[ToothSpec] = [
         source="Fig. 56a (p. 73) / Fig. 62a (p. 78)",
         src_template=14,
         root_frac=0.66,
-        width_frac=0.29,
+        width_frac=0.266,
         roots=1,
         length_rel=0.815,
         teeth=(15, 25, 34, 35, 44, 45),
@@ -178,7 +204,7 @@ SPECS: list[ToothSpec] = [
         source="derived from Fig. 70a and Fig. 3",
         src_template=16,
         root_frac=0.61,
-        width_frac=0.40,
+        width_frac=0.429,
         roots=3,
         length_rel=0.741,
         furc_frac=0.58,
@@ -192,7 +218,7 @@ SPECS: list[ToothSpec] = [
         source="Fig. 70a (p. 88)",
         src_template=16,
         root_frac=0.60,
-        width_frac=0.38,
+        width_frac=0.385,
         roots=3,
         length_rel=0.722,
         furc_frac=0.62,
@@ -206,7 +232,7 @@ SPECS: list[ToothSpec] = [
         source="Fig. 76a (p. 95)",
         src_template=16,
         root_frac=0.68,
-        width_frac=0.40,
+        width_frac=0.419,
         roots=2,
         length_rel=0.796,
         furc_frac=0.62,
@@ -308,7 +334,7 @@ PRIMARY_SPECS: list[ToothSpec] = [
         source="derived from 11, Bild 83 (overview)",
         src_template=11,
         root_frac=0.62,
-        width_frac=0.27,
+        width_frac=0.297,
         roots=1,
         length_rel=0.87,
         size_scale=PRIMARY_SIZE_SCALE,
@@ -322,7 +348,7 @@ PRIMARY_SPECS: list[ToothSpec] = [
         source="derived from 12, Bild 83 (overview)",
         src_template=11,
         root_frac=0.65,
-        width_frac=0.24,
+        width_frac=0.248,
         roots=1,
         length_rel=0.815,
         size_scale=PRIMARY_SIZE_SCALE,
@@ -336,7 +362,7 @@ PRIMARY_SPECS: list[ToothSpec] = [
         source="Bild 89 (p. 111) / Bild 90 (p. 112) + Bild 83",
         src_template=13,
         root_frac=0.62,
-        width_frac=0.30,
+        width_frac=0.238,
         roots=1,
         length_rel=1.0,
         size_scale=PRIMARY_SIZE_SCALE,
@@ -352,7 +378,7 @@ PRIMARY_SPECS: list[ToothSpec] = [
         source="Bild 91 (p. 113)",
         src_template=14,
         root_frac=0.69,
-        width_frac=0.36,
+        width_frac=0.391,
         roots=3,
         length_rel=0.741,
         size_scale=PRIMARY_SIZE_SCALE,
@@ -373,7 +399,7 @@ PRIMARY_SPECS: list[ToothSpec] = [
         source="Bild 92 (p. 114)",
         src_template=16,
         root_frac=0.62,
-        width_frac=0.41,
+        width_frac=0.42,
         roots=3,
         length_rel=0.775,
         size_scale=PRIMARY_SIZE_SCALE,
@@ -394,7 +420,7 @@ PRIMARY_SPECS: list[ToothSpec] = [
         source="derived from 31, Bild 83 (overview)",
         src_template=11,
         root_frac=0.68,
-        width_frac=0.19,
+        width_frac=0.217,
         roots=1,
         length_rel=0.759,
         size_scale=PRIMARY_SIZE_SCALE,
@@ -408,7 +434,7 @@ PRIMARY_SPECS: list[ToothSpec] = [
         source="Bild 93 (p. 117)",
         src_template=16,
         root_frac=0.69,
-        width_frac=0.40,
+        width_frac=0.402,
         roots=2,
         length_rel=0.760,
         size_scale=PRIMARY_SIZE_SCALE,
@@ -429,7 +455,7 @@ PRIMARY_SPECS: list[ToothSpec] = [
         source="p. 117 section 3.4.3.2 + derived from 46",
         src_template=16,
         root_frac=0.62,
-        width_frac=0.41,
+        width_frac=0.494,
         roots=2,
         length_rel=0.796,
         size_scale=PRIMARY_SIZE_SCALE,

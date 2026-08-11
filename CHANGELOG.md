@@ -31,6 +31,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Crown widths follow the mesiodistal diameters they are meant to.**
+  `width_frac` — the tooth's crown width as a fraction of its own length — was
+  the one anatomical value in the generator that carried no source, and the
+  values did not agree with each other. Measured crown against crown against the
+  mean mesiodistal crown diameters, the canine and both premolars stood about a
+  fifth too wide and the incisors about a seventh too narrow; the pattern is a
+  source-level systematic, since 13, 14 and 15 are exactly the three templates
+  derived from source drawings 13 and 14.
+
+  Corrected on all seventeen templates from the standard mean mesiodistal crown
+  diameters (Wheeler / Ash & Nelson), averaged over the positions each template
+  serves and recorded in full in `tools/toothgen/spec.py`. Unlike `root_frac`
+  and `length_rel` these are **not** read off the Odontographie plates:
+  measuring a width automatically off those pages was attempted and abandoned,
+  because it returned a fragment for one template and a clipped specimen for
+  another — the same failure mode that made the cervical line unreadable.
+
+  The scale is 3.049 units per mm, chosen so the whole permanent arch keeps the
+  width it had. The correction redistributes width between tooth classes rather
+  than making the chart wider or narrower, so the column widths and the canine
+  relationship are untouched — 43's centre stays in the 13/12 embrasure.
+  Rendering only; parity byte-identical.
+
 - **The lower canine stands where the mouth puts it.** The two arches shared one
   column list, so every tooth sat directly above its antagonist — and a lower
   incisor is drawn 22.5 px wide against the upper central's 36.6. In a 44 px
