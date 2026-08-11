@@ -67,24 +67,24 @@ export const EXCLUDED_TOOTH_BASE_IDS: readonly string[] = [
  * canine sits highest (longest root), the lower incisor lowest.
  */
 export const CEJ_Y: Record<TemplateNo, number> = {
-  11: 39.2,
-  12: 34.9,
-  13: 45.9,
-  14: 37.9,
-  15: 36.4,
-  16: 36.0,
-  17: 35.2,
-  31: 30.8,
-  46: 36.5,
+  11: 41.1,
+  12: 37.8,
+  13: 39.1,
+  14: 37.3,
+  15: 34.6,
+  16: 37.3,
+  17: 37.7,
+  31: 35.3,
+  46: 32.8,
   // primary dentition; only reached while a tooth is charted as a milk tooth
-  51: 32.9,
-  52: 29.4,
-  53: 36.7,
-  54: 25.1,
-  55: 30.1,
-  71: 26.2,
-  74: 25.6,
-  75: 30.7,
+  51: 32.5,
+  52: 29.9,
+  53: 34.2,
+  54: 26.6,
+  55: 31.3,
+  71: 27.4,
+  74: 26.8,
+  75: 31.5,
 };
 
 /**
@@ -106,23 +106,23 @@ export const CEJ_Y: Record<TemplateNo, number> = {
  * the templates are.
  */
 export const IMPLANT_CEJ_Y: Record<TemplateNo, number> = {
-  11: 33.6,
-  12: 30.0,
-  13: 42.2,
-  14: 33.8,
-  15: 32.6,
-  16: 31.3,
-  17: 30.7,
-  31: 26.7,
-  46: 31.8,
-  51: 28.4,
-  52: 25.5,
-  53: 33.9,
-  54: 22.8,
-  55: 26.4,
-  71: 22.8,
-  74: 22.7,
-  75: 27.0,
+  11: 35.2,
+  12: 32.5,
+  13: 36.1,
+  14: 33.3,
+  15: 31.0,
+  16: 32.5,
+  17: 32.9,
+  31: 30.5,
+  46: 28.8,
+  51: 28.1,
+  52: 26.0,
+  53: 31.7,
+  54: 24.1,
+  55: 27.5,
+  71: 24.0,
+  74: 23.8,
+  75: 27.7,
 };
 
 /** Predicate telling the arch builders whether a given tooth is an implant on
@@ -144,7 +144,7 @@ function anchorFor(tplNo: TemplateNo, implant: boolean): number {
  * Root-length restoration, for THIS chart only.
  *
  * The odontogram draws roots shortened — `ROOT_DISPLAY_SCALE` in
- * `tools/toothgen/spec.py` compresses them to 60 % of their measured length,
+ * `tools/toothgen/spec.py` compresses them to 75 % of their measured length,
  * because there the tooth is an icon and the apical third carries almost no
  * information. The periodontal chart is the one place where the tooth is not
  * an icon but the SCALE a probing depth is read against: the mm grid puts n mm
@@ -160,29 +160,34 @@ function anchorFor(tplNo: TemplateNo, implant: boolean): number {
  * not what a pocket is measured against. Restored lengths run 13.9 mm (upper
  * 2nd molar) to 19.2 mm (canine).
  */
-const ROOT_RESTORE_SCALE = 1 / 0.6;
+const ROOT_RESTORE_SCALE = 1 / 0.75;
 
 /**
- * Canine (FDI position 3) root factor — was an elongation, is now a slight
- * SHORTENING.
+ * Canine (FDI position 3) root factor — RETIRED to 1.0 on 2026-08-11.
  *
- * The 1.3 it used to carry came from the four-template era, when canines
- * borrowed the incisor template and had to be stretched to read as canines at
- * all. The nine-template set draws the canine from its own measured contour,
- * where the longest root of the dentition is already part of the shape, so
- * keeping 1.3 on top of `ROOT_RESTORE_SCALE` would count that length twice and
- * put the canine at 25 mm on the grid.
+ * Its history: 1.3 in the four-template era, when canines borrowed the incisor
+ * template and had to be stretched to read as canines at all; then 0.9, once
+ * the nine-template set drew the canine from its own contour and a flat restore
+ * put it at 19.2 mm, further than the chart wanted.
  *
- * At a flat restore the canine reads 19.2 mm, which is more than the chart
- * wants; 0.9 brings it to 17.3 mm. That is as far as this can go: the templates
- * make the canine root only 11 % longer than a central incisor's (57.6 against
- * 51.8 units) where the real difference is nearer 30 %, so anything below ~0.9
- * pushes the canine BELOW the incisors and inverts the one proportion everybody
- * recognises. Wanting the whole set to read shorter is a `PERIO_MM_PX` question
- * (the grid claims 3 units/mm where the artwork is drawn at about 3.7), not a
- * canine question.
+ * Both settings were compensating for the SAME defect at opposite ends: the
+ * templates under-stated the canine root. That defect is gone. `root_frac` is
+ * now Dirk's reading off the Odontographie plates, which raised the canine from
+ * 0.60 to 0.64 and lowered the central incisor from 0.62 to 0.59 — an inversion
+ * the old table carried. At a flat restore the canine now reads 18.4 mm against
+ * the central incisor's 15.9 mm, a ratio of 1.16 where it used to be 1.11 and
+ * where anatomy says about 1.32.
+ *
+ * Keeping 0.9 would therefore re-impose, in the one view where root length is
+ * actually read, exactly the under-statement the plate measurement removed —
+ * and would leave the canine at 16.6 against the incisor's 15.9, all but
+ * inverting the one proportion everybody recognises.
+ *
+ * Unchanged and still out of scope: the whole set reads long in mm because the
+ * grid claims 3 units/mm (`PERIO_MM_PX`) where the artwork is drawn at about
+ * 3.7. That is a grid question, not a canine question.
  */
-const CANINE_ROOT_SCALE = 0.9;
+const CANINE_ROOT_SCALE = 1.0;
 
 /** Lateral incisor (FDI position 2) width factor — narrower than the
  *  central incisor sharing the same tpl-11 template, per the task brief's

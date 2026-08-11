@@ -107,33 +107,41 @@ def lumen_extremes(txt: str, base_d: str, apex: float, cej: float):
 # attributes on all nine templates, which is an intended, reviewed correction,
 # not drift. The previous set was captured on 2026-08-09 from
 # origin/feat/tooth-anatomy-9-templates and is recorded in that bead.
+# Re-taken on 2026-08-11 for odontogram-3y9: `root_frac` on all nine permanent
+# templates is now Dirk's reading off the Odontographie plates, and the two
+# display constants changed with it - `ROOT_DISPLAY_SCALE` 0.60 -> 0.75 (less
+# root compression, as he asked) and the new `LENGTH_SPREAD` 0.45. Both move
+# geometry on every template, primary ones included, and both are intended,
+# reviewed corrections rather than drift. `OCCL_MARGIN` went 7.5 -> 8.0 in the
+# same change because the longer crown region pushed gum past the old viewBox
+# bottom. The previous set was taken on 2026-08-10 and is recorded below.
 AUTHORED_GEOMETRY_SHA256 = {
-    "11": "5403961a7985b751261a0e0429eff97619e51534d46d8fb078bbecd0fa10482e",
-    "12": "58e0d706d419ab08413afb5d9ab5e705d5574f4b95b7628567431de00bc9ddde",
-    "13": "9d8869b7692c2f0b489997873d6111cb39e142199b5b0e51fedf048584258e5d",
-    "14": "810e488c0973a1c04474cd243b921cfc23b75194bdf5fc184ef90ef3d0b72ebd",
+    "11": "6372efd50de3e153953892b66d2b13cb643408c98054ebe1e591b99f021a6caa",
+    "12": "95cb14201400172323e2ad8cc0db1ae67c90e0bfbebeeca744930b814e2cabf0",
+    "13": "49822c6e67781377314fe18d52d5404084ac38d75737daa4189f76047645a887",
+    "14": "0ccb435b66a6bb8e5778eeed6135fc77f143bf6d352918f3cc90471675f0f584",
     # Re-taken again on 2026-08-10 for odontogram-ay4: template 15's root is
     # grafted from source 13 instead of converted from source 14's two roots.
-    "15": "9571e1a8855110f8b191588261bc366b676efaf9d8fc7179f2bc9f79f010bf7d",
-    "16": "dccdd2fea0b80a5afdc74e034b79dfa0a08151d8ff5ca4d2c8cdb952e5202786",
-    "17": "57cdc697a16a578ef4d566d6a18d02c472ce48a263d10bbdf7b71c0a99e1a9f6",
-    "31": "4a10c5642fd72352dcf13c95d7f50a1ecf0a8b026661d6bb435a03a21d193e33",
-    "46": "fba5d08ec2aedf3fcc2ae63bf321b6f6d0d97ffb97da53150089edd79cf30976",
+    "15": "9a76672b5ed49872cb68128eee4cf09385d5962bc8355a326af6235c34a41890",
+    "16": "a0cc25bff09788ccc4cf9c2534a1642a6e7b0e946ae032d55b312c5140a7c142",
+    "17": "ab9a9b3f1822f187cdbf6656d56a92f9eb219ce1cded139d4252bb57f7e75e2e",
+    "31": "d968484c4189c1b3cb5a4084bb26bb2c85d2a0975831c7f4c8399547e086d4a7",
+    "46": "869b326cd2f9ac36eef948c22397a6e6332f874df5c805deebdde2683151e4ac",
     # Primary dentition, taken on 2026-08-10 after Dirk read the rendered
     # dentition in the running chart and accepted it. Until then these eight
     # were deliberately unfrozen, which the digest check reports as a state
     # rather than a fault - a drawing does not have to pass a digest before it
     # may exist, it has to pass the dentist (odontogram-0ak, odontogram-e0a).
-    "51": "170b6a615d3ca51a97e505c36bf13c62bfa24726c77710c4c0f992d1948a6450",
-    "52": "39eaf927f97c309bde9e72221c630c28f43661775f350d928cf833f2956c1b24",
-    "53": "5867d6a1beede3af9117259600836af09680092151a835169c4b35006d38a3d6",
+    "51": "4b892d1808a323ce3fc1e7c1c6b4225c902d8d4884c374a1295974c8f6552fff",
+    "52": "0e12cf13fb53692e52bf290634bde1e6cd4272ffb92d40162bc9e41cf68f72f0",
+    "53": "d6f50515ae3fa8949762669c4a54a1fe4cab41864a7f87e975e0b0935edb0af4",
     # 54 re-taken after Bild 91 moved its cervix from 38% to 31% of tooth height.
-    "54": "01afa84746564595f1f497fefa85c43639a081f9f601c0cacf203178ca87e999",
+    "54": "e8c65f5bcfa7b9d4b58b283a06af2cbd57400977a80c7c93d928db114639b794",
     # 55 re-taken after Bild 92 moved its cervix from 40% to 38%.
-    "55": "038dc7e49d907ab6fe34c23a81a60ca919ffa309a3aee02f6793a55f8f2dce58",
-    "71": "3d53cfc33d349031cea75a5bc6fbcc539aa6e116a40a7565905688ed24795664",
-    "74": "6e2d2ccc0c42617d29d3d0ae2d9c4dc40ac5b579b82506a673c6c0fe921c6e8b",
-    "75": "f12d024b5de3ce8a9a096ab2488c0382a31f849d03003b83fee298ec60c04d46",
+    "55": "15ff78bdf8e8ca72f5a36b92ffcdca868e2deefca8591913d82c08282ccecc86",
+    "71": "c61d8c328e89c9a3fcbd8298516e4fe0695d57a3ea346281c6c6f2d2b567709c",
+    "74": "2850a21fed18f9dbbb3da438239e9de5c04707adfc13fe1b566caf61bba693b0",
+    "75": "790e74749c64f4f00bb09680964a1b1670272a470a1493e7acb6934d9db4bd43",
 }
 
 GEOMETRY_ATTRIBUTES = (

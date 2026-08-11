@@ -35,13 +35,37 @@ class ToothSpec:
     primary: bool = False
 
 
+# `root_frac` below is Dirk's own reading off the Odontographie plates
+# (2026-08-11): view a, vestibular, read mid-facial, counted in cells of the
+# plate's Linienraster. Crown / root in cells, and the fraction they give:
+#
+#   11  4.4 / 6.4 = 0.593    14  4.0 / 6.9 = 0.633    31  3.6 / 6.4 = 0.640
+#   12  3.8 / 6.2 = 0.620    15  3.8 / 7.5 = 0.664    46  3.2 / 6.8 = 0.680
+#   13  4.4 / 7.9 = 0.642    16  3.6 / 5.6 = 0.609
+#                            17  3.6 / 5.4 = 0.600
+#
+# Rounded to two places, which is the precision the readings carry.
+#
+# They corrected TWO inversions this table had. The canine used to hold a LOWER
+# root fraction than the central incisor (0.60 against 0.62) where the plates
+# give 0.642 against 0.593; and the lower molar a lower one than the lower
+# incisor (0.62 against 0.68) where the plates give 0.680 against 0.640.
+#
+# The same cell counts also CONFIRM `length_rel`: normalized to the canine they
+# agree with the values below to within 0.02 on six of the nine templates. That
+# agreement is what establishes the Linienraster as ONE shared scale across the
+# archive - which no measurement of the photographs themselves could settle,
+# since the pages are photographed at different distances. The one exception is
+# tpl 15 at +0.104, the GRAFTED template, whose length may have been set to
+# serve the graft rather than the plate; left alone here, noted in
+# odontogram-3y9.
 SPECS: list[ToothSpec] = [
     ToothSpec(
         key="11",
         label="Upper central incisor",
         source="Fig. 32a (p. 49)",
         src_template=11,
-        root_frac=0.62,
+        root_frac=0.59,
         width_frac=0.27,
         roots=1,
         length_rel=0.87,
@@ -52,7 +76,7 @@ SPECS: list[ToothSpec] = [
         label="Upper lateral incisor",
         source="Fig. 35a (p. 51)",
         src_template=11,
-        root_frac=0.65,
+        root_frac=0.62,
         width_frac=0.24,
         roots=1,
         length_rel=0.815,
@@ -64,7 +88,7 @@ SPECS: list[ToothSpec] = [
         label="Lower incisor",
         source="Fig. 38a (p. 52)",
         src_template=11,
-        root_frac=0.68,
+        root_frac=0.64,
         width_frac=0.19,
         roots=1,
         length_rel=0.759,
@@ -76,7 +100,7 @@ SPECS: list[ToothSpec] = [
         label="Canine",
         source="Fig. 45a (p. 61)",
         src_template=13,
-        root_frac=0.60,
+        root_frac=0.64,
         width_frac=0.27,
         roots=1,
         length_rel=1.0,
@@ -88,7 +112,7 @@ SPECS: list[ToothSpec] = [
         label="Upper first premolar",
         source="Fig. 54a (p. 71)",
         src_template=14,
-        root_frac=0.62,
+        root_frac=0.63,
         width_frac=0.30,
         roots=2,
         length_rel=0.833,
@@ -101,7 +125,7 @@ SPECS: list[ToothSpec] = [
         label="Single-rooted premolar",
         source="Fig. 56a (p. 73) / Fig. 62a (p. 78)",
         src_template=14,
-        root_frac=0.63,
+        root_frac=0.66,
         width_frac=0.29,
         roots=1,
         length_rel=0.815,
@@ -116,7 +140,7 @@ SPECS: list[ToothSpec] = [
         label="Upper first molar",
         source="derived from Fig. 70a and Fig. 3",
         src_template=16,
-        root_frac=0.60,
+        root_frac=0.61,
         width_frac=0.40,
         roots=3,
         length_rel=0.741,
@@ -142,7 +166,7 @@ SPECS: list[ToothSpec] = [
         label="Lower molar",
         source="Fig. 76a (p. 95)",
         src_template=16,
-        root_frac=0.62,
+        root_frac=0.68,
         width_frac=0.40,
         roots=2,
         length_rel=0.796,
@@ -154,19 +178,74 @@ SPECS: list[ToothSpec] = [
 SPEC_BY_KEY = {s.key: s for s in SPECS}
 
 
-ROOT_DISPLAY_SCALE = 0.6
+# ---- Display, not anatomy ----------------------------------------------
+#
+# The two constants below are the ONLY place where the drawing knowingly departs
+# from what the plates say, and they exist for one reason: in the odontogram the
+# tooth is an icon in a row of thirty-two, not a specimen.
+#
+# ROOT_DISPLAY_SCALE draws roots at a fraction of their measured length, because
+# the apical third carries almost no information at chart size. It is 0.75 since
+# 2026-08-11, raised from 0.60 at Dirk's request for less compression.
+#
+# ANY change here must be mirrored in `src/perioGraphic.ts`, whose
+# `ROOT_RESTORE_SCALE` has to stay the RECIPROCAL of this value. There the tooth
+# is not an icon but the scale a probing depth is read against, so the perio
+# chart undoes this compression. Leave the two out of step and pockets are read
+# against a scale their own artwork disagrees with.
+ROOT_DISPLAY_SCALE = 0.75
+
+# LENGTH_SPREAD compresses the length DIFFERENCES between tooth classes toward
+# their mean; 1.0 leaves anatomy untouched, 0.0 would draw every tooth the same
+# length. It exists because a row aligned on the occlusal plane leaves the
+# apices ragged, and measurement showed that raggedness is not a defect to be
+# corrected but the anatomy itself: with the plate-measured values above the
+# apex spread is 30 px, and correcting the anatomy moved it by only 3 px. So an
+# even apex line cannot be had honestly - it can only be CHOSEN, which is what
+# this constant does, in the open rather than by quietly editing `length_rel`.
+#
+# At 0.45, with ROOT_DISPLAY_SCALE at 0.75, the spread halves (33 px -> 15 px)
+# while the tallest tooth stays where it is (117.7 px -> 116.9 px) and the
+# canine stays visibly the longest. The mean is taken PER DENTITION, so the
+# primary set keeps its own scale instead of being pulled toward the permanent
+# one.
+LENGTH_SPREAD = 0.45
+
+_MEAN_LENGTH_REL: dict[bool, float] = {}
+
+
+def _mean_length_rel(primary: bool) -> float:
+    if primary not in _MEAN_LENGTH_REL:
+        src = PRIMARY_SPECS if primary else SPECS
+        _MEAN_LENGTH_REL[primary] = sum(x.length_rel for x in src) / len(src)
+    return _MEAN_LENGTH_REL[primary]
+
+
+def displayed_length_rel(s: ToothSpec, spread: float | None = None) -> float:
+    """`length_rel` with the between-class differences compressed. See LENGTH_SPREAD."""
+    f = LENGTH_SPREAD if spread is None else spread
+    m = _mean_length_rel(s.primary)
+    return m + (s.length_rel - m) * f
 
 
 def display_targets(
-    s: ToothSpec, root_scale: float | None = None
+    s: ToothSpec, root_scale: float | None = None, spread: float | None = None
 ) -> tuple[float, float, float]:
 
     k = ROOT_DISPLAY_SCALE if root_scale is None else root_scale
 
     shrink = (1.0 - s.root_frac) + k * s.root_frac
-    length_rel = s.length_rel * s.size_scale * shrink
+    d_len = displayed_length_rel(s, spread)
+    length_rel = d_len * s.size_scale * shrink
     root_frac = k * s.root_frac / shrink
-    width_frac = s.width_frac / shrink
+    # `width_frac` is a fraction of the tooth's own LENGTH, and the builder
+    # multiplies it by the displayed length to get an absolute width. Both
+    # display factors therefore have to be divided back out, or a purely
+    # vertical decision would silently change how wide a tooth is drawn:
+    # `shrink` (root compression) as it always did, and now `d_len/length_rel`
+    # as well, which would otherwise make the canine narrower and the molars
+    # wider for no anatomical reason.
+    width_frac = s.width_frac * (s.length_rel / d_len) / shrink
     return length_rel, root_frac, width_frac
 
 

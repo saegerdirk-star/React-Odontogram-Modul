@@ -129,15 +129,21 @@ describe("installed tooth SVG assets", () => {
   });
 
   it("posterior side templates declare the generated anatomy and dimensions", () => {
+    // Heights grew across the board on 2026-08-11 (odontogram-3y9): roots are
+    // drawn at 75 % of measured length instead of 60 %, and `root_frac` is now
+    // read off the Odontographie plates. Widths are unchanged, deliberately —
+    // the length decision divides itself back out of `width_frac`, so how wide
+    // a tooth is drawn did not move.
     const expected = {
-      "14": { roots: "2", viewBox: "0.0 0.0 39.8 79.7" },
-      // Shorter since the root is grafted from the canine instead of converted
-      // from the premolar's two roots (odontogram-ay4): the converted root left
-      // lumen standing above the apex, and the viewBox had to reach up to it.
-      "15": { roots: "1", viewBox: "0.0 0.0 39.8 72.8" },
-      "16": { roots: "3", viewBox: "0.0 0.0 42.9 72.6" },
-      "17": { roots: "3", viewBox: "0.0 0.0 42.9 70.9" },
-      "46": { roots: "2", viewBox: "0.0 0.0 42.9 77.1" },
+      "14": { roots: "2", viewBox: "0.0 0.0 39.8 89.6" },
+      // Still shorter than its neighbours relative to its class because the
+      // root is grafted from the canine instead of converted from the
+      // premolar's two roots (odontogram-ay4): the converted root left lumen
+      // standing above the apex, and the viewBox had to reach up to it.
+      "15": { roots: "1", viewBox: "0.0 0.0 39.8 81.9" },
+      "16": { roots: "3", viewBox: "0.0 0.0 42.9 86.1" },
+      "17": { roots: "3", viewBox: "0.0 0.0 42.9 85.3" },
+      "46": { roots: "2", viewBox: "0.0 0.0 42.9 88.8" },
     } as const;
 
     for (const template of POSTERIOR_SIDE) {

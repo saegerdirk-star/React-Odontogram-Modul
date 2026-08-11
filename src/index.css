@@ -303,7 +303,7 @@ select:focus{
   /* Tracks the .tooth-svg height (the tallest template) plus border/padding.
      Keeping the old value while the teeth change height would preserve the
      old row height and defeat the template-specific sizing. */
-  min-height:153px;
+  min-height:157px;
 }
 .tooth-tile.occl-view{
   min-height:78px;
@@ -420,7 +420,7 @@ select:focus{
    generated template and must change with that factor. */
 .tooth-svg{
   width:100%;
-  height:143px;
+  height:147px;
   display:flex;
   align-items:flex-end;
   justify-content:center;
@@ -433,25 +433,25 @@ select:focus{
 .tooth-tile.lower-row.side-view .tooth-svg{align-items:flex-start}
 .tooth-tile.occl-view .tooth-svg{height:80px; align-items:center}
 .tooth-tile.occl-view .tooth-svg svg{width:64px;height:64px}
-.tooth-tile.tpl-11 .tooth-svg svg{width:64px;height:121px}
-.tooth-tile.tpl-12 .tooth-svg svg{width:64px;height:113px}
-.tooth-tile.tpl-31 .tooth-svg svg{width:64px;height:105px}
-.tooth-tile.tpl-13 .tooth-svg svg{width:65px;height:141px}
-.tooth-tile.tpl-14 .tooth-svg svg{width:64px;height:129px}
-.tooth-tile.tpl-15 .tooth-svg svg{width:64px;height:118px}
-.tooth-tile.tpl-16 .tooth-svg svg{width:69px;height:118px}
-.tooth-tile.tpl-17 .tooth-svg svg{width:69px;height:115px}
-.tooth-tile.tpl-46 .tooth-svg svg{width:69px;height:125px}
+.tooth-tile.tpl-11 .tooth-svg svg{width:64px;height:132px}
+.tooth-tile.tpl-12 .tooth-svg svg{width:64px;height:128px}
+.tooth-tile.tpl-31 .tooth-svg svg{width:64px;height:124px}
+.tooth-tile.tpl-13 .tooth-svg svg{width:65px;height:143px}
+.tooth-tile.tpl-14 .tooth-svg svg{width:64px;height:145px}
+.tooth-tile.tpl-15 .tooth-svg svg{width:64px;height:133px}
+.tooth-tile.tpl-16 .tooth-svg svg{width:69px;height:140px}
+.tooth-tile.tpl-17 .tooth-svg svg{width:69px;height:138px}
+.tooth-tile.tpl-46 .tooth-svg svg{width:69px;height:144px}
 /* primary dentition — mounted in place of the successor's template while a
    tooth is charted as a milk tooth (PRIMARY_TEMPLATE in odontogram.ts) */
-.tooth-tile.tpl-51 .tooth-svg svg{width:64px;height:99px}
-.tooth-tile.tpl-52 .tooth-svg svg{width:64px;height:93px}
-.tooth-tile.tpl-53 .tooth-svg svg{width:65px;height:115px}
-.tooth-tile.tpl-54 .tooth-svg svg{width:64px;height:95px}
-.tooth-tile.tpl-55 .tooth-svg svg{width:69px;height:100px}
-.tooth-tile.tpl-71 .tooth-svg svg{width:64px;height:87px}
-.tooth-tile.tpl-74 .tooth-svg svg{width:69px;height:98px}
-.tooth-tile.tpl-75 .tooth-svg svg{width:69px;height:103px}
+.tooth-tile.tpl-51 .tooth-svg svg{width:64px;height:108px}
+.tooth-tile.tpl-52 .tooth-svg svg{width:64px;height:105px}
+.tooth-tile.tpl-53 .tooth-svg svg{width:65px;height:117px}
+.tooth-tile.tpl-54 .tooth-svg svg{width:64px;height:114px}
+.tooth-tile.tpl-55 .tooth-svg svg{width:69px;height:116px}
+.tooth-tile.tpl-71 .tooth-svg svg{width:64px;height:101px}
+.tooth-tile.tpl-74 .tooth-svg svg{width:69px;height:116px}
+.tooth-tile.tpl-75 .tooth-svg svg{width:69px;height:118px}
 /* The lower primary canine is not drawn separately — it is template 53 shown
    about a tenth smaller, which is the observed difference between the arches
    and saves a drawing that would differ in nothing else. The origin is the

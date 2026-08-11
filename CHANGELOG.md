@@ -31,6 +31,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The teeth are drawn longer, and the row of apices is no longer ragged.**
+  Two changes that look like one, kept apart on purpose because only the first
+  is a matter of fact.
+
+  The **root fractions are now measured**. Dirk read all nine permanent
+  templates off the Odontographie plates — view a, mid-facial, counted in cells
+  of the plate's own Linienraster — and the readings corrected two inversions
+  the table had carried: the canine held a *lower* root fraction than the
+  central incisor (0.60 against 0.62) where the plates give 0.642 against
+  0.593, and the lower molar a lower one than the lower incisor (0.62 against
+  0.68) where the plates give 0.680 against 0.640. The same counts independently
+  confirm `length_rel`, agreeing to within 0.02 on six of nine templates, which
+  is what established the Linienraster as one scale across an archive of
+  photographs taken at different distances.
+
+  The **apex line is a decision, not a correction**. Modelling the measured
+  values showed the ragged apex line is not a defect: it *is* the anatomy — the
+  canine really is about 14 % longer than the central incisor and 37 % longer
+  than the second molar, and correcting the anatomy moved the spread by 3 px out
+  of 33. An even apex line can therefore only be chosen, so it is chosen in the
+  open: a new `LENGTH_SPREAD` (0.45) compresses the length *differences* between
+  tooth classes toward their mean, per dentition, instead of anyone quietly
+  editing `length_rel`.
+
+  With `ROOT_DISPLAY_SCALE` raised 0.60 → 0.75, the measured result on the chart
+  is teeth 9–20 % taller (the second molar gains the most, 84.8 → 101.7 px), the
+  apex spread halved from 32.7 px to 15.4 px, the occlusal plane still on one
+  line, and the canine still visibly the longest tooth. **Tooth widths are
+  unchanged** — the length decision divides itself back out of `width_frac`, so
+  a vertical choice cannot silently make the canine narrow and the molars wide.
+
+  `src/perioGraphic.ts` follows in the same change, as it must:
+  `ROOT_RESTORE_SCALE` stays the reciprocal (1/0.75), and `CANINE_ROOT_SCALE`
+  is retired to 1.0 — it existed only to compensate for the canine root the
+  templates used to under-state, and keeping it would re-impose that error in
+  the one view where root length is actually read.
+
+  SVG-fingerprint parity is unaffected (no layer added, removed or re-keyed);
+  the frozen generator digests are re-taken, which is what they are for.
+
 - **A telescope crown now reads as a double crown.** Primary and secondary crown
   were drawn as two filled shapes sharing an edge, so at chart size the pair
   merged into one blue cap with a grey centre — the very thing that distinguishes

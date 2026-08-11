@@ -342,7 +342,14 @@ H_REF = 96.0
 PX_PER_UNIT = 1.62
 
 
-OCCL_MARGIN = 7.5
+# Distance from the occlusal plane to the viewBox bottom. It has to be the SAME
+# on every template - verify.py asserts it - because that is what puts every
+# tooth's occlusal plane on one line when the row is assembled.
+#
+# Raised from 7.5 on 2026-08-11: at ROOT_DISPLAY_SCALE 0.75 the crown region of
+# the warp is longer than at 0.60, and the gum drawn below the incisal edge
+# followed it past the old bottom by 0.29 on tpl 11.
+OCCL_MARGIN = 8.0
 
 
 def curve_extent(d: str):
