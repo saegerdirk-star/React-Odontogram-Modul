@@ -352,6 +352,12 @@ PX_PER_UNIT = 1.62
 OCCL_MARGIN = 8.0
 
 
+# How far the palatal root tip is pulled down relative to the buccal one, as a
+# fraction of the distance from the furcation to the apex. Depth cue: the root
+# standing further from the viewer ends higher up the picture.
+PALATAL_TIP_DROP = 0.34
+
+
 def curve_extent(d: str):
 
     pts = [p for sub in roots._polylines(d) for p in sub]
@@ -434,6 +440,21 @@ def build_one(s: ToothSpec, out_dir: Path, dry: bool, root_scale: float | None =
         capped = "" if fy >= PRIMARY_PULP_SCALE - 1e-9 else f", capped to {fy:.3f}"
         root_note += f" +pulp {len(pulp_hit)}{capped} +spread"
         base_d = tooth_base_d(txt)
+
+    if s.root_converge != 1.0:
+        txt, hit_c = roots.converge_roots_layers(
+            txt, (bx0 + bx1) / 2, by0, cej, s.root_converge
+        )
+        furc_y = cej - (cej - by0) * s.furc_frac
+        txt, hit_s = roots.shorten_one_root_layers(
+            txt, (bx0 + bx1) / 2, by0, furc_y, PALATAL_TIP_DROP
+        )
+        root_note += (
+            f" +converge {s.root_converge:.2f} ({len(hit_c)} layers)"
+            f" +palatal tip -{PALATAL_TIP_DROP:.0%} ({len(hit_s)})"
+        )
+        base_d = tooth_base_d(txt)
+        bx0, by0, bx1, by1 = curve_extent(base_d)
 
     apex, inc = by0, by1
 

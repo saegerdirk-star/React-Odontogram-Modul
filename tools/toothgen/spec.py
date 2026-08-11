@@ -33,6 +33,22 @@ class ToothSpec:
     # permanent germ. `size_scale` is the overall reduction on top of that.
     size_scale: float = 1.0
     primary: bool = False
+    # Pull the roots TOWARDS each other (1.0 = as drawn, <1 = converge).
+    #
+    # A source that draws two roots well apart is showing the PROXIMAL aspect:
+    # on an upper first premolar the buccal and palatal roots separate
+    # bucco-palatally, along the line of sight. Every other template in the set
+    # is a buccal view, where the palatal root stands BEHIND the buccal one and
+    # shows only past its edge - a broad trunk that parts into two close tips
+    # near the apex, the palatal one slightly shorter.
+    #
+    # Done as an x-map, so it composes with the vertical warp and every layer -
+    # contour, canal, gum, bone - travels through the same transformation. The
+    # two roots are a NOTCH in one closed contour rather than two subpaths, so
+    # converging them narrows the notch instead of overlapping two shapes: no
+    # second outline to hide, and nothing added that the parity fingerprint
+    # would see.
+    root_converge: float = 1.0
 
 
 # `root_frac` below is Dirk's own reading off the Odontographie plates
@@ -117,6 +133,7 @@ SPECS: list[ToothSpec] = [
         roots=2,
         length_rel=0.833,
         furc_frac=0.55,
+        root_converge=0.45,
         teeth=(14, 24),
         note="only regularly two-rooted premolar (Fig. 62, section 2.3.3)",
     ),

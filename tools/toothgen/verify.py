@@ -119,7 +119,10 @@ AUTHORED_GEOMETRY_SHA256 = {
     "11": "6372efd50de3e153953892b66d2b13cb643408c98054ebe1e591b99f021a6caa",
     "12": "95cb14201400172323e2ad8cc0db1ae67c90e0bfbebeeca744930b814e2cabf0",
     "13": "49822c6e67781377314fe18d52d5404084ac38d75737daa4189f76047645a887",
-    "14": "0ccb435b66a6bb8e5778eeed6135fc77f143bf6d352918f3cc90471675f0f584",
+    # Re-taken for odontogram-1c0 on 2026-08-11: tpl 14 is drawn from BUCCAL
+    # now - the two roots converge and the palatal tip drops - instead of the
+    # proximal aspect the source draws. Intended, reviewed correction.
+    "14": "4fc08c6d75f7d4ce4ff197f649cb8fc126e249f789b48c5dbb78ad9f59505aed",
     # Re-taken again on 2026-08-10 for odontogram-ay4: template 15's root is
     # grafted from source 13 instead of converted from source 14's two roots.
     "15": "9a76672b5ed49872cb68128eee4cf09385d5962bc8355a326af6235c34a41890",

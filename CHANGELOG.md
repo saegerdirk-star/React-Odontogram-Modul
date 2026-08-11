@@ -31,6 +31,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Tooth 14 is drawn from buccal like every other tooth.** The source template
+  draws the two roots of the upper first premolar side by side, which can only
+  be the *proximal* aspect: those roots separate bucco-palatally, along the line
+  of sight. Teeth 14 and 24 were therefore the one pair in the chart shown from
+  a different side of the mouth.
+
+  Seen from buccal the palatal root stands behind the buccal one. Two transforms
+  produce that, both applied to the tooth and canal layers only: the roots are
+  pulled towards each other, and the palatal tip is dropped by a third of the
+  root's apical length — a structure further from the viewer ends higher up the
+  picture, which is what turns two prongs into depth. Restricting them to the
+  tooth matters: applied template-wide, the convergence pinched the gum band and
+  narrowed the whole tile.
+
+  No new layer and nothing appended, so the SVG-fingerprint parity is untouched.
+  An appended shape was tried first and cannot work — `tooth-base` is filled
+  *and* stroked, so a closed subpath always strokes its base line somewhere
+  across the tooth. The two roots are a notch in one contour rather than two
+  shapes, so moving that notch leaves nothing to hide.
+
 - **The arch closes up: teeth nearly meet at their contact points.** The grid
   gave all sixteen columns the same width (`repeat(16, 1fr)`) around drawings
   that are not the same width — a lower molar is drawn 65.5 px across, a lateral
