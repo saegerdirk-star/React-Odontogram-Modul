@@ -18,6 +18,7 @@ import svgpath  # noqa: E402
 import roots  # noqa: E402
 import graft  # noqa: E402
 import gum  # noqa: E402
+import fillings  # noqa: E402
 from spec import (  # noqa: E402
     PRIMARY_PULP_SCALE,
     PRIMARY_ROOT_SPREAD,
@@ -82,25 +83,18 @@ def content_bbox(txt: str):
 def _crossings(d: str, y: float) -> list[float]:
     """Sorted x of every place the outline crosses the horizontal line ``y``.
 
-    Flattened through ``roots._polylines``, which subdivides a cubic until it
-    is straight. The obvious shortcut - walking the command list and taking
+    Delegates to ``roots.crossings_at``, which flattens through the adaptive
+    subdivision. The obvious shortcut - walking the command list and taking
     each segment's ENDPOINT - is what stood here, and it measures a polygon
-    through the Bezier anchors rather than the outline itself. On a molar,
-    whose crown bulges in the MIDDLE of long cubics, it read 24.6 units where
-    the tooth is 40.0: a third of the width, gone. Every template was then
-    scaled to make that undersized number match its target, so the ones drawn
-    with the longest curves - the premolars and molars - came out about a third
-    too wide, and it looked like their roots were splayed, because the bounding
-    box was the only thing telling the truth (odontogram-5ca).
+    through the Bezier anchors rather than the outline. On a molar, whose crown
+    bulges in the MIDDLE of long cubics, it read 24.6 units where the tooth is
+    40.0: a third of the width, gone. Every template was then scaled to make
+    that undersized number match its target, so the ones drawn with the longest
+    curves - the premolars and molars - came out about a third too wide, and it
+    looked like their roots were splayed, because the bounding box was the only
+    thing telling the truth (odontogram-5ca).
     """
-    xs = []
-    for sub in roots._polylines(d):
-        for (ax, ay), (bx, by) in zip(sub, sub[1:]):
-            if (ay <= y < by) or (by <= y < ay):
-                t = (y - ay) / (by - ay)
-                xs.append(ax + t * (bx - ax))
-    xs.sort()
-    return xs
+    return roots.crossings_at(d, y)
 
 
 def silhouette_width(d: str, y: float) -> float:
@@ -379,6 +373,35 @@ def curve_extent(d: str):
     return min(xs), min(ys), max(xs), max(ys)
 
 
+def connect_fillings(txt: str, occl: float) -> str:
+    """Join each proximal filling shape to the occlusal one. See fillings.py."""
+
+    band = re.search(
+        r'<path id="filling-composite-occlusal" d="([^"]+)"', txt
+    )
+    if not band:
+        return txt
+    for surf in fillings.SURFACES:
+        m = re.search(rf'<path id="filling-composite-{surf}" d="([^"]+)"', txt)
+        if not m:
+            continue
+        new = fillings.stretch_to_band(
+            m.group(1), band.group(1), occl, tooth_base_d(txt), axis="y", sign=1.0
+        )
+        if new is None or new == m.group(1):
+            continue
+        # The four direct materials share ONE geometry per surface and differ
+        # only in fill, so the same stretch is written to all four.
+        for mat in fillings.MATERIALS:
+            txt = re.sub(
+                rf'(<path id="filling-{mat}-{surf}" d=")[^"]+(")',
+                lambda mm: mm.group(1) + new + mm.group(2),
+                txt,
+                count=1,
+            )
+    return txt
+
+
 def replace_gum(
     txt: str,
     occl: float,
@@ -574,6 +597,8 @@ def build_one(s: ToothSpec, out_dir: Path, dry: bool, root_scale: float | None =
         / 2.0,
         s.col_px,
     )
+
+    out = connect_fillings(out, n_inc)
 
     got_root = (n_cej - n_apex) / (n_inc - n_apex)
     got_total = n_inc - n_apex

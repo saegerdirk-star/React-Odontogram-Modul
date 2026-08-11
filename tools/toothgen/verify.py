@@ -143,36 +143,40 @@ def lumen_extremes(txt: str, base_d: str, apex: float, cej: float):
 # standing proud of the second molars; at 0.30 it is 9.6 px and the canine is
 # still visibly the longest tooth, which is what "almost equal" asked for. One
 # constant, every template's length moves. Intended, reviewed correction.
+# Re-taken on 2026-08-11 for odontogram-9cl: the mesial and distal filling
+# shapes are stretched until they meet the occlusal one, so MO/OD/MOD reads as
+# one restoration instead of three blobs. Only the four direct-filling layers
+# move, and only on the proximal surfaces. Intended, reviewed correction.
 AUTHORED_GEOMETRY_SHA256 = {
-    "11": "144396a2d9d2c51ac4e1f905857cb3d133935ca1d0f6c06732e1d27ba8346e10",
-    "12": "9fa7b90c58def903ea8a64847aba82bbb4273f7bd6722e0d1f844f60e48d77ec",
-    "13": "78f490c0a26b6fd79d390800b4c6d03103967550cd03427fff6c29e1804257ab",
+    "11": "c2de41b27659c7c96efc089f9c77b2aa73a34e145e8b3643ae21105187c7760b",
+    "12": "6941ca26f1950f6320596ec9462cd64bcfdfc3f4d983b4f43ee86fa033d3391c",
+    "13": "0bc25f854fb66c10f27a1ed0c9ffbb7c92c1590e241ccb31c8dfcadb3417d23a",
     # Re-taken for odontogram-1c0 on 2026-08-11: tpl 14 is drawn from BUCCAL
     # now - the two roots converge and the palatal tip drops - instead of the
     # proximal aspect the source draws. Intended, reviewed correction.
-    "14": "b571f9176594e0a63a8885d74ab8194e65f85483ab8d8686048d6eb32917a525",
+    "14": "a7dea116afe014eee02f6e33475289a2307ada697da1356aabe87ec85faec496",
     # Re-taken again on 2026-08-10 for odontogram-ay4: template 15's root is
     # grafted from source 13 instead of converted from source 14's two roots.
-    "15": "8d7e88a32e926ac793e07d80f89b227eb5f7931f383c8e82c4299ec04820152b",
-    "16": "8e248bb7e47467e3c36a473205a2fab3f9f4217e634f02e4565822495a5800dc",
-    "17": "d160f77008c245580f9521dd219f2f91f5ee45fca37fa5956a30cfca29d44443",
-    "31": "72b0a2aee5a4ff899a9c2c85155d51a941fca62140fe14b7a6e0f6e6c83ea835",
-    "46": "104996ed31bef30845aa8024076871a49d177bacd1703e758bd20c3acf5106b0",
+    "15": "ec51fc299adea9d3fd806acd003371ca2273a3ed401f6a6f34808a45ab12f009",
+    "16": "4b3f9e27054fef0a36fa85afabc4e62e0e9581f06c0cf8d4fa75240b42ea7b7e",
+    "17": "f8eb00f0078aeafe213b58f2df496dfefad4d7ed832e4d0347799e571f68beba",
+    "31": "de34279c6530fcce36a16002a160b73073f5078a7922061e6fd1b8cf61d0eec7",
+    "46": "b76ddc8212ef1211452e9b83f9b44707fa70f30e2a056dd7aef87ff0fa634321",
     # Primary dentition, taken on 2026-08-10 after Dirk read the rendered
     # dentition in the running chart and accepted it. Until then these eight
     # were deliberately unfrozen, which the digest check reports as a state
     # rather than a fault - a drawing does not have to pass a digest before it
     # may exist, it has to pass the dentist (odontogram-0ak, odontogram-e0a).
-    "51": "1e63ebdce62a29a40ee441ee962f3f5014a7cc82b0fd136391f51b98ea3df6f9",
-    "52": "db37be336adbe6c2453ebb5abaf85b558f03ebda46216d14440b84bbab67a603",
-    "53": "8ce2ba27c6769a0a02570e795a5953ac3dee654b8f76f768cd2df24d5ff94367",
+    "51": "a4bb53e56d46182ff145492e17e402d3eeba4c5a954867b34e68c601b46ea4f7",
+    "52": "76ea437a92e1e7ac6d89eac6f72201433823f0599e21679fad19f17f2bd180a7",
+    "53": "7b55004551a17a9633b8e2073a7ce8cd058be7a809c553a0e00ce79c5dab7eb8",
     # 54 re-taken after Bild 91 moved its cervix from 38% to 31% of tooth height.
-    "54": "d77049d162b47f7581508fa091faac111295c5b564c92d742e07e48775a54c44",
+    "54": "d9d66b5f73c4a2f9675a73e22330ba094cab4d2f225614c137a36194caa8f803",
     # 55 re-taken after Bild 92 moved its cervix from 40% to 38%.
-    "55": "070887e92d9906f2896e95b9e7a23831e10aaac6bd9d78d75f300f6591186025",
-    "71": "3d10dba845b65cabba818c5b3ccfe842fab2b13c2349c2221e0361b938755140",
-    "74": "c51272e7439616662b15f80cf52f2ba805391e0c45cea33ff1739e8e89e0bec8",
-    "75": "b6f18fdf33717ed216191e21ceb5b4f40ec43a64e63e2702ec318c97eb4e11f7",
+    "55": "751b772350e992d8279e54629d6a397e0bf6454bf9419deb5c70d73c4812e83f",
+    "71": "40cf7ddf728b54b8b2d1e999f563a1228c5292a5a2e23b831b232728090fea13",
+    "74": "8b5b302da7e179d62f71d0fe8a8043c012e7c1d5c017ddfbd81ff39a85e8bb9a",
+    "75": "3b373abc2c372bb47dc1ae40661aa17c9a42ddd2c2b9846481141bfccc8e1327",
 }
 
 GEOMETRY_ATTRIBUTES = (
@@ -358,6 +362,73 @@ def check_columns(specs, failures):
                 f"{s.key}: col_px {s.col_px:g} is not a column the grid has "
                 f"({sorted(have)}); the papilla would miss the joint"
             )
+
+
+# Adjacent filling surfaces that a clinician charts as ONE restoration. MO, OD
+# and MOD are cut through the occlusal surface, so the proximal box and the
+# occlusal part are one piece of material and have to be drawn as one shape.
+FILLING_PAIRS = (("mesial", "occlusal"), ("occlusal", "distal"))
+
+
+def _segments(d: str):
+    return [
+        (a, b) for sub in roots._polylines(d) for a, b in zip(sub, sub[1:])
+    ]
+
+
+def _crosses(p1, p2, p3, p4) -> bool:
+    def side(a, b, c):
+        return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+
+    d1, d2 = side(p3, p4, p1), side(p3, p4, p2)
+    d3, d4 = side(p1, p2, p3), side(p1, p2, p4)
+    return ((d1 > 0) != (d2 > 0)) and ((d3 > 0) != (d4 > 0))
+
+
+def _inside(pt, segs) -> bool:
+    x, y = pt
+    n = 0
+    for (ax, ay), (bx, by) in segs:
+        if (ay > y) != (by > y):
+            t = (y - ay) / (by - ay)
+            if ax + t * (bx - ax) > x:
+                n += 1
+    return n % 2 == 1
+
+
+def shapes_meet(d1: str, d2: str) -> bool:
+    """Do two filled outlines share any point - i.e. is their union ONE region?
+
+    Exact for these shapes and free of dependencies: two filled regions overlap
+    exactly when their outlines cross, or when one lies wholly inside the other.
+    Deliberately NOT an area or a bounding-box test - the shapes this was
+    written for had overlapping bounding boxes for years while missing each
+    other entirely, and a guard that does not measure what the clinician looks
+    at passes while the drawing gets worse (odontogram-9cl).
+    """
+    s1, s2 = _segments(d1), _segments(d2)
+    for a, b in s1:
+        for c, e in s2:
+            if _crosses(a, b, c, e):
+                return True
+    return _inside(s1[0][0], s2) or _inside(s2[0][0], s1)
+
+
+def check_fillings(out_dir: Path, failures):
+    """Every MO and OD pair, on every template, must be one connected shape."""
+    for f in sorted(out_dir.glob("*.svg")):
+        txt = f.read_text()
+        for a, b in FILLING_PAIRS:
+            da = re.search(rf'<path id="filling-composite-{a}" d="([^"]+)"', txt)
+            db = re.search(rf'<path id="filling-composite-{b}" d="([^"]+)"', txt)
+            if not da or not db:
+                continue
+            if not shapes_meet(da.group(1), db.group(1)):
+                failures.append(
+                    f"{f.stem}: filling {a[0].upper()}{b[0].upper()} is two "
+                    f"separate shapes; it has to read as one restoration"
+                )
+
 
 
 def main(argv):
@@ -565,6 +636,7 @@ def main(argv):
             failures.append(f"{s.key}: authored geometry changed")
 
     check_occlusal(out_dir, failures)
+    check_fillings(out_dir, failures)
     check_columns(specs, failures)
 
     if occl_offsets:

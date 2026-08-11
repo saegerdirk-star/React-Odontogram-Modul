@@ -1020,3 +1020,21 @@ def clamp_lumen_apex(txt: str, apex: float, margin: float = 1.0):
         return svgpath.warp_path_d(d, lambda x, y: (x, y_bot - (y_bot - y) * k))
 
     return _lumen_paths(txt, handler)
+
+
+def crossings_at(d: str, y: float) -> list[float]:
+    """Sorted x of every place the outline of ``d`` crosses the line ``y``.
+
+    Lives here because this is where the adaptive flattening lives. Walking the
+    command list and taking each segment's ENDPOINT instead measures a polygon
+    through the Bezier anchors, which cost the molars a third of their measured
+    width before it was found (odontogram-5ca).
+    """
+    xs = []
+    for sub in _polylines(d):
+        for (ax, ay), (bx, by) in zip(sub, sub[1:]):
+            if (ay <= y < by) or (by <= y < ay):
+                t = (y - ay) / (by - ay)
+                xs.append(ax + t * (bx - ax))
+    xs.sort()
+    return xs

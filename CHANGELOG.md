@@ -31,6 +31,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **An MO, OD or MOD filling is drawn as one restoration.** (odontogram-9cl)
+  Each surface is its own layer and its own authored shape, and the shapes had
+  been drawn independently: charting MOD lit three of them and the chart showed
+  three separate blobs with tooth between them. Measured, every adjacent pair on
+  every template and every material was **two** connected regions — not a seam
+  that overlapped too little, but shapes that missed each other entirely, while
+  their bounding boxes overlapped and made it look fine to any box-based check.
+
+  The mesial and distal shapes are now stretched toward the occlusal one until
+  they meet it, anchored at the far end — which on a side view is the floor of
+  the box and must not move. That is what the cavity itself does: a proximal box
+  on a posterior tooth is cut *through* the occlusal surface, and a mesial plus
+  incisal restoration on an anterior tooth is a class IV, which is also one
+  restoration. On the side view the stretch follows the crown as it narrows
+  toward the cusp tips, so the overhang past the contour is what it always was,
+  to within a tenth of a unit on every template.
+
+  Both views and all four direct materials, permanent and primary. The state
+  model is untouched — `fillingSurfaceMaterials` stays a per-surface map,
+  because the surfaces are what a clinician charts and what FHIR carries; only
+  the drawing changed. Parity byte-identical.
+
+  `verify.py` gains a guard that fails when an MO or OD pair stops being one
+  connected shape. It tests whether the two outlines actually share a point,
+  not whether their areas or boxes overlap — the defect it was written for
+  survived years of box-shaped agreement.
+
 - **The apex line reads even, with the canine still the longest tooth.**
   `LENGTH_SPREAD` 0.45 → 0.30. Every crown tip already sat on one line; the
   APICAL ends did not, and the 15.1 px of raggedness was essentially one tooth —
