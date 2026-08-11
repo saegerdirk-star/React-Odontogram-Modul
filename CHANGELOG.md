@@ -31,6 +31,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The arch closes up: teeth nearly meet at their contact points.** The grid
+  gave all sixteen columns the same width (`repeat(16, 1fr)`) around drawings
+  that are not the same width — a lower molar is drawn 65.5 px across, a lateral
+  incisor 31.6 px — so the leftover space piled up toward the midline. Adjacent
+  teeth stood 21 to 45 px apart, loosest exactly where contacts matter: the
+  lateral incisor had gaps on either side worth about 1.4× its own width.
+
+  Each column is now the widest tooth it has to hold plus 6 px, floored at 44 px
+  so the narrowest tile stays a usable touch target. Measured on the chart, the
+  gaps fell to **9–20 px** and the anterior segment from 43–45 px to 13–14 px.
+  Both arches still share the columns, so a tooth and its antagonist stay
+  aligned; that is why a column is sized by the wider of the two.
+
+  Two things had to follow. The SVG canvas is wider than the tooth it holds —
+  gum and bone are drawn wider than the crown, and on an incisor the tooth is
+  only about 59 % of its own canvas — so the canvas is now wider than its
+  column and must not shrink as a flex item, or the drawing scales down and the
+  teeth get *smaller* instead of closer. It overflows instead, and neighbouring
+  gum overlaps, which is what gum does. And the drawings now paint as one layer
+  above all tile chrome, because a tile's translucent background would otherwise
+  paint over its neighbour's overflow and punch white notches through the gum
+  band. Tile borders, hover and selection are unchanged.
+
 - **The teeth are drawn longer, and the row of apices is no longer ragged.**
   Two changes that look like one, kept apart on purpose because only the first
   is a matter of fact.

@@ -264,9 +264,29 @@ select:focus{
   direction: ltr;
 }
 
+/* Column widths follow the TOOTH, not the grid (odontogram-377).
+   `repeat(16, 1fr)` stretched every tile to the same width around drawings that
+   are not the same width - the molar is drawn 65.5 px wide and the lateral
+   incisor 31.6 px - so the empty space piled up toward the midline and adjacent
+   teeth stood 21 to 45 px apart, loosest exactly where contacts matter.
+   Each column is now the widest tooth it has to hold plus 6 px, which puts a
+   uniform ~10-16 px between neighbours instead. A column is never narrower than
+   44 px so the lateral-incisor tile stays a usable touch target, and the
+   minmax() lower bound keeps the old behaviour of shrinking under a narrow
+   container rather than overflowing it.
+   Both arches share these columns on purpose: a tooth and its antagonist stay
+   in one column, which is why a column is sized by the wider of the two (the
+   lower molar at 65.5 px against the upper at 61.0). */
 .tooth-grid{
   display:grid;
-  grid-template-columns: repeat(16, minmax(36px, 1fr));
+  grid-template-columns:
+    minmax(28px, 72px) minmax(28px, 72px) minmax(28px, 72px)
+    minmax(28px, 54px) minmax(28px, 57px) minmax(28px, 50px)
+    minmax(28px, 44px) minmax(28px, 44px)
+    minmax(28px, 44px) minmax(28px, 44px)
+    minmax(28px, 50px) minmax(28px, 57px) minmax(28px, 54px)
+    minmax(28px, 72px) minmax(28px, 72px) minmax(28px, 72px);
+  justify-content:center;
   gap:4px;
   padding:10px;
   position:relative;
@@ -425,7 +445,24 @@ select:focus{
   align-items:flex-end;
   justify-content:center;
 }
-.tooth-svg svg{width:72px;height:122px; pointer-events:none}
+/* Never shrink to the tile. The SVG canvas is wider than the tooth it holds -
+   gum and bone are drawn wider than the crown, and on an incisor the tooth is
+   only about 59 % of its own canvas - so once columns follow the TOOTH width
+   (odontogram-377) the canvas is wider than its column. Letting it shrink as a
+   flex item scales the whole drawing down, which makes teeth smaller instead of
+   closer. It overflows instead, and neighbouring gum overlaps, which is what
+   gum does. */
+.tooth-svg svg{width:72px;height:122px; pointer-events:none; flex:0 0 auto}
+/* Drawings paint as ONE layer above ALL tile backgrounds. Tiles are siblings
+   with a translucent white background, so once a canvas overflows its column
+   the NEXT tile's background paints over the overflow and punches a white notch
+   through the gum band. `position:relative; z-index:1` here does not create a
+   per-tile stacking context (the tiles set `position:relative` without a
+   z-index), so every drawing lifts into the grid's own stacking context and
+   lands above every tile's chrome, while the tile keeps its border, hover and
+   selection ring. */
+.tooth-svg{overflow:visible; position:relative; z-index:1}
+.tooth-tile{overflow:visible}
 /* Lower teeth are rendered after a 180-degree rotation. Their occlusal edge
    therefore has the fixed margin at the viewBox top. Top alignment keeps that
    plane continuous; bottom alignment would align root tips instead and offset
