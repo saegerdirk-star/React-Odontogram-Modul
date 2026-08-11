@@ -3477,7 +3477,14 @@ function isActiveWithin(el: Any, layer: Any): boolean {
  *  then drop the background rect and paint the hatch over bare nothing,
  *  discarding the colour that says which material the filling is. */
 function fillLightness(value: string): number | null {
-  const raw = (value || "").trim();
+  // Bead odontogram-sjr made every restoration fill a CSS variable, so a layer
+  // now reads back as `var(--odon-rest-gold, #e0a80d)`. The FALLBACK is the
+  // colour to judge by: it is what the layer renders unless the practice picked
+  // something, and no script here can resolve a custom property the cascade
+  // owns. Without this the hatch loses the colour on exactly the layers it is
+  // drawn over most - the restorations.
+  const varFallback = /^var\(\s*--[^,]+,\s*([^)]+)\)$/.exec((value || "").trim());
+  const raw = (varFallback ? varFallback[1] : (value || "")).trim();
   let rgb: number[] | null = null;
   const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(raw);
   if(hex){
