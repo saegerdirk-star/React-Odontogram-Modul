@@ -284,6 +284,7 @@ péri-implantaires.
 - 🪥 Matériaux d'obturation par surface : amalgame, composite, CVI, temporaire
 - 🏥 Diagnostic pulpaire et traitements endodontiques complets
 - 🩺 Module parodontal complet avec bilan graphique et classification 2017
+- 🔗 Éléments de rétention pour prothèse amovible : crochet, attachement, pilier de barre (crochet dessiné sur la couronne ; travée de barre dérivée, pilier implantaire et naturel mélangés)
 - 🔗 Exportation/Importation HL7 FHIR R4 et JSON
 - 🖼️ Exportation d'images PNG / JPG / SVG et rapport PDF
 - 🔢 Numérotation FDI / Universelle / Palmer

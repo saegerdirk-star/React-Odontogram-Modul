@@ -9,6 +9,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **What holds a removable denture to a natural tooth.** (odontogram-dma) A
+  removable denture could be charted but nothing that HOLDS it: a natural
+  abutment tooth was handed an empty prosthesis list, the attachment vocabulary
+  was gated to implants, and clasp, Geschiebe and Riegel appeared nowhere in the
+  repository. A combined fixed-removable case was half-chartable — the
+  telescopic crown yes, the partial denture at the gap yes, but not that the two
+  belong together.
+
+  **Three anchorings, not one axis.** A **clasp** needs only the tooth to be
+  there, crowned or not; an **attachment** and a **bar abutment** need a crown,
+  because they are built into one. `retention` (`none` / `clasp` /
+  `attachment` / `bar-abutment`) is ONE value per tooth, never a set — a bar
+  abutment does not normally carry a clasp and a telescope abutment does not
+  either, so choosing one replaces the other and the exclusion falls out of the
+  model instead of needing a rule to forbid combinations that do not occur.
+  `retentionSide` (`none` / `mesial` / `distal` / `both`) rides along, because
+  charly records the engaged side and that makes it part of the finding.
+
+  **The clasp is drawn.** A quarter-circle arm on the crown: one end at the
+  height of contour where the arm engages, the more occlusal end at the
+  interdental space where it leaves toward the denture, and therefore the belly
+  toward the gingiva. All three fall out of one construction — the arc's centre
+  sits at the occlusal-inward corner of the crown. Its rotation is derived from
+  the ARCH, not the engaged side: the lower arch draws crowns up and the upper
+  down, so taking it from the side would put every upper clasp upside down. The
+  attachment and the bar carry charly's own marks instead, `( G )` and `ste`,
+  since charly draws no glyph for those either.
+
+  **The bar span is derived, never stored** — like a bridge span, but not the
+  same derivation. A bridge is continuous, so its span is a run of ADJACENT
+  teeth; a bar crosses the edentulous space it exists to span, so requiring
+  adjacency would find nothing on a real case. And one bar may rest on implant
+  and natural abutments together: a natural abutment records it on `retention`,
+  an implant on the `prosthesis` axis it already had, and the derivation reads
+  both without either axis growing a value the other owns.
+
+  The **telescope** stays a crown MATERIAL — it is one, and it already draws as
+  a double contour. It is merely recognised as retention when the summary or an
+  export asks, rather than given a second place to be stored, and that keeps the
+  exclusion rule true without a special case.
+
+  Authored from a dedicated row in the control panel, gated per element and
+  hidden entirely on a tooth that can hold nothing. Payload **2.24 → 2.25**,
+  additive and omit-when-none. Legacy FHIR rides the declarative axis path both
+  ways; the canonical dialect reports it at the boundary, since the IG carries a
+  removable denture as a `DentalProsthesisDE` Device and defines no concept for
+  the retention element on its abutment. The clasp and the bar live in the grid
+  overlay, never in a tooth's own SVG, so SVG-fingerprint parity is unchanged.
+
+  Deliberately out of scope: the denture as an object owning its abutments (a
+  per-tooth marker with a direction is what charly shows and what this needs),
+  any BEMA position mapping, and splints — a splint belongs to an arch, not to a
+  tooth.
+
 - **The chart can now say what the patient arrived with.** (odontogram-ap7)
   A finding entered at the first visit and one entered three years later looked
   identical, and which of the two a crown was is exactly the question asked

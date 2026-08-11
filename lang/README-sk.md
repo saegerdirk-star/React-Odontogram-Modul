@@ -164,6 +164,7 @@ Alebo ho načítajte pomocou dynamického importu iba na strane klienta: `dynami
 - 🎚️ Tri nastavenia podrobnosti kazu (`secondaryCariesMode`, `rootCariesMode`, `radiographicDepthMode`) a prepínač `cariesDepthEnabled`, ktoré zbaľujú každú škálu do jednoduchšieho výberu bez straty uloženej hodnoty
 - 🩹 Súhrnný riadok sekundárneho kazu v paneli výplní: pod ovládacími prvkami výplní vypíše každý vybraný zub so sekundárnym kazom a jeho plochy (napr. „36 (O) má pri výplni nastavený sekundárny kaz.")
 - 🪛 Poruchy výplne na každú plochu (`fillingDefect`: none / marginal / fracture / wear) na priamych reštauráciách, nezávislé od sekundárneho kazu — zaznamenávané cez indikátor pre každú plochu na karte Výplne (podľa vzoru indikátora hĺbky kazu, so zvislo usporiadaným zoznamom možností), zobrazené na odontograme a v tooltipe aj v súhrne výplní za celé ústa s explicitným popiskom (napr. „36 (O) – Porucha výplne: O: okrajová"), rovnakým spôsobom, akým je označený sekundárny kaz v riadku Kaz; karta Výplne tiež zobrazuje upozorňujúcu poznámku pre každý vybraný zub so zaznamenanou poruchou výplne (napr. „36 má zaznamenanú poruchu výplne."), paralelne s existujúcou poznámkou o sekundárnom kaze
+- 🔗 Retenčné prvky, ktoré držia snímateľnú náhradu na prirodzenom zube (`retention`, `retentionSide`) — tri ukotvenia, nie jedna os: **spona** vyžaduje len prítomný zub, **zásuvný spoj** a **pilier trámca** korunku. JEDNA hodnota na zub, nikdy množina. Spona sa KRESLÍ ako štvrťoblúkové rameno na korunke (bruchom k ďasnu, zrkadlené podľa oblúka); zásuvný spoj a trámec nesú charlyho značky `( G )` a `ste`. **Rozpätie trámca sa odvodzuje**, nikdy neukladá, a jeden trámec môže spočívať súčasne na implantátových aj prirodzených pilieroch
 - 🦷🔻 Postihnutie krčka výplňou alebo kazovou léziou (`cervicalSurfaces`: množina nad vestibulárnou a orálnou plochou) — krčková oblasť **nie je** šiestou plochou, ale značkou na existujúcej (BEMA ju píše ako príponu „vz"/„lz"), takže nikdy nemení počet plôch, ktorý číta pozičný stupeň (`getFillingSurfaceCount()`); zaznamenáva sa v tom istom vyskakovacom okne pre plochu, ktoré otvára kríž kazu aj kríž výplní, na bunke plochy je označená písmenom prípony a zobrazuje sa v tooltipe a v riadku nálezu, ktorý spresňuje, v súhrne celých úst. Zámerne sa nekreslí do grafu — bočný pohľad nemá žiadnu linguálnu vrstvu
 - 🦷💥 Opotrebenie zuba typizované podľa klinickej príčiny a miesta (`wearEdge`: none / attrition / erosion, incizálne/oklúzne; `wearCervical`: none / abrasion / abfraction / erosion, cervikálne) — nahrádza dva staré prepínače opotrebenia zap/vyp z bruxizmu; zaznamenávané cez dva rozbaľovacie zoznamy v riadku opotrebenia, opätovne používa existujúcu ilustráciu opotrebenia a zobrazuje sa v tooltipe a novej sekcii súhrnu „Opotrebenie" za celé ústa
 - 🎨 Zafarbenie zuba podľa príčiny (`discoloration`: none / tetracycline / fluorosis / nonvital / extrinsic / other) na trvalých aj mliečnych zuboch — zafarbí zobrazenú prirodzenú korunku reprezentatívnou farbou, keď zub nemá náhradu a má prirodzený substrát; zobrazené v tooltipe a novej sekcii súhrnu „Zafarbenie" za celé ústa; dopĺňa sadu povrchových a štrukturálnych nálezov popri poruchách výplne a opotrebení
@@ -359,6 +360,9 @@ Polia `endo` a `pulpDx` sa zobrazujú cez jeden zlúčený výber „Stav drene 
 
 **Porucha výplne** (`fillingDefect`; na každú plochu, nález priamej reštaurácie nezávislý od sekundárneho kazu — obmedzený na plochy prítomné v `fillingSurfaceMaterials`; vykresľuje vrstvu ilustrácie `defect-{surface}`):
 `none`, `marginal`, `fracture`, `wear`
+
+**Retenčný prvok** (`retention` + `retentionSide`; na zub, viazané podľa prvku; bez grafickej vrstvy, kreslené v prekryve mriežky):
+`none`, `clasp`, `attachment`, `bar-abutment` — `retentionSide`: `none`, `mesial`, `distal`, `both`. **Teleskop** zostáva MATERIÁLOM korunky a rozpoznáva sa ako retencia
 
 **Postihnutie krčka** (`cervicalSurfaces`; množina nad `buccal`/`lingual`, viazaná na plochu, ktorá nesie výplň, kazovú léziu alebo oboje — bez grafickej vrstvy, zámerne nekreslené):
 `buccal`, `lingual` — značka na ploche, nikdy samostatná plocha: `getFillingSurfaceCount()` zostáva nedotknuté
@@ -777,6 +781,8 @@ Export vytvorí súbor JSON (verzia `2.20`; import tiež akceptuje staršie verz
 - `fillingMaterial` - materiál výplne
 - `fillingSurfaces` - plombované plochy
 - `fillingSurfaceMaterials` - materiál výplne pre každú plochu (zmiešané výplne, napr. bukálny amalgám + distálny kompozit)
+- `retention` - čo drží snímateľnú náhradu na tomto zube (none/clasp/attachment/bar-abutment)
+- `retentionSide` - strana, na ktorej retenčný prvok zaberá (none/mesial/distal/both)
 - `fillingDefect` - porucha výplne pre každú plochu (none/marginal/fracture/wear), obmedzená na plombované plochy, nezávislá od sekundárneho kazu
 - `cervicalSurfaces` - plochy, ktorých výplň alebo kazová lézia zasahuje do krčkovej oblasti (buccal/lingual); značka na ploche namiesto šiestej plochy
 - `pulpDx` - AAE diagnóza drene (normal/reversible-pulpitis/irreversible-pulpitis/necrosis); reversible-pulpitis zobrazuje zmenšený glyf
