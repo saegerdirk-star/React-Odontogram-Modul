@@ -2375,4 +2375,6 @@ select:focus{
 .retention-overlay-bar{fill:#8e7cc3; stroke:#4a3b6b; stroke-width:.75}
 /* The clasp is DRAWN, at Dirk's request — he reads charly every day and a
    notation he has to translate is one that slows him down. */
-.retention-overlay-clasp{fill:none; stroke:#1a1a1a; stroke-linecap:round; stroke-linejoin:round}
+/* FILLED, not stroked: a cast clasp tapers from the connector to the tip, and
+   a stroke has one width from end to end. */
+.retention-overlay-clasp{fill:#1a1a1a; stroke:none}

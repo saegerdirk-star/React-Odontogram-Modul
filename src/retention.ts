@@ -258,12 +258,11 @@ export function mesialIsLeft(toothNo: number): boolean {
   return quadrant === 2 || quadrant === 3;
 }
 
-/** One drawn clasp hook, in grid-relative coordinates. */
+/** One drawn clasp arm, in grid-relative coordinates. FILLED, not stroked: a
+ *  cast clasp tapers, and a stroke has one width from end to end. */
 export interface ClaspGlyph {
-  /** Path data for the hook, already placed. */
+  /** Closed outline of the arm, already placed. */
   d: string;
-  /** Stroke width, scaled to the tile. */
-  width: number;
 }
 
 /** Where down the tile the hook sits, as a fraction of tile height.
@@ -283,6 +282,17 @@ const CLASP_RADIUS = 0.20;
  *  landing it on the tooth. */
 const CLASP_EDGE_INSET = 0.10;
 
+/** Arm half-width at the occlusal end, where it joins the denture, and at the
+ *  free tip — both as fractions of the arc radius. A cast clasp is bulky where
+ *  it leaves the connector and thins toward the tip so the tip can flex; drawn
+ *  at one width end to end it reads as a fish hook, which is what Dirk called
+ *  it (2026-08-11). */
+const CLASP_HALF_WIDTH_OCCLUSAL = 0.30;
+const CLASP_HALF_WIDTH_TIP = 0.09;
+/** Samples along the quarter arc. Twelve is smooth at tile scale and keeps the
+ *  path short enough to read in the DOM. */
+const CLASP_SAMPLES = 12;
+
 /**
  * Build the clasp arm for ONE engaged side of one tooth.
  *
@@ -300,6 +310,10 @@ const CLASP_EDGE_INSET = 0.10;
  * occlusal-inward corner, so the quarter between "one radius gingival of the
  * centre" and "one radius proximal of it" bulges away from that corner.
  *
+ * The arm is drawn as a FILLED outline rather than a stroked arc so it can
+ * TAPER — thick where it leaves the denture, thin at the free tip, which is
+ * the shape of a cast clasp.
+ *
  * `uy` is the OCCLUSAL screen direction, and it is arch-derived rather than
  * side-derived: the lower arch draws crowns up (occlusal is -y), the upper
  * draws them down. Taking it from the engaged side instead would put every
@@ -312,18 +326,33 @@ function claspPath(rect: RetentionRect, isLower: boolean, sideIsLeft: boolean): 
   const ux = sideIsLeft ? 1 : -1;                    // toward the crown's centre
   const uy = isLower ? -1 : 1;                       // toward the occlusal edge
   const edge = (sideIsLeft ? rect.x : rect.x + rect.width) + ux * rect.width * CLASP_EDGE_INSET;
-
   const cx = edge + ux * r;
   const ccy = cy + uy * r;                           // arc centre: occlusal-inward corner
-  const crownEnd = [cx, cy];                         // toward the greatest extent
-  const interdentalEnd = [edge, ccy];                // toward the interdental space
-  // Short way round. Which rotational direction that is flips with either the
-  // side or the arch, so it is derived rather than tabulated.
-  const sweep = ux * uy < 0 ? 1 : 0;
+
+  // Angles of the two ends AROUND that centre. The tip end sits one radius
+  // gingival of it, the occlusal end one radius proximal.
+  const a0 = Math.atan2(-uy, 0);                     // free tip, one radius gingival
+  let a1 = Math.atan2(0, -ux);                       // joins the denture, one radius proximal
+  // Walk the SHORT way round (a quarter), whichever rotational sense that is.
+  while(a1 - a0 > Math.PI) a1 -= 2 * Math.PI;
+  while(a0 - a1 > Math.PI) a1 += 2 * Math.PI;
+
+  const half = (t: number) =>
+    r * (CLASP_HALF_WIDTH_TIP + (CLASP_HALF_WIDTH_OCCLUSAL - CLASP_HALF_WIDTH_TIP) * t);
+  const outer: string[] = [];
+  const inner: string[] = [];
   const n = (v: number) => v.toFixed(2);
-  const d = `M ${n(crownEnd[0])} ${n(crownEnd[1])} `
-    + `A ${n(r)} ${n(r)} 0 0 ${sweep} ${n(interdentalEnd[0])} ${n(interdentalEnd[1])}`;
-  return { d, width: Math.max(1.2, r * 0.30) };
+  for(let i = 0; i <= CLASP_SAMPLES; i++){
+    const t = i / CLASP_SAMPLES;
+    const ang = a0 + (a1 - a0) * t;
+    const cos = Math.cos(ang), sin = Math.sin(ang);
+    const w = half(t);
+    outer.push(`${n(cx + (r + w) * cos)} ${n(ccy + (r + w) * sin)}`);
+    inner.push(`${n(cx + (r - w) * cos)} ${n(ccy + (r - w) * sin)}`);
+  }
+  inner.reverse();
+  const d = `M ${outer[0]} L ${outer.slice(1).join(" L ")} L ${inner.join(" L ")} Z`;
+  return { d };
 }
 
 /**

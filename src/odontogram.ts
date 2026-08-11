@@ -1626,7 +1626,6 @@ function updateRetentionBarOverlay(grid: HTMLElement | null){
     const path = document.createElementNS(SVG_NS, "path");
     path.setAttribute("class", "retention-overlay-clasp");
     path.setAttribute("d", glyph.d);
-    path.setAttribute("stroke-width", String(glyph.width));
     overlay.appendChild(path);
   }
   for(const bar of bars){
