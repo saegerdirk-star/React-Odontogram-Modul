@@ -31,6 +31,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Restoration colours name the material.** (odontogram-58n) A direct composite
+  filling and a zirconia inlay were **exactly the same colour**, `#feffbf` — one
+  is a filling and the other is lab work, and the chart could not tell them
+  apart. Gold sat in the same yellow family, so yellow meant composite, zirconia
+  *and* gold. Two further exact collisions were found while measuring: a GIC
+  filling shared salmon with the denture saddle, and a metal crown shares blue
+  with a telescopic one.
+
+  The palette follows the material now, on the scheme Dirk gave: **gold reads
+  gold**, and the **plastics are one green family separated by lightness** —
+  direct composite dark, laboratory composite mid, the acrylic tooth of a
+  removable denture light. Zirconia moves to a cool ceramic white.
+
+  That last one also settles the bead's open question. "Replaced teeth in
+  acrylic" needed no new material value after all: a removable denture's
+  replacement tooth is its own layer (`prosthesis-crown`), so it takes the light
+  green directly, and `restorationMaterial` is untouched. The saddle stays
+  gum-coloured, which is what a denture base is.
+
+  A colour change is parity-safe and digest-neutral by construction — the SVG
+  fingerprint records id, opacity and class, and the frozen geometry digests
+  hash geometry plus only geometry-bearing style properties. `fill` is in
+  neither, and the full suite confirms it.
+
 - **The ceramic and composite materials are named by their material class.**
   Two of the eight restoration materials were brand names and nothing else —
   `emax` and `gradia` — so a dentist looking for a ceramic inlay or a composite
