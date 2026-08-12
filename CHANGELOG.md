@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.0] - 2026-08-12
+
+### Added
+
+- A typed fail-closed Dental-DE import API and patient-scoped renderer session.
+  Canonical profile, Bundle shape, subject ownership, and compatibility are
+  validated before a document or session is returned; failures cannot mutate a
+  mounted renderer or replace a last valid session.
+- A pure bidirectional save boundary. Editable sessions support local changes,
+  cancel-to-baseline, explicit complete Dental-DE export, and deterministic
+  destruction. Export preserves unchanged resources, existing IDs and
+  `meta.versionId`, reports additions/updates/removals, and performs no network
+  or persistence operation.
+- An exhaustive compile-enforced `ToothRecord` field-to-carrier manifest with
+  explicit canonical, unsupported, legacy, and derived classifications, plus
+  compatibility metadata for `de.cognovis.fhir.dental@0.41.6` and FHIR R4.
+- Semantic unchanged and edited roundtrip tests, negative import fixtures,
+  real-shell StrictMode/patient-switch coverage, package declarations, and a
+  downstream consumer contract for the root and optional `./fhir` entries.
+
 ## [Unreleased]
 
 ### Added

@@ -1,6 +1,8 @@
 // Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
 // Created by Zoltan Dul (https://github.com/ZoliQua) 2025-2026
 
+import type { ImplantProduct } from "./implantProduct";
+
 /** Per-tooth record as produced by the engine's serializeState(). */
 export interface ToothRecord {
   toothSelection?: string;
@@ -117,6 +119,8 @@ export interface ToothRecord {
   // indices, per-surface graded 1-3. FHIR import does not read them back yet.
   mpi?: Record<string, number>;
   mbi?: Record<string, number>;
+  implantProduct?: ImplantProduct;
+  assessment?: Record<string, "assessed" | "not-assessed" | "unmeasurable" | "not-applicable">;
   customStates?: Record<string, unknown>;
   note?: string;
 }
