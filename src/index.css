@@ -2460,3 +2460,26 @@ select:focus{
 
 .ma-visually-hidden{position:absolute; inline-size:1px; block-size:1px; overflow:hidden; clip-path:inset(50%);
   white-space:nowrap}
+
+/* Occlusal readings: direct entry, no norm bar — their sign convention is
+   spelled out beside the field instead of left to the reader. */
+.ma-occlusal{display:grid; grid-template-columns:repeat(2,1fr); gap:6px 14px; padding:8px 10px;
+  border:1px solid var(--line); border-radius:8px; background:var(--panel)}
+@media (min-width:760px){ .ma-occlusal{grid-template-columns:repeat(4,1fr)} }
+.ma-occl-field{display:flex; flex-direction:column; gap:2px}
+.ma-occl-field label{font-size:10px; color:var(--muted)}
+.ma-occl-entry{display:flex; align-items:baseline; gap:4px}
+.ma-occl-entry small{font-size:10px; color:var(--muted)}
+.ma-occl-hint{font-size:10px; color:var(--muted); min-block-size:1.2em; font-style:italic}
+
+/* An assumed width is an INFERENCE, and must never read as a measurement. In
+   the browser the first attempt — italics plus a dashed border — was almost
+   invisible next to the measured fields at this size. Tinted, with a corner
+   marker, it cannot be mistaken. Same amber the implant-product gap uses. */
+.ma-width-input.is-assumed{border-style:dashed; border-color:#b9770e;
+  background:color-mix(in srgb, #b9770e 12%, transparent); color:#8a5a08;
+  font-style:italic; cursor:help; position:relative}
+.ma-arch-cell:has(.is-assumed) .ma-arch-tooth,
+.ma-list th[scope="row"]:has(+ td .is-assumed){color:#b9770e; font-weight:700}
+.ma-arch-cell:has(.is-assumed) .ma-arch-tooth::after{content:"*"}
+.ma-assumed-note{margin:0; font-size:11px; color:var(--muted); font-style:italic}

@@ -14,6 +14,8 @@ import {
   hasAnyModelData,
   sumWidths,
   boltonDiscrepancy,
+  contralateral,
+  resolveWidths,
   TONN_TARGET_PERCENT,
   BOLTON_ANTERIOR_TARGET_PERCENT,
   BOLTON_OVERALL_TARGET_PERCENT,
@@ -154,5 +156,98 @@ describe("purity and emptiness", () => {
     expect(hasAnyModelData({ widths: { 11: 0 } })).toBe(false);
     expect(hasAnyModelData({ widths: { 11: Number.NaN } })).toBe(false);
     expect(hasAnyModelData({ widths: { 11: 8.7 } })).toBe(true);
+  });
+});
+
+describe("contralateral substitution", () => {
+  // Dirk's rule: a tooth that is not on the model takes the width of the same
+  // tooth on the other side, so Tonn and Bolton still mean something instead of
+  // collapsing to "not computable".
+
+  it("mirrors within the arch, permanent and primary", () => {
+    expect(contralateral(12)).toBe(22);
+    expect(contralateral(22)).toBe(12);
+    expect(contralateral(11)).toBe(21);
+    expect(contralateral(46)).toBe(36);
+    expect(contralateral(36)).toBe(46);
+    expect(contralateral(52)).toBe(62);
+    expect(contralateral(83)).toBe(73);
+  });
+
+  it("returns null for anything that is not an FDI tooth", () => {
+    expect(contralateral(9)).toBeNull();
+    expect(contralateral(19)).toBeNull();
+    expect(contralateral(99)).toBeNull();
+  });
+
+  it("REFERENCE: 12 missing but 22 present — SI still computes, from 22's width", () => {
+    const widths = { ...REFERENCE_WIDTHS };
+    delete widths[12];
+    const a = deriveModelAnalysis({ widths, absentTeeth: [12] });
+    // 22 is 7.0, so SI = 8.7 + 8.8 + 7.0 + 7.0 = 31.5
+    expect(a.sums.upperIncisors).toBeCloseTo(31.5, 6);
+    expect(a.substitutions).toEqual([{ toothNo: 12, from: 22, mm: 7.0 }]);
+  });
+
+  it("without the rule the same case computes nothing at all", () => {
+    const widths = { ...REFERENCE_WIDTHS };
+    delete widths[12];
+    const a = deriveModelAnalysis({ widths });   // no absentTeeth — 12 is merely unmeasured
+    expect(a.sums.upperIncisors).toBeNull();
+    expect(a.substitutions).toEqual([]);
+  });
+
+  it("an absent tooth ignores a width stored against itself", () => {
+    // There was nothing on the model to put the caliper on, so a reading filed
+    // under this position is stale. The partner's value wins.
+    const a = deriveModelAnalysis({
+      widths: { ...REFERENCE_WIDTHS, 12: 99 },
+      absentTeeth: [12],
+    });
+    expect(a.substitutions).toEqual([{ toothNo: 12, from: 22, mm: 7.0 }]);
+    expect(a.sums.upperIncisors).toBeCloseTo(31.5, 6);
+  });
+
+  it("...and the stored width is only ignored, never destroyed", () => {
+    const widths = { ...REFERENCE_WIDTHS };
+    const absent = deriveModelAnalysis({ widths, absentTeeth: [12] });
+    const present = deriveModelAnalysis({ widths });
+    expect(absent.substitutions).toHaveLength(1);
+    expect(present.substitutions).toHaveLength(0);
+    expect(present.sums.upperIncisors).toBeCloseTo(31.6, 6);   // 12's own 7.1 is back
+  });
+
+  it("never chains: two absent contralaterals borrow from nobody", () => {
+    const widths = { ...REFERENCE_WIDTHS };
+    const a = deriveModelAnalysis({ widths, absentTeeth: [12, 22] });
+    expect(a.substitutions).toEqual([]);
+    expect(a.sums.upperIncisors).toBeNull();   // the honest answer
+  });
+
+  it("works in the lower arch and across several teeth at once", () => {
+    const widths = { ...REFERENCE_WIDTHS };
+    const a = deriveModelAnalysis({ widths, absentTeeth: [46, 31] });
+    expect(a.substitutions).toEqual([
+      { toothNo: 46, from: 36, mm: 11.4 },
+      { toothNo: 31, from: 41, mm: 5.8 },
+    ]);
+    expect(a.sums.lowerTotal).toBeCloseTo(88.0, 6);   // symmetric case, unchanged
+  });
+
+  it("an absent tooth whose partner was never measured stays unmeasured", () => {
+    const widths = { ...REFERENCE_WIDTHS };
+    delete widths[22];
+    const a = deriveModelAnalysis({ widths, absentTeeth: [12] });
+    expect(a.substitutions).toEqual([]);
+    expect(a.sums.upperIncisors).toBeNull();
+  });
+
+  it("resolveWidths reports the effective set the sums were built from", () => {
+    const widths = { ...REFERENCE_WIDTHS };
+    delete widths[12];
+    const { effective, substitutions } = resolveWidths({ widths, absentTeeth: [12] });
+    expect(effective[12]).toBe(7.0);
+    expect(effective[11]).toBe(8.7);
+    expect(substitutions).toHaveLength(1);
   });
 });

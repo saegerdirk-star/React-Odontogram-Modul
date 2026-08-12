@@ -3845,6 +3845,16 @@ export function __setToothStateForTest(toothNo: number, raw: Record<string, unkn
   toothState.set(toothNo, hydrateState(raw, isLegacyPayloadVersion(version)));
 }
 
+/** TEST-ONLY: fire the change notification without mutating anything.
+ *  `__setToothStateForTest` writes straight into the Map and deliberately stays
+ *  silent — several tests count notifications and would break if it spoke. A
+ *  test that needs a SUBSCRIBER to see the seam's write (a mounted component
+ *  reacting to a tooth becoming absent, say) calls this straight after.
+ *  Production never needs it: every real edit notifies through its own setter. */
+export function __notifyStateChangeForTest(): void {
+  notifyStateChange();
+}
+
 /** TEST-ONLY: convert a hydrated state object to a plain object (Sets/Maps
  *  converted to arrays/objects for easy assertions). Shared by
  *  __getToothStateForTest and the R2-A __getStatusStateForTest/
@@ -3904,6 +3914,7 @@ export function __resetChartStateForTest(): void {
   toothState = charts.status;
   resetCaseMeta();
   resetToothWidths(); // measured crown widths are session state, cleared with everything else
+  resetOcclusalMeasurements();
   resetExaminationContext();
   resetExaminations();
   // Bead odontogram-3l1: hand the engine back to the default session and drop
@@ -9408,6 +9419,75 @@ export function resetToothWidths(): void {
   notifyStateChange();
 }
 
+/**
+ * Whether tooth `toothNo` is something a caliper can actually be put on when
+ * the plaster model is in your hand. FALSE for the four states that leave the
+ * position empty — never erupted, lost after extraction, missing, or still
+ * under the gum. This is what drives the contralateral substitution in
+ * `resolveWidths` (bead odontogram-c51.1): a tooth that is not there takes its
+ * width from the same tooth on the other side, so Tonn and Bolton still mean
+ * something.
+ *
+ * An IMPLANT counts as measurable, deliberately. The crown is physically on the
+ * model and a caliper reads it; whether that reading should stand in for the
+ * natural tooth in a Bolton analysis is a clinical judgement, not one this
+ * predicate should make silently.
+ */
+export function isToothMeasurable(toothNo: number): boolean {
+  const sel = toothState.get(toothNo)?.toothSelection ?? "tooth-base";
+  return sel !== "none"
+    && sel !== "not-erupted"
+    && sel !== "no-tooth-after-extraction"
+    && sel !== "tooth-under-gum";
+}
+
+/** Every arch position that carries no measurable tooth, for the substitution. */
+export function getAbsentTeeth(): number[] {
+  return ALL_TEETH.filter(toothNo => !isToothMeasurable(toothNo));
+}
+
+// ---- Bead odontogram-c51.1: the occlusal measurements ----
+// Overjet, overbite and the two dental midline deviations are DIRECT ENTRY —
+// read off the model with a ruler, not computed from anything — so unlike the
+// indices they are stored rather than derived. Session state on the same terms
+// as the widths above, and cleared by the same reset path.
+//
+// SIGN CONVENTIONS, and each is a real clinical distinction rather than a
+// storage detail:
+//   overjet   negative = reversed, i.e. an anterior crossbite
+//   overbite  negative = an open bite
+//   midline   positive = deviated to the PATIENT's right
+// `null` throughout means not measured — never 0, which is a perfectly normal
+// reading and must stay distinguishable from an unrecorded one.
+type OcclusalKey = "overjet" | "overbite" | "midlineUpper" | "midlineLower";
+const occlusal: Record<OcclusalKey, number | null> = {
+  overjet: null, overbite: null, midlineUpper: null, midlineLower: null,
+};
+
+/** The four recorded occlusal measurements in mm; `null` = not measured. */
+export function getOcclusalMeasurements(): Record<OcclusalKey, number | null> {
+  return { ...occlusal };
+}
+
+/**
+ * Record one occlusal measurement in mm. `null` (or any non-finite value)
+ * clears it. Clamped to ±20 mm — beyond that it is a typing slip, not a bite.
+ */
+export function setOcclusalMeasurement(key: OcclusalKey, mm: number | null): void {
+  if (!(key in occlusal)) return;
+  const next = mm === null || !Number.isFinite(mm) ? null : Math.min(20, Math.max(-20, mm));
+  if (occlusal[key] === next) return;
+  occlusal[key] = next;
+  notifyStateChange();
+}
+
+/** Drop every occlusal measurement — part of the blank-slate reset path. */
+export function resetOcclusalMeasurements(): void {
+  if (Object.values(occlusal).every(v => v === null)) return;
+  for (const key of Object.keys(occlusal) as OcclusalKey[]) occlusal[key] = null;
+  notifyStateChange();
+}
+
 // ---- UI-2 Task 1: Settings -> Periodontal tab app-level preferences ----
 // Two session-level UI preferences (no payload/FHIR change), mirroring the
 // `perioViewMode` precedent immediately above: a module `let` + getter +
@@ -11076,6 +11156,7 @@ function wireControls(){
     setEdentulous(false);
     resetCaseMeta(); // case-level patient metadata is part of the blank-slate reset (like edentulous)
     resetToothWidths(); // ... as are the measured crown widths (bead odontogram-c51.1)
+    resetOcclusalMeasurements();
     resetExaminationContext(); // ... as is the examination identity it was recorded under
     resetExaminations();
     for(const toothNo of ALL_TEETH){
@@ -11380,6 +11461,7 @@ export function destroyOdontogram(){
   toothState = charts.status;
   resetCaseMeta();
   resetToothWidths(); // measured crown widths are session state, cleared with everything else
+  resetOcclusalMeasurements();
   resetExaminationContext();
   resetExaminations();
   toothSvgRoot.clear();

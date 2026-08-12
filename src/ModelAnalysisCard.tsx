@@ -23,9 +23,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { t, getI18nLanguage } from "./i18n/useI18n";
 import {
   formatToothLabel,
+  getAbsentTeeth,
+  getOcclusalMeasurements,
   getReadOnly,
   getToothWidths,
   onStateChange,
+  setOcclusalMeasurement,
   setToothWidth,
 } from "./odontogram";
 import {
@@ -34,11 +37,26 @@ import {
   type RatioIndex,
 } from "./modelAnalysis";
 
+/** The four direct-entry occlusal readings, in the order they are charted. */
+const OCCLUSAL_FIELDS = [
+  { key: "overjet", labelKey: "model.overjet", hintKey: "model.overjet.negative" },
+  { key: "overbite", labelKey: "model.overbite", hintKey: "model.overbite.negative" },
+  { key: "midlineUpper", labelKey: "model.midline.upper", hintKey: null },
+  { key: "midlineLower", labelKey: "model.midline.lower", hintKey: null },
+] as const;
+
 /** Arch order, midline in the middle — the order a model is measured in. */
 const UPPER_ROW = [16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26];
 const LOWER_ROW = [46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36];
 
 type ViewMode = "arch" | "list";
+
+interface ViewProps {
+  widths: Record<number, number>;
+  readOnly: boolean;
+  /** toothNo -> the contralateral tooth its width was borrowed from. */
+  assumed: Record<number, number>;
+}
 
 // A German clinician writes 7,0 mm, not 7.0 mm. `toFixed` always emits a dot,
 // so every number a reader sees goes through the active locale instead —
@@ -105,10 +123,12 @@ function parseWidth(raw: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function WidthInput({ toothNo, value, readOnly }: {
+function WidthInput({ toothNo, value, readOnly, assumedFrom }: {
   toothNo: number;
   value: number | null;
   readOnly: boolean;
+  /** Set when this width was BORROWED from the contralateral tooth. */
+  assumedFrom?: number;
 }) {
   // NOT `type="number"`. A number input rejects the decimal COMMA that every
   // German-speaking user types, and hands back an empty string instead of the
@@ -125,6 +145,27 @@ function WidthInput({ toothNo, value, readOnly }: {
   useEffect(() => {
     if (!focused.current) setDraft(widthText(value));
   }, [value]);
+
+  // An assumed width is an INFERENCE. It shows the borrowed number so the sums
+  // are traceable, but it is read-only and visibly marked: a substituted value
+  // that looks like a measurement is the one way this could mislead someone.
+  if (assumedFrom !== undefined) {
+    return (
+      <input
+        type="text"
+        readOnly
+        className="ma-width-input is-assumed"
+        value={widthText(value)}
+        data-tooth={toothNo}
+        data-assumed-from={assumedFrom}
+        title={t("model.assumed.hint", { from: formatToothLabel(assumedFrom) })}
+        aria-label={t("model.assumed.aria", {
+          tooth: formatToothLabel(toothNo),
+          from: formatToothLabel(assumedFrom),
+        })}
+      />
+    );
+  }
 
   return (
     <input
@@ -149,7 +190,7 @@ function WidthInput({ toothNo, value, readOnly }: {
   );
 }
 
-function ArchView({ widths, readOnly }: { widths: Record<number, number>; readOnly: boolean }) {
+function ArchView({ widths, readOnly, assumed }: ViewProps) {
   const row = (teeth: number[], label: string) => (
     <div className="ma-arch-row">
       <span className="ma-arch-label">{label}</span>
@@ -160,7 +201,7 @@ function ArchView({ widths, readOnly }: { widths: Record<number, number>; readOn
             className={`ma-arch-cell${i === teeth.length / 2 ? " is-midline" : ""}`}
           >
             <span className="ma-arch-tooth">{formatToothLabel(toothNo)}</span>
-            <WidthInput toothNo={toothNo} value={widths[toothNo] ?? null} readOnly={readOnly} />
+            <WidthInput toothNo={toothNo} value={assumed[toothNo] !== undefined ? (widths[assumed[toothNo]] ?? null) : (widths[toothNo] ?? null)} readOnly={readOnly} assumedFrom={assumed[toothNo]} />
           </div>
         ))}
       </div>
@@ -174,7 +215,7 @@ function ArchView({ widths, readOnly }: { widths: Record<number, number>; readOn
   );
 }
 
-function ListView({ widths, readOnly }: { widths: Record<number, number>; readOnly: boolean }) {
+function ListView({ widths, readOnly, assumed }: ViewProps) {
   return (
     <div className="ma-list-scroll">
       <table className="ma-list">
@@ -192,15 +233,82 @@ function ListView({ widths, readOnly }: { widths: Record<number, number>; readOn
             return (
               <tr key={upper}>
                 <th scope="row">{formatToothLabel(upper)}</th>
-                <td><WidthInput toothNo={upper} value={widths[upper] ?? null} readOnly={readOnly} /></td>
+                <td><WidthInput toothNo={upper} value={assumed[upper] !== undefined ? (widths[assumed[upper]] ?? null) : (widths[upper] ?? null)} readOnly={readOnly} assumedFrom={assumed[upper]} /></td>
                 <th scope="row">{formatToothLabel(lower)}</th>
-                <td><WidthInput toothNo={lower} value={widths[lower] ?? null} readOnly={readOnly} /></td>
+                <td><WidthInput toothNo={lower} value={assumed[lower] !== undefined ? (widths[assumed[lower]] ?? null) : (widths[lower] ?? null)} readOnly={readOnly} assumedFrom={assumed[lower]} /></td>
               </tr>
             );
           })}
         </tbody>
       </table>
     </div>
+  );
+}
+
+/**
+ * The four ruler readings. Direct entry, not derived — so unlike the indices
+ * they carry no norm bar, only their sign convention, which is spelled out
+ * next to the field rather than left for the reader to guess.
+ */
+function OcclusalRow({ values, readOnly }: {
+  values: Record<string, number | null>;
+  readOnly: boolean;
+}) {
+  return (
+    <div className="ma-occlusal">
+      {OCCLUSAL_FIELDS.map(({ key, labelKey, hintKey }) => {
+        const value = values[key] ?? null;
+        const isMidline = key.startsWith("midline");
+        return (
+          <div className="ma-occl-field" key={key}>
+            <label htmlFor={`ma-${key}`}>{t(labelKey)}</label>
+            <div className="ma-occl-entry">
+              <SignedInput id={`ma-${key}`} field={key} value={value} readOnly={readOnly} />
+              <small>mm</small>
+            </div>
+            <span className="ma-occl-hint">
+              {isMidline
+                ? (value === null || value === 0 ? t("model.midline.centred") :
+                   t(value > 0 ? "model.midline.right" : "model.midline.left"))
+                : (value !== null && value < 0 && hintKey ? t(hintKey) : "")}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Signed millimetre entry — same comma tolerance and draft handling as a width. */
+function SignedInput({ id, field, value, readOnly }: {
+  id: string;
+  field: string;
+  value: number | null;
+  readOnly: boolean;
+}) {
+  const [draft, setDraft] = useState(() => (value === null ? "" : num(value)));
+  const focused = useRef(false);
+  useEffect(() => {
+    if (!focused.current) setDraft(value === null ? "" : num(value));
+  }, [value]);
+  return (
+    <input
+      id={id}
+      type="text"
+      inputMode="decimal"
+      className="ma-width-input"
+      value={draft}
+      disabled={readOnly}
+      data-occlusal={field}
+      onFocus={() => { focused.current = true; }}
+      onBlur={() => { focused.current = false; setDraft(value === null ? "" : num(value)); }}
+      onChange={e => {
+        setDraft(e.currentTarget.value);
+        const raw = e.currentTarget.value.trim().replace(",", ".");
+        const n = raw === "" || raw === "-" ? null : Number(raw);
+        setOcclusalMeasurement(field as never, n === null || !Number.isFinite(n) ? null : n);
+      }}
+    />
   );
 }
 
@@ -258,6 +366,16 @@ function Analysis({ analysis }: { analysis: ModelAnalysis }) {
         </table>
       </div>
 
+      {analysis.substitutions.length > 0 && (
+        <p className="ma-assumed-note">
+          {t("model.assumed.note", {
+            list: analysis.substitutions
+              .map(sub => `${formatToothLabel(sub.toothNo)} ← ${formatToothLabel(sub.from)}`)
+              .join(", "),
+          })}
+        </p>
+      )}
+
       <dl className="ma-findings">
         <dt>{t("model.targetSi")}</dt>
         <dd>{num(analysis.targetUpperIncisorSum)}<small> mm</small></dd>
@@ -280,15 +398,27 @@ function Analysis({ analysis }: { analysis: ModelAnalysis }) {
  */
 export function ModelAnalysisCard() {
   const [widths, setWidths] = useState<Record<number, number>>(() => getToothWidths());
+  const [absent, setAbsent] = useState<number[]>(() => getAbsentTeeth());
+  const [occlusal, setOcclusal] = useState(() => getOcclusalMeasurements());
   const [readOnly, setReadOnly] = useState<boolean>(() => getReadOnly());
   const [view, setView] = useState<ViewMode>("arch");
 
   useEffect(() => onStateChange(() => {
     setWidths(getToothWidths());
+    setAbsent(getAbsentTeeth());
+    setOcclusal(getOcclusalMeasurements());
     setReadOnly(getReadOnly());
   }), []);
 
-  const analysis = useMemo(() => deriveModelAnalysis({ widths }), [widths]);
+  const analysis = useMemo(
+    () => deriveModelAnalysis({ widths, absentTeeth: absent }),
+    [widths, absent],
+  );
+  // toothNo -> the tooth its width came from, for the two views to mark.
+  const assumed = useMemo(
+    () => Object.fromEntries(analysis.substitutions.map(sub => [sub.toothNo, sub.from])),
+    [analysis],
+  );
 
   return (
     <section className="card ma-card" id="modelAnalysisCard" aria-labelledby="maTitle">
@@ -310,8 +440,10 @@ export function ModelAnalysisCard() {
       </header>
 
       {view === "arch"
-        ? <ArchView widths={widths} readOnly={readOnly} />
-        : <ListView widths={widths} readOnly={readOnly} />}
+        ? <ArchView widths={widths} readOnly={readOnly} assumed={assumed} />
+        : <ListView widths={widths} readOnly={readOnly} assumed={assumed} />}
+
+      <OcclusalRow values={occlusal} readOnly={readOnly} />
 
       <Analysis analysis={analysis} />
     </section>

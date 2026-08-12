@@ -11,14 +11,17 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   getToothWidth, getToothWidths, setToothWidth, resetToothWidths,
+  isToothMeasurable, getAbsentTeeth,
+  getOcclusalMeasurements, setOcclusalMeasurement, resetOcclusalMeasurements,
   onStateChange,
-  __resetChartStateForTest, __collectExportPayloadForTest,
+  __resetChartStateForTest, __collectExportPayloadForTest, __setToothStateForTest,
 } from "../odontogram";
 import { deriveModelAnalysis } from "../modelAnalysis";
 
 beforeEach(() => {
   __resetChartStateForTest();
   resetToothWidths();
+  resetOcclusalMeasurements();
 });
 
 describe("recording a width", () => {
@@ -131,5 +134,110 @@ describe("feeding the derivation", () => {
     const a = deriveModelAnalysis({ widths: getToothWidths() });
     expect(a.sums.upperIncisors).toBeNull();
     expect(a.tonn.actualPercent).toBeNull();
+  });
+});
+
+describe("which teeth are measurable", () => {
+  it("a normal tooth is measurable, and so is an implant", () => {
+    expect(isToothMeasurable(11)).toBe(true);
+    __setToothStateForTest(11, { toothSelection: "implant" });
+    // An implant crown is physically on the model and a caliper reads it —
+    // whether it should stand in for the natural tooth is a clinical call,
+    // not one this predicate makes silently.
+    expect(isToothMeasurable(11)).toBe(true);
+  });
+
+  it("the four empty positions are not measurable", () => {
+    for (const sel of ["none", "not-erupted", "no-tooth-after-extraction", "tooth-under-gum"]) {
+      __setToothStateForTest(12, { toothSelection: sel });
+      expect(isToothMeasurable(12), sel).toBe(false);
+      expect(getAbsentTeeth()).toContain(12);
+    }
+  });
+
+  it("getAbsentTeeth is empty on a fresh chart", () => {
+    expect(getAbsentTeeth()).toEqual([]);
+  });
+});
+
+describe("the substitution rule end to end", () => {
+  it("12 missing, 22 present: the analysis borrows 22's width", () => {
+    const widths: Record<number, number> = {
+      16: 10.5, 15: 6.5, 14: 7.1, 13: 8.1, 11: 8.7,
+      21: 8.8, 22: 7.0, 23: 8.1, 24: 7.1, 25: 6.4, 26: 10.5,
+    };
+    for (const [no, mm] of Object.entries(widths)) setToothWidth(Number(no), mm);
+    __setToothStateForTest(12, { toothSelection: "none" });
+
+    const a = deriveModelAnalysis({ widths: getToothWidths(), absentTeeth: getAbsentTeeth() });
+    expect(a.substitutions).toEqual([{ toothNo: 12, from: 22, mm: 7.0 }]);
+    expect(a.sums.upperIncisors).toBeCloseTo(31.5, 6);
+  });
+});
+
+describe("occlusal measurements", () => {
+  it("records and reads back all four", () => {
+    setOcclusalMeasurement("overjet", 4.4);
+    setOcclusalMeasurement("overbite", 6.3);
+    setOcclusalMeasurement("midlineUpper", 0);
+    setOcclusalMeasurement("midlineLower", -1.5);
+    expect(getOcclusalMeasurements()).toEqual({
+      overjet: 4.4, overbite: 6.3, midlineUpper: 0, midlineLower: -1.5,
+    });
+  });
+
+  it("defaults to null, and 0 is a real reading rather than an absent one", () => {
+    expect(getOcclusalMeasurements()).toEqual({
+      overjet: null, overbite: null, midlineUpper: null, midlineLower: null,
+    });
+    setOcclusalMeasurement("overbite", 0);
+    expect(getOcclusalMeasurements().overbite).toBe(0);
+  });
+
+  it("keeps negatives — a reversed overjet and an open bite are findings", () => {
+    setOcclusalMeasurement("overjet", -2.5);
+    setOcclusalMeasurement("overbite", -3);
+    expect(getOcclusalMeasurements().overjet).toBe(-2.5);
+    expect(getOcclusalMeasurements().overbite).toBe(-3);
+  });
+
+  it("clamps a slip to plus or minus 20 mm", () => {
+    setOcclusalMeasurement("overjet", 400);
+    expect(getOcclusalMeasurements().overjet).toBe(20);
+    setOcclusalMeasurement("overjet", -400);
+    expect(getOcclusalMeasurements().overjet).toBe(-20);
+  });
+
+  it("null clears, and non-finite input clears rather than storing NaN", () => {
+    setOcclusalMeasurement("overjet", 4.4);
+    setOcclusalMeasurement("overjet", null);
+    expect(getOcclusalMeasurements().overjet).toBeNull();
+    setOcclusalMeasurement("overjet", Number.NaN);
+    expect(getOcclusalMeasurements().overjet).toBeNull();
+  });
+
+  it("notifies once per real change and stays silent when unchanged", () => {
+    let fired = 0;
+    const off = onStateChange(() => { fired += 1; });
+    try {
+      setOcclusalMeasurement("overjet", 4.4);
+      expect(fired).toBe(1);
+      setOcclusalMeasurement("overjet", 4.4);
+      expect(fired).toBe(1);
+    } finally { off(); }
+  });
+
+  it("the blank-slate reset clears them", () => {
+    setOcclusalMeasurement("overjet", 4.4);
+    __resetChartStateForTest();
+    expect(getOcclusalMeasurements().overjet).toBeNull();
+  });
+
+  it("recording them leaves the export payload byte-identical", () => {
+    const before = JSON.stringify(__collectExportPayloadForTest());
+    setOcclusalMeasurement("overjet", 4.4);
+    setOcclusalMeasurement("overbite", 6.3);
+    setOcclusalMeasurement("midlineLower", -1.5);
+    expect(JSON.stringify(__collectExportPayloadForTest())).toBe(before);
   });
 });

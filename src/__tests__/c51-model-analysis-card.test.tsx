@@ -14,7 +14,8 @@ import { ModelAnalysisCard } from "../ModelAnalysisCard";
 import { setI18nLanguage } from "../i18n/useI18n";
 import {
   getToothWidth, setToothWidth, resetToothWidths, setReadOnly,
-  __resetChartStateForTest,
+  getOcclusalMeasurements, resetOcclusalMeasurements,
+  __resetChartStateForTest, __setToothStateForTest, __notifyStateChangeForTest,
 } from "../odontogram";
 
 /** Every width of the reference model measurement, in arch order. */
@@ -28,8 +29,12 @@ const REFERENCE: Record<number, number> = {
 const field = (toothNo: number) =>
   document.querySelector<HTMLInputElement>(`.ma-width-input[data-tooth="${toothNo}"]`)!;
 
-const type = (toothNo: number, value: string) =>
+const type = (toothNo: number, value: string) => {
+  // A real typist focuses the field first, and the draft logic depends on that:
+  // while focused, nothing may overwrite what is being typed.
+  fireEvent.focus(field(toothNo));
   fireEvent.change(field(toothNo), { target: { value } });
+};
 
 const switchTo = (label: RegExp) =>
   fireEvent.click(within(document.querySelector(".ma-viewswitch")!).getByText(label));
@@ -37,6 +42,7 @@ const switchTo = (label: RegExp) =>
 beforeEach(() => {
   __resetChartStateForTest();
   resetToothWidths();
+  resetOcclusalMeasurements();
   setReadOnly(false);
   setI18nLanguage("en");
 });
@@ -160,8 +166,20 @@ describe("staying current", () => {
   it("a blank-slate reset empties the fields", () => {
     render(<ModelAnalysisCard />);
     type(11, "8.7");
+    fireEvent.blur(field(11));   // as clicking a reset button would
     act(() => __resetChartStateForTest());
     expect(field(11).value).toBe("");
+  });
+
+  it("but a field still being typed into is not overwritten from underneath", () => {
+    // Deliberate: an import or a second view arriving mid-keystroke must not
+    // yank the text out of the typist's field. It re-syncs on blur.
+    render(<ModelAnalysisCard />);
+    type(11, "8.7");
+    act(() => { setToothWidth(11, 9.9); });
+    expect(field(11).value).toBe("8.7");
+    fireEvent.blur(field(11));
+    expect(field(11).value).toBe("9.9");
   });
 });
 
@@ -194,5 +212,106 @@ describe("the decimal separator follows the language", () => {
     render(<ModelAnalysisCard />);
     type(11, "8,7");
     expect(getToothWidth(11)).toBe(8.7);
+  });
+});
+
+describe("occlusal readings", () => {
+  const occl = (field: string) =>
+    document.querySelector<HTMLInputElement>(`.ma-width-input[data-occlusal="${field}"]`)!;
+
+  it("writes all four through to the engine", () => {
+    render(<ModelAnalysisCard />);
+    fireEvent.change(occl("overjet"), { target: { value: "4.4" } });
+    fireEvent.change(occl("overbite"), { target: { value: "6.3" } });
+    fireEvent.change(occl("midlineLower"), { target: { value: "-1.5" } });
+    expect(getOcclusalMeasurements()).toMatchObject({
+      overjet: 4.4, overbite: 6.3, midlineLower: -1.5,
+    });
+  });
+
+  it("a lone minus sign is a half-typed number, not a clear", () => {
+    render(<ModelAnalysisCard />);
+    fireEvent.focus(occl("overjet"));
+    fireEvent.change(occl("overjet"), { target: { value: "4.4" } });
+    fireEvent.change(occl("overjet"), { target: { value: "-" } });
+    expect(occl("overjet").value).toBe("-");
+    fireEvent.change(occl("overjet"), { target: { value: "-2" } });
+    expect(getOcclusalMeasurements().overjet).toBe(-2);
+  });
+
+  it("names the direction of a midline deviation rather than leaving a sign to decode", () => {
+    setI18nLanguage("de");
+    render(<ModelAnalysisCard />);
+    const hint = () => document.querySelectorAll(".ma-occl-hint")[2].textContent;
+    expect(hint()).toBe("mittig");
+    fireEvent.change(occl("midlineUpper"), { target: { value: "2" } });
+    expect(hint()).toBe("nach rechts");
+    fireEvent.change(occl("midlineUpper"), { target: { value: "-2" } });
+    expect(hint()).toBe("nach links");
+  });
+
+  it("calls a negative overjet a crossbite and a negative overbite an open bite", () => {
+    setI18nLanguage("de");
+    render(<ModelAnalysisCard />);
+    const hints = () => Array.from(document.querySelectorAll(".ma-occl-hint")).map(e => e.textContent);
+    fireEvent.change(occl("overjet"), { target: { value: "-2" } });
+    fireEvent.change(occl("overbite"), { target: { value: "-3" } });
+    expect(hints()[0]).toMatch(/Kopfbiss|umgekehrt/);
+    expect(hints()[1]).toBe("offener Biss");
+  });
+});
+
+describe("an assumed width never reads as a measurement", () => {
+  it("shows the borrowed value, marked and not typeable", () => {
+    render(<ModelAnalysisCard />);
+    for (const [no, w] of Object.entries(REFERENCE)) type(Number(no), String(w));
+    act(() => { __setToothStateForTest(12, { toothSelection: "none" }); __notifyStateChangeForTest(); });
+
+    const f = field(12);
+    expect(f.readOnly).toBe(true);
+    expect(f.className).toMatch(/is-assumed/);
+    expect(f.dataset.assumedFrom).toBe("22");
+    expect(f.value).toBe("7.0");                       // 22's width, not 12's own 7.1
+    expect(f.getAttribute("aria-label")).toMatch(/12/);
+    expect(f.getAttribute("aria-label")).toMatch(/22/);
+  });
+
+  it("lists every assumption under the analysis", () => {
+    render(<ModelAnalysisCard />);
+    for (const [no, w] of Object.entries(REFERENCE)) type(Number(no), String(w));
+    expect(document.querySelector(".ma-assumed-note")).toBeNull();
+
+    act(() => {
+      __setToothStateForTest(12, { toothSelection: "none" });
+      __setToothStateForTest(46, { toothSelection: "not-erupted" });
+      __notifyStateChangeForTest();
+    });
+    const note = document.querySelector(".ma-assumed-note")!.textContent!;
+    expect(note).toMatch(/12/);
+    expect(note).toMatch(/22/);
+    expect(note).toMatch(/46/);
+    expect(note).toMatch(/36/);
+  });
+
+  it("the sums keep computing where without the rule they would not", () => {
+    render(<ModelAnalysisCard />);
+    for (const [no, w] of Object.entries(REFERENCE)) {
+      if (Number(no) !== 12) type(Number(no), String(w));
+    }
+    // 12 unmeasured and PRESENT: no substitution, so Tonn cannot be computed
+    const tonn = () => document.querySelectorAll(".ma-indices tbody tr")[0].querySelectorAll("td")[1].textContent;
+    expect(tonn()).toBe("—");
+
+    act(() => { __setToothStateForTest(12, { toothSelection: "none" }); __notifyStateChangeForTest(); });
+    expect(tonn()).not.toBe("—");
+  });
+
+  it("marks the assumption in the list view too", () => {
+    render(<ModelAnalysisCard />);
+    for (const [no, w] of Object.entries(REFERENCE)) type(Number(no), String(w));
+    act(() => { __setToothStateForTest(12, { toothSelection: "none" }); __notifyStateChangeForTest(); });
+    switchTo(/Liste|List/i);
+    expect(field(12).className).toMatch(/is-assumed/);
+    expect(field(12).readOnly).toBe(true);
   });
 });

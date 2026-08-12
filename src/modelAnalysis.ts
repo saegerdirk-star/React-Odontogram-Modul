@@ -62,9 +62,23 @@ export const BOLTON_OVERALL_TARGET_PERCENT = 91.3;
  * Mesiodistal crown widths in mm, keyed by FDI number. A tooth that has not
  * been measured is simply absent - there is no sentinel value, because 0 mm is
  * a legitimate reading nowhere and "not measured" must stay distinguishable.
+ *
+ * `absentTeeth` lists positions that carry NO measurable tooth on the model -
+ * never erupted, lost, or still under the gum. Those get the contralateral
+ * substitution below. It is deliberately separate from "no width typed yet":
+ * substituting for merely-unmeasured teeth would invent the other half of the
+ * arch the moment the first number was entered.
  */
 export interface ModelAnalysisInput {
   widths: Readonly<Record<number, number>>;
+  absentTeeth?: Iterable<number>;
+}
+
+/** One assumed width: `toothNo` took its value from `from`. */
+export interface Substitution {
+  toothNo: number;
+  from: number;
+  mm: number;
 }
 
 // ---- Output ---------------------------------------------------------------
@@ -106,6 +120,13 @@ export interface ModelAnalysis {
   targetUpperIncisorSum: number | null;
   /** Lower incisor sum Tonn's norm implies for the measured upper incisors. */
   targetLowerIncisorSum: number | null;
+  /**
+   * Every width that was ASSUMED rather than measured, in FDI order. Anything
+   * displaying this analysis has to surface these: a substituted width is an
+   * inference, and an inference that looks like a measurement is the one way
+   * this whole feature could mislead someone.
+   */
+  substitutions: Substitution[];
 }
 
 // ---- Helpers --------------------------------------------------------------
@@ -178,6 +199,71 @@ function ratioIndex(
   };
 }
 
+// ---- Contralateral substitution -------------------------------------------
+
+/**
+ * The same tooth on the other side of the same arch: 12 mirrors to 22, 46 to
+ * 36. FDI pairs the quadrants 1↔2 and 4↔3 in the permanent dentition, 5↔6 and
+ * 8↔7 in the primary one; the position digit never changes. Returns `null` for
+ * anything that is not an FDI tooth number.
+ */
+export function contralateral(toothNo: number): number | null {
+  const quadrant = Math.floor(toothNo / 10);
+  const position = toothNo % 10;
+  if (position < 1 || position > 8) return null;
+  const mirrored: Record<number, number> = { 1: 2, 2: 1, 3: 4, 4: 3, 5: 6, 6: 5, 7: 8, 8: 7 };
+  const other = mirrored[quadrant];
+  return other === undefined ? null : other * 10 + position;
+}
+
+/**
+ * Apply Dirk's rule: a tooth that is not on the model - never erupted, lost, or
+ * under the gum - takes the width of its contralateral partner, so Tonn and
+ * Bolton still mean something instead of collapsing to "not computable".
+ *
+ * Two decisions worth stating, because both could reasonably have gone the
+ * other way:
+ *
+ * - An absent tooth NEVER uses a width stored against itself. If the position
+ *   is charted as carrying no tooth, a reading filed under it is stale - there
+ *   was nothing there to put the caliper on. The stored value is ignored, not
+ *   deleted, so un-marking the tooth brings it straight back.
+ * - Substitution needs a MEASURED partner. It never chains: two missing
+ *   contralaterals stay unmeasured rather than borrowing from each other, and
+ *   an absent tooth whose partner is also absent leaves the sum null, which is
+ *   the honest answer.
+ */
+export function resolveWidths(input: ModelAnalysisInput): {
+  effective: Record<number, number>;
+  substitutions: Substitution[];
+} {
+  const absent = new Set(input.absentTeeth ?? []);
+  const measured = (toothNo: number): number | null => {
+    if (absent.has(toothNo)) return null;
+    const w = input.widths[toothNo];
+    return typeof w === "number" && Number.isFinite(w) && w > 0 ? w : null;
+  };
+
+  const effective: Record<number, number> = {};
+  const substitutions: Substitution[] = [];
+
+  for (const toothNo of [...UPPER_TOTAL_TEETH, ...LOWER_TOTAL_TEETH]) {
+    const own = measured(toothNo);
+    if (own !== null) {
+      effective[toothNo] = own;
+      continue;
+    }
+    if (!absent.has(toothNo)) continue;
+    const partner = contralateral(toothNo);
+    const borrowed = partner === null ? null : measured(partner);
+    if (borrowed !== null) {
+      effective[toothNo] = borrowed;
+      substitutions.push({ toothNo, from: partner!, mm: borrowed });
+    }
+  }
+  return { effective, substitutions };
+}
+
 // ---- Derivation -----------------------------------------------------------
 
 /**
@@ -186,7 +272,7 @@ function ratioIndex(
  * decision and belongs to whatever displays the result.
  */
 export function deriveModelAnalysis(input: ModelAnalysisInput): ModelAnalysis {
-  const w = input.widths;
+  const { effective: w, substitutions } = resolveWidths(input);
   const sums: ToothSums = {
     upperTotal: sumWidths(w, UPPER_TOTAL_TEETH),
     lowerTotal: sumWidths(w, LOWER_TOTAL_TEETH),
@@ -209,6 +295,7 @@ export function deriveModelAnalysis(input: ModelAnalysisInput): ModelAnalysis {
     boltonOverall: ratioIndex(sums.lowerTotal, sums.upperTotal, BOLTON_OVERALL_TARGET_PERCENT),
     targetUpperIncisorSum: sums.lowerIncisors === null ? null : sums.lowerIncisors / tonnFactor,
     targetLowerIncisorSum: sums.upperIncisors === null ? null : sums.upperIncisors * tonnFactor,
+    substitutions,
   };
 }
 

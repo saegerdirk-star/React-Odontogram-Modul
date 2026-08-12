@@ -8,7 +8,8 @@ import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "../../src/index.css";
 import { ModelAnalysisCard } from "../../src/ModelAnalysisCard";
-import { setToothWidth, resetToothWidths, setReadOnly, setNumberingSystem } from "../../src/odontogram";
+import { setToothWidth, resetToothWidths, setReadOnly, setNumberingSystem,
+  setOcclusalMeasurement, __setToothStateForTest, __notifyStateChangeForTest } from "../../src/odontogram";
 import { setI18nLanguage } from "../../src/i18n/useI18n";
 import type { Language } from "../../src/i18n/translations";
 
@@ -32,6 +33,17 @@ function Bench() {
         <button onClick={() => { for (const [n, w] of Object.entries(REFERENCE)) setToothWidth(Number(n), w); }}>
           Referenzfall füllen
         </button>
+        <button onClick={() => {
+          setOcclusalMeasurement("overjet", 4.4);
+          setOcclusalMeasurement("overbite", 6.3);
+          setOcclusalMeasurement("midlineUpper", 0);
+          setOcclusalMeasurement("midlineLower", -1.5);
+        }}>Okklusion füllen</button>
+        <button onClick={() => {
+          __setToothStateForTest(12, { toothSelection: "none" });
+          __setToothStateForTest(46, { toothSelection: "not-erupted" });
+          __notifyStateChangeForTest();
+        }}>12 fehlt, 46 nicht durchgebrochen</button>
         <button onClick={() => resetToothWidths()}>Leeren</button>
         <label>
           Sprache{" "}
