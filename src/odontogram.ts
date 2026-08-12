@@ -3903,6 +3903,7 @@ export function __resetChartStateForTest(): void {
   chartMode = "status";
   toothState = charts.status;
   resetCaseMeta();
+  resetToothWidths(); // measured crown widths are session state, cleared with everything else
   resetExaminationContext();
   resetExaminations();
   // Bead odontogram-3l1: hand the engine back to the default session and drop
@@ -9349,6 +9350,64 @@ export function setPerioViewMode(mode: PerioViewMode): void {
   notifyStateChange();
 }
 
+// ---- Bead odontogram-c51.1: measured mesiodistal crown widths ----
+// Session-level, DELIBERATELY not part of the export payload — the same
+// standing as `perioViewMode` above, and for a recorded reason rather than
+// convenience. c51's audit found that no published Dental-DE carrier authors
+// model analysis, and c51's own rule is to stay blocked rather than ship a
+// local-code persistence path. Keeping the widths in session state honours
+// that: `collectExportPayload`/`getPlanChart`/hydrate never reference them, so
+// the payload version, the FHIR bundle and the SVG fingerprints are all
+// byte-identical, and no unmapped field is invented in the meantime.
+//
+// PROMOTION POINT. When a carrier is published, this map moves into the
+// document and this comment goes away. Nothing else has to change: everything
+// downstream reads `getToothWidths()`, and the analysis itself is derived
+// (`deriveModelAnalysis` in `src/modelAnalysis.ts`), so no derived value is
+// stored anywhere and none has to be migrated.
+//
+// ABSENCE = NOT MEASURED. A tooth with no entry has no key — never a stored 0,
+// the same convention `radiographicDepth` and the perio maps use.
+const toothWidths = new Map<number, number>();
+
+/** Measured mesiodistal crown widths in mm, keyed by FDI. Omits unmeasured teeth. */
+export function getToothWidths(): Record<number, number> {
+  return Object.fromEntries(toothWidths);
+}
+
+/** One tooth's measured width in mm, or `null` when it has not been measured. */
+export function getToothWidth(toothNo: number): number | null {
+  const w = toothWidths.get(toothNo);
+  return typeof w === "number" ? w : null;
+}
+
+/**
+ * Record one tooth's mesiodistal width. `null` (or any non-finite or
+ * non-positive value) clears the entry rather than storing a sentinel, so
+ * "measured as nothing" can never be confused with "not measured".
+ * Clamped to a plausible crown range; a caliper reading outside it is a
+ * typing slip, not a finding.
+ */
+export function setToothWidth(toothNo: number, mm: number | null): void {
+  if (!ALL_TEETH.includes(toothNo)) return;
+  if (mm === null || !Number.isFinite(mm) || mm <= 0) {
+    if (!toothWidths.delete(toothNo)) return;
+    notifyStateChange();
+    return;
+  }
+  const clamped = Math.min(20, Math.max(1, mm));
+  if (toothWidths.get(toothNo) === clamped) return;
+  toothWidths.set(toothNo, clamped);
+  notifyStateChange();
+}
+
+/** Drop every measured width — part of the blank-slate reset path. */
+export function resetToothWidths(): void {
+  if (toothWidths.size === 0) return;
+  toothWidths.clear();
+  notifyStateChange();
+}
+
 // ---- UI-2 Task 1: Settings -> Periodontal tab app-level preferences ----
 // Two session-level UI preferences (no payload/FHIR change), mirroring the
 // `perioViewMode` precedent immediately above: a module `let` + getter +
@@ -11016,6 +11075,7 @@ function wireControls(){
   $("#btnResetAll").addEventListener("click", ()=>{
     setEdentulous(false);
     resetCaseMeta(); // case-level patient metadata is part of the blank-slate reset (like edentulous)
+    resetToothWidths(); // ... as are the measured crown widths (bead odontogram-c51.1)
     resetExaminationContext(); // ... as is the examination identity it was recorded under
     resetExaminations();
     for(const toothNo of ALL_TEETH){
@@ -11319,6 +11379,7 @@ export function destroyOdontogram(){
   chartMode = "status";
   toothState = charts.status;
   resetCaseMeta();
+  resetToothWidths(); // measured crown widths are session state, cleared with everything else
   resetExaminationContext();
   resetExaminations();
   toothSvgRoot.clear();

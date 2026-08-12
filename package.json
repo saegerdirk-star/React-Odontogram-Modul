@@ -67,7 +67,8 @@
     "toothgen:verify": "uv run tools/toothgen/verify.py && uv run tools/toothgen/check_roundtrip.py",
     "toothgen:verify:primary": "uv run tools/toothgen/verify.py --primary",
     "docs": "typedoc",
-    "prepublishOnly": "npm run build:lib"
+    "prepublishOnly": "npm run build:lib",
+    "prototype:model": "vite --open '/prototypes/model-analysis/'"
   },
   "peerDependencies": {
     "react": "^18 || ^19",

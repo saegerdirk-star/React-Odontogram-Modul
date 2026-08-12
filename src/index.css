@@ -2387,3 +2387,76 @@ select:focus{
 .settings-colour-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:8px 14px; margin:10px 0 14px}
 .settings-colour-row{display:flex; align-items:center; gap:9px; font-size:13px; cursor:pointer}
 .settings-colour-row input[type="color"]{inline-size:34px; block-size:26px; padding:0; border:1px solid var(--line); border-radius:6px; background:none; cursor:pointer}
+
+/* ── Bead odontogram-c51.1: model analysis ──────────────────────────────────
+   Two views over one width record (arch + list) and the derived indices under
+   them. Norms and deviations stay visible while typing, so entering the
+   measurements is also checking them. */
+.ma-card{display:flex; flex-direction:column; gap:12px}
+.ma-head{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
+.ma-head h3{margin:0; font-size:15px}
+.ma-viewswitch{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden}
+.ma-viewswitch button{border:0; background:var(--card); color:var(--muted); font:inherit; font-size:12px;
+  padding:4px 12px; cursor:pointer}
+.ma-viewswitch button + button{border-inline-start:1px solid var(--line)}
+.ma-viewswitch button.is-active{background:var(--accent); color:#fff}
+.ma-viewswitch button:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+
+/* Arch view. Pinned dir=ltr like #toothGrid — tooth geometry never mirrors. */
+.ma-arch{display:flex; flex-direction:column; gap:10px; overflow-x:auto}
+.ma-arch-row{display:flex; align-items:center; gap:8px}
+.ma-arch-label{flex:0 0 auto; inline-size:6.5em; font-size:11px; color:var(--muted); text-transform:uppercase;
+  letter-spacing:.04em}
+.ma-arch-teeth{display:flex; gap:2px}
+.ma-arch-cell{display:flex; flex-direction:column; align-items:center; gap:2px}
+.ma-arch-cell.is-midline{margin-inline-start:9px; border-inline-start:1px dashed var(--line); padding-inline-start:8px}
+.ma-arch-tooth{font-size:10px; color:var(--muted); font-variant-numeric:tabular-nums}
+.ma-width-input{inline-size:3.6em; padding:3px 4px; text-align:center; font:inherit; font-size:12px;
+  font-variant-numeric:tabular-nums; border:1px solid var(--line); border-radius:5px;
+  background:var(--panel); color:var(--text)}
+.ma-width-input:focus-visible{outline:2px solid var(--accent); outline-offset:-1px}
+.ma-width-input:disabled{opacity:.55; cursor:not-allowed}
+/* Chrome/Safari spinners steal width in a 3.6em field and are useless for a caliper reading. */
+.ma-width-input::-webkit-outer-spin-button,
+.ma-width-input::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
+.ma-width-input{-moz-appearance:textfield; appearance:textfield}
+
+.ma-list-scroll{overflow-x:auto}
+.ma-list, .ma-indices{border-collapse:collapse; inline-size:100%; font-size:12px}
+.ma-list th, .ma-list td, .ma-indices th, .ma-indices td{padding:3px 8px; text-align:start;
+  border-block-end:1px solid var(--line)}
+.ma-list thead th, .ma-indices thead th{font-size:10px; text-transform:uppercase; letter-spacing:.05em;
+  color:var(--muted); font-weight:600}
+.ma-list th[scope="row"]{font-weight:600; font-variant-numeric:tabular-nums; color:var(--muted)}
+
+.ma-sums{display:grid; grid-template-columns:repeat(3,1fr); gap:6px 10px}
+@media (min-width:900px){ .ma-sums{grid-template-columns:repeat(6,1fr)} }
+@media (max-width:520px){ .ma-sums{grid-template-columns:repeat(2,1fr)} }
+.ma-sum{display:flex; flex-direction:column; padding:5px 8px; border:1px solid var(--line); border-radius:7px;
+  background:var(--panel)}
+.ma-sum-label{font-size:10px; color:var(--muted)}
+.ma-sum-value{font-size:14px; font-weight:600; font-variant-numeric:tabular-nums}
+.ma-sum-value small{font-size:10px; font-weight:400; color:var(--muted)}
+
+.ma-num{font-variant-numeric:tabular-nums; text-align:end}
+.ma-norm{color:var(--muted)}
+.ma-delta.is-over{color:#b9770e}
+.ma-delta.is-under{color:#2563eb}
+
+/* Deviation bar: centred on the norm, saturating at ±5 percentage points. */
+.ma-bar-cell{inline-size:88px}
+.ma-bar{position:relative; display:block; block-size:9px; inline-size:80px; border-radius:3px;
+  background:color-mix(in srgb, var(--line) 55%, transparent)}
+.ma-bar-empty{opacity:.4}
+.ma-bar-axis{position:absolute; inset-block:0; inset-inline-start:50%; inline-size:1px; background:var(--muted)}
+.ma-bar-fill{position:absolute; inset-block:1px; border-radius:2px; min-inline-size:2px}
+.ma-bar-fill.is-over{background:#b9770e}
+.ma-bar-fill.is-under{background:#2563eb}
+
+.ma-findings{display:grid; grid-template-columns:auto 1fr; gap:2px 12px; margin:0; font-size:12px}
+.ma-findings dt{color:var(--muted)}
+.ma-findings dd{margin:0; font-weight:600; font-variant-numeric:tabular-nums}
+.ma-findings dd small{font-size:10px; font-weight:400; color:var(--muted)}
+
+.ma-visually-hidden{position:absolute; inline-size:1px; block-size:1px; overflow:hidden; clip-path:inset(50%);
+  white-space:nowrap}

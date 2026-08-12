@@ -1,0 +1,135 @@
+// Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
+//
+// Bead odontogram-c51.1 — measured mesiodistal crown widths.
+//
+// The widths are SESSION state, not document state: c51's audit found no
+// published Dental-DE carrier for model analysis, and c51's rule is to stay
+// blocked rather than invent a local-code path. These tests pin that boundary
+// so a later change cannot quietly cross it — the export payload must stay
+// untouched by anything recorded here.
+
+import { describe, it, expect, beforeEach } from "vitest";
+import {
+  getToothWidth, getToothWidths, setToothWidth, resetToothWidths,
+  onStateChange,
+  __resetChartStateForTest, __collectExportPayloadForTest,
+} from "../odontogram";
+import { deriveModelAnalysis } from "../modelAnalysis";
+
+beforeEach(() => {
+  __resetChartStateForTest();
+  resetToothWidths();
+});
+
+describe("recording a width", () => {
+  it("stores and reads back one tooth", () => {
+    setToothWidth(11, 8.7);
+    expect(getToothWidth(11)).toBe(8.7);
+    expect(getToothWidths()).toEqual({ 11: 8.7 });
+  });
+
+  it("an unmeasured tooth has NO key — absence is not zero", () => {
+    setToothWidth(11, 8.7);
+    expect(getToothWidth(21)).toBeNull();
+    expect(Object.keys(getToothWidths())).toEqual(["11"]);
+  });
+
+  it("null clears the entry rather than storing a sentinel", () => {
+    setToothWidth(11, 8.7);
+    setToothWidth(11, null);
+    expect(getToothWidth(11)).toBeNull();
+    expect(getToothWidths()).toEqual({});
+  });
+
+  it("rejects non-finite and non-positive readings by clearing", () => {
+    for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, 0, -2]) {
+      setToothWidth(11, 8.7);
+      setToothWidth(11, bad);
+      expect(getToothWidth(11)).toBeNull();
+    }
+  });
+
+  it("clamps a caliper slip into a plausible crown range", () => {
+    setToothWidth(11, 900);
+    expect(getToothWidth(11)).toBe(20);
+    setToothWidth(12, 0.2);
+    expect(getToothWidth(12)).toBe(1);
+  });
+
+  it("ignores a tooth number that is not in the arch", () => {
+    setToothWidth(99, 8.7);
+    expect(getToothWidths()).toEqual({});
+  });
+});
+
+describe("change notification", () => {
+  it("fires on a real change and stays silent when the value is unchanged", () => {
+    let fired = 0;
+    const off = onStateChange(() => { fired += 1; });
+    try {
+      setToothWidth(11, 8.7);
+      expect(fired).toBe(1);
+      setToothWidth(11, 8.7);       // same value — idempotent, no notification
+      expect(fired).toBe(1);
+      setToothWidth(11, 8.8);
+      expect(fired).toBe(2);
+      setToothWidth(11, null);
+      expect(fired).toBe(3);
+      setToothWidth(11, null);      // already absent — nothing to clear
+      expect(fired).toBe(3);
+    } finally {
+      off();
+    }
+  });
+});
+
+describe("reset", () => {
+  it("resetToothWidths drops everything", () => {
+    setToothWidth(11, 8.7);
+    setToothWidth(21, 8.8);
+    resetToothWidths();
+    expect(getToothWidths()).toEqual({});
+  });
+
+  it("the blank-slate chart reset clears the widths too", () => {
+    setToothWidth(11, 8.7);
+    __resetChartStateForTest();
+    expect(getToothWidths()).toEqual({});
+  });
+});
+
+describe("the persistence boundary holds", () => {
+  it("recording widths leaves the export payload byte-identical", () => {
+    const before = JSON.stringify(__collectExportPayloadForTest());
+    setToothWidth(11, 8.7);
+    setToothWidth(21, 8.8);
+    setToothWidth(16, 10.5);
+    const after = JSON.stringify(__collectExportPayloadForTest());
+    expect(after).toBe(before);
+  });
+});
+
+describe("feeding the derivation", () => {
+  it("getToothWidths plugs straight into deriveModelAnalysis", () => {
+    const widths: Record<number, number> = {
+      16: 10.5, 15: 6.5, 14: 7.1, 13: 8.1, 12: 7.1, 11: 8.7,
+      21: 8.8, 22: 7.0, 23: 8.1, 24: 7.1, 25: 6.4, 26: 10.5,
+      46: 11.4, 45: 6.8, 44: 6.8, 43: 7.0, 42: 6.2, 41: 5.8,
+      31: 5.8, 32: 6.2, 33: 7.0, 34: 6.8, 35: 6.8, 36: 11.4,
+    };
+    for (const [no, mm] of Object.entries(widths)) setToothWidth(Number(no), mm);
+
+    const a = deriveModelAnalysis({ widths: getToothWidths() });
+    expect(a.sums.upperTotal!).toBeCloseTo(95.9, 6);
+    expect(a.sums.lowerIncisors!).toBeCloseTo(24.0, 6);
+    expect(a.boltonOverall.actualPercent!.toFixed(1)).toBe("91.8");
+  });
+
+  it("a half-measured arch derives nothing rather than a wrong ratio", () => {
+    setToothWidth(11, 8.7);
+    setToothWidth(21, 8.8);
+    const a = deriveModelAnalysis({ widths: getToothWidths() });
+    expect(a.sums.upperIncisors).toBeNull();
+    expect(a.tonn.actualPercent).toBeNull();
+  });
+});
