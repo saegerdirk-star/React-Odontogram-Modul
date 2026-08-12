@@ -12,7 +12,7 @@ export type DentalDeCarrier =
 export interface DentalDeImportManifestEntry {
   field: keyof ToothRecord;
   carrier: DentalDeCarrier;
-  support: "canonical" | "unsupported" | "legacy" | "derived";
+  support: "canonical" | "export-only" | "unsupported" | "legacy" | "derived";
   roundTrip: boolean;
 }
 
@@ -22,6 +22,7 @@ const row = (
   support: DentalDeImportManifestEntry["support"],
 ): DentalDeImportManifestEntry => ({ field, carrier, support, roundTrip: support === "canonical" });
 const canonical = (field: keyof ToothRecord, carrier: DentalDeCarrier) => row(field, carrier, "canonical");
+const exportOnly = (field: keyof ToothRecord, carrier: DentalDeCarrier) => row(field, carrier, "export-only");
 const unsupported = (field: keyof ToothRecord, carrier: DentalDeCarrier = "none") => row(field, carrier, "unsupported");
 const legacy = (field: keyof ToothRecord) => row(field, "none", "legacy");
 const derived = (field: keyof ToothRecord) => row(field, "none", "derived");
@@ -43,7 +44,7 @@ const MANIFEST_BY_FIELD = {
   restorationMaterial: canonical("restorationMaterial", "odontogram-observation"),
   fillingSurfaces: canonical("fillingSurfaces", "odontogram-observation"),
   crownLeakage: canonical("crownLeakage", "odontogram-observation"),
-  fillingDefect: canonical("fillingDefect", "dental-finding"),
+  fillingDefect: canonical("fillingDefect", "odontogram-observation"),
   prosthesis: canonical("prosthesis", "odontogram-observation"),
   caries: canonical("caries", "caries-observation"),
   cariesSeverity: canonical("cariesSeverity", "caries-observation"),
@@ -58,7 +59,7 @@ const MANIFEST_BY_FIELD = {
   kg: canonical("kg", "periodontal-observation"),
   implantProduct: canonical("implantProduct", "dental-implant"),
   note: canonical("note", "dental-finding"),
-  assessment: unsupported("assessment", "periodontal-observation"),
+  assessment: exportOnly("assessment", "periodontal-observation"),
 
   endoResection: unsupported("endoResection", "dental-finding"),
   mods: unsupported("mods", "dental-finding"),

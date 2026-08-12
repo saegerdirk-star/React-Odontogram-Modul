@@ -14,6 +14,7 @@ import { FDI_TOOTH_NUMBER_EXT_URL } from "./dentalDeCodesystems";
 import { slotForPrimaryFdi } from "../utils/numbering";
 import { DENTAL_DE_IMPORT_MANIFEST } from "./dentalDeImportManifest";
 import type { DentalDeCarrier } from "./dentalDeImportManifest";
+import { exportedFdi } from "./toFhirDentalDe";
 
 type ImportedDentalDe = Extract<DentalDeImportResult, { ok: true }>;
 
@@ -54,6 +55,22 @@ interface ResourceLike {
   bodySite?: { coding?: Array<{ system?: string; code?: string }>; extension?: unknown[] };
   code?: { coding?: Array<{ system?: string; code?: string }>; text?: string };
   subject?: { reference?: string };
+  patient?: { reference?: string };
+}
+
+const DENTAL_DE_DOCUMENT_SLOTS = [
+  "18", "17", "16", "15", "14", "13", "12", "11",
+  "21", "22", "23", "24", "25", "26", "27", "28",
+  "48", "47", "46", "45", "44", "43", "42", "41",
+  "31", "32", "33", "34", "35", "36", "37", "38",
+] as const;
+
+function normalizeDentalDeDocument(document: OdontogramDocument): OdontogramDocument {
+  const normalized = structuredClone(document);
+  for (const slot of DENTAL_DE_DOCUMENT_SLOTS) {
+    normalized.teeth[slot] ??= { toothSelection: "tooth-base" };
+  }
+  return normalized;
 }
 
 function coding(resource: ResourceLike, system: string): string {
@@ -110,37 +127,6 @@ function documentSlot(fdi: string): string {
   return primarySlot === null ? fdi : String(primarySlot);
 }
 
-function changedSlots(before: OdontogramDocument, after: OdontogramDocument): Set<string> {
-  const slots = new Set([...Object.keys(before.teeth), ...Object.keys(after.teeth)]);
-  return new Set([...slots].filter((slot) =>
-    JSON.stringify(before.teeth[slot] ?? {}) !== JSON.stringify(after.teeth[slot] ?? {}),
-  ));
-}
-
-function affectedCarriers(before: OdontogramDocument, after: OdontogramDocument): Map<string, Set<DentalDeCarrier>> {
-  const byField = new Map(DENTAL_DE_IMPORT_MANIFEST.map((entry) => [entry.field, entry]));
-  const result = new Map<string, Set<DentalDeCarrier>>();
-  const slots = new Set([...Object.keys(before.teeth), ...Object.keys(after.teeth)]);
-  for (const slot of slots) {
-    const previous = before.teeth[slot] ?? {};
-    const next = after.teeth[slot] ?? {};
-    const fields = new Set([...Object.keys(previous), ...Object.keys(next)] as Array<keyof typeof next>);
-    const carriers = new Set<DentalDeCarrier>();
-    for (const field of fields) {
-      if (JSON.stringify(previous[field]) === JSON.stringify(next[field])) continue;
-      const manifest = byField.get(field);
-      if (manifest?.support === "canonical") carriers.add(manifest.carrier);
-      if (field === "toothSelection") {
-        carriers.add("dental-implant");
-        carriers.add("periodontal-observation");
-        carriers.add("peri-implant-observation");
-      }
-    }
-    result.set(slot, carriers);
-  }
-  return result;
-}
-
 function carrierOf(resource: ResourceLike): DentalDeCarrier | undefined {
   const profile = resource.meta?.profile?.find((entry) => entry.startsWith(`${DENTAL_DE_BASE}/StructureDefinition/`));
   if (!profile) return undefined;
@@ -151,6 +137,37 @@ function carrierOf(resource: ResourceLike): DentalDeCarrier | undefined {
   if (profile.endsWith("/peri-implant-observation")) return "peri-implant-observation";
   if (profile.endsWith("/dental-implant")) return "dental-implant";
   return undefined;
+}
+
+function generatedCarrierValues(bundle: Bundle): Map<string, string[]> {
+  const values = new Map<string, string[]>();
+  for (const entry of bundle.entry ?? []) {
+    const resource = entry.resource as ResourceLike | undefined;
+    if (!resource) continue;
+    const carrier = carrierOf(resource);
+    const slot = documentSlot(tooth(resource));
+    if (!carrier || !slot) continue;
+    const key = `${slot}|${carrier}`;
+    const bucket = values.get(key) ?? [];
+    bucket.push(clinicalValue(resource));
+    values.set(key, bucket);
+  }
+  for (const bucket of values.values()) bucket.sort();
+  return values;
+}
+
+function affectedCarriers(before: Bundle, after: Bundle): Map<string, Set<DentalDeCarrier>> {
+  const previous = generatedCarrierValues(before);
+  const next = generatedCarrierValues(after);
+  const result = new Map<string, Set<DentalDeCarrier>>();
+  for (const key of new Set([...previous.keys(), ...next.keys()])) {
+    if (JSON.stringify(previous.get(key) ?? []) === JSON.stringify(next.get(key) ?? [])) continue;
+    const [slot, carrier] = key.split("|") as [string, DentalDeCarrier];
+    const carriers = result.get(slot) ?? new Set<DentalDeCarrier>();
+    carriers.add(carrier);
+    result.set(slot, carriers);
+  }
+  return result;
 }
 
 function applyEditMetadata(resource: ResourceLike, options: DentalDeExportOptions): void {
@@ -177,12 +194,13 @@ function appendUnsupportedLosses(
 ): void {
   const unsupported = DENTAL_DE_IMPORT_MANIFEST.filter((entry) => entry.support === "unsupported");
   for (const [tooth, record] of Object.entries(odontogramState.teeth)) {
+    const fdi = exportedFdi(tooth, record);
     for (const entry of unsupported) {
       const value = record[entry.field];
       if (!hasMeaningfulValue(value)) continue;
-      if (report.unmapped.some((item) => item.tooth === tooth && item.field === entry.field)) continue;
+      if (report.unmapped.some((item) => item.tooth === fdi && item.field === entry.field)) continue;
       report.unmapped.push({
-        tooth,
+        tooth: fdi,
         field: entry.field,
         value: typeof value === "string" ? value : JSON.stringify(value),
         reason: `The exhaustive Dental-DE carrier manifest classifies this field as unsupported by ${entry.carrier}.`,
@@ -209,14 +227,21 @@ export function exportDentalDeBundle(
     };
   }
 
-  const generated = buildDentalDeBundle(odontogramState, {
+  const normalizedState = normalizeDentalDeDocument(odontogramState);
+  const normalizedBaseline = normalizeDentalDeDocument(imported.document);
+  const generated = buildDentalDeBundle(normalizedState, {
     dialect: "dental-de",
     subject: imported.patient.sourceReference ?? options.patient,
     effectiveDateTime: options.effectiveDateTime,
   });
-  appendUnsupportedLosses(generated.report, odontogramState);
-  const changed = changedSlots(imported.document, odontogramState);
-  const carriersBySlot = affectedCarriers(imported.document, odontogramState);
+  appendUnsupportedLosses(generated.report, normalizedState);
+  const generatedBaseline = buildDentalDeBundle(normalizedBaseline, {
+    dialect: "dental-de",
+    subject: imported.patient.sourceReference ?? options.patient,
+    effectiveDateTime: options.effectiveDateTime,
+  });
+  const carriersBySlot = affectedCarriers(generatedBaseline.bundle, generated.bundle);
+  const changed = new Set(carriersBySlot.keys());
   if (changed.size === 0) {
     return {
       ok: true,
@@ -267,6 +292,12 @@ export function exportDentalDeBundle(
     if (bucket?.length === 0) previousSupported.delete(key);
     next.id = previous.resource.id;
     next.meta = { ...next.meta, ...previous.resource.meta };
+    if (previous.resource.subject?.reference && next.subject) {
+      next.subject.reference = previous.resource.subject.reference;
+    }
+    if (previous.resource.patient?.reference && next.patient) {
+      next.patient.reference = previous.resource.patient.reference;
+    }
     const comparable = structuredClone(next) as ResourceLike & { effectiveDateTime?: string };
     const prior = previous.resource as ResourceLike & { effectiveDateTime?: string };
     if (prior.effectiveDateTime) comparable.effectiveDateTime = prior.effectiveDateTime;

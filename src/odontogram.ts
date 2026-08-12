@@ -11935,6 +11935,7 @@ function cloneDocument(doc: OdontogramDocument): OdontogramDocument {
 }
 
 /**
+ * @internal
  * Normalize a sparse host document into the exact serialization domain a live
  * engine snapshot uses, without activating a session or touching renderer state.
  */

@@ -45,7 +45,7 @@ describe("odontogram-229 AC1/AC3: fail-closed canonical import", () => {
       expect(fields).toContain(required);
     }
     expect(DENTAL_DE_IMPORT_MANIFEST.find((entry) => entry.field === "assessment")).toEqual(
-      expect.objectContaining({ support: "unsupported", roundTrip: false }),
+      expect.objectContaining({ support: "export-only", roundTrip: false }),
     );
   });
   it("creates an isolated read-only patient session from a canonical Bundle", () => {
@@ -150,6 +150,75 @@ describe("odontogram-229 AC1/AC3: fail-closed canonical import", () => {
     expect(roundTrip.ok && roundTrip.document.teeth["46"]).toEqual(imported.document.teeth["46"]);
   });
 
+  it.each([
+    ["filling defect", {
+      toothSelection: "tooth-base", fillingSurfaces: ["occlusal"],
+      fillingSurfaceMaterials: { occlusal: "composite" }, fillingDefect: { occlusal: "fracture" },
+    }, { fillingDefect: { occlusal: "fracture" } }],
+    ["recurrent caries score", {
+      toothSelection: "tooth-base", fillingSurfaces: ["occlusal"],
+      fillingSurfaceMaterials: { occlusal: "composite" }, caries: ["caries-occlusal"],
+      cariesSeverity: { occlusal: 4 },
+    }, { caries: ["caries-occlusal"], cariesSeverity: { occlusal: 4 } }],
+    ["peri-implant probing depth", {
+      toothSelection: "implant", perio: { pd: { MB: 6 }, gm: { MB: 0 }, bop: [], sup: [] },
+    }, { toothSelection: "implant" }],
+  ])("exports a %s-only edit through its actual generated carrier", (_name, editedRecord, expectedRecord) => {
+    const source = buildDentalDeBundle({
+      version: "2.25", globals: {}, teeth: { "46": { toothSelection: editedRecord.toothSelection } },
+    }, { subject: PATIENT, effectiveDateTime: "2025-01-01" }).bundle;
+    const imported = importDentalDeBundle(source);
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) return;
+    const edited = structuredClone(imported.document);
+    edited.teeth["46"] = editedRecord;
+
+    const exported = exportDentalDeBundle(imported, edited, { patient: PATIENT, effectiveDateTime: "2026-08-12" });
+    expect(exported.ok).toBe(true);
+    if (!exported.ok) return;
+    expect(exported.changes.added.length + exported.changes.updated.length).toBeGreaterThan(0);
+    const roundTrip = importDentalDeBundle(exported.bundle);
+    expect(roundTrip.ok).toBe(true);
+    if (!roundTrip.ok) return;
+    expect(roundTrip.document.teeth["46"]).toEqual(expect.objectContaining(expectedRecord));
+    if (_name === "peri-implant probing depth") {
+      expect(roundTrip.document.teeth["46"].perio?.pd.MB).toBe(6);
+    }
+  });
+
+  it("exports periodontal assessment status without reporting a false loss", () => {
+    const imported = importDentalDeBundle(buildDentalDeBundle({
+      version: "2.25", globals: {}, teeth: {
+        "16": { toothSelection: "tooth-base", perio: { pd: { MB: 4 }, gm: {}, bop: [], sup: [] } },
+      },
+    }, { subject: PATIENT, effectiveDateTime: "2025-01-01" }).bundle);
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) return;
+    const edited = structuredClone(imported.document);
+    edited.teeth["16"].assessment = { "pd:DB": "unmeasurable" };
+    const exported = exportDentalDeBundle(imported, edited, { patient: PATIENT, effectiveDateTime: "2026-08-12" });
+    expect(exported.ok).toBe(true);
+    if (!exported.ok) return;
+    expect(exported.changes.updated.length + exported.changes.added.length).toBeGreaterThan(0);
+    expect(exported.report.unmapped).not.toContainEqual(expect.objectContaining({ field: "assessment" }));
+  });
+
+  it("normalizes a direct public export before deciding whether resources changed", () => {
+    const imported = importDentalDeBundle(canonicalBundle());
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) return;
+    const normalized = structuredClone(imported.document);
+    for (const quadrant of [1, 2, 3, 4]) {
+      for (let position = 1; position <= 8; position += 1) {
+        const slot = `${quadrant}${position}`;
+        normalized.teeth[slot] ??= { toothSelection: "tooth-base" };
+      }
+    }
+    const exported = exportDentalDeBundle(imported, normalized, { patient: PATIENT, effectiveDateTime: "2026-08-12" });
+    expect(exported.ok && exported.changes).toEqual({ added: [], updated: [], removed: [] });
+    expect(exported.ok && exported.bundle).toEqual(imported.sourceBundle);
+  });
+
   it("reports a locally edited unsupported planned-care field as loss", () => {
     const imported = importDentalDeBundle(canonicalBundle());
     expect(imported.ok).toBe(true);
@@ -160,6 +229,23 @@ describe("odontogram-229 AC1/AC3: fail-closed canonical import", () => {
     expect(exported.ok).toBe(true);
     if (!exported.ok) return;
     expect(exported.report.unmapped).toContainEqual(expect.objectContaining({ tooth: "11", field: "extractionPlan" }));
+  });
+
+  it("deduplicates unsupported-field loss under the exported primary FDI number", () => {
+    const source = buildDentalDeBundle({
+      version: "2.25", globals: {}, teeth: { "11": { toothSelection: "milktooth" } },
+    }, { subject: PATIENT, effectiveDateTime: "2025-01-01" }).bundle;
+    const imported = importDentalDeBundle(source);
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) return;
+    const edited = structuredClone(imported.document);
+    edited.teeth["11"].wearEdge = "attrition";
+    const exported = exportDentalDeBundle(imported, edited, { patient: PATIENT, effectiveDateTime: "2026-08-12" });
+    expect(exported.ok).toBe(true);
+    if (!exported.ok) return;
+    expect(exported.report.unmapped.filter((entry) => entry.field === "wearEdge")).toEqual([
+      expect.objectContaining({ tooth: "51" }),
+    ]);
   });
 
   it("accounts for every duplicate source carrier as an explicit removal", () => {
@@ -219,6 +305,37 @@ describe("odontogram-229 AC1/AC3: fail-closed canonical import", () => {
     expect(observations.every((observation) => observation.subject?.reference === sourceReference)).toBe(true);
   });
 
+  it("preserves each matched resource patient-reference form in a mixed-form Bundle", () => {
+    const source = canonicalBundle({
+      version: "2.25", globals: {}, teeth: {
+        "11": { toothSelection: "none" }, "46": { toothSelection: "none" },
+      },
+    });
+    const urn = "urn:uuid:patient-a";
+    source.entry?.unshift({ fullUrl: urn, resource: { resourceType: "Patient", id: "patient-a" } });
+    const observations = source.entry?.filter((entry) => entry.resource?.resourceType === "Observation") ?? [];
+    (observations[0].resource as import("fhir/r4").Observation).subject = { reference: urn };
+    (observations[1].resource as import("fhir/r4").Observation).subject = { reference: PATIENT };
+    const expectedById = new Map(observations.map((entry) => {
+      const observation = entry.resource as import("fhir/r4").Observation;
+      return [observation.id, observation.subject?.reference];
+    }));
+    const imported = importDentalDeBundle(source);
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) return;
+    const edited = structuredClone(imported.document);
+    edited.teeth["11"].toothSelection = "tooth-base";
+    edited.teeth["46"].toothSelection = "tooth-base";
+    const exported = exportDentalDeBundle(imported, edited, { patient: PATIENT, effectiveDateTime: "2026-08-12" });
+    expect(exported.ok).toBe(true);
+    if (!exported.ok) return;
+    for (const entry of exported.bundle.entry ?? []) {
+      if (entry.resource?.resourceType !== "Observation" || !entry.resource.id) continue;
+      const observation = entry.resource as import("fhir/r4").Observation;
+      expect(observation.subject?.reference).toBe(expectedById.get(observation.id));
+    }
+  });
+
   it.each([
     ["malformed", null, "malformed"],
     ["wrong resource type", { resourceType: "Patient" }, "malformed"],
@@ -247,6 +364,15 @@ describe("odontogram-229 AC1/AC3: fail-closed canonical import", () => {
       if (device?.resourceType === "Device") device.patient = { reference: "Patient/patient-b" };
       return bundle;
     })(), "incompatible"],
+    ["profile-less canonical-coded observation", (() => {
+      const bundle = canonicalBundle();
+      bundle.entry?.push({ resource: {
+        resourceType: "Observation", status: "final",
+        code: { coding: [{ system: "https://fhir.cognovis.de/dental/CodeSystem/dental-assessment-type", code: "odontogram-assessment" }] },
+        subject: { reference: "Patient/patient-b" },
+      } as import("fhir/r4").Observation });
+      return bundle;
+    })(), "unsupported"],
   ])("rejects %s before hydration", (_name, input, code) => {
     const result = importDentalDeBundle(input);
     expect(result).toEqual(expect.objectContaining({ ok: false, code }));

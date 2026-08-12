@@ -11,6 +11,7 @@ import {
   DENTAL_DE_PERI_IMPLANT_PROFILE,
 } from "./dentalDeCodesystems";
 import { LOCAL_SYSTEM } from "./codesystems";
+import { isDentalDeResource } from "./fromFhirDentalDe";
 
 export const DENTAL_DE_COMPATIBILITY = {
   package: "de.cognovis.fhir.dental",
@@ -116,7 +117,12 @@ export function importDentalDeBundle(input: unknown): DentalDeImportResult {
       return failure("unsupported", "Legacy renderer FHIR resources cannot be mixed into a canonical Dental-DE session.");
     }
     const canonicalProfiles = profiles.filter((profile) => profile.startsWith(`${DENTAL_DE_COMPATIBILITY.canonical}/StructureDefinition/`));
-    if (canonicalProfiles.length === 0) continue;
+    if (canonicalProfiles.length === 0) {
+      if (isDentalDeResource(resource)) {
+        return failure("unsupported", "Every consumed Dental-DE clinical resource must declare a supported canonical profile.");
+      }
+      continue;
+    }
     if (canonicalProfiles.some((profile) => !SUPPORTED_PROFILES.has(profile))) {
       return failure("unsupported", "The Bundle contains a Dental-DE profile unsupported by this package version.");
     }
@@ -148,7 +154,8 @@ export function importDentalDeBundle(input: unknown): DentalDeImportResult {
   if (normalizedSubjects.size !== 1) {
     return failure("incompatible", "All Dental-DE resources must belong to one patient.");
   }
-  const sourceReference = [...clinicalSubjects][0];
+  const normalizedReference = [...normalizedSubjects][0];
+  const sourceReference = clinicalSubjects.size === 1 ? [...clinicalSubjects][0] : normalizedReference;
 
   const odontogramState = parseFhirBundle(input as Bundle);
   odontogramState.version = PAYLOAD_VERSION;
@@ -156,8 +163,8 @@ export function importDentalDeBundle(input: unknown): DentalDeImportResult {
     ok: true,
     document: odontogramState,
     patient: {
-      reference: [...normalizedSubjects][0],
-      ...(sourceReference !== [...normalizedSubjects][0] ? { sourceReference } : {}),
+      reference: normalizedReference,
+      ...(sourceReference !== normalizedReference ? { sourceReference } : {}),
     },
     compatibility: DENTAL_DE_COMPATIBILITY,
     sourceBundle: structuredClone(input as Bundle),
