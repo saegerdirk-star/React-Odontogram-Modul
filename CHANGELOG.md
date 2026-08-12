@@ -9,6 +9,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Model measurement and analysis.** (odontogram-c51.1) Tonn and Bolton
+  derived from the mesiodistal crown widths, each implemented from its own
+  publication with the citation beside its constant, and verified against a real
+  model measurement: all six sums, all three percentages and the target incisor
+  sum reproduce the printed values exactly. Entry on an arch or as a list — two
+  views of one record, with norms and deviations live while typing.
+
+  A tooth that is **not on the model** (not erupted, lost after extraction,
+  missing, under the gum) borrows its contralateral partner's width so Tonn and
+  Bolton still mean something; an implant counts only once it carries a crown.
+  Every borrowed width is read-only, tinted and listed — an inference that looks
+  like a measurement is the one way this could mislead. Substitution never
+  chains, and an absent tooth ignores any width stored against itself.
+
+  Two deliberate departures from the reference printout, both documented in
+  place: a sum whose teeth are not all measured is `null`, never a partial
+  total; and the millimetre discrepancy is the classical Bolton excess rather
+  than the printout's `delta% × numerator`. Plus overjet, overbite and the
+  dental midline deviation per arch, each with its sign convention spelled out
+  beside the field.
+
+- **Cephalometry.** (odontogram-c51.2) One shared landmark stock, measures
+  defined over it, and the analyses as profiles above those — a new school is a
+  new profile and the landmarks do not move. A profile declares its own
+  reference frame, so an analysis that deliberately uses none (Sato's Denture
+  Frame Analysis) stays representable, and it owns its **norm set**: ML-NSL is
+  28° in the Hasund school and 32° in Segner's, and the same measurement reads
+  vertical against one and neutral against the other.
+
+  **Every measure carries its source, enforced by a test.** A norm without a
+  publication is not shipped — the measure is recorded with no target instead of
+  a guessed one. Each measure also carries its FHIR coding inline (local code
+  plus UCUM unit) rather than in a separate mapping table, so there is no second
+  layer to drift; no LOINC or SNOMED code is invented, because none verified for
+  a cephalometric measurement could be produced.
+
+  Derived: where the jaws sit against the skull (facial type after Björk,
+  harmony, and the sagittal class against the population norm **and** the
+  individual one — they disagree exactly where individualisation earns its keep)
+  and the growth pattern as a vote across every indicator with a sourced norm,
+  each returning its own reading and whether a published band or a standard
+  deviation decided it. An empty form is `indeterminate`, which is not the same
+  answer as `neutral`.
+
+  Values can be taken from another program's printed evaluation by **pasting its
+  text** — no PDF library, and a PDF reader would feed the same parser. Nothing
+  is applied without confirmation: a printed sheet has three number columns and
+  some rows carry only a norm, so the parser reports its confidence per line and
+  shows every candidate number.
+
+- Both are **session state**: no published Dental-DE carrier authors model
+  analysis or cephalometry, so neither joins the export payload rather than
+  inventing a local code path. The payload version, the FHIR bundle and the SVG
+  fingerprints are unchanged, and tests pin that boundary.
+
 - **Restoration colours are choosable.** (odontogram-sjr) The palette
   odontogram-58n shipped becomes the DEFAULT, not the only answer. Settings
   gains a **Colours** tab with one picker per material and a reset.

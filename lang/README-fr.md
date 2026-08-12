@@ -285,6 +285,9 @@ péri-implantaires.
 - 🏥 Diagnostic pulpaire et traitements endodontiques complets
 - 🩺 Module parodontal complet avec bilan graphique et classification 2017
 - 🔗 Éléments de rétention pour prothèse amovible : crochet, attachement, pilier de barre (crochet dessiné sur la couronne ; travée de barre dérivée, pilier implantaire et naturel mélangés)
+- 📐 **Analyse des modèles** (`odontogram-c51.1`) : Tonn et Bolton à partir des largeurs mésio-distales, avec la somme incisive cible, la discordance de taille dentaire et l'arcade porteuse de l'excès. Saisie sur une arcade ou en liste — deux vues d'un même enregistrement. Une dent absente du modèle (non éruptée, perdue, sous la gencive) reprend la largeur de sa controlatérale, signalée comme hypothèse. Plus le surplomb, le recouvrement et la déviation de la ligne médiane par arcade
+- 🩻 **Céphalométrie** (`odontogram-c51.2`) : un répertoire de points commun, les mesures définies dessus, et les analyses comme profils au-dessus — une nouvelle école est un nouveau profil, les points ne bougent pas. Chaque mesure porte sa source et son codage FHIR ; une norme sans publication n'est pas livrée. Sont dérivées la position des maxillaires par rapport au crâne (type facial selon Björk, harmonie, classe sagittale face à la norme de population **et** à la norme individuelle) et le schéma de croissance comme vote entre tous les indicateurs dotés d'une norme sourcée. Les valeurs peuvent être reprises de l'évaluation imprimée d'un autre programme en collant son texte — rien n'est appliqué sans confirmation
+- ⚠️ Les deux sont pour l'instant un **état de session** : aucun porteur Dental-DE publié n'existe, ils ne font donc pas partie du payload d'export plutôt que d'en inventer un local
 - 🔗 Exportation/Importation HL7 FHIR R4 et JSON
 - 🖼️ Exportation d'images PNG / JPG / SVG et rapport PDF
 - 🔢 Numérotation FDI / Universelle / Palmer
