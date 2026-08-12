@@ -138,13 +138,28 @@ describe("feeding the derivation", () => {
 });
 
 describe("which teeth are measurable", () => {
-  it("a normal tooth is measurable, and so is an implant", () => {
+  it("a normal tooth is measurable", () => {
     expect(isToothMeasurable(11)).toBe(true);
+  });
+
+  it("an implant counts only once it carries a crown", () => {
+    // Dirk's ruling: the crown's width is the reading, but a bare fixture or a
+    // healing abutment has no width to measure. He also notes this has not
+    // arisen once in thirty years — correctness, not load-bearing.
     __setToothStateForTest(11, { toothSelection: "implant" });
-    // An implant crown is physically on the model and a caliper reads it —
-    // whether it should stand in for the natural tooth is a clinical call,
-    // not one this predicate makes silently.
-    expect(isToothMeasurable(11)).toBe(true);
+    expect(isToothMeasurable(11)).toBe(false);
+
+    for (const restoration of ["crown", "bridge"]) {
+      __setToothStateForTest(11, { toothSelection: "implant", restorationType: restoration });
+      expect(isToothMeasurable(11), restoration).toBe(true);
+    }
+  });
+
+  it("a bare implant substitutes from the contralateral like any empty position", () => {
+    setToothWidth(21, 8.8);
+    __setToothStateForTest(11, { toothSelection: "implant" });
+    const a = deriveModelAnalysis({ widths: getToothWidths(), absentTeeth: getAbsentTeeth() });
+    expect(a.substitutions).toEqual([{ toothNo: 11, from: 21, mm: 8.8 }]);
   });
 
   it("the four empty positions are not measurable", () => {

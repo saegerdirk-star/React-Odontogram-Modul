@@ -9428,17 +9428,24 @@ export function resetToothWidths(): void {
  * width from the same tooth on the other side, so Tonn and Bolton still mean
  * something.
  *
- * An IMPLANT counts as measurable, deliberately. The crown is physically on the
- * model and a caliper reads it; whether that reading should stand in for the
- * natural tooth in a Bolton analysis is a clinical judgement, not one this
- * predicate should make silently.
+ * IMPLANTS, ruled by Dirk 2026-08-12: an implant only counts once it carries a
+ * crown, and then that crown's width is the reading. A bare fixture or a
+ * healing abutment has no mesiodistal width to measure, so it substitutes from
+ * the contralateral like any other empty position. He also notes this has not
+ * come up once in over thirty years of practice — so it is written for
+ * correctness, not because anything depends on it. Nothing here should be
+ * elaborated on the assumption that it matters.
  */
 export function isToothMeasurable(toothNo: number): boolean {
-  const sel = toothState.get(toothNo)?.toothSelection ?? "tooth-base";
-  return sel !== "none"
-    && sel !== "not-erupted"
-    && sel !== "no-tooth-after-extraction"
-    && sel !== "tooth-under-gum";
+  const state = toothState.get(toothNo);
+  const sel = state?.toothSelection ?? "tooth-base";
+  if (sel === "none" || sel === "not-erupted"
+    || sel === "no-tooth-after-extraction" || sel === "tooth-under-gum") return false;
+  if (sel === "implant") {
+    const restoration = state?.restorationType ?? "none";
+    return restoration === "crown" || restoration === "bridge";
+  }
+  return true;
 }
 
 /** Every arch position that carries no measurable tooth, for the substitution. */
