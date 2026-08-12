@@ -2483,3 +2483,83 @@ select:focus{
 .ma-list th[scope="row"]:has(+ td .is-assumed){color:#b9770e; font-weight:700}
 .ma-arch-cell:has(.is-assumed) .ma-arch-tooth::after{content:"*"}
 .ma-assumed-note{margin:0; font-size:11px; color:var(--muted); font-style:italic}
+
+/* ── Bead odontogram-c51.2: cephalometric entry ──────────────────────────── */
+.ceph-card{display:flex; flex-direction:column; gap:12px}
+.ceph-head{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
+.ceph-head h3{margin:0; font-size:15px}
+.ceph-head-controls{display:flex; align-items:center; gap:10px; font-size:12px; flex-wrap:wrap}
+.ceph-head-controls select, .ceph-head-controls button{font:inherit; font-size:12px; padding:3px 8px;
+  border:1px solid var(--line); border-radius:6px; background:var(--panel); color:var(--text)}
+.ceph-head-controls button{cursor:pointer}
+.ceph-progress{margin:0; font-size:11px; color:var(--muted)}
+
+.ceph-scroll{overflow-x:auto}
+.ceph-table{border-collapse:collapse; inline-size:100%; font-size:12px}
+.ceph-table th, .ceph-table td{padding:3px 8px; text-align:start; border-block-end:1px solid var(--line)}
+.ceph-table thead th{font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted)}
+.ceph-table th[scope="row"]{font-weight:600}
+.ceph-points{color:var(--muted); font-weight:400; font-size:9px; letter-spacing:.03em}
+.ceph-norm{color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap}
+.ceph-nonorm{cursor:help; border-block-end:1px dotted var(--muted)}
+.ceph-entry{display:flex; align-items:baseline; gap:4px}
+.ceph-entry small{font-size:10px; color:var(--muted)}
+.ceph-input{inline-size:4.6em; padding:3px 4px; text-align:end; font:inherit; font-size:12px;
+  font-variant-numeric:tabular-nums; border:1px solid var(--line); border-radius:5px;
+  background:var(--panel); color:var(--text)}
+.ceph-input:focus-visible{outline:2px solid var(--accent); outline-offset:-1px}
+.ceph-input:disabled{opacity:.55; cursor:not-allowed}
+.ceph-delta{font-variant-numeric:tabular-nums; text-align:end; white-space:nowrap}
+.ceph-delta.is-over{color:#b9770e}
+.ceph-delta.is-under{color:#2563eb}
+
+.ceph-bar-cell{inline-size:84px}
+.ceph-bar{position:relative; display:block; block-size:9px; inline-size:76px; border-radius:3px;
+  background:color-mix(in srgb, var(--line) 55%, transparent)}
+.ceph-bar-empty{opacity:.4}
+.ceph-bar-axis{position:absolute; inset-block:0; inset-inline-start:50%; inline-size:1px; background:var(--muted)}
+.ceph-bar-fill{position:absolute; inset-block:1px; border-radius:2px; min-inline-size:2px}
+.ceph-bar-fill.is-over{background:#b9770e}
+.ceph-bar-fill.is-under{background:#2563eb}
+
+.ceph-findings{display:grid; gap:12px; grid-template-columns:1fr}
+@media (min-width:720px){ .ceph-findings{grid-template-columns:1fr 1fr} }
+.ceph-findings section{border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:var(--panel)}
+.ceph-findings h4{margin:0 0 6px; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted)}
+.ceph-findings dl{display:grid; grid-template-columns:auto 1fr; gap:2px 10px; margin:0; font-size:12px}
+.ceph-findings dt{color:var(--muted)}
+.ceph-findings dd{margin:0; font-weight:600}
+.ceph-findings dd small{font-weight:400; color:var(--muted); font-size:10px}
+/* The two sagittal readings disagreeing IS the finding — mark it, don't hide it. */
+.ceph-conflict{color:#b9770e}
+
+.ceph-indicators{list-style:none; margin:8px 0 0; padding:0; display:grid; gap:2px; font-size:11px}
+.ceph-indicators li{display:grid; grid-template-columns:5.5em 4.5em 1fr auto; gap:6px; align-items:baseline}
+.ceph-ind-id{font-weight:600}
+.ceph-ind-dev{font-variant-numeric:tabular-nums; color:var(--muted); text-align:end}
+.ceph-indicators li.reads-vertical .ceph-ind-reads{color:#b9770e; font-weight:600}
+.ceph-indicators li.reads-horizontal .ceph-ind-reads{color:#2563eb; font-weight:600}
+.ceph-ind-basis{color:var(--muted); font-size:9px}
+
+.ceph-import{border:1px solid var(--accent); border-radius:8px; padding:10px; background:var(--panel);
+  display:flex; flex-direction:column; gap:8px}
+.ceph-import-hint{margin:0; font-size:11px; color:var(--muted)}
+.ceph-import-text{font:inherit; font-size:11px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  inline-size:100%; padding:6px; border:1px solid var(--line); border-radius:6px;
+  background:var(--card); color:var(--text); resize:vertical}
+.ceph-import-list{list-style:none; margin:0; padding:0; max-block-size:210px; overflow-y:auto;
+  display:grid; gap:1px; font-size:11px}
+.ceph-import-list label{display:grid; grid-template-columns:auto 1fr auto auto auto; gap:6px;
+  align-items:baseline; cursor:pointer; padding:2px 4px; border-radius:4px}
+.ceph-import-list li.conf-low label{background:color-mix(in srgb, #b9770e 10%, transparent)}
+.ceph-import-value{font-variant-numeric:tabular-nums; font-weight:600}
+.ceph-import-warn{color:#b9770e; font-size:9px; text-transform:uppercase; letter-spacing:.05em}
+.ceph-import-cands{color:var(--muted); font-size:9px; font-variant-numeric:tabular-nums}
+.ceph-import-actions{display:flex; gap:8px}
+.ceph-import-actions button{font:inherit; font-size:12px; padding:4px 12px; border-radius:6px;
+  border:1px solid var(--line); background:var(--card); color:var(--text); cursor:pointer}
+.ceph-import-actions button:first-child{background:var(--accent); color:#fff; border-color:var(--accent)}
+.ceph-import-empty{margin:0; font-size:11px; color:#b9770e}
+
+.ceph-visually-hidden{position:absolute; inline-size:1px; block-size:1px; overflow:hidden;
+  clip-path:inset(50%); white-space:nowrap}

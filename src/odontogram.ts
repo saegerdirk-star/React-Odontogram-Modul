@@ -3915,6 +3915,7 @@ export function __resetChartStateForTest(): void {
   resetCaseMeta();
   resetToothWidths(); // measured crown widths are session state, cleared with everything else
   resetOcclusalMeasurements();
+  resetCephValues();
   resetExaminationContext();
   resetExaminations();
   // Bead odontogram-3l1: hand the engine back to the default session and drop
@@ -9488,6 +9489,59 @@ export function setOcclusalMeasurement(key: OcclusalKey, mm: number | null): voi
   notifyStateChange();
 }
 
+// ---- Bead odontogram-c51.2: recorded cephalometric values ----
+// Session state on the same terms as the crown widths above, and for the same
+// recorded reason: no published Dental-DE carrier authors cephalometry, and
+// c51's rule is to stay blocked rather than invent a local persistence path.
+// The promotion point is the same one. Keyed by measure id from
+// `src/cephalometry.ts`; absent = not recorded, never a stored 0.
+const cephValues = new Map<string, number>();
+
+/** Recorded cephalometric values, keyed by measure id. Omits what is unrecorded. */
+export function getCephValues(): Record<string, number> {
+  return Object.fromEntries(cephValues);
+}
+
+/** One recorded value, or `null` when the measure has not been recorded. */
+export function getCephValue(measureId: string): number | null {
+  const v = cephValues.get(measureId);
+  return typeof v === "number" ? v : null;
+}
+
+/**
+ * Record one cephalometric value. `null` or a non-finite number clears it.
+ * Clamped to ±400, which is wide enough for every angle, distance and index in
+ * the registry and narrow enough to catch a stray keystroke.
+ */
+export function setCephValue(measureId: string, value: number | null): void {
+  if (!measureId) return;
+  if (value === null || !Number.isFinite(value)) {
+    if (!cephValues.delete(measureId)) return;
+    notifyStateChange();
+    return;
+  }
+  const clamped = Math.min(400, Math.max(-400, value));
+  if (cephValues.get(measureId) === clamped) return;
+  cephValues.set(measureId, clamped);
+  notifyStateChange();
+}
+
+/** Drop every recorded cephalometric value — part of the blank-slate reset. */
+export function resetCephValues(): void {
+  if (cephValues.size === 0) return;
+  cephValues.clear();
+  notifyStateChange();
+}
+
+/** Which cephalometric profile the UI is presenting. Session state. */
+let cephProfileId = "hasund";
+export function getCephProfileId(): string { return cephProfileId; }
+export function setCephProfileId(id: string): void {
+  if (!id || id === cephProfileId) return;
+  cephProfileId = id;
+  notifyStateChange();
+}
+
 /** Drop every occlusal measurement — part of the blank-slate reset path. */
 export function resetOcclusalMeasurements(): void {
   if (Object.values(occlusal).every(v => v === null)) return;
@@ -11164,6 +11218,7 @@ function wireControls(){
     resetCaseMeta(); // case-level patient metadata is part of the blank-slate reset (like edentulous)
     resetToothWidths(); // ... as are the measured crown widths (bead odontogram-c51.1)
     resetOcclusalMeasurements();
+    resetCephValues();
     resetExaminationContext(); // ... as is the examination identity it was recorded under
     resetExaminations();
     for(const toothNo of ALL_TEETH){
@@ -11469,6 +11524,7 @@ export function destroyOdontogram(){
   resetCaseMeta();
   resetToothWidths(); // measured crown widths are session state, cleared with everything else
   resetOcclusalMeasurements();
+  resetCephValues();
   resetExaminationContext();
   resetExaminations();
   toothSvgRoot.clear();

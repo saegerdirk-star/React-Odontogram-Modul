@@ -8,7 +8,8 @@ import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "../../src/index.css";
 import { ModelAnalysisCard } from "../../src/ModelAnalysisCard";
-import { setToothWidth, resetToothWidths, setReadOnly, setNumberingSystem,
+import { CephalometryCard } from "../../src/CephalometryCard";
+import { setCephValue, resetCephValues, setToothWidth, resetToothWidths, setReadOnly, setNumberingSystem,
   setOcclusalMeasurement, __setToothStateForTest, __notifyStateChangeForTest } from "../../src/odontogram";
 import { setI18nLanguage } from "../../src/i18n/useI18n";
 import type { Language } from "../../src/i18n/translations";
@@ -22,6 +23,14 @@ const REFERENCE: Record<number, number> = {
 };
 
 const LANGS: Language[] = ["de", "en", "hu", "ar"];
+
+/** Reference case A, from a lateral cephalogram supplied with the bead. */
+const CEPH_A: Record<string, number> = {
+  SNA: 81.0, SNB: 76.6, ANB: 4.5, SNPg: 77.7, NSBa: 131.1, GnTgoAr: 119.4,
+  MLNSL: 37.6, NLNSL: 10.3, MLNL: 27.3, NSp1: 57.1, Sp1Gn: 65.6, Index: 87.0,
+  Interincisal: 107.6, OK1NA_deg: 19.7, UK1NB_deg: 48.3, OK1NA_mm: 4.2,
+  UK1NB_mm: 9.0, PgNB: 2.3, HAngle: 11.9,
+};
 
 function Bench() {
   const [lang, setLang] = useState<Language>("de");
@@ -44,7 +53,10 @@ function Bench() {
           __setToothStateForTest(46, { toothSelection: "not-erupted" });
           __notifyStateChangeForTest();
         }}>12 fehlt, 46 nicht durchgebrochen</button>
-        <button onClick={() => resetToothWidths()}>Leeren</button>
+        <button onClick={() => { for (const [k, v] of Object.entries(CEPH_A)) setCephValue(k, v); }}>
+          FRS Fall A füllen
+        </button>
+        <button onClick={() => { resetToothWidths(); resetCephValues(); }}>Leeren</button>
         <label>
           Sprache{" "}
           <select value={lang} onChange={e => { const l = e.target.value as Language; setLang(l); setI18nLanguage(l); }}>
@@ -65,6 +77,7 @@ function Bench() {
         </label>
       </div>
       <ModelAnalysisCard />
+      <CephalometryCard />
     </div>
   );
 }
