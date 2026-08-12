@@ -52,6 +52,13 @@ graphics/
 # === SNOMED CT working files ===
 snomed/
 
+# === Clinical source material ===
+# Printouts from the practice software used to derive the orthodontic beads
+# (odontogram-c51.1 model analysis, c51.2 cephalometry). They carry patient
+# identity and must never enter version control - the beads reference the
+# folder, never its contents.
+KFO/
+
 # === Beads runtime state ===
 .dolt/
 *.db
