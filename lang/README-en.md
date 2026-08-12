@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.9.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.10.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -570,6 +570,22 @@ under the relevant **extensible** binding — never an invented code — and whe
 are listed in `report.textFallback` and `report.unmapped`, with the tooth, the
 field, the preserved value and the reason, so nothing degrades silently. The
 value itself always stays in the UI-domain document and round-trips through JSON.
+
+**Canonical Dental-DE patient sessions and save boundary (since 2.10.0):**
+
+`createDentalDeOdontogramSession(bundle, { readOnly })` validates the supported
+Dental-DE profiles and one-patient ownership before creating an isolated
+session. Read-only is the default. An editable session supports local changes,
+`cancel()` back to the imported baseline, `export(options)` for one complete
+canonical save candidate, and deterministic `destroy()`. Export retains
+unchanged imported resources, preserves IDs and `meta.versionId` on controlled
+updates, and reports additions, updates, removals, compatibility, and loss.
+There is no network or persistence in the adapter: the host validates and saves
+the candidate conflict-safely, then reloads and compares the persisted result.
+`session.patient.reference` is normalized; `sourceReference` retains a single
+alternate form such as a Bundle URN. Manifest carriers are primary routes and
+may vary by value and tooth context. A missing tooth slot in a direct export
+means healthy present. Unmount the component before `session.destroy()`.
 
 **Verified SNOMED coverage (from 2.5.0):** a clinical value is coded only when
 the IG's own ValueSets admit the concept AND its meaning has been verified;

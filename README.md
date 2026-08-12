@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
-[![Version](https://img.shields.io/badge/version-2.9.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
+[![Version](https://img.shields.io/badge/version-2.10.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](https://raw.githubusercontent.com/ZoliQua/React-Odontogram-Modul/main/src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
 
@@ -127,6 +127,56 @@ the biting surface is coded `I` on an anterior tooth and `O` on a posterior one)
 Where the IG defines no coded value it uses `CodeableConcept.text` under the
 relevant extensible binding — never an invented code — and `report.textFallback`
 / `report.unmapped` name every such value so nothing degrades silently.
+
+### Canonical Dental-DE patient sessions and save boundary
+
+Version 2.10.0 adds a fail-closed, bidirectional host boundary. Import validates
+the supported Dental-DE profiles and one-patient ownership before it creates a
+session. The session is read-only by default; an authorized host may opt into
+local editing, cancel back to the imported baseline, and export one complete
+save candidate:
+
+```tsx
+import Odontogram, {
+  createDentalDeOdontogramSession,
+} from "react-advanced-odontogram";
+
+const imported = createDentalDeOdontogramSession(bundle, { readOnly: false });
+if (!imported.ok) throw new Error(imported.message);
+
+const { session } = imported;
+// Render and edit locally. No click performs network I/O.
+<Odontogram session={session} />;
+
+const candidate = session.export({
+  patient: session.patient.reference,
+  encounter: "Encounter/456",
+  author: "Practitioner/789",
+  effectiveDateTime: "2026-08-12T10:00:00Z",
+});
+if (!candidate.ok) throw new Error(candidate.message);
+```
+
+`candidate.bundle` is the complete canonical resource set. Unchanged imported
+resources are retained byte-for-byte; controlled updates preserve resource IDs
+and `meta.versionId`; additions, updates, and removals are listed in
+`candidate.changes`. `candidate.report` and `DENTAL_DE_IMPORT_MANIFEST` make
+compatibility and unsupported fields explicit. The adapter never calls Aidbox
+or another server.
+
+`session.patient.reference` is the normalized patient identity;
+`session.patient.sourceReference` retains a single alternate source form such
+as a bundle URN. Manifest carriers are primary routes and may vary with clinical
+value and tooth context. In direct `exportDentalDeBundle` calls, an omitted
+tooth slot means a healthy present tooth. Unmount the component before calling
+`session.destroy()`.
+
+The host save workflow remains: validate the candidate, use its version/ETag
+evidence for conflict-safe persistence, write transactionally, persist
+Provenance, reload, and compare. MIRA owns permissions and save/cancel/conflict
+UX; the backend owns tenant-bound Aidbox access and transactions; Aidbox remains
+the canonical persisted history. `session.cancel()` restores the imported
+baseline and `session.destroy()` invalidates the patient-scoped handle.
 
 **Verified SNOMED coverage (from 2.5.0):** a clinical value is coded only when
 the IG's own ValueSets admit the concept AND its meaning has been verified;

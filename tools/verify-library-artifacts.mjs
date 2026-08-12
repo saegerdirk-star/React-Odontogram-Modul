@@ -24,10 +24,17 @@ const consumerDirectory = mkdtempSync(join(root, ".odontogram-library-consumer-"
 
 try {
   writeFileSync(join(consumerDirectory, "consumer.ts"), [
-    'import Odontogram from "react-advanced-odontogram";',
-    'import type { FhirExportOptions } from "react-advanced-odontogram/fhir";',
-    "const options: FhirExportOptions = { dialect: \"legacy\" };",
+    'import Odontogram, { createDentalDeOdontogramSession } from "react-advanced-odontogram";',
+    'import { DENTAL_DE_COMPATIBILITY, DENTAL_DE_IMPORT_MANIFEST, importDentalDeBundle, exportDentalDeBundle } from "react-advanced-odontogram/fhir";',
+    'import type { DentalDeExportOptions, SupportedDentalDeBundle } from "react-advanced-odontogram/fhir";',
+    "const options: DentalDeExportOptions = { patient: \"Patient/example\", effectiveDateTime: \"2026-08-12\" };",
     "void Odontogram;",
+    "void createDentalDeOdontogramSession;",
+    "void importDentalDeBundle;",
+    "void exportDentalDeBundle;",
+    "void DENTAL_DE_COMPATIBILITY;",
+    "void DENTAL_DE_IMPORT_MANIFEST;",
+    "void (null as SupportedDentalDeBundle | null);",
     "void options;",
     "",
   ].join("\n"));
