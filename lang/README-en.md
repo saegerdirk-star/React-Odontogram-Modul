@@ -579,6 +579,10 @@ unchanged imported resources, preserves IDs and `meta.versionId` on controlled
 updates, and reports additions, updates, removals, compatibility, and loss.
 There is no network or persistence in the adapter: the host validates and saves
 the candidate conflict-safely, then reloads and compares the persisted result.
+`session.patient.reference` is normalized; `sourceReference` retains a single
+alternate form such as a Bundle URN. Manifest carriers are primary routes and
+may vary by value and tooth context. A missing tooth slot in a direct export
+means healthy present. Unmount the component before `session.destroy()`.
 
 **Verified SNOMED coverage (from 2.5.0):** a clinical value is coded only when
 the IG's own ValueSets admit the concept AND its meaning has been verified;

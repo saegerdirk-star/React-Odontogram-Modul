@@ -11,6 +11,7 @@ export type DentalDeCarrier =
 
 export interface DentalDeImportManifestEntry {
   field: keyof ToothRecord;
+  /** Primary carrier; value-dependent routes may use another canonical carrier. */
   carrier: DentalDeCarrier;
   support: "canonical" | "export-only" | "unsupported" | "legacy" | "derived";
   roundTrip: boolean;
@@ -30,7 +31,9 @@ const derived = (field: keyof ToothRecord) => row(field, "none", "derived");
 /**
  * Exhaustive field-to-carrier contract. `satisfies Record<keyof ToothRecord, …>`
  * makes a newly serialized field a compile error until its Dental-DE policy is
- * declared. Unsupported fields are never silently claimed as round-trippable.
+ * declared. `carrier` names the primary carrier; the emitter may select another
+ * canonical carrier from the field value and tooth context. Unsupported fields
+ * are never silently claimed as round-trippable.
  */
 const MANIFEST_BY_FIELD = {
   toothSelection: canonical("toothSelection", "odontogram-observation"),

@@ -21,8 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `meta.versionId`, reports additions/updates/removals, and performs no network
   or persistence operation.
 - An exhaustive compile-enforced `ToothRecord` field-to-carrier manifest with
-  explicit canonical, unsupported, legacy, and derived classifications, plus
-  compatibility metadata for `de.cognovis.fhir.dental@0.41.6` and FHIR R4.
+  explicit canonical, export-only, unsupported, legacy, and derived
+  classifications. Its carrier is the primary route; value-dependent fields
+  can use another canonical carrier. Compatibility metadata targets
+  `de.cognovis.fhir.dental@0.41.6` and FHIR R4.
+- Patient identity exposes the normalized `reference` and, when all imported
+  resources use one alternate form, `sourceReference` for faithful regeneration.
 - Semantic unchanged and edited roundtrip tests, negative import fixtures,
   real-shell StrictMode/patient-switch coverage, package declarations, and a
   downstream consumer contract for the root and optional `./fhir` entries.

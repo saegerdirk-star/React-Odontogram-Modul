@@ -373,6 +373,12 @@ describe("odontogram-229 AC1/AC3: fail-closed canonical import", () => {
       } as import("fhir/r4").Observation });
       return bundle;
     })(), "unsupported"],
+    ["supported resource without a resolvable tooth", (() => {
+      const bundle = canonicalBundle();
+      const observation = bundle.entry?.find((entry) => entry.resource?.resourceType === "Observation")?.resource;
+      if (observation?.resourceType === "Observation") delete (observation as import("fhir/r4").Observation).bodySite;
+      return bundle;
+    })(), "incompatible"],
   ])("rejects %s before hydration", (_name, input, code) => {
     const result = importDentalDeBundle(input);
     expect(result).toEqual(expect.objectContaining({ ok: false, code }));

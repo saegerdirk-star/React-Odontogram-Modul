@@ -9,9 +9,12 @@ import {
   DENTAL_DE_ODONTOGRAM_PROFILE,
   DENTAL_DE_PERIODONTAL_PROFILE,
   DENTAL_DE_PERI_IMPLANT_PROFILE,
+  DENTAL_DE_FDI_SYSTEM,
+  FDI_TOOTH_NUMBER_EXT_URL,
 } from "./dentalDeCodesystems";
 import { LOCAL_SYSTEM } from "./codesystems";
 import { isDentalDeResource } from "./fromFhirDentalDe";
+import { slotForPrimaryFdi } from "../utils/numbering";
 
 export const DENTAL_DE_COMPATIBILITY = {
   package: "de.cognovis.fhir.dental",
@@ -62,6 +65,24 @@ interface ResourceEnvelope {
   subject?: { reference?: unknown };
   patient?: { reference?: unknown };
   code?: { coding?: Array<{ system?: unknown }> };
+  bodySite?: { coding?: Array<{ system?: unknown; code?: unknown }> };
+  extension?: Array<{ url?: unknown; valueCode?: unknown }>;
+}
+
+const PERMANENT_FDI = new Set([
+  "18", "17", "16", "15", "14", "13", "12", "11",
+  "21", "22", "23", "24", "25", "26", "27", "28",
+  "48", "47", "46", "45", "44", "43", "42", "41",
+  "31", "32", "33", "34", "35", "36", "37", "38",
+]);
+
+function clinicalTooth(resource: ResourceEnvelope): string | undefined {
+  const value = resource.resourceType === "Device"
+    ? resource.extension?.find((entry) => entry.url === FDI_TOOTH_NUMBER_EXT_URL)?.valueCode
+    : resource.bodySite?.coding?.find((entry) => entry.system === DENTAL_DE_FDI_SYSTEM)?.code;
+  if (typeof value !== "string" || !value) return undefined;
+  const slot = slotForPrimaryFdi(value);
+  return slot === null && !PERMANENT_FDI.has(value) ? undefined : value;
 }
 
 function failure(code: DentalDeImportFailureCode, message: string): DentalDeImportResult {
@@ -125,6 +146,9 @@ export function importDentalDeBundle(input: unknown): DentalDeImportResult {
     }
     if (canonicalProfiles.some((profile) => !SUPPORTED_PROFILES.has(profile))) {
       return failure("unsupported", "The Bundle contains a Dental-DE profile unsupported by this package version.");
+    }
+    if (!clinicalTooth(resource)) {
+      return failure("incompatible", "Every supported Dental-DE clinical resource must identify a resolvable FDI tooth.");
     }
     canonicalClinicalResources += 1;
     const reference = resource.resourceType === "Device"

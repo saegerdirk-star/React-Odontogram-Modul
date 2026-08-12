@@ -210,8 +210,10 @@ function appendUnsupportedLosses(
 }
 
 /**
- * Export one complete local save candidate. This function is pure and performs
- * no validation request or persistence; the host owns those operations.
+ * Export one complete local save candidate. An omitted tooth slot means a
+ * healthy present tooth, matching the renderer document contract. This
+ * function is pure and performs no validation request or persistence; the host
+ * owns those operations.
  */
 export function exportDentalDeBundle(
   imported: ImportedDentalDe,

@@ -164,6 +164,13 @@ and `meta.versionId`; additions, updates, and removals are listed in
 compatibility and unsupported fields explicit. The adapter never calls Aidbox
 or another server.
 
+`session.patient.reference` is the normalized patient identity;
+`session.patient.sourceReference` retains a single alternate source form such
+as a bundle URN. Manifest carriers are primary routes and may vary with clinical
+value and tooth context. In direct `exportDentalDeBundle` calls, an omitted
+tooth slot means a healthy present tooth. Unmount the component before calling
+`session.destroy()`.
+
 The host save workflow remains: validate the candidate, use its version/ETag
 evidence for conflict-safe persistence, write transactionally, persist
 Provenance, reload, and compare. MIRA owns permissions and save/cancel/conflict
