@@ -101,6 +101,23 @@ export interface CephMeasure {
   /** Which way a value above the norm reads for the growth pattern. */
   growth?: "higher-is-vertical" | "higher-is-horizontal";
   /**
+   * FHIR coding, carried HERE rather than in a later mapping table. The engine
+   * already does it this way for tooth axes (`ClinicalAxis.finding` /
+   * `AxisValue.coding` in `registry/types.ts`), and the reason is exactly the
+   * one Dirk raised: a separate translation layer is a second place to get the
+   * same fact wrong, and it drifts.
+   *
+   * `local` is always present and is the round-trip key. `loinc` and `snomed`
+   * are OPTIONAL and left unset — no verified standard code for a cephalometric
+   * measurement has been produced, and inventing one would silently assert
+   * something false. That is the same call `toFhirPerio.ts` already makes for
+   * per-site BOP, plaque and the Mombelli indices.
+   *
+   * `ucum` is the unit code for `Observation.valueQuantity`, in the shape
+   * `toFhirPerio.ts` already emits: `{ value, unit, system: UCUM, code }`.
+   */
+  coding: { local: string; ucum: "deg" | "mm" | "%"; loinc?: string; snomed?: string };
+  /**
    * PUBLISHED growth bands, where the literature states them outright. These
    * beat the standard-deviation rule, which is only a fallback for a parameter
    * that has a norm but no published band — a growth type is a clinical
@@ -135,16 +152,22 @@ const UNSOURCED =
 export const MEASURES: readonly CephMeasure[] = [
   // --- sagittal jaw position against the cranial base ---
   { id: "SNA", labelKey: "ceph.sna", unit: "deg", points: ["S", "N", "N", "A"],
+    coding: { local: "ceph-s-n-a", ucum: "deg" },
     norm: 82.0, sd: 3.0, source: SEGNER + " (Paddenberg 2021 gives 81,0 ± 2,0 — the two disagree)" },
   { id: "SNB", labelKey: "ceph.snb", unit: "deg", points: ["S", "N", "N", "B"],
+    coding: { local: "ceph-s-n-b", ucum: "deg" },
     norm: 80.0, sd: 3.0, source: SEGNER + " (Paddenberg 2021 gives 79,0 ± 2,0 — the two disagree)" },
   { id: "ANB", labelKey: "ceph.anb", unit: "deg", points: ["A", "N", "N", "B"],
+    coding: { local: "ceph-a-n-b", ucum: "deg" },
     norm: 2.0, sd: 2.0, source: SEGNER + "; Paddenberg 2021 agrees" },
   { id: "SNPg", labelKey: "ceph.snpg", unit: "deg", points: ["S", "N", "N", "Pg"],
+    coding: { local: "ceph-s-n-pg", ucum: "deg" },
     norm: null, sd: null, source: UNSOURCED },
   { id: "PgNB", labelKey: "ceph.pgnb", unit: "mm", points: ["Pg", "N", "B"],
+    coding: { local: "ceph-pg-n-b", ucum: "mm" },
     norm: null, sd: null, source: UNSOURCED },
   { id: "Wits", labelKey: "ceph.wits", unit: "mm", points: ["A", "B", "Occl"],
+    coding: { local: "ceph-wits", ucum: "mm" },
     norm: 0.0, sd: 1.0,
     source: PADDENBERG + " — female 0,0 ± 1,0 mm, male −1,0 ± 1,0 mm; the female value is "
       + "carried here and the sex difference is not yet modelled" },
@@ -158,59 +181,79 @@ export const MEASURES: readonly CephMeasure[] = [
   // against three other Paddenberg parameters that are all exactly ± 2,0. The
   // choice CHANGES the growth reading, so it is stated rather than buried.
   { id: "MLNSL", labelKey: "ceph.mlnsl", unit: "deg", points: ["Go", "Me", "S", "N"],
+    coding: { local: "ceph-m-l-n-s-l", ucum: "deg" },
     norm: 32.0, sd: 6.0,
     source: SEGNER + " — CONFLICT: Paddenberg 2021 states 32,0 ± 2,0 for the same "
       + "parameter. The wider Segner spread is used; see the note above.",
     growth: "higher-is-vertical" },
   { id: "NLNSL", labelKey: "ceph.nlnsl", unit: "deg", points: ["Sp", "Spp", "S", "N"],
+    coding: { local: "ceph-n-l-n-s-l", ucum: "deg" },
     norm: 8.5, sd: 3.0, source: PADDENBERG },
   { id: "MLNL", labelKey: "ceph.mlnl", unit: "deg", points: ["Go", "Me", "Sp", "Spp"],
+    coding: { local: "ceph-m-l-n-l", ucum: "deg" },
     norm: 23.5, sd: 6.0, source: SEGNER, growth: "higher-is-vertical" },
   { id: "NSp1", labelKey: "ceph.nsp", unit: "mm", points: ["N", "Sp1"],
+    coding: { local: "ceph-n-sp1", ucum: "mm" },
     norm: null, sd: null, source: UNSOURCED },
   { id: "Sp1Gn", labelKey: "ceph.spgn", unit: "mm", points: ["Sp1", "Gn"],
+    coding: { local: "ceph-sp1-gn", ucum: "mm" },
     norm: null, sd: null, source: UNSOURCED },
   { id: "Index", labelKey: "ceph.index", unit: "percent", points: ["N", "Sp1", "Gn"],
+    coding: { local: "ceph-index", ucum: "%" },
     norm: 79.0, sd: 5.0,
     source: SEGNER + "; classification bands first-hand from " + HASUND
       + " (Paddenberg 2021 gives 80,0 ± 9,0)",
     growth: "higher-is-horizontal", bands: { horizontalAbove: 89, verticalBelow: 71 } },
   { id: "JarabakIndex", labelKey: "ceph.jarabak", unit: "percent", points: ["S", "Go", "N", "Me"],
+    coding: { local: "ceph-jarabak-index", ucum: "%" },
     norm: 63.5, sd: 1.5, source: SEGNER, growth: "higher-is-horizontal",
     bands: { horizontalAbove: 65, verticalBelow: 62, bandSource: JARABAK_BANDS } },
 
   // --- cranial base structure ---
   { id: "NSBa", labelKey: "ceph.nsba", unit: "deg", points: ["N", "S", "S", "Ba"],
+    coding: { local: "ceph-n-s-ba", ucum: "deg" },
     norm: 130.0, sd: 6.0, source: PADDENBERG },
   { id: "GnTgoAr", labelKey: "ceph.gntgoar", unit: "deg", points: ["Gn", "tgo", "tgo", "Ar"],
+    coding: { local: "ceph-gn-tgo-ar", ucum: "deg" },
     norm: 126.0, sd: 6.0, source: SEGNER + " (tabulated there as ArGoMe)",
     growth: "higher-is-vertical" },
   { id: "FacialAxis", labelKey: "ceph.facialaxis", unit: "deg", points: ["N", "Ba", "Pt", "Gn"],
+    coding: { local: "ceph-facial-axis", ucum: "deg" },
     norm: 90.0, sd: 3.0, source: PADDENBERG + " (Ricketts' facial axis, N-Ba against Pt-Gn)",
     growth: "higher-is-horizontal" },
   { id: "SNOccl", labelKey: "ceph.snoccl", unit: "deg", points: ["S", "N", "Occl"],
+    coding: { local: "ceph-s-n-occl", ucum: "deg" },
     norm: 14.5, sd: 2.0, source: PADDENBERG },
 
   // --- incisors ---
   { id: "Interincisal", labelKey: "ceph.interincisal", unit: "deg",
-    points: ["Ap1-", "Is1-", "Ap1_", "Is1_"], norm: 132.0, sd: 6.0, source: SEGNER },
+    points: ["Ap1-", "Is1-", "Ap1_", "Is1_"], coding: { local: "ceph-interincisal", ucum: "deg" },
+    norm: 132.0, sd: 6.0, source: SEGNER },
   { id: "OK1NL", labelKey: "ceph.ok1nl", unit: "deg", points: ["Ap1_", "Is1_", "Sp", "Spp"],
+    coding: { local: "ceph-o-k1-n-l", ucum: "deg" },
     norm: 70.0, sd: 5.0, source: SEGNER },
   { id: "UK1ML", labelKey: "ceph.uk1ml", unit: "deg", points: ["Ap1-", "Is1-", "Go", "Me"],
+    coding: { local: "ceph-u-k1-m-l", ucum: "deg" },
     norm: 92.0, sd: 6.0, source: SEGNER },
   { id: "OK1NA_deg", labelKey: "ceph.ok1na.deg", unit: "deg", points: ["Ap1_", "Is1_", "N", "A"],
+    coding: { local: "ceph-o-k1-n-a-deg", ucum: "deg" },
     norm: null, sd: null, source: UNSOURCED },
   { id: "OK1NA_mm", labelKey: "ceph.ok1na.mm", unit: "mm", points: ["Is1_", "N", "A"],
+    coding: { local: "ceph-o-k1-n-a-mm", ucum: "mm" },
     norm: null, sd: null, source: UNSOURCED },
   { id: "UK1NB_deg", labelKey: "ceph.uk1nb.deg", unit: "deg", points: ["Ap1-", "Is1-", "N", "B"],
+    coding: { local: "ceph-u-k1-n-b-deg", ucum: "deg" },
     norm: null, sd: null, source: UNSOURCED },
   { id: "UK1NB_mm", labelKey: "ceph.uk1nb.mm", unit: "mm", points: ["Is1-", "N", "B"],
+    coding: { local: "ceph-u-k1-n-b-mm", ucum: "mm" },
     norm: null, sd: null, source: UNSOURCED },
 
   // --- soft tissue ---
   { id: "HAngle", labelKey: "ceph.hangle", unit: "deg", points: ["ls", "pog", "N", "B"],
+    coding: { local: "ceph-h-angle", ucum: "deg" },
     norm: null, sd: null, source: UNSOURCED },
   { id: "Nasolabial", labelKey: "ceph.nasolabial", unit: "deg", points: ["no", "sn", "sn", "ls"],
+    coding: { local: "ceph-nasolabial", ucum: "deg" },
     norm: null, sd: null, source: UNSOURCED },
 ];
 
@@ -239,6 +282,34 @@ export interface CephProfile {
   /** What the profile measures AGAINST. Sato's carries none by design. */
   referenceFrame: "anterior-cranial-base" | "frankfurt" | "occlusal-plane" | "none";
   source: string;
+  /**
+   * NORMS BELONG TO THE PROFILE, not to the measure. Schools disagree about
+   * them: ML-NSL is 28° in the Hasund school and 32° in Segner's, and reference
+   * case A reads vertical against the first and neutral against the second —
+   * the same measurement, two findings. A norm hung on the measure would force
+   * every school to share one, which is the mistake this field corrects.
+   *
+   * Entries here override the measure's default. A profile that omits the field
+   * simply flies the defaults, which is what the built-in one does.
+   */
+  norms?: Record<string, NormOverride>;
+}
+
+export interface NormOverride {
+  norm: number | null;
+  sd: number | null;
+  source: string;
+}
+
+/** The norm one profile flies for one measure: its override, else the default. */
+export function normFor(measureId: string, profileId?: string):
+  { norm: number | null; sd: number | null; source: string } | null {
+  const m = BY_ID.get(measureId);
+  if (!m) return null;
+  const override = profileId
+    ? PROFILES.find(p => p.id === profileId)?.norms?.[measureId]
+    : undefined;
+  return override ?? { norm: m.norm, sd: m.sd, source: m.source };
 }
 
 export const PROFILES: readonly CephProfile[] = [
@@ -341,7 +412,7 @@ export function individualisedWits(values: CephValues): number | null {
   return 57.510 + 1.526 * anb - 0.634 * sna - 0.666 * occl;
 }
 
-export function deriveJawRelation(values: CephValues): JawRelation {
+export function deriveJawRelation(values: CephValues, profileId?: string): JawRelation {
   const maxilla = classifyJaw(read(values, "SNA"), 79, 85);
   const mandible = classifyJaw(read(values, "SNB"), 77, 83);
   const anb = read(values, "ANB");
@@ -352,8 +423,9 @@ export function deriveJawRelation(values: CephValues): JawRelation {
   // against the population one, because the disagreement between them IS the
   // clinical finding — a large ANB in a posteriorly rotated face is a vertical
   // problem, not a sagittal one, and only the individualised reading says so.
-  const sd = BY_ID.get("ANB")!.sd ?? 2;
-  const populationNorm = BY_ID.get("ANB")!.norm;
+  const anbNorm = normFor("ANB", profileId)!;
+  const sd = anbNorm.sd ?? 2;
+  const populationNorm = anbNorm.norm;
   const band = (value: number | null, target: number | null): SagittalClass | null =>
     value === null || target === null ? null
       : value - target > sd ? "distal"
@@ -440,14 +512,16 @@ export function classifySubdivision(mlnl: number | null): 1 | 2 | 3 | null {
  * One standard deviation is the threshold. `indeterminate` when nothing
  * contributed — which is the honest answer to an empty form, not "neutral".
  */
-export function deriveGrowthPattern(values: CephValues): GrowthAssessment {
+export function deriveGrowthPattern(values: CephValues, profileId?: string): GrowthAssessment {
   const indicators: GrowthIndicator[] = [];
 
   for (const m of MEASURES) {
-    if (!m.growth || m.norm === null || m.sd === null || m.sd <= 0) continue;
+    if (!m.growth) continue;
+    const { norm, sd } = normFor(m.id, profileId)!;
+    if (norm === null || sd === null || sd <= 0) continue;
     const value = read(values, m.id);
     if (value === null) continue;
-    const deviations = (value - m.norm) / m.sd;
+    const deviations = (value - norm) / sd;
 
     // A published band wins. Only where none exists does the SD rule decide,
     // and then at one standard deviation.
@@ -461,7 +535,7 @@ export function deriveGrowthPattern(values: CephValues): GrowthAssessment {
       reads = towardsVertical > 1 ? "vertical" : towardsVertical < -1 ? "horizontal" : "neutral";
     }
     indicators.push({
-      id: m.id, value, norm: m.norm, sd: m.sd, deviations, reads,
+      id: m.id, value, norm, sd, deviations, reads,
       basis: m.bands ? "published-band" : "standard-deviation",
     });
   }
@@ -529,8 +603,8 @@ export interface CephAssessment {
 export function assess(values: CephValues, profileId = "hasund"): CephAssessment {
   const measures = profileMeasures(profileId);
   return {
-    jaws: deriveJawRelation(values),
-    growth: deriveGrowthPattern(values),
+    jaws: deriveJawRelation(values, profileId),
+    growth: deriveGrowthPattern(values, profileId),
     targetLowerIncisor: targetLowerIncisorPosition(values),
     targetHAngle: targetHAngle(values),
     individualisedWits: individualisedWits(values),

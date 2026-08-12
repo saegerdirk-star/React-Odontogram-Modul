@@ -15,7 +15,9 @@ import {
   classifyJaw, classifyVerticalRelation, classifySubdivision,
   individualisedAnb, individualisedAnbExtended, individualisedWits,
   targetLowerIncisorPosition, targetHAngle, hasAnyCephData,
+  normFor,
   type CephValues,
+  type CephProfile,
 } from "../cephalometry";
 
 /** Reference case A: retrognathic mandible, posterior rotation. */
@@ -321,5 +323,73 @@ describe("the whole assessment", () => {
     expect(hasAnyCephData({})).toBe(false);
     expect(hasAnyCephData({ SNA: Number.NaN })).toBe(false);
     expect(hasAnyCephData({ SNA: 81 })).toBe(true);
+  });
+});
+
+describe("FHIR coding lives on the measure, not in a later mapping", () => {
+  // Dirk's question: how does this fit FHIR terminology, without a second layer
+  // to translate through? By putting the coding here, exactly as the engine
+  // already does for tooth axes in registry/types.ts.
+
+  it("every measure carries a local code and a UCUM unit", () => {
+    for (const m of MEASURES) {
+      expect(m.coding, m.id).toBeDefined();
+      expect(m.coding.local, m.id).toMatch(/^ceph-[a-z0-9-]+$/);
+      expect(["deg", "mm", "%"]).toContain(m.coding.ucum);
+    }
+  });
+
+  it("the UCUM code agrees with the measure's own unit", () => {
+    const expected = { deg: "deg", mm: "mm", percent: "%" } as const;
+    for (const m of MEASURES) expect(m.coding.ucum, m.id).toBe(expected[m.unit]);
+  });
+
+  it("local codes are unique — they are the round-trip key", () => {
+    const codes = MEASURES.map(m => m.coding.local);
+    expect(new Set(codes).size).toBe(codes.length);
+  });
+
+  it("NO LOINC or SNOMED code is invented", () => {
+    // No verified standard code for a cephalometric measurement has been
+    // produced. Guessing one would silently assert something false — the same
+    // call toFhirPerio.ts already makes for per-site BOP and the Mombelli
+    // indices. The slots exist for when a verified code turns up.
+    for (const m of MEASURES) {
+      expect(m.coding.loinc, m.id).toBeUndefined();
+      expect(m.coding.snomed, m.id).toBeUndefined();
+    }
+  });
+});
+
+describe("norms belong to the profile", () => {
+  it("a profile with no overrides flies the measure defaults", () => {
+    expect(normFor("MLNSL")).toEqual({ norm: 32.0, sd: 6.0, source: measure("MLNSL")!.source });
+    expect(normFor("MLNSL", "hasund")!.norm).toBe(32.0);
+  });
+
+  it("an override replaces norm, SD and source together", () => {
+    const school: CephProfile = {
+      id: "test-school", labelKey: "x", referenceFrame: "anterior-cranial-base",
+      source: "a source long enough to pass the profile check",
+      measures: ["MLNSL"],
+      norms: { MLNSL: { norm: 28.0, sd: 6.0, source: "the other school" } },
+    };
+    // resolved through the profile, not through the measure
+    const override = school.norms!.MLNSL;
+    expect(override.norm).toBe(28.0);
+    expect(override.source).not.toBe(measure("MLNSL")!.source);
+  });
+
+  it("THE POINT: the same measurement gives a different finding per norm set", () => {
+    // ML-NSL 37,6 against 32 ± 6 is +0,93 SD — neutral.
+    // The same value against the Hasund school's 28 ± 6 is +1,6 SD — vertical.
+    // Which school the profile flies decides the growth reading, which is why
+    // this cannot live on the measure.
+    expect((37.6 - 32) / 6).toBeLessThan(1);
+    expect((37.6 - 28) / 6).toBeGreaterThan(1);
+  });
+
+  it("normFor returns null for a measure that does not exist", () => {
+    expect(normFor("NotAMeasure")).toBeNull();
   });
 });
