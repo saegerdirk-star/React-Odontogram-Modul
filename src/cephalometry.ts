@@ -100,11 +100,31 @@ export interface CephMeasure {
   source: string;
   /** Which way a value above the norm reads for the growth pattern. */
   growth?: "higher-is-vertical" | "higher-is-horizontal";
+  /**
+   * PUBLISHED growth bands, where the literature states them outright. These
+   * beat the standard-deviation rule, which is only a fallback for a parameter
+   * that has a norm but no published band — a growth type is a clinical
+   * tendency, not a statistical outlier, and an author who published thresholds
+   * knew that better than an SD multiple does.
+   */
+  bands?: { horizontalAbove: number; verticalBelow: number; bandSource?: string };
 }
 
 const PADDENBERG =
   "Paddenberg et al., Floating norms for individualising the ANB angle and the WITS "
   + "appraisal, J Orofac Orthop 2021 (Tab. 1), Universität Regensburg";
+// The norm set the Bergen technique is actually built on, and the one Dirk's own
+// school uses. Read from the norm table of the Regensburg university orthodontic
+// clinic, which states its provenance in as many words: "Diese Normwerte leiten
+// sich von den von Segner et al. (1998) veröffentlichten Normen ab."
+const SEGNER =
+  "Segner & Hasund, Individualisierte Kephalometrie 1998 — norms and standard "
+  + "deviations as tabulated by the orthodontic clinic of Universitätsklinikum "
+  + "Regensburg (dissertation, Tab. 4), which cites Segner et al. 1998 as their source";
+const JARABAK_BANDS =
+  "Jarabak & Fizzell, Technique and treatment with light-wire edgewise appliances — "
+  + "the published growth bands, quoted second-hand from the orthodontic literature; "
+  + "the original has not been read";
 const HASUND =
   "Habersack & Hasund, Klinische Anwendung der individualisierten Kephalometrie, "
   + "SAM Präzisionstechnik 2013";
@@ -115,11 +135,11 @@ const UNSOURCED =
 export const MEASURES: readonly CephMeasure[] = [
   // --- sagittal jaw position against the cranial base ---
   { id: "SNA", labelKey: "ceph.sna", unit: "deg", points: ["S", "N", "N", "A"],
-    norm: 81.0, sd: 2.0, source: PADDENBERG },
+    norm: 82.0, sd: 3.0, source: SEGNER + " (Paddenberg 2021 gives 81,0 ± 2,0 — the two disagree)" },
   { id: "SNB", labelKey: "ceph.snb", unit: "deg", points: ["S", "N", "N", "B"],
-    norm: 79.0, sd: 2.0, source: PADDENBERG },
+    norm: 80.0, sd: 3.0, source: SEGNER + " (Paddenberg 2021 gives 79,0 ± 2,0 — the two disagree)" },
   { id: "ANB", labelKey: "ceph.anb", unit: "deg", points: ["A", "N", "N", "B"],
-    norm: 2.0, sd: 2.0, source: PADDENBERG },
+    norm: 2.0, sd: 2.0, source: SEGNER + "; Paddenberg 2021 agrees" },
   { id: "SNPg", labelKey: "ceph.snpg", unit: "deg", points: ["S", "N", "N", "Pg"],
     norm: null, sd: null, source: UNSOURCED },
   { id: "PgNB", labelKey: "ceph.pgnb", unit: "mm", points: ["Pg", "N", "B"],
@@ -130,25 +150,41 @@ export const MEASURES: readonly CephMeasure[] = [
       + "carried here and the sex difference is not yet modelled" },
 
   // --- vertical relations ---
+  // NORM CONFLICT, deliberately left visible. Both sources put the mean at 32°,
+  // but Paddenberg 2021 states ± 2,0 and Segner ± 6,0 — a threefold difference in
+  // spread on one of the most variable parameters in the whole analysis. The
+  // wider figure is used, because it matches the observed spread of the
+  // Regensburg study group (SD 6,9) and because ± 2,0 sits implausibly tight
+  // against three other Paddenberg parameters that are all exactly ± 2,0. The
+  // choice CHANGES the growth reading, so it is stated rather than buried.
   { id: "MLNSL", labelKey: "ceph.mlnsl", unit: "deg", points: ["Go", "Me", "S", "N"],
-    norm: 32.0, sd: 2.0, source: PADDENBERG, growth: "higher-is-vertical" },
+    norm: 32.0, sd: 6.0,
+    source: SEGNER + " — CONFLICT: Paddenberg 2021 states 32,0 ± 2,0 for the same "
+      + "parameter. The wider Segner spread is used; see the note above.",
+    growth: "higher-is-vertical" },
   { id: "NLNSL", labelKey: "ceph.nlnsl", unit: "deg", points: ["Sp", "Spp", "S", "N"],
     norm: 8.5, sd: 3.0, source: PADDENBERG },
   { id: "MLNL", labelKey: "ceph.mlnl", unit: "deg", points: ["Go", "Me", "Sp", "Spp"],
-    norm: null, sd: null, source: UNSOURCED, growth: "higher-is-vertical" },
+    norm: 23.5, sd: 6.0, source: SEGNER, growth: "higher-is-vertical" },
   { id: "NSp1", labelKey: "ceph.nsp", unit: "mm", points: ["N", "Sp1"],
     norm: null, sd: null, source: UNSOURCED },
   { id: "Sp1Gn", labelKey: "ceph.spgn", unit: "mm", points: ["Sp1", "Gn"],
     norm: null, sd: null, source: UNSOURCED },
   { id: "Index", labelKey: "ceph.index", unit: "percent", points: ["N", "Sp1", "Gn"],
-    norm: 80.0, sd: 9.0, source: PADDENBERG + "; classification bands from " + HASUND,
-    growth: "higher-is-horizontal" },
+    norm: 79.0, sd: 5.0,
+    source: SEGNER + "; classification bands first-hand from " + HASUND
+      + " (Paddenberg 2021 gives 80,0 ± 9,0)",
+    growth: "higher-is-horizontal", bands: { horizontalAbove: 89, verticalBelow: 71 } },
+  { id: "JarabakIndex", labelKey: "ceph.jarabak", unit: "percent", points: ["S", "Go", "N", "Me"],
+    norm: 63.5, sd: 1.5, source: SEGNER, growth: "higher-is-horizontal",
+    bands: { horizontalAbove: 65, verticalBelow: 62, bandSource: JARABAK_BANDS } },
 
   // --- cranial base structure ---
   { id: "NSBa", labelKey: "ceph.nsba", unit: "deg", points: ["N", "S", "S", "Ba"],
     norm: 130.0, sd: 6.0, source: PADDENBERG },
   { id: "GnTgoAr", labelKey: "ceph.gntgoar", unit: "deg", points: ["Gn", "tgo", "tgo", "Ar"],
-    norm: null, sd: null, source: UNSOURCED, growth: "higher-is-vertical" },
+    norm: 126.0, sd: 6.0, source: SEGNER + " (tabulated there as ArGoMe)",
+    growth: "higher-is-vertical" },
   { id: "FacialAxis", labelKey: "ceph.facialaxis", unit: "deg", points: ["N", "Ba", "Pt", "Gn"],
     norm: 90.0, sd: 3.0, source: PADDENBERG + " (Ricketts' facial axis, N-Ba against Pt-Gn)",
     growth: "higher-is-horizontal" },
@@ -157,7 +193,11 @@ export const MEASURES: readonly CephMeasure[] = [
 
   // --- incisors ---
   { id: "Interincisal", labelKey: "ceph.interincisal", unit: "deg",
-    points: ["Ap1-", "Is1-", "Ap1_", "Is1_"], norm: null, sd: null, source: UNSOURCED },
+    points: ["Ap1-", "Is1-", "Ap1_", "Is1_"], norm: 132.0, sd: 6.0, source: SEGNER },
+  { id: "OK1NL", labelKey: "ceph.ok1nl", unit: "deg", points: ["Ap1_", "Is1_", "Sp", "Spp"],
+    norm: 70.0, sd: 5.0, source: SEGNER },
+  { id: "UK1ML", labelKey: "ceph.uk1ml", unit: "deg", points: ["Ap1-", "Is1-", "Go", "Me"],
+    norm: 92.0, sd: 6.0, source: SEGNER },
   { id: "OK1NA_deg", labelKey: "ceph.ok1na.deg", unit: "deg", points: ["Ap1_", "Is1_", "N", "A"],
     norm: null, sd: null, source: UNSOURCED },
   { id: "OK1NA_mm", labelKey: "ceph.ok1na.mm", unit: "mm", points: ["Is1_", "N", "A"],
@@ -347,6 +387,8 @@ export interface GrowthIndicator {
   /** How far from the norm, in standard deviations. Signed. */
   deviations: number;
   reads: "horizontal" | "neutral" | "vertical";
+  /** Whether the reading came from a published band or from the SD fallback. */
+  basis: "published-band" | "standard-deviation";
 }
 
 export interface GrowthAssessment {
@@ -356,6 +398,8 @@ export interface GrowthAssessment {
   /** Hasund's vertical relation from the index, and its 1/2/3 subdivision. */
   verticalRelation: VerticalRelation | null;
   subdivision: 1 | 2 | 3 | null;
+  /** Indicators reading against the verdict. 0 = every voter agreed. */
+  dissent: number;
 }
 
 /**
@@ -404,10 +448,21 @@ export function deriveGrowthPattern(values: CephValues): GrowthAssessment {
     const value = read(values, m.id);
     if (value === null) continue;
     const deviations = (value - m.norm) / m.sd;
-    const towardsVertical = m.growth === "higher-is-vertical" ? deviations : -deviations;
+
+    // A published band wins. Only where none exists does the SD rule decide,
+    // and then at one standard deviation.
+    let reads: GrowthIndicator["reads"];
+    if (m.bands) {
+      reads = value > m.bands.horizontalAbove ? "horizontal"
+        : value < m.bands.verticalBelow ? "vertical"
+          : "neutral";
+    } else {
+      const towardsVertical = m.growth === "higher-is-vertical" ? deviations : -deviations;
+      reads = towardsVertical > 1 ? "vertical" : towardsVertical < -1 ? "horizontal" : "neutral";
+    }
     indicators.push({
-      id: m.id, value, norm: m.norm, sd: m.sd, deviations,
-      reads: towardsVertical > 1 ? "vertical" : towardsVertical < -1 ? "horizontal" : "neutral",
+      id: m.id, value, norm: m.norm, sd: m.sd, deviations, reads,
+      basis: m.bands ? "published-band" : "standard-deviation",
     });
   }
 
@@ -416,14 +471,22 @@ export function deriveGrowthPattern(values: CephValues): GrowthAssessment {
   const subdivision = classifySubdivision(read(values, "MLNL"));
 
   if (indicators.length === 0) {
-    return { pattern: "indeterminate", indicators, verticalRelation, subdivision };
+    return { pattern: "indeterminate", indicators, verticalRelation, subdivision, dissent: 0 };
   }
   const vertical = indicators.filter(i => i.reads === "vertical").length;
   const horizontal = indicators.filter(i => i.reads === "horizontal").length;
   const pattern: GrowthPattern =
     vertical > horizontal ? "vertical" : horizontal > vertical ? "horizontal" : "neutral";
 
-  return { pattern, indicators, verticalRelation, subdivision };
+  // How many indicators read the OTHER way. A verdict carried by one indicator
+  // against another is not the same finding as one every indicator agrees on,
+  // and a reader has to be able to tell them apart — reference case A is
+  // exactly this: a steep mandibular plane pulling one way while a small gonial
+  // angle pulls the other.
+  const dissent = pattern === "neutral" ? 0
+    : indicators.filter(i => i.reads !== "neutral" && i.reads !== pattern).length;
+
+  return { pattern, indicators, verticalRelation, subdivision, dissent };
 }
 
 // ---- Hasund's two clinical equations --------------------------------------

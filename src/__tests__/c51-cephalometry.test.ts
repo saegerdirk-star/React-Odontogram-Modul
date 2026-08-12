@@ -197,13 +197,28 @@ describe("the growth pattern", () => {
     expect(classifySubdivision(null)).toBeNull();
   });
 
-  it("REFERENCE case A: posterior rotation reads vertical", () => {
+  it("REFERENCE case A: the indicators genuinely disagree, and the vote says so", () => {
+    // The printed sheet calls this a posterior rotation. Under the Segner norms
+    // it is not that simple: a mandibular plane of 37,6 against 32,0 ± 6,0 is
+    // only +0,9 SD, while a gonial angle of 119,4 against 126,0 ± 6,0 pulls the
+    // other way at -1,1 SD. A real disharmony, not a tidy growth type.
+    //
+    // THIS IS THE OPEN QUESTION FOR DIRK, recorded here rather than papered
+    // over: the norm for ML-NSL is 28° in the Hasund school (and in his own
+    // printout), 32° in both Segner and Paddenberg. Against 28° the same value
+    // reads clearly vertical. Which norm set the profile flies decides the
+    // finding, which is why norms belong to the PROFILE and not to the measure.
     const g = deriveGrowthPattern(CASE_A);
-    expect(g.pattern).toBe("vertical");
-    // ML-NSL 37,6 against 32,0 ± 2,0 is +2,8 SD
     const mlnsl = g.indicators.find(i => i.id === "MLNSL")!;
-    expect(mlnsl.deviations).toBeCloseTo(2.8, 6);
-    expect(mlnsl.reads).toBe("vertical");
+    expect(mlnsl.deviations).toBeCloseTo(0.9333, 3);
+    expect(mlnsl.reads).toBe("neutral");
+
+    const gonial = g.indicators.find(i => i.id === "GnTgoAr")!;
+    expect(gonial.reads).toBe("horizontal");
+    expect(g.dissent).toBe(0);          // nothing reads vertical to dissent with
+
+    // against the Hasund norm of 28 the very same measurement flips
+    expect((37.6 - 28) / 6).toBeGreaterThan(1);
   });
 
   it("REFERENCE case B: anterior rotation reads horizontal", () => {
@@ -221,22 +236,43 @@ describe("the growth pattern", () => {
       expect(i.sd).toBeGreaterThan(0);
       expect(["horizontal", "neutral", "vertical"]).toContain(i.reads);
     }
-    // an indicator may legitimately disagree with the verdict — that is information
-    expect(g.indicators.some(i => i.reads !== g.pattern) || true).toBe(true);
+    // an indicator may legitimately disagree with the verdict — that is
+    // information, and the count is reported rather than smoothed away
+    expect(typeof g.dissent).toBe("number");
   });
 
   it("only indicators with a SOURCED norm can vote", () => {
-    // ML-NL and the gonial angle both carry `growth` but have no sourced norm,
-    // so they are recorded and never counted.
     const g = deriveGrowthPattern(CASE_A);
-    expect(g.indicators.map(i => i.id)).not.toContain("MLNL");
-    expect(g.indicators.map(i => i.id)).not.toContain("GnTgoAr");
+    const voters = g.indicators.map(i => i.id);
+    for (const id of voters) expect(measure(id)!.norm).not.toBeNull();
+    // a measure carrying `growth` but no sourced norm is recorded, never counted
+    const unsourcedGrowth = MEASURES.filter(m => m.growth && m.norm === null);
+    for (const m of unsourcedGrowth) expect(voters).not.toContain(m.id);
+  });
+
+  it("a published band beats the standard-deviation fallback", () => {
+    const jarabak = MEASURES.find(m => m.id === "JarabakIndex")!;
+    expect(jarabak.bands).toBeDefined();
+    // 60 % is inside 1 SD of 63,5 ± 1,5? No — but the published band is what counts
+    const g = deriveGrowthPattern({ JarabakIndex: 60 });
+    const i = g.indicators.find(x => x.id === "JarabakIndex")!;
+    expect(i.basis).toBe("published-band");
+    expect(i.reads).toBe("vertical");
+    expect(deriveGrowthPattern({ JarabakIndex: 67 }).indicators[0].reads).toBe("horizontal");
+    expect(deriveGrowthPattern({ JarabakIndex: 63.5 }).indicators[0].reads).toBe("neutral");
+  });
+
+  it("an indicator without a published band falls back to the SD rule, and says so", () => {
+    const g = deriveGrowthPattern({ MLNSL: 45 });
+    expect(g.indicators[0].basis).toBe("standard-deviation");
+    expect(g.indicators[0].reads).toBe("vertical");
   });
 
   it("an empty form is indeterminate, which is not the same as neutral", () => {
     const g = deriveGrowthPattern({});
     expect(g.pattern).toBe("indeterminate");
     expect(g.indicators).toEqual([]);
+    expect(g.dissent).toBe(0);
   });
 
   it("REFERENCE: the index classification matches both printed cases", () => {
