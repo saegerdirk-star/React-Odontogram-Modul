@@ -1,4 +1,6 @@
 // Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
+// Cognovis fork - https://github.com/cognovis/React-Odontogram-Modul
+// Dirk Saeger, Malte Sussdorff 2026
 //
 // Bead odontogram-c51.2: cephalometry — one landmark set, derived measures, and
 // the analyses as profiles over them.

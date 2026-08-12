@@ -1,4 +1,6 @@
 // Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
+// Cognovis fork - https://github.com/cognovis/React-Odontogram-Modul
+// Dirk Saeger, Malte Sussdorff 2026
 //
 // Bead odontogram-3l1 / AC4: the integration boundary is ENFORCED, not only
 // described. React state stays the UI-domain document; FHIR conversion stays a

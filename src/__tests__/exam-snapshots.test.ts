@@ -1,4 +1,6 @@
 // Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
+// Cognovis fork - https://github.com/cognovis/React-Odontogram-Modul
+// Dirk Saeger, Malte Sussdorff 2026
 //
 // Bead odontogram-2vd, AC1/AC4: a document can carry several dated examinations,
 // each an INDEPENDENT snapshot. Status and plan keep meaning current-versus-

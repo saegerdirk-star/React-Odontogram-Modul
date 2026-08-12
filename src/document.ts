@@ -1,5 +1,7 @@
 // Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
 // Created by Zoltan Dul (https://github.com/ZoliQua) 2025-2026
+// Cognovis fork - https://github.com/cognovis/React-Odontogram-Modul
+// Dirk Saeger, Malte Sussdorff 2026
 
 /** Per-tooth record as produced by the engine's serializeState(). */
 export interface ToothRecord {

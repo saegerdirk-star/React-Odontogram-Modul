@@ -1,3 +1,7 @@
+// Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
+// Cognovis fork - https://github.com/cognovis/React-Odontogram-Modul
+// Dirk Saeger, Malte Sussdorff 2026
+
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
 import { mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";

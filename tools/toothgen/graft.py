@@ -1,3 +1,7 @@
+# Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
+# Cognovis fork - https://github.com/cognovis/React-Odontogram-Modul
+# Dirk Saeger, Malte Sussdorff 2026
+
 """Graft a drawn root from one source template onto the crown of another.
 
 Template 15, the single-rooted premolar, was produced by redrawing the two roots

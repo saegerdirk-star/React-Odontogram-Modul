@@ -1,3 +1,7 @@
+# Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
+# Cognovis fork - https://github.com/cognovis/React-Odontogram-Modul
+# Dirk Saeger, Malte Sussdorff 2026
+
 """Draw the gingiva so that the row shares one line.
 
 The source drawings carry a hand-drawn gum outline per tooth. Each one is

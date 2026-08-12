@@ -1,3 +1,7 @@
+// Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
+// Cognovis fork - https://github.com/cognovis/React-Odontogram-Modul
+// Dirk Saeger, Malte Sussdorff 2026
+
 /**
  * Bead odontogram-im1's last rule, and the reason it waited for ap7.
  *

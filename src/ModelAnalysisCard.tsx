@@ -1,4 +1,6 @@
 // Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
+// Cognovis fork - https://github.com/cognovis/React-Odontogram-Modul
+// Dirk Saeger, Malte Sussdorff 2026
 //
 // Bead odontogram-c51.1: entering the measured crown widths, and the analysis
 // derived from them, in one card.

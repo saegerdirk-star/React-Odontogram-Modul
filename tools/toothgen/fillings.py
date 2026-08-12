@@ -1,3 +1,7 @@
+# Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
+# Cognovis fork - https://github.com/cognovis/React-Odontogram-Modul
+# Dirk Saeger, Malte Sussdorff 2026
+
 """Make a proximal filling reach the occlusal one, so MO/OD/MOD is one shape.
 
 Each surface is its own layer and its own authored shape, and the shapes were

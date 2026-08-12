@@ -1,4 +1,6 @@
 // Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
+// Cognovis fork - https://github.com/cognovis/React-Odontogram-Modul
+// Dirk Saeger, Malte Sussdorff 2026
 //
 // Bead odontogram-2vd, AC2 (exchange side): suppuration finally leaves the
 // engine, and a gap in the examination is exported as FHIR's own
