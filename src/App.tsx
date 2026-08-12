@@ -9,6 +9,7 @@ export { default as PerioChart } from "./PerioChart";
 // + instance-isolated clinical sessions) and the canonical fhir-dental-de codec.
 import {
   createOdontogramSession, getDefaultOdontogramSession,
+  normalizeOdontogramDocument,
   createEngineClaim, claimEngine, releaseEngine, ownsEngine, onEngineOwnerChange,
 } from "./odontogram";
 export {
@@ -68,7 +69,8 @@ export function createDentalDeOdontogramSession(
 ): DentalDeSessionImportResult {
   const imported = importDentalDeBundle(bundle);
   if (imported.ok === false) return imported;
-  const baseline = structuredClone(imported.document);
+  const baseline = normalizeOdontogramDocument(imported.document);
+  const sessionImport = { ...imported, document: baseline };
   const base = createOdontogramSession(baseline);
   let destroyed = false;
   let dirty = false;
@@ -105,7 +107,7 @@ export function createDentalDeOdontogramSession(
     },
     export: (exportOptions) => {
       ensureLive();
-      return exportDentalDeBundle(imported, base.getDocument(), exportOptions);
+      return exportDentalDeBundle(sessionImport, base.getDocument(), exportOptions);
     },
     destroy: () => {
       if (destroyed) return;
@@ -550,11 +552,12 @@ export default function App({
 
   // Sync read-only mode
   useEffect(() => {
+    if (!ownsTheEngine) return;
     const sessionReadOnly = sessionProp && "readOnly" in sessionProp
       ? sessionProp.readOnly === true
       : false;
     setReadOnly(readOnlyProp ?? sessionReadOnly);
-  }, [readOnlyProp, sessionProp]);
+  }, [readOnlyProp, sessionProp, ownsTheEngine]);
 
   // Sync notes enabled
   useEffect(() => {

@@ -10,6 +10,7 @@ import {
   DENTAL_DE_PERIODONTAL_PROFILE,
   DENTAL_DE_PERI_IMPLANT_PROFILE,
 } from "./dentalDeCodesystems";
+import { LOCAL_SYSTEM } from "./codesystems";
 
 export const DENTAL_DE_COMPATIBILITY = {
   package: "de.cognovis.fhir.dental",
@@ -26,6 +27,7 @@ export type DentalDeImportFailureCode =
 
 export interface DentalDePatientIdentity {
   reference: string;
+  sourceReference?: string;
   resourceId?: string;
 }
 
@@ -57,6 +59,8 @@ interface ResourceEnvelope {
   id?: unknown;
   meta?: { profile?: unknown };
   subject?: { reference?: unknown };
+  patient?: { reference?: unknown };
+  code?: { coding?: Array<{ system?: unknown }> };
 }
 
 function failure(code: DentalDeImportFailureCode, message: string): DentalDeImportResult {
@@ -106,14 +110,26 @@ export function importDentalDeBundle(input: unknown): DentalDeImportResult {
     }
 
     const profiles = profilesOf(resource);
+    const isLegacyClinical = resource.resourceType === "Observation"
+      && resource.code?.coding?.some((entry) => entry.system === LOCAL_SYSTEM);
+    if (isLegacyClinical) {
+      return failure("unsupported", "Legacy renderer FHIR resources cannot be mixed into a canonical Dental-DE session.");
+    }
     const canonicalProfiles = profiles.filter((profile) => profile.startsWith(`${DENTAL_DE_COMPATIBILITY.canonical}/StructureDefinition/`));
     if (canonicalProfiles.length === 0) continue;
     if (canonicalProfiles.some((profile) => !SUPPORTED_PROFILES.has(profile))) {
       return failure("unsupported", "The Bundle contains a Dental-DE profile unsupported by this package version.");
     }
     canonicalClinicalResources += 1;
-    const reference = resource.subject?.reference;
-    if (resource.resourceType !== "Device") {
+    const reference = resource.resourceType === "Device"
+      ? resource.patient?.reference
+      : resource.subject?.reference;
+    if (resource.resourceType === "Device") {
+      if (typeof reference !== "string" || !reference) {
+        return failure("incomplete", "Every Dental-DE implant Device must identify its patient.");
+      }
+      clinicalSubjects.add(reference);
+    } else {
       if (typeof reference !== "string" || !reference) {
         return failure("incomplete", "Every Dental-DE clinical resource must identify its patient subject.");
       }
@@ -132,13 +148,17 @@ export function importDentalDeBundle(input: unknown): DentalDeImportResult {
   if (normalizedSubjects.size !== 1) {
     return failure("incompatible", "All Dental-DE resources must belong to one patient.");
   }
+  const sourceReference = [...clinicalSubjects][0];
 
   const odontogramState = parseFhirBundle(input as Bundle);
   odontogramState.version = PAYLOAD_VERSION;
   return {
     ok: true,
     document: odontogramState,
-    patient: { reference: [...normalizedSubjects][0] },
+    patient: {
+      reference: [...normalizedSubjects][0],
+      ...(sourceReference !== [...normalizedSubjects][0] ? { sourceReference } : {}),
+    },
     compatibility: DENTAL_DE_COMPATIBILITY,
     sourceBundle: structuredClone(input as Bundle),
   };

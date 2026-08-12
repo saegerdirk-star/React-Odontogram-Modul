@@ -11934,6 +11934,29 @@ function cloneDocument(doc: OdontogramDocument): OdontogramDocument {
   return JSON.parse(JSON.stringify(doc)) as OdontogramDocument;
 }
 
+/**
+ * Normalize a sparse host document into the exact serialization domain a live
+ * engine snapshot uses, without activating a session or touching renderer state.
+ */
+export function normalizeOdontogramDocument(doc: OdontogramDocument): OdontogramDocument {
+  const normalized = cloneDocument(doc);
+  const teeth: Record<string, OdontogramDocument["teeth"][string]> = {};
+  for (const toothNo of ALL_TEETH) {
+    teeth[String(toothNo)] = serializeState(
+      hydrateState(doc.teeth?.[String(toothNo)] ?? {}, false),
+    ) as OdontogramDocument["teeth"][string];
+  }
+  normalized.teeth = teeth;
+  normalized.globals = {
+    wisdomVisible: doc.globals?.wisdomVisible ?? true,
+    showBase: doc.globals?.showBase ?? true,
+    occlusalVisible: doc.globals?.occlusalVisible ?? true,
+    showHealthyPulp: doc.globals?.showHealthyPulp ?? true,
+    edentulous: doc.globals?.edentulous ?? false,
+  };
+  return normalized;
+}
+
 /** Serialize the engine's live clinical state into a document. */
 function snapshotLiveDocument(): OdontogramDocument {
   return collectExportPayload() as OdontogramDocument;

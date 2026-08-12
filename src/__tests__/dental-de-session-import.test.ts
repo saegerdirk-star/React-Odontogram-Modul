@@ -44,6 +44,9 @@ describe("odontogram-229 AC1/AC3: fail-closed canonical import", () => {
     for (const required of ["toothSelection", "caries", "perio", "mpi", "restorationType", "extractionPlan", "orthoAppliance"]) {
       expect(fields).toContain(required);
     }
+    expect(DENTAL_DE_IMPORT_MANIFEST.find((entry) => entry.field === "assessment")).toEqual(
+      expect.objectContaining({ support: "unsupported", roundTrip: false }),
+    );
   });
   it("creates an isolated read-only patient session from a canonical Bundle", () => {
     const result = createDentalDeOdontogramSession(canonicalBundle());
@@ -147,6 +150,75 @@ describe("odontogram-229 AC1/AC3: fail-closed canonical import", () => {
     expect(roundTrip.ok && roundTrip.document.teeth["46"]).toEqual(imported.document.teeth["46"]);
   });
 
+  it("reports a locally edited unsupported planned-care field as loss", () => {
+    const imported = importDentalDeBundle(canonicalBundle());
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) return;
+    const edited = structuredClone(imported.document);
+    edited.teeth["11"].extractionPlan = true;
+    const exported = exportDentalDeBundle(imported, edited, { patient: PATIENT, effectiveDateTime: "2026-08-12" });
+    expect(exported.ok).toBe(true);
+    if (!exported.ok) return;
+    expect(exported.report.unmapped).toContainEqual(expect.objectContaining({ tooth: "11", field: "extractionPlan" }));
+  });
+
+  it("accounts for every duplicate source carrier as an explicit removal", () => {
+    const source = canonicalBundle();
+    const original = source.entry?.find((entry) => entry.resource?.resourceType === "Observation");
+    expect(original?.resource?.resourceType).toBe("Observation");
+    source.entry?.push({ resource: { ...structuredClone(original?.resource), id: "duplicate-2" } as import("fhir/r4").Observation });
+    const imported = importDentalDeBundle(source);
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) return;
+    const edited = structuredClone(imported.document);
+    edited.teeth["11"].toothSelection = "tooth-base";
+    const exported = exportDentalDeBundle(imported, edited, { patient: PATIENT, effectiveDateTime: "2026-08-13" });
+    expect(exported.ok).toBe(true);
+    if (!exported.ok) return;
+    expect(exported.changes.removed).toContainEqual(expect.objectContaining({ id: "duplicate-2" }));
+  });
+
+  it("preserves an unrelated periodontal observation time when restoration changes", () => {
+    const source = buildDentalDeBundle({
+      version: "2.25", globals: {},
+      teeth: { "16": { toothSelection: "tooth-base", restorationType: "crown", perio: { pd: { MB: 4 }, gm: { MB: 1 }, bop: [], sup: [] } } },
+    }, { subject: PATIENT, effectiveDateTime: "2025-01-01" }).bundle;
+    const imported = importDentalDeBundle(source);
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) return;
+    const edited = structuredClone(imported.document);
+    edited.teeth["16"].restorationMaterial = "zircon";
+    const exported = exportDentalDeBundle(imported, edited, { patient: PATIENT, effectiveDateTime: "2026-08-12" });
+    expect(exported.ok).toBe(true);
+    if (!exported.ok) return;
+    const perio = exported.bundle.entry?.map((entry) => entry.resource).find((resource) =>
+      resource?.resourceType === "Observation" && resource.meta?.profile?.some((profile) => profile.endsWith("/periodontal-observation")),
+    ) as import("fhir/r4").Observation | undefined;
+    expect(perio?.effectiveDateTime).toBe("2025-01-01");
+  });
+
+  it("retains the source URN patient reference on regenerated resources", () => {
+    const source = canonicalBundle();
+    const sourceReference = "urn:uuid:patient-a";
+    source.entry?.unshift({ fullUrl: sourceReference, resource: { resourceType: "Patient", id: "patient-a" } });
+    for (const entry of source.entry ?? []) {
+      if (entry.resource?.resourceType === "Observation") {
+        (entry.resource as import("fhir/r4").Observation).subject = { reference: sourceReference };
+      }
+    }
+    const imported = importDentalDeBundle(source);
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) return;
+    expect(imported.patient).toEqual({ reference: "Patient/patient-a", sourceReference });
+    const edited = structuredClone(imported.document);
+    edited.teeth["11"].toothSelection = "tooth-base";
+    const exported = exportDentalDeBundle(imported, edited, { patient: "Patient/patient-a", effectiveDateTime: "2026-08-12" });
+    expect(exported.ok).toBe(true);
+    if (!exported.ok) return;
+    const observations = exported.bundle.entry?.map((entry) => entry.resource).filter((resource): resource is import("fhir/r4").Observation => resource?.resourceType === "Observation") ?? [];
+    expect(observations.every((observation) => observation.subject?.reference === sourceReference)).toBe(true);
+  });
+
   it.each([
     ["malformed", null, "malformed"],
     ["wrong resource type", { resourceType: "Patient" }, "malformed"],
@@ -159,6 +231,20 @@ describe("odontogram-229 AC1/AC3: fail-closed canonical import", () => {
           resource: { ...observation, subject: { reference: "Patient/patient-b" } } as typeof observation,
         });
       }
+      return bundle;
+    })(), "incompatible"],
+    ["legacy clinical resource", (() => {
+      const bundle = canonicalBundle();
+      bundle.entry?.push({ resource: {
+        resourceType: "Observation", status: "final", code: { coding: [{ system: "https://github.com/ZoliQua/React-Odontogram-Modul/fhir/CodeSystem/odontogram", code: "caries" }] },
+        subject: { reference: "Patient/patient-b" },
+      } as import("fhir/r4").Observation });
+      return bundle;
+    })(), "unsupported"],
+    ["foreign implant patient", (() => {
+      const bundle = buildDentalDeBundle({ version: "2.25", globals: {}, teeth: { "36": { toothSelection: "implant" } } }, { subject: PATIENT, effectiveDateTime: "2026-08-12" }).bundle;
+      const device = bundle.entry?.find((entry) => entry.resource?.resourceType === "Device")?.resource as import("fhir/r4").Device | undefined;
+      if (device?.resourceType === "Device") device.patient = { reference: "Patient/patient-b" };
       return bundle;
     })(), "incompatible"],
   ])("rejects %s before hydration", (_name, input, code) => {

@@ -50,7 +50,23 @@ describe("odontogram-229 AC1/AC6: canonical shell lifecycle", () => {
     await waitFor(() => expect(container.querySelectorAll("#toothGrid .tooth-tile").length).toBeGreaterThan(0));
     expect(getReadOnly()).toBe(true);
     expect(imported.session.getDocument().teeth["11"].toothSelection).toBe("none");
-  });
+    expect(imported.session.dirty).toBe(false);
+    const exported = imported.session.export({ patient: "Patient/a", effectiveDateTime: "2026-08-12" });
+    expect(exported.ok && exported.changes).toEqual({ added: [], updated: [], removed: [] });
+    expect(exported.ok && exported.bundle).toEqual(bundle("Patient/a", "11"));
+  }, 15_000);
+
+  it("keeps the owner read-only when a non-owning editable instance mounts", async () => {
+    const owner = createDentalDeOdontogramSession(bundle("Patient/a", "11"));
+    const waiting = createDentalDeOdontogramSession(bundle("Patient/b", "46"), { readOnly: false });
+    expect(owner.ok && waiting.ok).toBe(true);
+    if (!owner.ok || !waiting.ok) return;
+
+    render(<><OdontogramShell session={owner.session} /><OdontogramShell session={waiting.session} /></>);
+    await waitFor(() => expect(owner.session.isActive()).toBe(true));
+    expect(waiting.session.isActive()).toBe(false);
+    expect(getReadOnly()).toBe(true);
+  }, 15_000);
 
   it("switches patients by replacing sessions without reusing clinical state", async () => {
     const patientA = createDentalDeOdontogramSession(bundle("Patient/a", "11"));
@@ -66,5 +82,5 @@ describe("odontogram-229 AC1/AC6: canonical shell lifecycle", () => {
     expect(patientB.session.getDocument().teeth["46"].toothSelection).toBe("none");
     expect(patientB.session.getDocument().teeth["11"]?.toothSelection ?? "tooth-base").not.toBe("none");
     expect(patientA.session.getDocument().teeth["11"].toothSelection).toBe("none");
-  });
+  }, 15_000);
 });

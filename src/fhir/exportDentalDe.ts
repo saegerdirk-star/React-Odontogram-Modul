@@ -12,6 +12,8 @@ import {
 } from "./dentalDeCodesystems";
 import { FDI_TOOTH_NUMBER_EXT_URL } from "./dentalDeCodesystems";
 import { slotForPrimaryFdi } from "../utils/numbering";
+import { DENTAL_DE_IMPORT_MANIFEST } from "./dentalDeImportManifest";
+import type { DentalDeCarrier } from "./dentalDeImportManifest";
 
 type ImportedDentalDe = Extract<DentalDeImportResult, { ok: true }>;
 
@@ -43,7 +45,7 @@ export type DentalDeExportResult =
       report: DentalDeConversionReport;
       compatibility: typeof DENTAL_DE_COMPATIBILITY;
     }
-  | { ok: false; code: "incompatible" | "loss"; message: string; report: DentalDeConversionReport };
+  | { ok: false; code: "incompatible"; message: string; report: DentalDeConversionReport };
 
 interface ResourceLike {
   resourceType?: string;
@@ -115,6 +117,42 @@ function changedSlots(before: OdontogramDocument, after: OdontogramDocument): Se
   ));
 }
 
+function affectedCarriers(before: OdontogramDocument, after: OdontogramDocument): Map<string, Set<DentalDeCarrier>> {
+  const byField = new Map(DENTAL_DE_IMPORT_MANIFEST.map((entry) => [entry.field, entry]));
+  const result = new Map<string, Set<DentalDeCarrier>>();
+  const slots = new Set([...Object.keys(before.teeth), ...Object.keys(after.teeth)]);
+  for (const slot of slots) {
+    const previous = before.teeth[slot] ?? {};
+    const next = after.teeth[slot] ?? {};
+    const fields = new Set([...Object.keys(previous), ...Object.keys(next)] as Array<keyof typeof next>);
+    const carriers = new Set<DentalDeCarrier>();
+    for (const field of fields) {
+      if (JSON.stringify(previous[field]) === JSON.stringify(next[field])) continue;
+      const manifest = byField.get(field);
+      if (manifest?.support === "canonical") carriers.add(manifest.carrier);
+      if (field === "toothSelection") {
+        carriers.add("dental-implant");
+        carriers.add("periodontal-observation");
+        carriers.add("peri-implant-observation");
+      }
+    }
+    result.set(slot, carriers);
+  }
+  return result;
+}
+
+function carrierOf(resource: ResourceLike): DentalDeCarrier | undefined {
+  const profile = resource.meta?.profile?.find((entry) => entry.startsWith(`${DENTAL_DE_BASE}/StructureDefinition/`));
+  if (!profile) return undefined;
+  if (profile.endsWith("/odontogram-observation")) return "odontogram-observation";
+  if (profile.endsWith("/caries-observation")) return "caries-observation";
+  if (profile.endsWith("/dental-finding")) return "dental-finding";
+  if (profile.endsWith("/periodontal-observation")) return "periodontal-observation";
+  if (profile.endsWith("/peri-implant-observation")) return "peri-implant-observation";
+  if (profile.endsWith("/dental-implant")) return "dental-implant";
+  return undefined;
+}
+
 function applyEditMetadata(resource: ResourceLike, options: DentalDeExportOptions): void {
   const observation = resource as ResourceLike & {
     encounter?: { reference: string };
@@ -123,6 +161,34 @@ function applyEditMetadata(resource: ResourceLike, options: DentalDeExportOption
   if (resource.resourceType !== "Observation") return;
   if (options.encounter) observation.encounter = { reference: options.encounter };
   if (options.author) observation.performer = [{ reference: options.author }];
+}
+
+function hasMeaningfulValue(value: unknown): boolean {
+  if (value === undefined || value === null || value === false) return false;
+  if (typeof value === "string") return !["", "none", "normal", "unknown"].includes(value);
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "object") return Object.keys(value).length > 0;
+  return true;
+}
+
+function appendUnsupportedLosses(
+  report: DentalDeConversionReport,
+  odontogramState: OdontogramDocument,
+): void {
+  const unsupported = DENTAL_DE_IMPORT_MANIFEST.filter((entry) => entry.support === "unsupported");
+  for (const [tooth, record] of Object.entries(odontogramState.teeth)) {
+    for (const entry of unsupported) {
+      const value = record[entry.field];
+      if (!hasMeaningfulValue(value)) continue;
+      if (report.unmapped.some((item) => item.tooth === tooth && item.field === entry.field)) continue;
+      report.unmapped.push({
+        tooth,
+        field: entry.field,
+        value: typeof value === "string" ? value : JSON.stringify(value),
+        reason: `The exhaustive Dental-DE carrier manifest classifies this field as unsupported by ${entry.carrier}.`,
+      });
+    }
+  }
 }
 
 /**
@@ -145,10 +211,12 @@ export function exportDentalDeBundle(
 
   const generated = buildDentalDeBundle(odontogramState, {
     dialect: "dental-de",
-    subject: options.patient,
+    subject: imported.patient.sourceReference ?? options.patient,
     effectiveDateTime: options.effectiveDateTime,
   });
+  appendUnsupportedLosses(generated.report, odontogramState);
   const changed = changedSlots(imported.document, odontogramState);
+  const carriersBySlot = affectedCarriers(imported.document, odontogramState);
   if (changed.size === 0) {
     return {
       ok: true,
@@ -159,7 +227,7 @@ export function exportDentalDeBundle(
     };
   }
   const previousEntries = imported.sourceBundle.entry ?? [];
-  const previousSupported = new Map<string, { resource: ResourceLike; fullUrl?: string }>();
+  const previousSupported = new Map<string, Array<{ resource: ResourceLike; fullUrl?: string }>>();
   const retainedEntries: NonNullable<Bundle["entry"]> = [];
   for (const entry of previousEntries) {
     const resource = entry.resource as ResourceLike | undefined;
@@ -168,11 +236,15 @@ export function exportDentalDeBundle(
       continue;
     }
     const slot = documentSlot(tooth(resource));
-    if (slot && !changed.has(slot)) {
+    const carrier = carrierOf(resource);
+    if (slot && (!changed.has(slot) || !carrier || !carriersBySlot.get(slot)?.has(carrier))) {
       retainedEntries.push(structuredClone(entry));
       continue;
     }
-    previousSupported.set(resourceKey(resource), { resource, fullUrl: entry.fullUrl });
+    const key = resourceKey(resource);
+    const bucket = previousSupported.get(key) ?? [];
+    bucket.push({ resource, fullUrl: entry.fullUrl });
+    previousSupported.set(key, bucket);
   }
 
   const changes: DentalDeChangeSet = { added: [], updated: [], removed: [] };
@@ -181,19 +253,24 @@ export function exportDentalDeBundle(
     const next = structuredClone(entry.resource) as ResourceLike | undefined;
     if (!next) continue;
     const slot = documentSlot(tooth(next));
-    if (slot && !changed.has(slot)) continue;
+    const carrier = carrierOf(next);
+    if (slot && (!changed.has(slot) || !carrier || !carriersBySlot.get(slot)?.has(carrier))) continue;
     const key = resourceKey(next);
-    const previous = previousSupported.get(key);
+    const bucket = previousSupported.get(key);
+    const previous = bucket?.shift();
     if (!previous) {
       applyEditMetadata(next, options);
       changes.added.push(change(next, key));
       nextEntries.push({ resource: next as Resource });
       continue;
     }
-    previousSupported.delete(key);
+    if (bucket?.length === 0) previousSupported.delete(key);
     next.id = previous.resource.id;
     next.meta = { ...next.meta, ...previous.resource.meta };
-    const isChanged = clinicalValue(next) !== clinicalValue(previous.resource);
+    const comparable = structuredClone(next) as ResourceLike & { effectiveDateTime?: string };
+    const prior = previous.resource as ResourceLike & { effectiveDateTime?: string };
+    if (prior.effectiveDateTime) comparable.effectiveDateTime = prior.effectiveDateTime;
+    const isChanged = clinicalValue(comparable) !== clinicalValue(previous.resource);
     if (isChanged) {
       applyEditMetadata(next, options);
       changes.updated.push(change(next, key));
@@ -203,8 +280,8 @@ export function exportDentalDeBundle(
     }
   }
 
-  for (const [key, previous] of previousSupported) {
-    changes.removed.push(change(previous.resource, key));
+  for (const [key, previousEntries] of previousSupported) {
+    for (const previous of previousEntries) changes.removed.push(change(previous.resource, key));
   }
 
   return {

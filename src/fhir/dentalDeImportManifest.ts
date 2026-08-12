@@ -58,7 +58,7 @@ const MANIFEST_BY_FIELD = {
   kg: canonical("kg", "periodontal-observation"),
   implantProduct: canonical("implantProduct", "dental-implant"),
   note: canonical("note", "dental-finding"),
-  assessment: canonical("assessment", "periodontal-observation"),
+  assessment: unsupported("assessment", "periodontal-observation"),
 
   endoResection: unsupported("endoResection", "dental-finding"),
   mods: unsupported("mods", "dental-finding"),
