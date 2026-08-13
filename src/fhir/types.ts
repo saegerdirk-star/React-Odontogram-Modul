@@ -14,7 +14,7 @@ export type {
 export { PAYLOAD_VERSION } from "../document";
 
 /** Which FHIR representation the optional adapter produces. */
-export type FhirDialect = "legacy" | "dental-de";
+export type FhirDialect = "legacy" | "dental-de" | "dental-core";
 
 /** Options for buildFhirBundle and exportFhir. */
 export interface FhirExportOptions {

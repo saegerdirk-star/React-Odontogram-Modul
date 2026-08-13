@@ -86,8 +86,73 @@ describe("FHIR field mappings", () => {
 
 import { buildFhirBundle } from "../fhir/toFhir";
 import type { OdontogramExportPayload } from "../fhir/types";
+import { parseFhirBundle } from "../fhir/fromFhir";
 
 const emptyPayload: OdontogramExportPayload = { version: "1.3", globals: {}, teeth: {} };
+const dentalCoreOptions = { dialect: "dental-core" as const, effectiveDateTime: "2026-08-13T12:00:00Z" };
+
+const DENTAL_CORE_VALUES: Record<string, unknown[]> = {
+  endoResection: [true], mods: [["inflammation", "parodontal", "mobility"]],
+  periapicalType: ["granuloma", "cyst", "abscess"], fissureSealing: [true], contactMesial: [true], contactDistal: [true],
+  wearEdge: ["attrition", "erosion"], wearCervical: ["abrasion", "abfraction", "erosion"],
+  discoloration: ["tetracycline", "fluorosis", "nonvital", "extrinsic", "other"],
+  cejVisibility: ["detectable", "not-detectable"], rootConcavity: ["mild", "deep"], gingivalThickness: ["thin", "medium", "thick"],
+  orthoAppliance: ["bracket", "band"], orthoDrift: ["mesial", "distal"], orthoVertical: ["extrusion", "intrusion"], orthoRotation: [true],
+  brokenMesial: [true], brokenIncisal: [true], brokenDistal: [true], extractionWound: [true], parapulpalPin: [true], missingClosed: [true], bridgePillar: [true],
+  pulpLatin: ["pulpa-sana", "hyperaemia-pulpae", "pulpitis-acuta-serosa", "pulpitis-acuta-purulenta", "pulpitis-chronica-clausa", "pulpitis-chronica-ulcerosa", "pulpitis-chronica-hyperplastica", "necrosis-pulpae", "gangraena-pulpae"],
+  resorptionType: ["internal", "external-cervical"], retention: ["clasp", "attachment", "bar-abutment"], retentionSide: ["mesial", "distal", "both"],
+};
+
+describe("Dental Core 0.2 lossless carrier dialect", () => {
+  for (const [field, values] of Object.entries(DENTAL_CORE_VALUES)) {
+    for (const value of values) {
+      it(`roundtrips ${field}=${JSON.stringify(value)}`, () => {
+        const source = { version: "2.25", teeth: { "16": { [field]: value } } } as OdontogramExportPayload;
+        const bundle = buildFhirBundle(source, { ...dentalCoreOptions, subject: "Patient/example" });
+        expect(parseFhirBundle(bundle).teeth["16"]?.[field as keyof import("../document").ToothRecord]).toEqual(value);
+      });
+    }
+  }
+
+  for (const field of ["endoResection", "fissureSealing", "contactMesial", "contactDistal", "orthoRotation", "brokenMesial", "brokenIncisal", "brokenDistal", "extractionWound", "parapulpalPin", "missingClosed", "bridgePillar"]) {
+    it(`preserves explicit false for ${field} while leaving omitted fields absent`, () => {
+      const source = { version: "2.25", teeth: { "16": { [field]: false } } } as OdontogramExportPayload;
+      const back = parseFhirBundle(buildFhirBundle(source, dentalCoreOptions));
+      expect(back.teeth["16"]?.[field as keyof import("../document").ToothRecord]).toBe(false);
+      expect(parseFhirBundle(buildFhirBundle({ version: "2.25", teeth: {} }, dentalCoreOptions)).teeth["16"]).toBeUndefined();
+    });
+  }
+
+  for (const [field, value] of [["periapicalType", "none"], ["wearEdge", "none"], ["wearCervical", "none"], ["discoloration", "none"], ["cejVisibility", "none"], ["rootConcavity", "none"], ["gingivalThickness", "unknown"], ["orthoAppliance", "none"], ["orthoDrift", "none"], ["orthoVertical", "none"], ["pulpLatin", "none"], ["resorptionType", "none"], ["retention", "none"], ["retentionSide", "none"]] as const) {
+    it(`preserves explicitly serialized default ${field}=${value}`, () => {
+      const source = { version: "2.25", teeth: { "16": { [field]: value } } } as OdontogramExportPayload;
+      expect(parseFhirBundle(buildFhirBundle(source, dentalCoreOptions)).teeth["16"]?.[field as keyof import("../document").ToothRecord]).toBe(value);
+    });
+  }
+
+  it("roundtrips plan state, bounded case evidence, and clinician diagnosis override", () => {
+    const source: OdontogramExportPayload = {
+      version: "2.25", teeth: {}, plan: { "16": { retention: "attachment", retentionSide: "both" } },
+      case: { cigarettesPerDay: 99, toothLossPerio: 32, maxRblPercent: 100, diagnosisOverride: "periodontitis" },
+    };
+    const bundle = buildFhirBundle(source, { ...dentalCoreOptions, subject: "Patient/example" });
+    const back = parseFhirBundle(bundle);
+    expect(back.plan?.["16"]).toMatchObject(source.plan?.["16"] ?? {});
+    expect(back.case).toMatchObject(source.case ?? {});
+    expect(bundle.entry?.find((entry) => entry.resource?.resourceType === "CarePlan")?.resource).toMatchObject({
+      activity: [{ reference: { reference: "ServiceRequest/dental-core-request-16" } }],
+    });
+  });
+
+  it("emits truthful companion resources for performed work and retained devices", () => {
+    const bundle = buildFhirBundle({ version: "2.25", teeth: { "16": { endoResection: true, fissureSealing: true, orthoAppliance: "bracket", parapulpalPin: true, bridgePillar: true, retention: "clasp", rootConcavity: "deep" } }, plan: { "16": { retention: "attachment" } } }, dentalCoreOptions);
+    const resources = (bundle.entry ?? []).map((entry) => entry.resource?.resourceType);
+    expect(resources.filter((type) => type === "Procedure")).toHaveLength(2);
+    expect(resources.filter((type) => type === "Device")).toHaveLength(4);
+    expect(resources).toContain("Observation");
+    expect(resources).toContain("ServiceRequest");
+  });
+});
 
 describe("buildFhirBundle — skeleton & subject", () => {
   it("returns a valid empty collection Bundle with a placeholder Patient", () => {
