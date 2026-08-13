@@ -5,6 +5,7 @@ import type { Bundle, OdontogramExportPayload, FhirExportOptions } from "./types
 import { buildFhirBundleFromRegistry } from "../registry/fhir";
 import { appendPerioObservations, appendPerioCondition } from "./toFhirPerio";
 import { buildDentalDeBundle } from "./toFhirDentalDe";
+import { buildDentalCoreBundle } from "./toFhirDentalCore";
 
 /**
  * Convert a serialized odontogram payload into a FHIR R4 collection Bundle.
@@ -33,6 +34,7 @@ import { buildDentalDeBundle } from "./toFhirDentalDe";
  */
 export function buildFhirBundle(payload: OdontogramExportPayload, options: FhirExportOptions = {}): Bundle {
   if (options.dialect === "dental-de") return buildDentalDeBundle(payload, options).bundle;
+  if (options.dialect === "dental-core") return buildDentalCoreBundle(payload, options);
   const bundle = buildFhirBundleFromRegistry(payload, options);
   appendPerioObservations(bundle, payload, options);
   appendPerioCondition(bundle, payload, options);

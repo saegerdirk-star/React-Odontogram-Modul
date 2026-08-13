@@ -4,6 +4,7 @@
 import type { OdontogramExportPayload, ToothRecord } from "./types";
 import { parseFhirBundleFromRegistry } from "../registry/fromFhir";
 import { isDentalDeResource, applyDentalDeResource } from "./fromFhirDentalDe";
+import { parseDentalCoreBundle } from "./fromFhirDentalCore";
 
 /**
  * Invert buildFhirBundle: parse a FHIR R4 collection Bundle back into the
@@ -26,6 +27,8 @@ import { isDentalDeResource, applyDentalDeResource } from "./fromFhirDentalDe";
  * Tolerant of bad input: never throws.
  */
 export function parseFhirBundle(bundle: unknown): OdontogramExportPayload {
+  const dentalCore = parseDentalCoreBundle(bundle);
+  if (dentalCore) return dentalCore;
   const payload = parseFhirBundleFromRegistry(bundle);
 
   const entries = (bundle as { entry?: unknown })?.entry;
