@@ -31,8 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   real-shell StrictMode/patient-switch coverage, package declarations, and a
   downstream consumer contract for the root and optional `./fhir` entries.
 
-### Added
-
 - **Model measurement and analysis.** (odontogram-c51.1) Tonn and Bolton
   derived from the mesiodistal crown widths, each implemented from its own
   publication with the citation beside its constant, and verified against a real
