@@ -36,6 +36,7 @@ Thumbs.db
 
 # === Testing / coverage ===
 coverage/
+.playwright-cli/
 
 # === Python bytecode cache ===
 # Written by tools/toothgen on every generator or verification run.
