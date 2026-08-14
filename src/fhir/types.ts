@@ -13,26 +13,8 @@ export type {
 } from "../document";
 export { PAYLOAD_VERSION } from "../document";
 
-/** Which FHIR representation the optional adapter produces. */
-export type FhirDialect = "legacy" | "dental-de" | "dental-core";
-
 /** Options for buildFhirBundle and exportFhir. */
 export interface FhirExportOptions {
   subject?: string;
-  dialect?: FhirDialect;
   effectiveDateTime?: string;
-}
-
-/** One document value the canonical Dental-DE conversion could not code. */
-export interface DentalDeConversionEntry {
-  tooth: string;
-  field: string;
-  value: string;
-  reason: string;
-}
-
-/** Conversion evidence for values represented as text or left unmapped. */
-export interface DentalDeConversionReport {
-  textFallback: DentalDeConversionEntry[];
-  unmapped: DentalDeConversionEntry[];
 }

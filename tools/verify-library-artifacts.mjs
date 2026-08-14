@@ -24,23 +24,19 @@ const consumerDirectory = mkdtempSync(join(root, ".odontogram-library-consumer-"
 
 try {
   writeFileSync(join(consumerDirectory, "consumer.ts"), [
-    'import Odontogram, { createDentalDeOdontogramSession } from "react-advanced-odontogram";',
-    'import { DENTAL_DE_COMPATIBILITY, DENTAL_DE_IMPORT_MANIFEST, DentalCoreBundleRejectedError, buildFhirBundle, importDentalDeBundle, exportDentalDeBundle, parseFhirBundle } from "react-advanced-odontogram/fhir";',
-    'import type { DentalDeExportOptions, FhirDialect, SupportedDentalDeBundle } from "react-advanced-odontogram/fhir";',
-    "const options: DentalDeExportOptions = { patient: \"Patient/example\", effectiveDateTime: \"2026-08-12\" };",
-    'const dialect: FhirDialect = "dental-core";',
+    'import Odontogram from "react-advanced-odontogram";',
+    'import { DentalCoreBundleRejectedError, buildDentalCoreBundle, buildFhirBundle, parseDentalCoreBundle, parseFhirBundle } from "react-advanced-odontogram/fhir";',
+    'import type { FhirExportOptions, OdontogramExportPayload } from "react-advanced-odontogram/fhir";',
+    "const options: FhirExportOptions = { subject: \"Patient/example\", effectiveDateTime: \"2026-08-12\" };",
+    'const payload: OdontogramExportPayload = { version: "2.25", globals: {}, teeth: {} };',
     "void Odontogram;",
-    "void createDentalDeOdontogramSession;",
-    "void importDentalDeBundle;",
-    "void exportDentalDeBundle;",
+    "void buildDentalCoreBundle;",
     "void buildFhirBundle;",
     "void parseFhirBundle;",
     "void DentalCoreBundleRejectedError;",
-    "void DENTAL_DE_COMPATIBILITY;",
-    "void DENTAL_DE_IMPORT_MANIFEST;",
-    "void (null as SupportedDentalDeBundle | null);",
+    "void parseDentalCoreBundle;",
     "void options;",
-    "void dialect;",
+    "void payload;",
     "",
   ].join("\n"));
 

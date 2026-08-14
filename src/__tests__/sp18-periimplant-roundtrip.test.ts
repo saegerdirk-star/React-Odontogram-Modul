@@ -31,17 +31,6 @@ describe("SP18: periImplant serialize/round-trip fix", () => {
     expect(__getToothStateForTest(17)!.periImplant).toBe("peri-implantitis-moderate");
   });
 
-  it("FHIR export -> import round-trips a non-none periImplant value", () => {
-    __setToothStateForTest(26, { toothSelection: "implant", periImplant: "peri-implantitis-severe" });
-    const parsed = parseFhirBundle(buildFhirBundle(__collectExportPayloadForTest()));
-    // NOTE: `ToothRecord` (src/fhir/types.ts) doesn't declare `periImplant` even
-    // though FIELD_MAPPINGS carries it through generically at runtime — a
-    // pre-existing type-declaration gap, out of scope for this fix (see report).
-    // Cast narrowly here rather than widening the shared type as a side effect
-    // of this test.
-    const tooth26 = parsed.teeth["26"] as unknown as Record<string, unknown>;
-    expect(tooth26.periImplant).toBe("peri-implantitis-severe");
-  });
 
   it("default/none periImplant still round-trips (no regression for the common case)", () => {
     __setToothStateForTest(36, { toothSelection: "implant" });

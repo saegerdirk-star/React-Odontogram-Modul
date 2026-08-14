@@ -2,14 +2,11 @@
 // Created by Zoltan Dul (https://github.com/ZoliQua) 2025-2026
 
 /**
- * Registry catalog coding data (SP2 Stage 0). One `ClinicalAxis` per
- * `FIELD_MAPPINGS` row (`src/fhir/fieldMappings.ts`), with finding codes and
- * value codings transcribed from `LOCAL_VALUE_MAPS` (`src/fhir/codesystems.ts`).
- * Enforced verbatim by `src/__tests__/parity.test.ts` ("registry catalog
- * matches today's tables"). No SNOMED/ICD codes populated (SP2 keeps them empty).
+ * Registry catalog data. It owns UI-facing values and renderer metadata;
+ * generated Dental Core terminology remains isolated in the FHIR adapter.
  */
 import type { ClinicalAxis } from "./types";
-import { LOCAL_VALUE_MAPS } from "../fhir/codesystems";
+import { LOCAL_VALUE_MAPS } from "./valueCatalog";
 
 const valuesFrom = (group: string) =>
   Object.values(LOCAL_VALUE_MAPS[group]).map(e => ({ id: e.code, coding: { local: e.code, display: e.display } }));

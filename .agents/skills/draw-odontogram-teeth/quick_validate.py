@@ -13,7 +13,7 @@ REQUIRED_FILES = (
     "SKILL.md",
     "agents/openai.yaml",
     "references/anatomy-svg-standard.md",
-    "references/fhir-dental-de-graphics.md",
+    "references/fhir-dental-core-graphics.md",
     "tests/draw-odontogram-teeth.test.md",
 )
 EXPECTED_INPUTS = {

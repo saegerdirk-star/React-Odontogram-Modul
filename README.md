@@ -95,153 +95,32 @@ every module-level entry point (`exportStatus`, `importStatus`, `getStatusChart`
 > through their session API. Ownership passes to a waiting instance when the
 > current one unmounts.
 
-### FHIR is a pure, optional projection
+### FHIR is a pure, optional Dental Core projection
 
-FHIR conversion is a **pure adapter** over that document: no DOM, no network, no
-wall clock, no randomness, and no transport or persistence concerns inside the
-component. Exactly three dialects are available:
+FHIR conversion is a pure adapter over the UI-domain document: it performs no DOM access, network I/O, wall-clock reads, randomness, transport, persistence, or authentication. The package supports only the generated Dental Core contract `de.cognovis.fhir.dental.core#0.3.0`.
 
 ```ts
-import {
-  DentalCoreBundleRejectedError,
-  buildDentalDeBundle,
-  buildFhirBundle,
-  parseFhirBundle,
-} from "react-advanced-odontogram/fhir";
+import { DentalCoreBundleRejectedError, buildFhirBundle, parseFhirBundle } from "react-advanced-odontogram/fhir";
 
-// Default: the engine-local representation this package has always emitted.
-const legacy = buildFhirBundle(session.getDocument());
-
-// Canonical fhir-dental-de (de.cognovis.fhir.dental) profiles and extensions.
-const canonical = buildFhirBundle(session.getDocument(), {
-  dialect: "dental-de",
+const bundle = buildFhirBundle(session.getDocument(), {
   subject: "Patient/123",
   effectiveDateTime: "2026-08-08",
 });
 
-// Same canonical bundle, plus a report of everything the IG has no coded value for.
-const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
-  effectiveDateTime: "2026-08-08",
-});
-
-// Dental Core 0.3.0 (de.cognovis.fhir.dental.core#0.3.0).
-// An effective date is required for this dialect.
-const dentalCore = buildFhirBundle(session.getDocument(), {
-  dialect: "dental-core",
-  subject: "Patient/123",
-  effectiveDateTime: "2026-08-08",
-});
-
-function parseImportedBundle(candidate: unknown) {
-  try {
-    return parseFhirBundle(candidate);
-  } catch (error) {
-    if (error instanceof DentalCoreBundleRejectedError) return undefined;
-    throw error;
-  }
+try {
+  const document = parseFhirBundle(bundle);
+} catch (error) {
+  if (error instanceof DentalCoreBundleRejectedError) throw error;
 }
 ```
 
-A bundle that claims Dental Core but is outside the supported module-produced contract throws the exported `DentalCoreBundleRejectedError`; a host can catch it without replacing its current chart.
-
-The `dental-de` dialect emits `OdontogramObservationDE`, `CariesObservationDE`
-and `DentalFindingDE` with the IG's `OdontogramComponentCS` slices, FDI tooth
-identity and the repeatable `ToothSurfacesExt` (HL7 `FDI-surface`, tooth-aware —
-the biting surface is coded `I` on an anterior tooth and `O` on a posterior one).
-Where the IG defines no coded value it uses `CodeableConcept.text` under the
-relevant extensible binding — never an invented code — and `report.textFallback`
-/ `report.unmapped` name every such value so nothing degrades silently.
-
-### Canonical Dental-DE patient sessions and save boundary
-
-Version 2.10.0 adds a fail-closed, bidirectional host boundary. Import validates
-the supported Dental-DE profiles and one-patient ownership before it creates a
-session. The session is read-only by default; an authorized host may opt into
-local editing, cancel back to the imported baseline, and export one complete
-save candidate:
-
-```tsx
-import Odontogram, {
-  createDentalDeOdontogramSession,
-} from "react-advanced-odontogram";
-
-const imported = createDentalDeOdontogramSession(bundle, { readOnly: false });
-if (!imported.ok) throw new Error(imported.message);
-
-const { session } = imported;
-// Render and edit locally. No click performs network I/O.
-<Odontogram session={session} />;
-
-const candidate = session.export({
-  patient: session.patient.reference,
-  encounter: "Encounter/456",
-  author: "Practitioner/789",
-  effectiveDateTime: "2026-08-12T10:00:00Z",
-});
-if (!candidate.ok) throw new Error(candidate.message);
-```
-
-`candidate.bundle` is the complete canonical resource set. Unchanged imported
-resources are retained byte-for-byte; controlled updates preserve resource IDs
-and `meta.versionId`; additions, updates, and removals are listed in
-`candidate.changes`. `candidate.report` and `DENTAL_DE_IMPORT_MANIFEST` make
-compatibility and unsupported fields explicit. The adapter never calls Aidbox
-or another server.
-
-`session.patient.reference` is the normalized patient identity;
-`session.patient.sourceReference` retains a single alternate source form such
-as a bundle URN. Manifest carriers are primary routes and may vary with clinical
-value and tooth context. In direct `exportDentalDeBundle` calls, an omitted
-tooth slot means a healthy present tooth. Unmount the component before calling
-`session.destroy()`.
-
-The host save workflow remains: validate the candidate, use its version/ETag
-evidence for conflict-safe persistence, write transactionally, persist
-Provenance, reload, and compare. MIRA owns permissions and save/cancel/conflict
-UX; the backend owns tenant-bound Aidbox access and transactions; Aidbox remains
-the canonical persisted history. `session.cancel()` restores the imported
-baseline and `session.destroy()` invalidates the patient-scoped handle.
-
-**Verified SNOMED coverage (from 2.5.0):** a clinical value is coded only when
-the IG's own ValueSets admit the concept AND its meaning has been verified;
-`SCT_PROVENANCE` in `dentalDeCodesystems.ts` records the admitting ValueSet and
-the verification source for every emitted code. Root caries, internal and
-external cervical root resorption, apical periodontitis and the
-restoration-integrity findings are coded on that basis. The exact source
-assessment always stays in `CodeableConcept.text`, and no `Coding.display` is
-invented, because the IG omits displays.
-
-**Canonical periodontal export (from 2.6.0):** a charted natural tooth exports a
-`PeriodontalObservationDE` and an implant position a `PeriImplantObservationDE`
-plus the `DentalImplantDE` device it focuses on — six-site probing depth, the
-signed gingival-margin-to-CEJ level, derived attachment level, bleeding and
-suppuration on probing, the Glickman furcation grade with its entrance, plaque
-presence, the Silness-Loe and Loe-Silness indices, keratinized-gingiva width and
-the Mombelli peri-implant indices, each qualified by the IG's
-`PeriodontalMeasurementSiteExt` or `ToothSurfacesExt`. An assessed-normal finding
-is an explicit `false`/`0`; a recorded gap is a standard `dataAbsentReason`. Gingival
-recession (from 2.8.0) is emitted per site, but only where the signed margin
-is an actual recession; the margin remains the source of truth, so an imported
-recession component is never read back into it.
-
-The built-in UI FHIR download deliberately remains the legacy default; it has no
-Dental Core selector. Programmatic FHIR conversion uses the public
-`react-advanced-odontogram/fhir` entry.
-
-`parseFhirBundle` reads legacy and Dental-DE resources (including a bundle that
-mixes them), and recognizes module-produced Odontogram Dental Core
-`de.cognovis.fhir.dental.core#0.3.0` bundles. Dental Core import is deliberately
-not a generic FHIR importer: it rejects a misleading bundle marker and unprofiled
-or unsupported resources.
-
-Transport, authentication, audit and persistence stay outside this package: it
-converts, it does not talk to a server.
+A clinical export requires an effective date supplied by the caller or stored in the examination context. Input is accepted only when every resource satisfies the generated Dental Core profiles and terminology; unsupported or malformed bundles are rejected.
 
 ## 🦷 Periodontal charting
 
 ![Full-mouth periodontal chart](https://raw.githubusercontent.com/ZoliQua/React-Odontogram-Modul/main/lang/screenshot_en_perio.png)
 
-Per-site probing depth, gingival margin, bleeding **and suppuration** on probing at the six standard sites, with derived CAL, recession and whole-mouth %BOP; a graphical full-mouth perio chart (CEJ line, mm guide grid, pocket/margin curve, anatomical diamond index tiles), 2017 staging/grading, and per-site FHIR export (LOINC periodontal panel `74029-0`). Available as an `Odontogram | Periodontal Status` view toggle and as a separately-invocable `PerioChart` component.
+Per-site probing depth, gingival margin, bleeding **and suppuration** on probing at the six standard sites, with derived CAL, recession and whole-mouth %BOP; a graphical full-mouth perio chart (CEJ line, mm guide grid, pocket/margin curve, anatomical diamond index tiles), and 2017 staging/grading. Available as an `Odontogram | Periodontal Status` view toggle and as a separately-invocable `PerioChart` component.
 
 An implant column supports the **peri-implant examination**: six-site probing depth, bleeding, suppuration, implant mobility and keratinized-tissue width, alongside the Mombelli mPI/mBI indices. Only the axes that need a CEJ — the gingival margin and the CAL derived from it — and the natural-tooth plaque indices stay inactive there.
 
@@ -305,7 +184,7 @@ the tooth tooltip and the whole-mouth periodontal summary.
 - 🩺 Full periodontal module (see above) + 2017 classification
 - 📐 **Model analysis** (`odontogram-c51.1`): Tonn and Bolton from the mesiodistal crown widths, with the target incisor sum, the tooth-size discrepancy and which arch carries the surplus. Widths are entered on an arch or as a list — two views of one record. A tooth that is not on the model (not erupted, lost, under the gum) borrows its contralateral partner's width, visibly marked as an assumption. Plus overjet, overbite and the dental midline deviation per arch
 - 🩻 **Cephalometry** (`odontogram-c51.2`): one shared landmark stock, measures defined over it, and the analyses as profiles above those — a new school is a new profile, the landmarks do not move. Every measure carries its source and its FHIR coding; a norm without a publication is not shipped, and the measure is recorded with no target instead. Derived: where the jaws sit against the skull (facial type after Björk, harmony, sagittal class against the population norm **and** the individual one, which disagree exactly where individualisation earns its keep) and the growth pattern as a vote across every indicator with a sourced norm. Values can be taken from another program's printed evaluation by pasting its text — nothing is applied without confirmation, because a printed sheet has three number columns and some rows carry only a norm
-- ⚠️ Both are **session state** for now: no published Dental-DE carrier authors model analysis or cephalometry, so neither is part of the export payload rather than inventing a local one
+- ⚠️ Both are **session state** for now: the generated Dental Core package publishes related profile families, but this adapter does not project these module-specific records until their mappings are deliberately supported
 - 🔗 **HL7 FHIR R4** export/import; JSON export/import with migrations
 - 🖼️ PNG / JPG / SVG chart export and a **PDF report** (jsPDF, lazy-loaded)
 - 🔢 FDI / Universal / Palmer numbering · 🌐 12 UI languages (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR/AR/ZH/FR, Arabic RTL) · 🎨 theming via `--odon-*` CSS variables · 🧩 plugin system · ⌨️ keyboard accessibility

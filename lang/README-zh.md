@@ -157,7 +157,7 @@ export default function OdontogramClient() {
 - 💾 JSON 格式的状态导出/导入（版本 2.20；导入仍接受旧版 1.4 及 2.0 至 2.19 版本，并自动迁移，包含插件自定义状态及每颗牙齿的备注）
 - 📐 **模型分析**（`odontogram-c51.1`）：由近远中牙冠宽度计算 Tonn 与 Bolton 比值，给出目标切牙总和、牙量不调以及哪一牙弓存在多余牙体。宽度可在牙弓图上或以列表录入——同一份记录的两种视图。模型上缺失的牙（未萌出、已丧失、龈下）沿用对侧同名牙的宽度，并明确标记为推定值。此外还包括覆盖、覆𬌗与各牙弓的牙性中线偏移
 - 🩻 **头影测量**（`odontogram-c51.2`）：共用一套测量点，其上是测量项，再其上是作为配置档的各家分析方法——新增学派即新增配置档，测量点不变。每个测量项都带有出处与 FHIR 编码；没有出版物支持的标准值不予发布，该测量项仅记录而不显示目标值。可推导出颌骨相对颅底的位置（Björk 面型分类、协调性、相对于群体标准值**与**个体标准值的矢状分类）以及生长型——由所有具备出处标准值的指标共同投票得出。数值可通过粘贴文本从其他程序的打印报告中导入——未经确认不会写入任何数据
-- ⚠️ 两者目前均为**会话状态**：尚无已发布的 Dental-DE 载体，因此它们不进入导出负载，而不是自行发明一个本地载体
+- ⚠️ 两者目前均为**会话状态**：尚无已发布的 Dental Core profile，因此它们不进入导出负载，而不是自行发明一个本地载体
 - 🔗 HL7 FHIR R4 导出（每颗牙齿一个 Observation 组成的 collection Bundle，恒牙列采用 ISO 3950 牙位编码，使用本地代码系统——SNOMED CT 映射计划中）
 - ✚ 十字/加号式牙面选择界面（B/M/O/D/L）用于龋齿和充填记录
 - 🧱 每个牙面独立的修复材料（混合充填，例如颊侧银汞合金 + 远中复合树脂）
@@ -165,7 +165,6 @@ export default function OdontogramClient() {
 - 🦷 龋齿/继发龋是按牙面划分的状态机：无充填体的患龋牙面渲染为原发龋（按 ICDAS 分级的不透明度）；一旦该牙面存在充填体，则改为渲染继发龋（`subcaries-{surface}` 层，按 CARS 评分）——同一牙面上两者永远不会同时激活
 - 🎯 统一的按牙面严重度（`cariesSeverity`，0–6，取代旧有的独立 ICDAS 深度字段和 CARS 字段）：在原发牙面上按 ICDAS 深度解读，在继发（已充填）牙面上按具名 CARS 评分（健康……广泛龋洞）解读，通过一个情境化弹窗仅显示与该牙面当前状态相关的量表
 - 🌱 根面龋（`rootCaries`：无 / 活动性 / 静止性 / 活动性伴龋洞），驱动专用的根面龋美术层，其不透明度由严重度决定（活动性 0.5 / 静止性 0.7 / 活动性伴龋洞 完全不透明）
-- 📡 影像学龋损深度（`radiographicDepth`：无 / E1 / E2 / D1 / D2 / D3，按牙面记录），独立于视觉上的 ICDAS/CARS 严重度量表，以徽标形式呈现，并通过其自身的 FHIR Observation 往返导出/导入
 - 🎚️ 三项龋齿粒度设置（`secondaryCariesMode`、`rootCariesMode`、`radiographicDepthMode`）以及一个 `cariesDepthEnabled` 开关，可将每种量表折叠为更简化的选择视图，而不丢失已存储的数值
 - 🩹 充填面板中的继发龋摘要行：在充填控件下方列出任何已选中且带有继发龋的牙齿及其牙面（例如“36 号牙（O 面）的充填体上记录有继发龋。”）
 - 🪛 每个牙面的充填缺陷（`fillingDefect`：无 / 边缘 / 折裂 / 磨损），针对直接修复体，独立于继发龋——通过充填卡片上的按牙面指示器记录（与龋齿深度指示器呼应，其选项列表纵向排列），在图表上渲染，并以明确的标签形式显示在提示信息和全口充填摘要中（例如“36（O）– 充填缺陷：O：边缘”），与继发龋在龋齿行中的标注方式一致；充填卡片还会为任何已选中且记录有充填缺陷的牙齿显示提示说明（例如“36 号牙记录有充填缺陷。”），与现有的继发龋提示说明并列
@@ -209,7 +208,6 @@ export default function OdontogramClient() {
 
 ![全口牙周图（简体中文）](screenshot_zh_perio.png)
 
-- 🩺 牙周记录：每颗牙齿六个标准位点的**探诊深度**、**龈缘位置**、**探诊出血**（+溢脓），并推算出**临床附着水平（CAL = 探诊深度 + 龈缘位置）**、牙龈退缩量，以及全口**探诊出血百分比（%BOP）**。**图形化全口牙周图**——每侧牙弓分别绘制为**两张独立的颊侧/腭（舌）侧 SVG 图**（复用牙齿美术资源，在两个面上统一采用“牙冠朝向一致”的方向；种植牙位使用**种植体图形**），配有红色的**CEJ 线**、**带毫米刻度编号的参考网格**，以及贯穿各牙的**龈缘/牙周袋深度曲线**，并由一条**中央牙周指标带**（标注为 `▲ 颊侧 … 舌/腭侧 ▼`）将其分隔，该指标带承载共用的按牙位指标——最上方为 **Miller 分级**，**菌斑/PI/GI/mPI/mBI** 则以每颗牙齿一个**解剖学菱形方块**呈现（颊侧尖朝上，舌侧尖朝下，中间行的近中/远中根据左右侧对调，使近中始终指向牙弓中线）；数值行（完整指标名称——PD/GM/CAL/BOP + 松动度 + 根分叉——采用更大、更适合触控的单元格）按列对齐，并附一份摘要（平均 PD/CAL、%BOP、PI%），支持**键盘自动前进**式录入；图表会**动态缩放以填满可用宽度**，在任意窗口尺寸下均具响应式效果。以 `Odontogram | Periodontal Status`（牙位图 | 牙周状态）**视图切换开关**呈现，该视图激活时右侧面板会转用为**牙周情境侧栏**（患者数据、2017 年分类结果及全口摘要），设置选项可将整体呈现方式切回**弹窗**形式；`PerioChart` 依然是一个**可独立调用的组件**（具名导出），使宿主应用可以独立于基础牙位图单独调起牙周图表。按位点的 **FHIR** 导出通过 LOINC 牙周面板代码（`74029-0`；探诊深度 `32910-2`、牙龈退缩 `32911-0`、CAL `32912-8`）
 - 🅿️ 拟定样式：在计划模式下，计划相对当前现状**新增**的发现（拟定牙冠、拔牙、正畸移动、修复体等）会以醒目的**虚线、着色“拟定”轮廓**渲染，使计划呈现为意向而非既成事实——图表卡片中附有“虚线 = 拟定”图例说明。现状模式下的渲染保持逐字节一致；治疗方案仅存在于计划图表中，切回现状时会完全重置
 - 🚦 计划模式限定：计划图表仅显示牙医实际可以**执行**的操作——基础选择器仅提供缺失 / 恒牙 / 种植体，且仅适用于现状的发现项（龋齿、牙齿磨耗、变色，以及整个牙周区块——松动度、六位点探诊网格、炎症/牙周修饰项、牙石、种植体周状态）均被隐藏；牙髓/根管控件保留根管**治疗**操作（根管治疗/桩钉/根尖切除/髓旁钉），同时隐藏牙髓/根尖**诊断**及牙根吸收。修复体、可摘修复、正畸、需要牙冠/更换牙冠及拔牙计划仍可纳入计划
 - 🧪 1746 个自动化测试通过（另有 1 个测试被跳过）（Vitest），覆盖 164 个测试文件（共 165 个），涵盖编号系统、翻译、预设模板、国际化、App 组件、主题、触控、插件、无障碍访问及临床轴/诊断一致性
@@ -529,83 +527,10 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 - 同一时刻只有一个会话在 DOM 引擎中*生效*（引擎是全局唯一的，绑定在一个牙位网格上）；
   其余会话各自保留自己的文档，并可通过其会话 API 完整读写。
 
-**FHIR 方言 —— 纯粹且可选的投影：**
+**FHIR / Dental Core:**
 
-FHIR 转换是文档之上的纯适配器：不访问 DOM、不联网、不读系统时钟、不使用随机数，
-组件内部也不涉及传输、鉴权或持久化。
+FHIR conversion is a pure optional projection of the UI-domain document. This package supports only generated Dental Core `de.cognovis.fhir.dental.core#0.3.0` bundles. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date; `parseDentalCoreBundle` fails closed for unsupported or malformed bundles.
 
-```ts
-import {
-  DentalCoreBundleRejectedError,
-  buildDentalDeBundle,
-  buildFhirBundle,
-  parseFhirBundle,
-} from "react-advanced-odontogram/fhir";
-
-const legacy = buildFhirBundle(session.getDocument());
-
-const canonical = buildFhirBundle(session.getDocument(), {
-  dialect: "dental-de", subject: "Patient/123", effectiveDateTime: "2026-08-08",
-});
-
-const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
-  effectiveDateTime: "2026-08-08",
-});
-
-const dentalCore = buildFhirBundle(session.getDocument(), {
-  dialect: "dental-core", subject: "Patient/123", effectiveDateTime: "2026-08-08",
-});
-
-function parseImportedBundle(candidate: unknown) {
-  try {
-    return parseFhirBundle(candidate);
-  } catch (error) {
-    if (error instanceof DentalCoreBundleRejectedError) return undefined;
-    throw error;
-  }
-}
-```
-
-声称使用 Dental Core、但不符合本模块所支持生成契约的 Bundle 会抛出已导出的 `DentalCoreBundleRejectedError`；宿主可以捕获它，而不替换当前牙位图。
-
-`dental-de` 方言输出 `OdontogramObservationDE`、`CariesObservationDE` 和
-`DentalFindingDE`，使用 IG 的 `OdontogramComponentCS` 组件切片、FDI 牙位标识
-（`ToothIdentificationFDICS`）、ICDAS 评分（`ICDASCariesScoreCS`）以及基于 HL7
-`FDI-surface` 的可重复扩展 `ToothSurfacesExt`。牙面编码与牙位相关：咬合面在前牙记为
-`I`（切端），在后牙记为 `O`（𬌗面）；导入时 `I` 归回引擎的 `occlusal` 键、`V` 归回
-`buccal`，组合码 `MO`/`DO`/`DI`/`MOD` 会拆分为各个成员。
-
-凡 IG 未定义编码值之处，适配器在相应的 **extensible** 绑定下使用
-`CodeableConcept.text` —— 绝不臆造编码；而在 **required** 绑定下若无对应概念，则完全不
-输出。两种情况都会连同牙位、字段、保留的原值与原因列入 `report.textFallback` 与
-`report.unmapped`，因此不会有任何内容被悄悄丢失。原值始终留在界面域文档中，并可经 JSON
-完整往返。
-
-**已核实的 SNOMED 覆盖范围（自 2.5.0 起）：** 只有当 IG 自身的 ValueSet 允许该概念
-且其含义已被核实时，临床值才会被编码；`dentalDeCodesystems.ts` 中的
-`SCT_PROVENANCE` 为每个发出的编码记录了允许它的 ValueSet 以及核实来源。根面龋、
-内吸收与外部颈部牙根吸收、根尖周炎以及修复体完整性所见均据此编码。确切的原始评估
-始终保留在 `CodeableConcept.text` 中，并且不会杜撰任何 `Coding.display`，因为 IG
-并未公布显示名称。
-
-**规范化牙周导出（自 2.6.0 起）：** 已记录的天然牙导出为 `PeriodontalObservationDE`，
-种植体位点导出为 `PeriImplantObservationDE` 及其所引用的 `DentalImplantDE` 设备——
-六点探诊深度、龈缘相对釉牙骨质界的带符号水平、派生的附着水平、探诊出血与溢脓、
-带入口的 Glickman 根分叉度、菌斑存在、Silness-Löe 与 Löe-Silness 指数、角化龈宽度
-以及 Mombelli 种植体周指数，每一项均由 IG 的 `PeriodontalMeasurementSiteExt` 或
-`ToothSurfacesExt` 限定。已检查且正常的结果为显式的 `false`/`0`，已记录的缺失则为
-标准的 `dataAbsentReason`。牙龈退缩（自 2.8.0 起）按测量位点输出，但仅在带符号的龈缘确为退缩之处输出；
-龈缘仍是唯一可信来源，因此导入的退缩组件绝不会回写到龈缘。
-
-可选入口 `react-advanced-odontogram/fhir` 提供且仅提供三种方言：默认的
-`legacy`、`dental-de`，以及用于
-`de.cognovis.fhir.dental.core#0.3.0` 的 `dental-core`。`dental-core` 必须
-提供 `effectiveDateTime`。内置 UI FHIR 下载有意保持 legacy 默认值，且没有
-Dental Core 选择器。
-
-`parseFhirBundle` 可读取 legacy 与 Dental-DE 资源（包括混合 Bundle），并且仅
-识别本模块生成的 Odontogram Dental Core 0.3.0 Bundle。它不是通用 FHIR 导入器：
-误导性的标记、无 profile 的资源或不支持的资源都会被拒绝。
 **带日期的检查、评估状态与种植体周围记录（自 2.4.0 起）：**
 
 牙周病例会在数年间反复复查，因此文档现在可以携带这次检查自身的标识，以及既往检查的存档：

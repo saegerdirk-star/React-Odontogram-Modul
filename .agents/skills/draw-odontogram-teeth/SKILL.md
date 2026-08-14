@@ -2,7 +2,7 @@
 name: draw-odontogram-teeth
 description: >-
   use when: authoring or revising permanent or primary tooth and root SVG templates
-  for this odontogram, including FHIR-Dental-DE mapping review; NOT for: changing
+  for this odontogram, including FHIR Dental Core mapping review; NOT for: changing
   clinical state, FHIR profiles, or general medical illustration; boundary: this
   repository-local skill preserves this renderer's SVG and adapter contracts.
 requires_standards: [english-only, no-emoji, judge-layer]
@@ -39,7 +39,7 @@ Produce provider-neutral, clinically grounded tooth SVG templates without breaki
 
 1. Read [the anatomy and SVG standard](references/anatomy-svg-standard.md); identify the tooth class and landmarks before editing.
 2. Check for the repository generator before reuse, then retain generator ownership and verify its output contract.
-3. Read [the FHIR-Dental-DE graphics boundary](references/fhir-dental-de-graphics.md) before any semantic mapping decision.
+3. Read [the FHIR Dental Core graphics boundary](references/fhir-dental-core-graphics.md) before any semantic mapping decision.
 4. Apply the smallest template change, preserving registered layers, hidden defaults, namespaces, orientation, and periodontal anchors.
 5. Run the repository's focused SVG checks and `quick_validate.py`; record unmapped or drifting concepts instead of guessing.
 
@@ -53,6 +53,6 @@ Produce provider-neutral, clinically grounded tooth SVG templates without breaki
 | File | Purpose |
 |---|---|
 | `references/anatomy-svg-standard.md` | Clinical and renderer authoring standard. |
-| `references/fhir-dental-de-graphics.md` | FHIR semantic boundary and drift procedure. |
+| `references/fhir-dental-core-graphics.md` | FHIR semantic boundary and drift procedure. |
 | `tests/draw-odontogram-teeth.test.md` | Capability fixtures for this skill. |
 | `quick_validate.py` | Deterministic local artifact validator. |

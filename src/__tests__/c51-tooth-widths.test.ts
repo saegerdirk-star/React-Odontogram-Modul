@@ -5,7 +5,7 @@
 // Bead odontogram-c51.1 — measured mesiodistal crown widths.
 //
 // The widths are SESSION state, not document state: c51's audit found no
-// published Dental-DE carrier for model analysis, and c51's rule is to stay
+// published Dental Core profile for model analysis, and c51's rule is to stay
 // blocked rather than invent a local-code path. These tests pin that boundary
 // so a later change cannot quietly cross it — the export payload must stay
 // untouched by anything recorded here.

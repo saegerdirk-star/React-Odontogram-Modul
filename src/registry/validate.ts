@@ -2,7 +2,7 @@
 // Created by Zoltan Dul (https://github.com/ZoliQua) 2025-2026
 
 import { AXES } from "./axes";
-import { LOCAL_VALUE_MAPS } from "../fhir/codesystems";
+import { LOCAL_VALUE_MAPS } from "./valueCatalog";
 
 /** The allowed enum/set values for an axis, sourced from the registry catalog. */
 export function validValues(axisId: string): Set<string> {

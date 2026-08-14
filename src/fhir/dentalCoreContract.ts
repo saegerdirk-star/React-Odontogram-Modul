@@ -1,26 +1,31 @@
 import type { ToothRecord } from "../document";
+import {
+  DENTAL_CORE_CANONICAL,
+  DENTAL_CORE_CODE_SYSTEM_CODES,
+  DENTAL_CORE_CODE_SYSTEM_URLS,
+  DENTAL_CORE_PACKAGE_VERSION,
+  DENTAL_CORE_PROFILE_URLS,
+} from "./generated/dental-core-contract";
 
-export const DENTAL_CORE = "https://fhir.cognovis.de/dental-core";
-export const DENTAL_CORE_PACKAGE_VERSION = "0.3.0";
+export const DENTAL_CORE = DENTAL_CORE_CANONICAL;
+export { DENTAL_CORE_PACKAGE_VERSION };
 export const DENTAL_CORE_BUNDLE_IDENTIFIER = `odontogram-dental-core-${DENTAL_CORE_PACKAGE_VERSION}`;
-export const PROFILE = `${DENTAL_CORE}/StructureDefinition`;
-export const PROPERTY_SYSTEM = `${DENTAL_CORE}/CodeSystem/dental-chart-property`;
-export const VALUE_SYSTEM = `${DENTAL_CORE}/CodeSystem/dental-chart-value`;
-export const COMPONENT_SYSTEM = `${DENTAL_CORE}/CodeSystem/dental-component`;
-export const PROVENANCE_SYSTEM = `${DENTAL_CORE}/CodeSystem/dental-provenance-activity`;
-export const FDI_SYSTEM = `${DENTAL_CORE}/CodeSystem/tooth-position-fdi`;
+export const DENTAL_CORE_PROFILES = DENTAL_CORE_PROFILE_URLS;
+export const PROPERTY_SYSTEM = DENTAL_CORE_CODE_SYSTEM_URLS["dental-chart-property"];
+export const VALUE_SYSTEM = DENTAL_CORE_CODE_SYSTEM_URLS["dental-chart-value"];
+export const COMPONENT_SYSTEM = DENTAL_CORE_CODE_SYSTEM_URLS["dental-component"];
+export const PROVENANCE_SYSTEM = DENTAL_CORE_CODE_SYSTEM_URLS["dental-provenance-activity"];
+export const FDI_SYSTEM = DENTAL_CORE_CODE_SYSTEM_URLS["tooth-position-fdi"];
 
-const permanentFdi = [1, 2, 3, 4].flatMap((quadrant) =>
-  Array.from({ length: 8 }, (_, index) => `${quadrant}${index + 1}`),
-);
-const primaryFdi = [5, 6, 7, 8].flatMap((quadrant) =>
-  Array.from({ length: 5 }, (_, index) => `${quadrant}${index + 1}`),
-);
-const FDI_CODES = new Set([...permanentFdi, ...primaryFdi]);
-const DIAGNOSIS_CODES = new Set(["health", "gingivitis", "periodontitis"]);
+const propertyCodes = new Set<string>(DENTAL_CORE_CODE_SYSTEM_CODES["dental-chart-property"]);
+const valueCodes = new Set<string>(DENTAL_CORE_CODE_SYSTEM_CODES["dental-chart-value"]);
+const fdiCodes = new Set<string>(DENTAL_CORE_CODE_SYSTEM_CODES["tooth-position-fdi"]);
 
-export const isDentalCoreFdi = (value: string): boolean => FDI_CODES.has(value);
-export const isDentalCoreDiagnosis = (value: string): boolean => DIAGNOSIS_CODES.has(value);
+export const isDentalCoreFdi = (value: string): boolean => fdiCodes.has(value);
+export const isDentalCoreProperty = (value: string): boolean => propertyCodes.has(value);
+export const isDentalCoreValue = (value: string): boolean => valueCodes.has(value);
+export const isDentalCoreDiagnosis = (value: string): boolean =>
+  ["health", "gingivitis", "periodontitis"].includes(value) && isDentalCoreValue(value);
 
 export function isDentalCoreRiskValue(code: string, value: number): boolean {
   if (!Number.isFinite(value)) return false;
@@ -71,6 +76,13 @@ export const CHART_MAPPINGS: readonly ChartMapping[] = [
   { field: "retention", property: "prosthesis-retention-element", kind: "enum", defaultValue: "none", values: identity("none", "clasp", "attachment", "bar-abutment") },
   { field: "retentionSide", property: "retention-engaged-side", kind: "enum", defaultValue: "none", values: identity("none", "mesial", "distal", "both") },
 ] as const;
+
+for (const mapping of CHART_MAPPINGS) {
+  if (!isDentalCoreProperty(mapping.property)) throw new Error(`Unsupported Dental Core property mapping: ${mapping.property}`);
+  for (const code of Object.values(mapping.values ?? {})) {
+    if (!isDentalCoreValue(code)) throw new Error(`Unsupported Dental Core value mapping: ${code}`);
+  }
+}
 
 export const mappingsByProperty = new Map<string, ChartMapping[]>();
 for (const mapping of CHART_MAPPINGS) {

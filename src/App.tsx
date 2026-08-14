@@ -6,7 +6,7 @@ import { destroyOdontogram, initOdontogram, setNumberingSystem, clearSelection, 
 export { clearSelection, setOcclusalVisible, setWisdomVisible, setShowBase, setHealthyPulpVisible, registerPlugins, setPluginState, getPluginState, getToothStateSummary, getOdontogramSummary, formatToothLabel, onStateChange, setReadOnly, getReadOnly, setNotesEnabled, getNotesEnabled, setIcdasEnabled, getIcdasEnabled, setPulpDetailLevel, getPulpDetailLevel, setSecondaryCariesMode, getSecondaryCariesMode, setRootCariesMode, getRootCariesMode, setRadiographicDepthMode, getRadiographicDepthMode, setCariesDepthEnabled, getCariesDepthEnabled, setWearDetailLevel, getWearDetailLevel, setDiscolorationDetailLevel, getDiscolorationDetailLevel, setSurfaceNotation, getSurfaceNotation, exportFhir, exportImage, exportSvg, setImportFormat, getPerioViewMode, setPerioViewMode, getPerioRowVisibility, setPerioRowVisibility, getPerioIndexNameMode, setPerioIndexNameMode, isDualStateConfirmPending, acceptDualStateConfirm, cancelDualStateConfirm, getImportAsBaseline, setImportAsBaseline, initOdontogram, destroyOdontogram, setNumberingSystem, getChartMode, setChartMode, getStatusChart, getPlanChart, setPlanChart, getPlanChanges, openPerioOverlay, closePerioOverlay, isPerioOverlayOpen, hasAnyPerioData, exportStatus, importStatus, exportPdf, exportPerioImage, exportPerioSvg };
 export { default as PerioChart } from "./PerioChart";
 // Bead odontogram-3l1: the controlled-integration surface (UI-domain document
-// + instance-isolated clinical sessions) and the canonical fhir-dental-de codec.
+// + instance-isolated clinical sessions) and the Dental Core codec.
 import {
   createOdontogramSession, getDefaultOdontogramSession,
   normalizeOdontogramDocument,
@@ -29,95 +29,11 @@ export {
 export type { ExaminationContext, AssessmentStatus, PerioAssessmentAxis } from "./odontogram";
 export type { ExaminationSnapshotRecord, ExaminationContextRecord } from "./document";
 import type { EngineClaim } from "./odontogram";
+import type { OdontogramSession, OdontogramDocument } from "./odontogram";
 export { buildFhirBundle } from "./fhir/toFhir";
 export { parseFhirBundle } from "./fhir/fromFhir";
-export { buildDentalDeBundle } from "./fhir/toFhirDentalDe";
-export type {
-  FhirDialect, DentalDeConversionEntry, DentalDeConversionReport,
-} from "./fhir/types";
-import type { OdontogramSession, OdontogramDocument } from "./odontogram";
-import { importDentalDeBundle } from "./fhir/importDentalDe";
-import type { DentalDeImportResult, DentalDePatientIdentity } from "./fhir/importDentalDe";
-import { exportDentalDeBundle } from "./fhir/exportDentalDe";
-import type { DentalDeExportOptions, DentalDeExportResult } from "./fhir/exportDentalDe";
 import type { OdontogramSummary, PulpDetailLevel, SecondaryCariesMode, RootCariesMode, RadiographicDepthMode, ToothDetailLevel, SurfaceNotation, PerioViewMode, PerioRowId, PerioIndexNameMode } from "./odontogram";
 export type { PulpDetailLevel, SecondaryCariesMode, RootCariesMode, RadiographicDepthMode, ToothDetailLevel, SurfaceNotation, PerioViewMode, PerioRowId, PerioIndexNameMode } from "./odontogram";
-
-export interface DentalDeOdontogramSession extends OdontogramSession {
-  readonly patient: DentalDePatientIdentity;
-  readonly readOnly: boolean;
-  readonly persistence: "disabled";
-  readonly destroyed: boolean;
-  readonly dirty: boolean;
-  cancel(): void;
-  export(options: DentalDeExportOptions): DentalDeExportResult;
-  destroy(): void;
-}
-
-export interface DentalDeSessionOptions {
-  readOnly?: boolean;
-}
-
-export type DentalDeSessionImportResult =
-  | (Extract<DentalDeImportResult, { ok: true }> & { session: DentalDeOdontogramSession })
-  | Extract<DentalDeImportResult, { ok: false }>;
-
-/** Create one patient-scoped renderer session only after canonical import succeeds. */
-export function createDentalDeOdontogramSession(
-  bundle: unknown,
-  options: DentalDeSessionOptions = {},
-): DentalDeSessionImportResult {
-  const imported = importDentalDeBundle(bundle);
-  if (imported.ok === false) return imported;
-  const baseline = normalizeOdontogramDocument(imported.document);
-  const sessionImport = { ...imported, document: baseline };
-  const base = createOdontogramSession(baseline);
-  let destroyed = false;
-  let dirty = false;
-  const trackDirty = base.subscribe((document) => {
-    dirty = JSON.stringify(document) !== JSON.stringify(baseline);
-  });
-  const ensureLive = () => {
-    if (destroyed) throw new Error("Cannot use a destroyed odontogram session.");
-  };
-  const session: DentalDeOdontogramSession = {
-    id: base.id,
-    patient: imported.patient,
-    readOnly: options.readOnly ?? true,
-    persistence: "disabled",
-    get destroyed() { return destroyed; },
-    get dirty() { return dirty; },
-    getDocument: () => { ensureLive(); return base.getDocument(); },
-    setDocument: (document) => {
-      ensureLive();
-      if (session.readOnly) throw new Error("Cannot edit a read-only odontogram session.");
-      base.setDocument(document);
-    },
-    subscribe: (listener) => { ensureLive(); return base.subscribe(listener); },
-    isActive: () => !destroyed && base.isActive(),
-    activate: () => {
-      ensureLive();
-      base.activate();
-    },
-    release: () => base.release(),
-    cancel: () => {
-      ensureLive();
-      base.setDocument(baseline);
-      dirty = false;
-    },
-    export: (exportOptions) => {
-      ensureLive();
-      return exportDentalDeBundle(sessionImport, base.getDocument(), exportOptions);
-    },
-    destroy: () => {
-      if (destroyed) return;
-      base.release();
-      trackDirty();
-      destroyed = true;
-    },
-  };
-  return { ...imported, session };
-}
 export type { OdontogramSummary, OdontogramSummarySection } from "./odontogram";
 export type { FhirExportOptions } from "./fhir/types";
 import { startIntroTour } from "./tour";

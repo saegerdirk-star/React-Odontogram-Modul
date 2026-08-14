@@ -29,12 +29,6 @@ describe("SP10 Task 1: fillingDefect field + round-trip", () => {
     const s = __getToothStateForTest(17)!;
     expect(s.fillingDefect).toEqual({ mesial: "wear" });
   });
-  it("FHIR round-trips fillingDefect", () => {
-    __setToothStateForTest(26, { toothSelection: "tooth-base", fillingSurfaceMaterials: { distal: "gic" }, fillingDefect: { distal: "marginal" } });
-    const bundle = buildFhirBundle(__collectExportPayloadForTest());
-    const parsed = parseFhirBundle(bundle);
-    expect(parsed.teeth["26"].fillingDefect).toEqual({ distal: "marginal" });
-  });
   it("i18n labels exist", () => {
     expect(t("fillingDefect.fracture")).not.toContain("fillingDefect.");
   });

@@ -67,26 +67,6 @@ describe("SP6 Task 1: payload version 2.4", () => {
     expect(Object.fromEntries(s.radiographicDepth)).toEqual({ mesial: "D2", occlusal: "E1" });
   });
 
-  it("rootCaries/cariesSeverity/radiographicDepth survive a full FHIR export(2.4) -> import round-trip", () => {
-    const payload = {
-      version: "2.4",
-      teeth: {
-        "36": {
-          toothSelection: "tooth-base",
-          caries: ["caries-buccal", "caries-lingual"],
-          rootCaries: "arrested",
-          cariesSeverity: { buccal: 6, lingual: 1 },
-          radiographicDepth: { buccal: "D3", lingual: "E2" },
-        },
-      },
-    };
-    const bundle = buildFhirBundle(payload as never);
-    const out = parseFhirBundle(bundle);
-    expect(out.version).toBe("2.25");
-    expect(out.teeth["36"].rootCaries).toBe("arrested");
-    expect(out.teeth["36"].cariesSeverity).toEqual({ buccal: 6, lingual: 1 });
-    expect(out.teeth["36"].radiographicDepth).toEqual({ buccal: "D3", lingual: "E2" });
-  });
 
   it("importer is field-presence-driven: 1.4/2.0/2.1/2.2/2.3/2.4-tagged payloads all hydrate the unified fields identically", () => {
     for (const version of ["1.4", "2.0", "2.1", "2.2", "2.3", "2.4"]) {

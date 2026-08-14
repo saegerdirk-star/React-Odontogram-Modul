@@ -155,7 +155,7 @@ Vagy töltsd be egy kizárólag kliensoldali dinamikus importtal: `dynamic(() =>
 - 💾 Állapot export/import JSON formátumban (2.20 verzió; az importálás továbbra is elfogadja a korábbi 1.4 és 2.0–2.19 verziókat, és automatikusan migrálja, plugin egyedi állapotokkal és fogankénti megjegyzésekkel)
 - 📐 **Modellkiértékelés** (`odontogram-c51.1`): Tonn és Bolton a meziodisztális fogszélességekből, cél metszőösszeggel, fogméret-eltéréssel és azzal, melyik állcsont hordozza a többletet. A szélességek fogívre vagy listába vihetők be — ugyanannak a rekordnak két nézete. A modellen nem szereplő fog (nem tört elő, elveszett, íny alatt) a kontralaterális párja szélességét veszi át, láthatóan feltételezésként jelölve. Ezen felül horizontális és vertikális lépcső, valamint állcsontonkénti középvonal-eltérés
 - 🩻 **Kefalometria** (`odontogram-c51.2`): egyetlen közös mérőpont-készlet, fölötte a mérőszámok, azok fölött az eljárások profilként — új iskola új profil, a pontok nem mozdulnak. Minden mérőszám hordozza a forrását és a FHIR-kódolását; publikáció nélküli norma nem kerül kiadásra. Levezetve: az állcsontok helyzete a koponyához (Björk szerinti arctípus, harmónia, szagittális osztály a populációs **és** az egyéni normához mérve) és a növekedési minta szavazásként az összes forrásolt normájú indikátor között. Az értékek másik program nyomtatott kiértékeléséből is átvehetők a szöveg beillesztésével — semmi nem kerül alkalmazásra megerősítés nélkül
-- ⚠️ Mindkettő egyelőre **munkamenet-állapot**: nincs publikált Dental-DE hordozó, ezért nem részei az exportált payloadnak ahelyett, hogy helyit találnánk ki
+- ⚠️ Mindkettő egyelőre **munkamenet-állapot**: nincs publikált Dental Core profil, ezért nem részei az exportált payloadnak ahelyett, hogy helyit találnánk ki
 - 🔗 HL7 FHIR R4 export (collection Bundle fogankénti Observation-ökkel, ISO 3950 fogkódolás a maradó fogazatra, lokális kódrendszer — SNOMED CT megfeleltetés tervezett)
 - ✚ Kereszt/plusz felület-választó UI (B/M/O/D/L) szuvasodáshoz és tömésekhez
 - 🧱 Felületenkénti tömőanyagok (vegyes tömések, pl. bukkális amalgám + disztális kompozit)
@@ -163,7 +163,6 @@ Vagy töltsd be egy kizárólag kliensoldali dinamikus importtal: `dynamic(() =>
 - 🦷 A caries/subcaries felületenkénti állapotgép: egy tömés nélküli szuvas felület elsődleges caries-ként jelenik meg (ICDAS-szintezett átlátszósággal); amint a felületen tömés is van, helyette szekunder (visszatérő) caries-ként jelenik meg (`subcaries-{surface}` réteg, CARS-pontszámmal) — a kettő soha nem lehet egyszerre aktív ugyanazon a felületen
 - 🎯 Egységesített, felületenkénti súlyossági érték (`cariesSeverity`, 0–6, amely felváltja a korábbi külön ICDAS-mélység és CARS mezőket): elsődleges felületen ICDAS mélységként, szekunder felületen elnevezett CARS pontszámként (Ép … Kiterjedt üreg) olvasandó, egy kontextusfüggő felugró ablakon keresztül, amely mindig csak a felület aktuális állapotához tartozó skálát mutatja
 - 🌱 Gyökér szuvasodás (`rootCaries`: none / active / arrested / active-cavitated), amely bekapcsolja a dedikált gyökér-szuvasodás grafikai réteget, a súlyosságtól függő átlátszósággal (active 0,5 / arrested 0,7 / active-cavitated teljes átlátszóság)
-- 📡 Radiológiai szuvasodás mélység (`radiographicDepth`: none / E1 / E2 / D1 / D2 / D3 felületenként), független a vizuális ICDAS/CARS súlyossági skálától, jelvényként (badge) jelenik meg, és saját FHIR Observation-jén keresztül is vissza-visszatölthető (round-trip)
 - 🎚️ Három szuvasodás-részletezettségi beállítás (`secondaryCariesMode`, `rootCariesMode`, `radiographicDepthMode`), valamint egy `cariesDepthEnabled` kapcsoló, amelyek mindegyike egyszerűbb választó nézetre egyszerűsíti a saját skáláját a tárolt érték elvesztése nélkül
 - 🩹 Subcaries-összegző sor a tömés panelen: a tömés vezérlők alatt felsorolja a kijelölt fogak közül azokat, amelyeken szekunder caries van, a felületeikkel együtt (pl. "36 (O) tömése mellett subcaries van beállítva.")
 - 🪛 Felületenkénti tömésdefektus (`fillingDefect`: none / marginal / fracture / wear) közvetlen restaurációkon, függetlenül a szekunder caries-tól — a Tömések kártyán egy felületenkénti jelzővel rögzíthető (a caries-mélység jelzőt tükrözve, opciólistája függőlegesen egymás alatt), megjelenik a diagramon, valamint a tooltipben és a teljes szájüreg tömés-összegzésben explicit felirattal (pl. "36 (O) – Tömésdefektus: O: marginális"), ugyanúgy, ahogy a szekunder caries is fel van tüntetve a Caries soron; a Tömések kártya emellett egy figyelmeztető megjegyzést is mutat minden olyan kijelölt fogra, amelyen tömésdefektus van rögzítve (pl. "36-on tömésdefektus van rögzítve."), a meglévő subcaries figyelmeztető megjegyzéssel párhuzamosan
@@ -207,7 +206,6 @@ Vagy töltsd be egy kizárólag kliensoldali dinamikus importtal: `dynamic(() =>
 
 ![Parodontális státusz diagram (magyar)](screenshot_hu_perio.png)
 
-- 🩺 Parodontális státuszrögzítés: fogankénti hat standard ponton mért **tasakmélység (probing depth)**, **ínyszél (gingival margin)**, **véreztethetőség szondázásra (bleeding on probing)** (+ suppuráció), levezetett **klinikai tapadásvesztéssel (CAL = PD + ínyszél)**, recesszióval és teljes szájüregi **%BOP**-pal. Egy **grafikus, teljes szájüregre kiterjedő parodontális diagram** — minden fogsor **két külön, bukkális/palatinális(linguális) SVG-ként** rajzolódik (a meglévő fog-grafikát felhasználva, mindkét nézetben egységes korona-a-sáv-felé orientációval; **implantátum grafikával** az implantátum fogakhoz), piros **CEJ-vonallal**, egy **számozott milliméteres segédráccsal**, és egy, a fogak felett húzódó **ínyszél/tasakmélység görbével**, amelyet egy **központi parodontális index-sáv** (felirat: `▲ Buccal … Lingual/Palatal ▼`) oszt ketté, és amely a fogankénti közös indexeket hordozza — a **Miller-osztály** egészen felül, a **Plakk/PI/GI/mPI/mBI** pedig **anatómiai rombusz csempeként** jelenik meg foganként (bukkális csúcs felül, linguális csúcs alul, a középső sor meziális/disztális értékei oldalanként felcserélve, hogy a meziális mindig a fogív középvonala felé mutasson); a számsorok (teljes index-nevekkel — PD/GM/CAL/BOP + mobilitás + furkáció — nagyobb, érintésbarátabb cellákban) oszlopokba rendezve, összegzéssel (átlag PD/CAL, %BOP, PI%), **billentyűzetes automatikus továbblépéssel** történő rögzítéssel; a diagram **dinamikusan a rendelkezésre álló szélességhez igazodik**, bármilyen ablakméretnél reszponzív. Egy `Odontogram | Periodontal Status` **nézetváltóként** jelenik meg, amelynek jobb oldali panelje — amíg ez a nézet aktív — egy **parodontális kontextus oldalsávvá** alakul (páciens adatok, a 2017-es klasszifikáció és a teljes szájüreg összegzés) (egy Beállítás opció visszaváltja az egész megjelenítést **felugró ablakra**), és továbbra is **önállóan meghívható komponens** (`PerioChart` export), így egy befogadó alkalmazás a parodontális diagramot az odontogramtól függetlenül is előhívhatja. Fogankénti **FHIR** export a LOINC parodontális panelen keresztül (`74029-0`; PD `32910-2`, recesszió `32911-0`, CAL `32912-8`)
 - 🅿️ Javasolt (proposed) stílus: Terv módban azok a leletek, amelyeket a terv **hozzáad** az aktuális státuszhoz képest (tervezett korona, extrakció, ortodonciai elmozdulás, protetika, …), egy jellegzetes **szaggatott, színezett "javasolt" körvonallal** jelennek meg, hogy a terv szándékként és ne tényként olvasható — egy "szaggatott = javasolt" jelmagyarázattal a diagram kártyán. A Státusz módú megjelenítés byte-azonos marad; a kezelés csak a tervben létezik, és visszaváltáskor teljesen visszaáll
 - 🚦 Terv módú szűrés (gating): a Terv diagram csak azt mutatja, amit a fogorvos *tenni* tud — az alap választó csak Hiányzó / Maradó / Implantátum opciókat kínál, és a csak-státusz leletek (caries, fogkopás, elszíneződés, valamint a teljes parodontális blokk — mobilitás, hat pontos szondázási rács, gyulladásos/parodontális módosítók, fogkő, peri-implantáris státusz) rejtve vannak; a Pulpa/Endo kezelőelem megtartja az endodonciai **kezelést** (gyökértömés / csap / rezekció / parapulpális csap), miközben elrejti a pulpa/apikális **diagnózist** és a gyökérreszorpciót. A pótlás, protetika, ortodoncia, korona-szükséges/csere és a fogeltávolítási terv továbbra is tervezhető marad
 - 🧪 1746 automatizált teszt sikeres (1 további teszt kihagyva) (Vitest) 164 tesztfájlban (165 összesen): számozás, fordítások, presetek, i18n, App komponens, téma, érintés, pluginek, akadálymentesítés és klinikai tengelyek/diagnózisok paritása lefedésére
@@ -531,95 +529,10 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
   fográcshoz kötve); a többi megőrzi saját dokumentumát, és a munkamenet API-ján keresztül
   továbbra is teljesen olvasható és írható.
 
-**FHIR-nyelvjárások — tiszta, opcionális vetület:**
+**FHIR / Dental Core:**
 
-A FHIR-konverzió tiszta adapter a dokumentum felett: nincs DOM, nincs hálózat, nincs
-rendszeróra, nincs véletlenszerűség, és nincs szállítási, hitelesítési vagy tárolási
-szempont a komponensben.
+FHIR conversion supports only generated Dental Core `de.cognovis.fhir.dental.core#0.3.0` bundles and rejects unsupported input.
 
-```ts
-import {
-  DentalCoreBundleRejectedError,
-  buildDentalDeBundle,
-  buildFhirBundle,
-  parseFhirBundle,
-} from "react-advanced-odontogram/fhir";
-
-const legacy = buildFhirBundle(session.getDocument());
-
-const canonical = buildFhirBundle(session.getDocument(), {
-  dialect: "dental-de", subject: "Patient/123", effectiveDateTime: "2026-08-08",
-});
-
-const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
-  effectiveDateTime: "2026-08-08",
-});
-
-const dentalCore = buildFhirBundle(session.getDocument(), {
-  dialect: "dental-core", subject: "Patient/123", effectiveDateTime: "2026-08-08",
-});
-
-function parseImportedBundle(candidate: unknown) {
-  try {
-    return parseFhirBundle(candidate);
-  } catch (error) {
-    if (error instanceof DentalCoreBundleRejectedError) return undefined;
-    throw error;
-  }
-}
-```
-
-A Dental Core-ként megjelölt, de a támogatott, modul által előállított szerződésen kívüli bundle az exportált `DentalCoreBundleRejectedError` hibát dobja; a gazda ezt az aktuális odontogram lecserélése nélkül elkaphatja.
-
-A `dental-de` nyelvjárás `OdontogramObservationDE`, `CariesObservationDE` és
-`DentalFindingDE` erőforrásokat állít elő az `OdontogramComponentCS` komponens-szeleteivel,
-FDI fogazonossággal (`ToothIdentificationFDICS`), ICDAS-pontszámokkal
-(`ICDASCariesScoreCS`) és az ismételhető `ToothSurfacesExt` kiterjesztéssel a HL7
-`FDI-surface` felett. A felszínkódolás fogfüggő: a rágófelszín `I` (incizális) front-, és
-`O` (okkluzális) őrlőfogon; importkor az `I` visszakerül a motor `occlusal` kulcsára, a `V`
-a `buccal`-ra, a `MO`/`DO`/`DI`/`MOD` kombinált kódok pedig tagjaikra bomlanak.
-
-Ahol az IG nem definiál kódolt értéket, az adapter a vonatkozó **extensible** kötés alatt
-`CodeableConcept.text`-et használ — sosem kitalált kódot —, ahol pedig egy **required**
-kötéshez nincs megfelelő fogalom, ott semmit sem ad ki. Mindkét eset szerepel a
-`report.textFallback`, illetve `report.unmapped` listában a foggal, a mezővel, a megőrzött
-értékkel és az indoklással, így semmi nem vész el észrevétlenül. Maga az érték mindig a
-felületi tartomány dokumentumában marad, és túléli a JSON oda-vissza utat.
-
-**Ellenőrzött SNOMED-lefedettség (2.5.0-tól):** egy klinikai érték csak akkor kap
-kódot, ha az IG saját ValueSetjei engedélyezik a fogalmat ÉS a jelentése
-ellenőrzött; a `dentalDeCodesystems.ts` `SCT_PROVENANCE` táblája minden kiadott
-kódnál rögzíti az engedélyező ValueSetet és az ellenőrzés forrását. A
-gyökérszuvasodás, a belső és a külső cervikális gyökérreszorpció, az apikális
-parodontitis, valamint a restaurátum épségére vonatkozó leletek ezen az alapon
-kapnak kódot. A pontos forrásértékelés mindig a `CodeableConcept.text` mezőben
-marad, és `Coding.display` sosem kerül kitalálásra, mert az IG nem közöl
-megjelenítési neveket.
-
-**Kanonikus parodontális export (2.6.0-tól):** egy felvett természetes fog
-`PeriodontalObservationDE`-ként, egy implantátumpozíció `PeriImplantObservationDE`-ként
-exportálódik a hozzá tartozó `DentalImplantDE` eszközzel együtt — hat ponton mért
-szondázási mélység, az ínyszél zománc-cement határhoz viszonyított előjeles szintje,
-a származtatott tapadási szint, szondázásra jelentkező vérzés és gennyedés, a
-Glickman-furkációfok a bejáratával, plakk jelenléte, a Silness-Löe és Löe-Silness
-indexek, a keratinizált íny szélessége, valamint a Mombelli-féle periimplantáris
-indexek, mindegyik az IG `PeriodontalMeasurementSiteExt` vagy `ToothSurfacesExt`
-kiterjesztésével minősítve. A vizsgált, negatív lelet kifejezett `false`/`0`, a
-rögzített hiány pedig szabványos `dataAbsentReason`. Az ínyrecesszió (2.8.0-tól)
-mérési pontonként kerül kiadásra, de csak ott, ahol az előjeles ínyszél valóban
-recesszió; a mérvadó továbbra is az ínyszél, ezért importált recesszió-komponens
-soha nem íródik vissza bele.
-
-A választható `react-advanced-odontogram/fhir` belépési pont pontosan három
-nyelvjárást ad: `legacy` (az alapértelmezett), `dental-de` és `dental-core` a
-`de.cognovis.fhir.dental.core#0.3.0` csomaghoz. A `dental-core` használatához
-`effectiveDateTime` kötelező. A beépített UI FHIR-letöltés szándékosan legacy
-alapértelmezett marad, és nincs Dental Core választója.
-
-A `parseFhirBundle` legacy és Dental-DE erőforrásokat olvas, vegyes kötegben is,
-és csak a modul által létrehozott Odontogram Dental Core 0.3.0 kötegeket ismeri
-fel. Nem általános FHIR-importáló: a megtévesztő jelölőt, profil nélküli vagy nem
-támogatott erőforrást elutasítja.
 **Dátumozott vizsgálatok, felmérési státusz és peri-implantáris rögzítés (2.4.0-tól):**
 
 Egy parodontális esetet éveken át újravizsgálnak, ezért a dokumentum mostantól hordozza a

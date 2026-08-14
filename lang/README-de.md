@@ -157,7 +157,7 @@ Oder laden Sie sie mit einem rein clientseitigen dynamischen Import: `dynamic(()
 - 💾 Status-Export/Import in JSON (Version 2.20; Importe akzeptieren weiterhin die Legacy-Version 1.4 sowie 2.0 bis 2.19 und werden automatisch migriert, mit Plugin Custom States und per-Zahn Notizen)
 - 📐 **Modellauswertung** (`odontogram-c51.1`): Tonn und Bolton aus den mesiodistalen Zahnbreiten, mit Soll-SI, Zahnbreitendifferenz und der Angabe, welcher Kiefer den Überschuss trägt. Eingabe wahlweise am Zahnbogen oder als Liste — zwei Ansichten auf denselben Datensatz. Ein Zahn, der nicht auf dem Modell ist (nicht durchgebrochen, verloren, unter der Gingiva), übernimmt die Breite des kontralateralen Zahns, sichtbar als Annahme markiert. Dazu horizontale und vertikale Stufe sowie die dentale Mittellinienverschiebung je Kiefer
 - 🩻 **Kephalometrie** (`odontogram-c51.2`): ein gemeinsamer Messpunktvorrat, darüber die Messgrößen, darüber die Verfahren als Profile — ein neues Verfahren ist ein neues Profil, die Messpunkte bleiben. Jede Messgröße trägt ihre Quelle und ihre FHIR-Codierung; eine Norm ohne Publikation wird nicht ausgeliefert, die Messgröße wird stattdessen ohne Zielwert erfasst. Abgeleitet werden die Lage der Kiefer zum Schädel (Gesichtstyp nach Björk, Harmonie, sagittale Klasse gegen die Populationsnorm **und** gegen die individuelle — die genau dort auseinandergehen, wo die Individualisierung ihren Zweck erfüllt) und das Wachstumsmuster als Abstimmung über alle Indikatoren mit belegter Norm. Werte lassen sich aus der Auswertung eines anderen Programms per Texteinfügen übernehmen — nichts landet ohne Bestätigung, denn ein Ausdruck hat drei Zahlenspalten und manche Zeilen tragen nur die Norm
-- ⚠️ Beides ist vorerst **Sitzungszustand**: für Modellauswertung und Kephalometrie existiert kein veröffentlichter Dental-DE-Träger, daher sind sie bewusst nicht Teil des Export-Payloads, statt einen lokalen zu erfinden
+- ⚠️ Beides ist vorerst **Sitzungszustand**: für Modellauswertung und Kephalometrie existiert kein veröffentlichter Dental-Core-Profil, daher sind sie bewusst nicht Teil des Export-Payloads, statt einen lokalen zu erfinden
 - 🔗 HL7 FHIR R4 Export (Collection-Bundle aus Observations pro Zahn, ISO 3950 Zahnkodierung für das bleibende Gebiss, lokales Codesystem — SNOMED-CT-Mapping geplant)
 - ✚ Kreuz-/Plus-Oberflächenauswahl (B/M/O/D/L) für Karies und Füllungen
 - 🧱 Füllungsmaterialien pro Fläche (gemischte Füllungen, z. B. bukkal Amalgam + distal Komposit)
@@ -165,7 +165,6 @@ Oder laden Sie sie mit einem rein clientseitigen dynamischen Import: `dynamic(()
 - 🦷 Karies/Sekundärkaries als Zustandsautomat pro Fläche: eine kariöse Fläche ohne Füllung wird als primäre Karies dargestellt (ICDAS-gestufte Deckkraft); sobald diese Fläche eine Füllung hat, wird sie stattdessen als Sekundärkaries (rezidivierende Karies) dargestellt (`subcaries-{surface}`-Ebene, CARS-bewertet) — beide sind nie gleichzeitig auf derselben Fläche aktiv
 - 🎯 Vereinheitlichter Schweregrad pro Fläche (`cariesSeverity`, 0–6, ersetzt die früheren getrennten ICDAS-Tiefe- und CARS-Felder): wird auf einer primären Fläche als ICDAS-Tiefe gelesen, auf einer rezidivierenden Fläche als benannter CARS-Score (Gesund … Ausgedehnte Kavität), über ein kontextabhängiges Popup, das jeweils nur die zum aktuellen Zustand der Fläche passende Skala zeigt
 - 🌱 Wurzelkaries (`rootCaries`: none / active / arrested / active-cavitated), steuert die dedizierte Wurzelkaries-Bildebene mit einer vom Schweregrad abhängigen Deckkraft (active 0,5 / arrested 0,7 / active-cavitated volle Deckkraft)
-- 📡 Radiologische Kariestiefe (`radiographicDepth`: none / E1 / E2 / D1 / D2 / D3 pro Fläche), unabhängig von der visuellen ICDAS-/CARS-Schweregradskala, dargestellt als Badge und über eine eigene FHIR-Observation rückführbar
 - 🎚️ Drei Karies-Granularitätseinstellungen (`secondaryCariesMode`, `rootCariesMode`, `radiographicDepthMode`) sowie ein `cariesDepthEnabled`-Umschalter, die jede Skala auf eine einfachere Auswahlansicht reduzieren, ohne den gespeicherten Wert zu verlieren
 - 🩹 Sekundärkaries-Zusammenfassung im Füllungspanel: eine Zeile unterhalb der Füllungssteuerung listet jeden ausgewählten Zahn mit Sekundärkaries samt Flächen auf (z. B. „36 (O) hat Sekundärkaries an der Füllung.")
 - 🪛 Füllungsdefekte pro Fläche (`fillingDefect`: none / marginal / fracture / wear) an direkten Restaurationen, unabhängig von Sekundärkaries — erfasst über einen Flächenindikator auf der Füllungskarte (analog zum Kariestiefe-Indikator, die Optionsliste vertikal gestapelt), auf dem Befund dargestellt und im Tooltip sowie in der Ganzmund-Füllungszusammenfassung mit einer expliziten Beschriftung angezeigt (z. B. „36 (O) – Füllungsdefekt: O: marginal"), auf dieselbe Weise, wie Sekundärkaries in der Kariologie-Zeile beschriftet wird; die Füllungskarte zeigt außerdem einen Hinweis für jeden ausgewählten Zahn mit erfasstem Füllungsdefekt (z. B. „36 hat einen erfassten Füllungsdefekt."), parallel zum bestehenden Sekundärkaries-Hinweis
@@ -209,7 +208,6 @@ Oder laden Sie sie mit einem rein clientseitigen dynamischen Import: `dynamic(()
 
 ![Parodontalstatus-Chart (Deutsch)](screenshot_de_perio.png)
 
-- 🩺 Parodontale Erfassung: pro Messstelle **Sondierungstiefe**, **Gingivarand**, **Blutung bei Sondierung** (+ Suppuration) an den sechs Standardmessstellen je Zahn, mit abgeleitetem **klinischem Attachmentniveau (CAL = PD + Gingivarand)**, Rezession und Ganzmund-**%BOP**. Ein **grafisches Ganzmund-Parodontalstatus-Chart** — jeder Kieferbogen als **zwei separate bukkale/palatinale(linguale) SVGs** gezeichnet (unter Wiederverwendung der Zahngrafik mit einheitlicher Kronen-zum-Band-Ausrichtung auf beiden Seiten; eine **Implantatgrafik** für Implantatzähne) mit einer roten **CEJ-Linie**, einem **nummerierten Millimeter-Rasterraster** und einer **Gingivarand-/Taschentiefe-Kurve** über den Zähnen, unterteilt durch ein **zentrales Parodontal-Index-Band** (beschriftet mit `▲ Buccal … Lingual/Palatal ▼`), das die gemeinsamen Indizes pro Zahn trägt — **Miller-Klasse** ganz oben, sowie **Plaque/PI/GI/mPI/mBI**, dargestellt als **anatomische Rauten-Kachel** pro Zahn (bukkale Spitze oben, linguale Spitze unten, mesial/distal in der mittleren Reihe je nach Seite vertauscht, sodass mesial immer zur Zahnbogenmitte zeigt); die Zahlenreihen (vollständige Indexnamen — PD/GM/CAL/BOP + Mobilität + Furkation — in größeren, touch-freundlicheren Zellen) in Spalten ausgerichtet sowie eine Zusammenfassung (Ø PD/CAL, %BOP, PI%), mit **automatischem Tastatur-Weitersprung** bei der Eingabe; das Chart **skaliert dynamisch auf die verfügbare Breite** und ist bei jeder Fenstergröße responsiv. Dargestellt als `Odontogram | Periodontal Status`-**Ansichtsumschalter**, dessen rechtes Panel während dieser Ansicht zu einer **Parodontal-Kontext-Seitenleiste** umfunktioniert wird (Patientendaten, die Klassifikation nach 2017 und die Ganzmund-Zusammenfassung; eine Einstellungsoption schaltet die gesamte Darstellung stattdessen auf ein **Popup** um), und weiterhin eine **eigenständig aufrufbare Komponente** (`PerioChart`-Export), sodass eine Host-App das Parodontalstatus-Chart unabhängig vom Basis-Odontogramm aufrufen kann. Export pro Messstelle via **FHIR** über das LOINC-Parodontal-Panel (`74029-0`; PD `32910-2`, Rezession `32911-0`, CAL `32912-8`)
 - 🅿️ Vorschlags-Darstellung: im Plan-Modus rendern Befunde, die der Plan **gegenüber** dem aktuellen Status **hinzufügt** (geplante Krone, Extraktion, kieferorthopädische Bewegung, Prothetik, …) mit einer unterscheidbaren **gestrichelten, eingefärbten „Vorschlags"-Umrandung**, damit der Plan als Absicht und nicht als Tatsache gelesen wird — mit einer „gestrichelt = vorgeschlagen"-Legende in der Diagramm-Karte. Die Darstellung im Status-Modus ist byte-identisch; die Behandlung existiert nur im Plan und wird beim Zurückwechseln vollständig zurückgesetzt
 - 🚦 Plan-Modus-Gating: das Plan-Chart zeigt nur, was ein Zahnarzt *tun* kann — der Basis-Auswähler bietet nur Fehlend / Bleibend / Implantat, und reine Statusbefunde (Karies, Zahnabrieb, Verfärbung sowie der gesamte parodontale Block — Mobilität, sechs-Punkte-Sondierungsraster, Entzündungs-/parodontale Modifikatoren, Zahnstein, periimplantärer Status) sind ausgeblendet; die Pulpa-/Endo-Steuerung behält die endodontische **Behandlung** (Wurzelkanal / Stift / Wurzelspitzenresektion / parapulpaler Stift) bei, während die Pulpa-/apikale **Diagnose** und die Wurzelresorption ausgeblendet werden. Restauration, Prothetik, Kieferorthopädie, Kronenbedarf/-wechsel und Extraktionsplan bleiben weiterhin planbar
 - 🧪 1746 automatisierte Tests bestanden (1 zusätzlicher Test übersprungen) (Vitest) in 164 Testdateien (165 insgesamt) für Nummerierung, Übersetzungen, Vorlagen, i18n, App-Komponente, Theme, Touch, Plugins, Barrierefreiheit sowie Parität der klinischen Diagnose-/Befund-Achsen
@@ -534,95 +532,10 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
   globale Engine an einem Zahnraster); die uebrigen behalten ihr eigenes Dokument und
   bleiben ueber ihre Session-API voll les- und schreibbar.
 
-**FHIR-Dialekte — eine reine, optionale Projektion:**
+**FHIR / Dental Core:**
 
-Die FHIR-Konvertierung ist ein reiner Adapter ueber dem Dokument: kein DOM, kein
-Netzwerk, keine Systemzeit, kein Zufall und keine Transport-, Authentifizierungs- oder
-Persistenzbelange in der Komponente.
+FHIR conversion is a pure optional projection of the UI-domain document. This package supports only generated Dental Core `de.cognovis.fhir.dental.core#0.3.0` bundles. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date; `parseDentalCoreBundle` fails closed for unsupported or malformed bundles.
 
-```ts
-import {
-  DentalCoreBundleRejectedError,
-  buildDentalDeBundle,
-  buildFhirBundle,
-  parseFhirBundle,
-} from "react-advanced-odontogram/fhir";
-
-const legacy = buildFhirBundle(session.getDocument());
-
-const canonical = buildFhirBundle(session.getDocument(), {
-  dialect: "dental-de", subject: "Patient/123", effectiveDateTime: "2026-08-08",
-});
-
-const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
-  effectiveDateTime: "2026-08-08",
-});
-
-const dentalCore = buildFhirBundle(session.getDocument(), {
-  dialect: "dental-core", subject: "Patient/123", effectiveDateTime: "2026-08-08",
-});
-
-function parseImportedBundle(candidate: unknown) {
-  try {
-    return parseFhirBundle(candidate);
-  } catch (error) {
-    if (error instanceof DentalCoreBundleRejectedError) return undefined;
-    throw error;
-  }
-}
-```
-
-Ein Bundle, das Dental Core beansprucht, aber außerhalb des unterstützten modul-erzeugten Vertrags liegt, löst den exportierten `DentalCoreBundleRejectedError` aus; ein Host kann ihn abfangen, ohne den aktuellen Befund zu ersetzen.
-
-Der Dialekt `dental-de` erzeugt `OdontogramObservationDE`, `CariesObservationDE` und
-`DentalFindingDE` mit den Component-Slices aus `OdontogramComponentCS`, FDI-Zahnidentitaet
-(`ToothIdentificationFDICS`), ICDAS-Werten (`ICDASCariesScoreCS`) und der wiederholbaren
-`ToothSurfacesExt` ueber HL7 `FDI-surface`. Die Flaechenkodierung ist zahnabhaengig: die
-Kaustflaeche ist `I` (inzisal) am Frontzahn und `O` (okklusal) am Seitenzahn; beim Import
-wird `I` wieder auf den Engine-Schluessel `occlusal` und `V` auf `buccal` abgebildet, und
-die Kombinationscodes `MO`/`DO`/`DI`/`MOD` werden in ihre Einzelflaechen aufgeteilt.
-
-Wo der IG keinen kodierten Wert definiert, verwendet der Adapter `CodeableConcept.text`
-unter der jeweiligen **extensible** Bindung — niemals einen erfundenen Code —, und wo eine
-**required** Bindung keinen passenden Begriff enthaelt, wird gar nichts ausgegeben. Beide
-Faelle stehen mit Zahn, Feld, erhaltenem Wert und Begruendung in `report.textFallback`
-bzw. `report.unmapped`, damit nichts stillschweigend verloren geht. Der Wert selbst bleibt
-immer im UI-Domain-Dokument und ueberlebt den JSON-Roundtrip.
-
-**Geprüfte SNOMED-Abdeckung (ab 2.5.0):** ein klinischer Wert wird nur dann
-kodiert, wenn die ValueSets des IG das Konzept zulassen UND seine Bedeutung
-geprüft wurde; `SCT_PROVENANCE` in `dentalDeCodesystems.ts` hält je Code das
-zulassende ValueSet und die Prüfquelle fest. Wurzelkaries, interne und externe
-zervikale Wurzelresorption, apikale Parodontitis sowie die Befunde zur
-Restaurations-Integrität werden auf dieser Grundlage kodiert. Die exakte
-Quellbewertung bleibt immer in `CodeableConcept.text`, und es wird kein
-`Coding.display` erfunden, da der IG keine Displays veröffentlicht.
-
-**Kanonischer Parodontal-Export (ab 2.6.0):** ein befundeter natürlicher Zahn wird
-als `PeriodontalObservationDE` exportiert, eine Implantatposition als
-`PeriImplantObservationDE` samt dem `DentalImplantDE`-Device, auf das sie sich
-bezieht — Sondierungstiefe an sechs Stellen, der vorzeichenbehaftete Abstand vom
-Gingivarand zur Schmelz-Zement-Grenze, der abgeleitete Attachmentverlust, Blutung
-und Pus nach Sondierung, der Glickman-Furkationsgrad mit Eingang, Plaque-Nachweis,
-die Indizes nach Silness-Löe und Löe-Silness, die Breite der keratinisierten
-Gingiva sowie die periimplantären Mombelli-Indizes, jeweils qualifiziert durch
-`PeriodontalMeasurementSiteExt` oder `ToothSurfacesExt` der IG. Ein untersuchter
-Normalbefund ist ein explizites `false`/`0`, eine dokumentierte Lücke ein
-standardisierter `dataAbsentReason`. Die Gingivarezession wird (ab 2.8.0)
-je Messstelle ausgegeben, aber nur dort, wo der vorzeichenbehaftete Gingivarand
-tatsächlich eine Rezession ist; maßgeblich bleibt der Gingivarand, eine
-importierte Rezessions-Komponente wird nie in ihn zurückgelesen.
-
-Der optionale Einstieg `react-advanced-odontogram/fhir` bietet genau drei
-Dialekte: `legacy` (der Standard), `dental-de` und `dental-core` fuer
-`de.cognovis.fhir.dental.core#0.3.0`. `dental-core` erfordert
-`effectiveDateTime`. Der eingebaute FHIR-Download der UI bleibt absichtlich beim
-Legacy-Standard und bietet keinen Dental-Core-Selektor.
-
-`parseFhirBundle` liest Legacy- und Dental-DE-Ressourcen, auch gemischt, und
-erkennt nur vom Modul erzeugte Odontogram Dental Core 0.3.0 Bundles. Es ist kein
-generischer FHIR-Importer: ein irrefuehrender Marker sowie unprofilierte oder
-nicht unterstuetzte Ressourcen werden abgelehnt.
 **Datierte Untersuchungen, Erhebungsstatus und periimplantaere Erfassung (ab 2.4.0):**
 
 Ein Parodontalfall wird ueber Jahre nachuntersucht. Ein Dokument traegt daher jetzt die
