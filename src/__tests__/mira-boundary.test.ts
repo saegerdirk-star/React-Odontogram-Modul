@@ -101,8 +101,8 @@ describe("odontogram-3l1 AC4: the component carries no transport coupling", () =
   it("documents the integration boundary in the README", () => {
     const readme = readSource("README.md");
     expect(readme).toMatch(/UI-domain document/i);
-    expect(readme).toMatch(/fhir-dental-de/i);
+    expect(readme).toMatch(/Dental Core/i);
     expect(readme).toMatch(/createOdontogramSession/);
-    expect(readme).toMatch(/buildDentalDeBundle/);
+    expect(readme).toMatch(/buildFhirBundle/);
   });
 });

@@ -155,7 +155,7 @@ Ewentualnie załaduj go za pomocą dynamicznego importu tylko po stronie klienta
 - 💾 Eksport/import statusu w formacie JSON (wersja 2.20; import nadal akceptuje starsze wersje 1.4 oraz 2.0 do 2.19 i migruje je automatycznie, wraz z niestandardowymi stanami wtyczek i notatkami do zębów)
 - 📐 **Analiza modeli** (`odontogram-c51.1`): Tonn i Bolton z szerokości mezjodystalnych, z docelową sumą siekaczy, rozbieżnością szerokości zębów i wskazaniem, który łuk niesie nadmiar. Szerokości wprowadza się na łuku lub jako listę — dwa widoki jednego rekordu. Ząb nieobecny na modelu (niewyrznięty, utracony, pod dziąsłem) przejmuje szerokość zęba przeciwstronnego, widocznie oznaczoną jako założenie. Do tego nagryz poziomy i pionowy oraz odchylenie linii pośrodkowej dla każdego łuku
 - 🩻 **Cefalometria** (`odontogram-c51.2`): jeden wspólny zasób punktów pomiarowych, nad nim wielkości mierzone, a nad nimi metody jako profile — nowa szkoła to nowy profil, punkty pozostają. Każda wielkość niesie swoje źródło i kodowanie FHIR; norma bez publikacji nie jest dostarczana. Wyprowadzane: położenie szczęk względem czaszki (typ twarzy wg Björka, harmonia, klasa strzałkowa wobec normy populacyjnej **i** indywidualnej) oraz wzorzec wzrostu jako głosowanie wszystkich wskaźników z udokumentowaną normą. Wartości można przejąć z wydrukowanej oceny innego programu przez wklejenie tekstu — nic nie zostaje zastosowane bez potwierdzenia
-- ⚠️ Oba są na razie **stanem sesji**: nie istnieje opublikowany nośnik Dental-DE, więc nie są częścią eksportowanego payloadu zamiast wymyślania lokalnego
+- ⚠️ Oba są na razie **stanem sesji**: nie istnieje opublikowany profil Dental Core, więc nie są częścią eksportowanego payloadu zamiast wymyślania lokalnego
 - 🔗 Eksport HL7 FHIR R4 (kolekcja Bundle z obserwacjami na ząb, kodowanie zębów wg ISO 3950 dla uzębienia stałego, lokalny system kodów — mapowanie SNOMED CT planowane)
 - ✚ Interfejs wyboru powierzchni w układzie krzyżowym (B/M/O/D/L) dla próchnicy i wypełnień
 - 🧱 Materiały wypełnień na powierzchnię (mieszane wypełnienia, np. policzkowe amalgamat + dystalne kompozyt)
@@ -163,7 +163,6 @@ Ewentualnie załaduj go za pomocą dynamicznego importu tylko po stronie klienta
 - 🦷 Próchnica/próchnica wtórna jako maszyna stanów per powierzchnia: spróchniała powierzchnia bez wypełnienia jest renderowana jako próchnica pierwotna (nieprzezroczystość warstwowana wg ICDAS); gdy tylko ta powierzchnia ma wypełnienie, jest renderowana zamiast tego jako próchnica wtórna (nawracająca) (warstwa `subcaries-{surface}`, punktowana wg CARS) — obie nigdy nie są aktywne jednocześnie na tej samej powierzchni
 - 🎯 Ujednolicona wartość ciężkości na powierzchnię (`cariesSeverity`, 0–6, zastępująca dawne osobne pola głębokości ICDAS i CARS): odczytywana jako głębokość ICDAS na powierzchni pierwotnej, jako nazwany wynik CARS (Zdrowy … Rozległy ubytek) na powierzchni wtórnej, poprzez kontekstowy popup pokazujący tylko skalę odpowiednią dla aktualnego stanu powierzchni
 - 🌱 Próchnica korzenia (`rootCaries`: `none` / `active` / `arrested` / `active-cavitated`), uruchamiająca dedykowaną warstwę grafiki próchnicy korzenia z nieprzezroczystością zależną od ciężkości (active 0,5 / arrested 0,7 / active-cavitated pełna nieprzezroczystość)
-- 📡 Radiologiczna głębokość próchnicy (`radiographicDepth`: brak / E1 / E2 / D1 / D2 / D3 na powierzchnię), niezależna od wizualnej skali ciężkości ICDAS/CARS, prezentowana jako odznaka i zwrotnie zapisywana we własnej obserwacji FHIR
 - 🎚️ Trzy ustawienia szczegółowości próchnicy (`secondaryCariesMode`, `rootCariesMode`, `radiographicDepthMode`) oraz przełącznik `cariesDepthEnabled`, zwijające każdą skalę do prostszego widoku wyboru bez utraty zapisanej wartości
 - 🩹 Wiersz podsumowania próchnicy wtórnej w panelu wypełnień: pod kontrolkami wypełnień wymienia każdy wybrany ząb z próchnicą wtórną i jego powierzchnie (np. „36 (O) ma próchnicę wtórną przy wypełnieniu.”)
 - 🪛 Wady wypełnienia na powierzchnię (`fillingDefect`: `none` / `marginal` / `fracture` / `wear`) w bezpośrednich odbudowach, niezależne od próchnicy wtórnej — dokumentowane za pomocą wskaźnika na powierzchnię na karcie Wypełnień (analogicznie do wskaźnika głębokości próchnicy, z listą opcji ułożoną pionowo), renderowane na wykresie oraz pokazywane w etykietce i w podsumowaniu wypełnień całej jamy ustnej z jawną etykietą (np. „36 (O) – Wada wypełnienia: O: brzeżna”), w ten sam sposób, w jaki próchnica wtórna jest opisywana w wierszu Próchnicy; karta Wypełnień pokazuje też notatkę pomocniczą dla każdego wybranego zęba z odnotowaną wadą wypełnienia (np. „36 ma odnotowaną wadę wypełnienia.”), analogicznie do istniejącej notatki pomocniczej dot. próchnicy wtórnej
@@ -207,7 +206,6 @@ Ewentualnie załaduj go za pomocą dynamicznego importu tylko po stronie klienta
 
 ![Wykres periodontologiczny całej jamy ustnej (polski)](screenshot_pl_perio.png)
 
-- 🩺 Dokumentowanie periodontologiczne: **głębokość sondowania**, **brzeg dziąsłowy**, **krwawienie przy sondowaniu** (+ ropienie) na miejsce, w sześciu standardowych miejscach na ząb, z pochodnym **klinicznym poziomem przyczepu (CAL = PD + brzeg dziąsłowy)**, recesją i **%BOP** dla całej jamy ustnej. **Graficzny odontogram periodontalny całej jamy ustnej** — każdy łuk rysowany jako **dwa osobne SVG, policzkowy i podniebienny/językowy** (wykorzystujące grafikę zębów z jednolitą orientacją korony w stronę pasma na obu aspektach; **grafika implantu** dla zębów z implantem) z czerwoną **linią CEJ**, **numerowaną siatką milimetrową** i **krzywą brzegu dziąsłowego/głębokości kieszonki** nad zębami, rozdzieloną przez **centralne pasmo indeksów periodontalnych** (oznaczone `▲ Buccal … Lingual/Palatal ▼`), które grupuje wspólne indeksy na ząb — **klasa Millera** na samej górze, a **Płytka/PI/GI/mPI/mBI** renderowane jako **anatomiczny romboidalny kafelek** na ząb (wierzchołek policzkowy u góry, wierzchołek językowy u dołu, mezjalny/dystalny w środkowym rzędzie zamienione stronami tak, aby mezjalny zawsze wskazywał w stronę linii środkowej łuku); wiersze liczbowe (pełne nazwy indeksów — PD/GM/CAL/BOP + ruchomość + furkacja — w większych, bardziej dotykowych komórkach) wyrównane w kolumnach oraz podsumowanie (średnie PD/CAL, %BOP, %PI), z wprowadzaniem danych przez **automatyczne przechodzenie klawiaturą**; wykres **dynamicznie skaluje się, aby wypełnić dostępną szerokość**, responsywny przy dowolnym rozmiarze okna. Prezentowany jako **przełącznik widoku** `Odontogram | Periodontal Status`, którego prawy panel jest przekształcany w **pasek boczny kontekstu periodontalnego** (dane pacjenta, klasyfikacja z 2017 r. oraz podsumowanie całej jamy ustnej), gdy ten widok jest aktywny (opcja w Ustawieniach przełącza całą prezentację z powrotem na **okno wyskakujące**), a nadal pozostaje **komponentem wywoływanym osobno** (eksport `PerioChart`), dzięki czemu aplikacja hostująca może wywołać odontogram periodontalny niezależnie od podstawowego odontogramu. Eksport **FHIR** na miejsce za pomocą panelu periodontalnego LOINC (`74029-0`; PD `32910-2`, recesja `32911-0`, CAL `32912-8`)
 - 🅿️ Stylizacja propozycji: w trybie Plan wyniki, które plan **dodaje** względem bieżącego statusu (planowana korona, ekstrakcja, ruch ortodontyczny, protetyka, …) są renderowane z wyraźnym **przerywanym, zabarwionym konturem „propozycji”**, dzięki czemu plan czyta się jako zamiar, a nie fakt — z legendą „przerywana linia = propozycja” na karcie wykresu. Renderowanie w trybie Status jest identyczne co do bajtu; leczenie dotyczy wyłącznie planu i jest w pełni resetowane przy powrocie do statusu
 - 🚦 Blokowanie trybu Plan: wykres Planu pokazuje tylko to, co dentysta może *zrobić* — podstawowy selektor oferuje wyłącznie Brak / Stały / Implant, a wyniki dotyczące wyłącznie statusu (próchnica, starcie zęba, przebarwienie oraz cały blok periodontologiczny — ruchomość, sześciopunktowa siatka sondowania, modyfikatory zapalenia/przyzębia, kamień nazębny, stan okołowszczepowy) są ukryte; kontrolka miazgi/endo zachowuje endodontyczne **leczenie** (leczenie kanałowe / wkład / resekcja endodontyczna / wkład parapulpalny), ukrywając jednocześnie **diagnozę** miazgi/okołowierzchołkową oraz resorpcję korzenia. Odbudowa, protetyka, ortodoncja, potrzeba/wymiana korony oraz plan ekstrakcji pozostają możliwe do zaplanowania
 - 🧪 1746 testów automatycznych zaliczonych (1 dodatkowy test pominięty) (Vitest) w 164 plikach testowych (165 łącznie) obejmujących numerację, tłumaczenia, presety, i18n, komponent App, motyw, dotyk, wtyczki, dostępność oraz parytet osi klinicznych/diagnostycznych
@@ -531,96 +529,10 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
   powiązany z jedną siatką zębów); pozostałe zachowują własny dokument i pozostają w pełni
   czytelne i zapisywalne przez swoje API sesji.
 
-**Dialekty FHIR — czysta, opcjonalna projekcja:**
+**FHIR / Dental Core:**
 
-Konwersja FHIR jest czystym adapterem nad dokumentem: bez DOM, bez sieci, bez zegara
-systemowego, bez losowości i bez kwestii transportu, uwierzytelniania czy trwałości
-wewnątrz komponentu.
+FHIR conversion is a pure optional projection of the UI-domain document. This package supports only generated Dental Core `de.cognovis.fhir.dental.core#0.3.0` bundles. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date; `parseDentalCoreBundle` fails closed for unsupported or malformed bundles.
 
-```ts
-import {
-  DentalCoreBundleRejectedError,
-  buildDentalDeBundle,
-  buildFhirBundle,
-  parseFhirBundle,
-} from "react-advanced-odontogram/fhir";
-
-const legacy = buildFhirBundle(session.getDocument());
-
-const canonical = buildFhirBundle(session.getDocument(), {
-  dialect: "dental-de", subject: "Patient/123", effectiveDateTime: "2026-08-08",
-});
-
-const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
-  effectiveDateTime: "2026-08-08",
-});
-
-const dentalCore = buildFhirBundle(session.getDocument(), {
-  dialect: "dental-core", subject: "Patient/123", effectiveDateTime: "2026-08-08",
-});
-
-function parseImportedBundle(candidate: unknown) {
-  try {
-    return parseFhirBundle(candidate);
-  } catch (error) {
-    if (error instanceof DentalCoreBundleRejectedError) return undefined;
-    throw error;
-  }
-}
-```
-
-Bundle deklarujący Dental Core, ale wykraczający poza obsługiwany kontrakt tworzony przez moduł, zgłasza eksportowany `DentalCoreBundleRejectedError`; host może go przechwycić bez zastępowania bieżącego odontogramu.
-
-Dialekt `dental-de` emituje `OdontogramObservationDE`, `CariesObservationDE` i
-`DentalFindingDE` z wycinkami komponentów z `OdontogramComponentCS`, tożsamością zęba FDI
-(`ToothIdentificationFDICS`), punktacją ICDAS (`ICDASCariesScoreCS`) oraz powtarzalnym
-rozszerzeniem `ToothSurfacesExt` nad HL7 `FDI-surface`. Kodowanie powierzchni zależy od
-zęba: powierzchnia żująca to `I` (sieczna) w zębie przednim i `O` (zwarciowa) w bocznym;
-przy imporcie `I` wraca do klucza `occlusal` silnika, `V` do `buccal`, a kody złożone
-`MO`/`DO`/`DI`/`MOD` są rozbijane na składowe.
-
-Tam gdzie IG nie definiuje wartości kodowanej, adapter używa `CodeableConcept.text` w
-ramach odpowiedniego wiązania **extensible** — nigdy wymyślonego kodu — a tam gdzie
-wiązanie **required** nie ma pasującego pojęcia, nie emituje nic. Oba przypadki trafiają do
-`report.textFallback` i `report.unmapped` wraz z zębem, polem, zachowaną wartością i
-uzasadnieniem, więc nic nie degraduje się po cichu. Sama wartość zawsze pozostaje w
-dokumencie domeny interfejsu i przechodzi pełny obieg przez JSON.
-
-**Zweryfikowane pokrycie SNOMED (od 2.5.0):** wartość kliniczna jest kodowana
-tylko wtedy, gdy ValueSety samego IG dopuszczają dane pojęcie ORAZ jego znaczenie
-zostało zweryfikowane; `SCT_PROVENANCE` w `dentalDeCodesystems.ts` zapisuje dla
-każdego emitowanego kodu dopuszczający ValueSet i źródło weryfikacji. Próchnica
-korzenia, wewnętrzna i zewnętrzna przyszyjkowa resorpcja korzenia, zapalenie
-tkanek okołowierzchołkowych oraz ustalenia dotyczące integralności wypełnienia są
-kodowane na tej podstawie. Dokładna ocena źródłowa zawsze pozostaje w
-`CodeableConcept.text`, a żaden `Coding.display` nie jest wymyślany, ponieważ IG
-ich nie publikuje.
-
-**Kanoniczny eksport periodontologiczny (od 2.6.0):** zbadany ząb naturalny jest
-eksportowany jako `PeriodontalObservationDE`, a pozycja implantu jako
-`PeriImplantObservationDE` wraz z urządzeniem `DentalImplantDE`, do którego się
-odnosi — głębokość sondowania w sześciu punktach, znakowany poziom brzegu dziąsła
-względem granicy szkliwno-cementowej, wyprowadzony poziom przyczepu, krwawienie i
-wysięk ropny przy sondowaniu, stopień furkacji wg Glickmana wraz z wejściem,
-obecność płytki, wskaźniki Silness-Löe i Löe-Silness, szerokość dziąsła
-zrogowaciałego oraz okołowszczepowe wskaźniki Mombellego, każdy kwalifikowany przez
-`PeriodontalMeasurementSiteExt` lub `ToothSurfacesExt` z IG. Zbadany prawidłowy
-wynik to jawne `false`/`0`, a zapisana luka to standardowy `dataAbsentReason`.
-Recesja dziąsła (od 2.8.0) jest emitowana
-dla każdego punktu, ale tylko tam, gdzie znakowany brzeg dziąsła jest
-rzeczywistą recesją; źródłem prawdy pozostaje brzeg, więc zaimportowany komponent
-recesji nigdy nie jest do niego wczytywany.
-
-Opcjonalny punkt wejścia `react-advanced-odontogram/fhir` udostępnia dokładnie
-trzy dialekty: `legacy` (domyślny), `dental-de` i `dental-core` dla
-`de.cognovis.fhir.dental.core#0.3.0`. `dental-core` wymaga
-`effectiveDateTime`. Wbudowane pobieranie FHIR z UI celowo pozostaje domyślnie
-legacy i nie udostępnia selektora Dental Core.
-
-`parseFhirBundle` czyta zasoby legacy i Dental-DE, również w pakiecie mieszanym,
-i rozpoznaje wyłącznie bundle Odontogram Dental Core 0.3.0 utworzone przez moduł.
-Nie jest ogólnym importerem FHIR: odrzuca mylący znacznik, zasób bez profilu lub
-nieobsługiwany zasób.
 **Datowane badania, status oceny i zapis okołowszczepowy (od 2.4.0):**
 
 Przypadek periodontologiczny bada się ponownie przez lata, dlatego dokument może teraz nieść

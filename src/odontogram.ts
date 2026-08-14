@@ -8355,7 +8355,7 @@ const ASSESSMENT_AXIS_KIND: Record<PerioAssessmentAxis, "site" | "surface" | "en
   mobility: "tooth", kg: "tooth",
 };
 
-/** The peri-implant examination Dental-DE defines: probing depth, bleeding,
+/** The peri-implant examination includes probing depth, bleeding,
  *  suppuration, implant mobility, keratinized tissue width, and the two
  *  Mombelli indices. Everything else in {@link PERIO_ASSESSMENT_AXES} is
  *  natural-tooth-only — the gingival margin is measured against the CEJ, which
@@ -9365,7 +9365,7 @@ export function setPerioViewMode(mode: PerioViewMode): void {
 // ---- Bead odontogram-c51.1: measured mesiodistal crown widths ----
 // Session-level, DELIBERATELY not part of the export payload — the same
 // standing as `perioViewMode` above, and for a recorded reason rather than
-// convenience. c51's audit found that no published Dental-DE carrier authors
+// convenience. c51's audit found that no published Dental Core profile authors
 // model analysis, and c51's own rule is to stay blocked rather than ship a
 // local-code persistence path. Keeping the widths in session state honours
 // that: `collectExportPayload`/`getPlanChart`/hydrate never reference them, so
@@ -9491,7 +9491,7 @@ export function setOcclusalMeasurement(key: OcclusalKey, mm: number | null): voi
 
 // ---- Bead odontogram-c51.2: recorded cephalometric values ----
 // Session state on the same terms as the crown widths above, and for the same
-// recorded reason: no published Dental-DE carrier authors cephalometry, and
+// recorded reason: no published Dental Core profile authors cephalometry, and
 // c51's rule is to stay blocked rather than invent a local persistence path.
 // The promotion point is the same one. Keyed by measure id from
 // `src/cephalometry.ts`; absent = not recorded, never a stored 0.
@@ -10147,10 +10147,15 @@ export function exportStatus(){
 /**
  * Export the current odontogram as an HL7 FHIR R4 collection Bundle (JSON).
  * @param options - Optional subject reference (e.g. "Patient/123"); when
- *   omitted a placeholder Patient is embedded.
+ *   omitted a placeholder Patient is embedded. Clinical content requires a
+ *   caller-supplied or examination-supplied effective date.
  */
 export function exportFhir(options?: FhirExportOptions){
-  const bundle = buildFhirBundle(collectExportPayload(), options);
+  const payload = collectExportPayload();
+  const caseExamDate = typeof payload.case?.examDate === "string" ? payload.case.examDate : undefined;
+  const examinationDate = typeof payload.examination?.effectiveDateTime === "string" ? payload.examination.effectiveDateTime : undefined;
+  const effectiveDateTime = options?.effectiveDateTime ?? examinationDate ?? caseExamDate;
+  const bundle = buildFhirBundle(payload, { ...options, effectiveDateTime });
   downloadJson(bundle, "odontogram-fhir");
 }
 
@@ -11381,7 +11386,14 @@ function wireControls(){
     exportBtn.onclick = () => exportStatus();
   }
   if(fhirBtn){
-    fhirBtn.onclick = () => exportFhir();
+    fhirBtn.onclick = () => {
+      try {
+        exportFhir();
+      } catch (error) {
+        console.error("FHIR export failed", error);
+        window.alert("FHIR export requires an effective date in the examination context.");
+      }
+    };
   }
   const pngBtn = $("#btnStatusPngExport") as HTMLButtonElement | null;
   const jpgBtn = $("#btnStatusJpgExport") as HTMLButtonElement | null;

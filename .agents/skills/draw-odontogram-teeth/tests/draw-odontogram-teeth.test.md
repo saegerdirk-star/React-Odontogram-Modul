@@ -55,14 +55,14 @@
       "id": "surface-specific-finding",
       "input": {"fdi": "16", "surface": "buccal", "finding": "scored-caries"},
       "assertions": [
-        {"path": "references/fhir-dental-de-graphics.md", "must_include": ["tooth-surfaces", "repeatable", "one published surface code per extension instance", "SVG layer IDs are renderer state"]}
+        {"path": "references/fhir-dental-core-graphics.md", "must_include": ["tooth-surfaces", "repeatable", "one published surface code per extension instance", "SVG layer IDs are renderer state"]}
       ]
     },
     {
       "id": "unmapped-drifting",
       "input": {"concept": "new-renderer-layer", "adapter_capability": "absent", "expected_outcome": "report-unmapped-drifting"},
       "assertions": [
-        {"path": "references/fhir-dental-de-graphics.md", "must_include": ["report the concept as unmapped/drifting and stop", "Never invent FHIR codes"]}
+        {"path": "references/fhir-dental-core-graphics.md", "must_include": ["report the concept as unmapped/drifting and stop", "Never invent FHIR codes"]}
       ]
     }
   ]

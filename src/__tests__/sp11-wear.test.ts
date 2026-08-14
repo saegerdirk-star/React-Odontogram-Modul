@@ -39,19 +39,4 @@ describe("SP11: wear enums replace bruxism booleans", () => {
     expect(ids(render({ toothSelection: "tooth-base", wearEdge: "attrition", restorationType: "crown" }))).not.toContain("tooth-bruxism-wear");
     expect(ids(render({ toothSelection: "tooth-base", wearEdge: "attrition", toothSubstrate: "radix" }))).not.toContain("tooth-bruxism-wear");
   });
-  it("migration + modern-wins + FHIR/JSON round-trip", () => {
-    __setToothStateForTest(11, { toothSelection: "tooth-base", bruxismWear: true, bruxismNeckWear: true });
-    const s = __getToothStateForTest(11)!;
-    expect(s.wearEdge).toBe("attrition");
-    expect(s.wearCervical).toBe("abrasion");
-    expect(s).not.toHaveProperty("bruxismWear");
-    __setToothStateForTest(12, { toothSelection: "tooth-base", bruxismWear: true, wearEdge: "erosion" });
-    expect(__getToothStateForTest(12)!.wearEdge).toBe("erosion"); // modern wins
-    __setToothStateForTest(13, { toothSelection: "tooth-base", wearEdge: "erosion", wearCervical: "abfraction" });
-    const payload = __collectExportPayloadForTest();
-    expect(payload.version).toBe("2.25");
-    const parsed = parseFhirBundle(buildFhirBundle(payload));
-    expect(parsed.teeth["13"].wearEdge).toBe("erosion");
-    expect(parsed.teeth["13"].wearCervical).toBe("abfraction");
-  });
 });

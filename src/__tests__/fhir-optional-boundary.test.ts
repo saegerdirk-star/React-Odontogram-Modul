@@ -3,14 +3,23 @@
 // Dirk Saeger, Malte Sussdorff 2026
 
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
-import type { FhirExportOptions } from "../fhir/index";
 
 const root = process.cwd();
 
 function source(relative: string): string {
   return readFileSync(resolve(root, relative), "utf8");
+}
+
+const removedDialectPattern = new RegExp(["dental", "de"].join("-"), "i");
+
+function distributableFiles(relative: string): string[] {
+  return readdirSync(resolve(root, relative), { withFileTypes: true }).flatMap((entry) => {
+    const child = `${relative}/${entry.name}`;
+    if (entry.isDirectory()) return distributableFiles(child);
+    return /\.(?:md|mjs|py|ts|tsx|json|ya?ml)$/i.test(entry.name) ? [child] : [];
+  });
 }
 
 function executableCode(text: string): string {
@@ -21,8 +30,6 @@ function executableCode(text: string): string {
     .replace(/"(?:\\.|[^"\\])*"/g, '""')
     .replace(/'(?:\\.|[^'\\])*'/g, "''");
 }
-
-const optionalFhirConsumerOptions: FhirExportOptions = { dialect: "legacy" };
 
 describe("optional FHIR package boundary", () => {
   it("keeps the document contract independent from the FHIR adapter", () => {
@@ -47,7 +54,7 @@ describe("optional FHIR package boundary", () => {
     expect(packageJson.exports).toHaveProperty("./fhir");
     expect(source("src/fhir/index.ts")).toContain("buildFhirBundle");
     expect(source("vite.lib.config.ts")).toContain("fhir: path.resolve");
-    expect(optionalFhirConsumerOptions.dialect).toBe("legacy");
+    expect(source("src/fhir/index.ts")).not.toMatch(new RegExp(`${["Dental", "De"].join("")}|${removedDialectPattern.source}|FhirDialect`));
   });
 
   it("maps each package type entry to a declared library entry", () => {
@@ -84,12 +91,31 @@ describe("optional FHIR package boundary", () => {
     }
   });
 
-  it("pins and verifies the released Dental-DE generation input", () => {
-    const generator = source("tools/generate-dental-de-types.mjs");
+  it("pins and verifies the released Dental Core generation input", () => {
+    const generator = source("tools/generate-dental-core-types.mjs");
 
-    expect(generator).toContain('name: "de.cognovis.fhir.dental", version: "0.41.6"');
-    expect(generator).toContain("https://fhir.cognovis.de/dental/package.tgz");
-    expect(generator).toContain("80f17e02dba591697a4107f463ee3516f16f5f591cfb12f0174d5f472581947b");
+    expect(generator).toContain('name: "de.cognovis.fhir.dental.core", version: "0.3.0"');
+    expect(generator).toContain("https://fhir.cognovis.de/dental-core/0.3.0/package.tgz");
+    expect(generator).toContain("12e2292e8d3c33907cde013fb1730a79cd276e25076fad8399e1df1e1f1addbc9b20c81a504839f78c3102bfdaad3d460f4f969d98eae97a7f277dce604733cb");
+    expect(generator).toContain("dental-core-contract.ts");
+    expect(generator).not.toMatch(removedDialectPattern);
+    expect(generator).not.toMatch(/de\.cognovis\.fhir\.dental"/i);
     expect(generator).toContain("@atomic-ehr/codegen");
+  });
+
+  it("contains no removed-dialect implementation, generated artifact, or documentation residue", () => {
+    const residue = new RegExp([
+      `\\b${["fhir", "dental", "de"].join("-")}\\b`,
+      `\\b${["dental", "de"].join("[-_.]")}\\b`,
+      `\\b${["de", "cognovis", "fhir", "dental"].join("\\.")}(?!\\.core\\b)`,
+      ["\\bdental", "De(?!vice)"].join(""),
+    ].join("|"), "i");
+    const files = ["src", "tools", "docs", "lang", "prototypes", ".agents"]
+      .flatMap(distributableFiles)
+      .concat(["README.md", "CHANGELOG.md", "CLAUDE.md", "package.json"]);
+
+    for (const file of files) {
+      expect(source(file), `Removed dialect residue in ${file}`).not.toMatch(residue);
+    }
   });
 });

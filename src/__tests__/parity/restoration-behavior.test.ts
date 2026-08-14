@@ -137,16 +137,6 @@ describe("restoration behavior: new-model axes authored directly", () => {
     expect(ids).not.toContain("gold-crown");
   });
 
-  it("an emax crown FHIR-exports a restoration-type + restoration-material coding", () => {
-    const bundle = buildFhirBundle({
-      version: "2.0",
-      teeth: { "11": { toothSelection: "tooth-base", toothSubstrate: "crownprep", restorationType: "crown", restorationMaterial: "emax" } },
-    });
-    const typeObs = findCoding(bundle, "restoration-type");
-    const materialObs = findCoding(bundle, "restoration-material");
-    expect((typeObs as any)?.valueCodeableConcept?.coding?.[0]?.code).toBe("crown");
-    expect((materialObs as any)?.valueCodeableConcept?.coding?.[0]?.code).toBe("emax");
-  });
 });
 
 // Task 4: retire the legacy `crownMaterial`/`bridgeUnit` STATE fields entirely

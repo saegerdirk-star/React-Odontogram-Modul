@@ -158,7 +158,7 @@ Ou carregue-o com um import dinâmico somente client-side: `dynamic(() => import
 - 💾 Exportação/importação de estado em JSON (versão 2.10; as importações continuam aceitando as versões legadas 1.4, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8 e 2.9 e são migradas automaticamente, com estados personalizados de plugins e anotações por dente)
 - 📐 **Análise de modelos** (`odontogram-c51.1`): Tonn e Bolton a partir das larguras mesiodistais, com a soma incisiva alvo, a discrepância de tamanho dentário e qual arco carrega o excesso. As larguras são inseridas em um arco ou como lista — duas visões do mesmo registro. Um dente ausente do modelo (não irrompido, perdido, sob a gengiva) assume a largura do contralateral, marcada visivelmente como suposição. Além disso sobressaliência, sobremordida e desvio da linha média dentária por arco
 - 🩻 **Cefalometria** (`odontogram-c51.2`): um repertório de pontos comum, as medidas definidas sobre ele e as análises como perfis acima — uma escola nova é um perfil novo, os pontos não mudam. Cada medida carrega sua fonte e sua codificação FHIR; uma norma sem publicação não é entregue. Derivados: a posição dos maxilares em relação ao crânio (tipo facial segundo Björk, harmonia, classe sagital frente à norma populacional **e** à individual) e o padrão de crescimento como votação entre todos os indicadores com norma documentada. Os valores podem ser trazidos da avaliação impressa de outro programa colando seu texto — nada é aplicado sem confirmação
-- ⚠️ Ambos são por ora **estado de sessão**: não existe portador Dental-DE publicado, portanto não fazem parte do payload de exportação em vez de inventar um local
+- ⚠️ Ambos são por ora **estado de sessão**: não existe perfil Dental Core publicado, portanto não fazem parte do payload de exportação em vez de inventar um local
 - 🔗 Exportação HL7 FHIR R4 (Bundle de coleção com Observations por dente, codificação de dente ISO 3950 para dentição permanente, sistema de códigos local — mapeamento SNOMED CT planejado)
 - ✚ Interface de seleção de faces em cruz/mais (B/M/O/D/L) para cáries e restaurações
 - 🧱 Materiais de restauração por face (restaurações mistas, por exemplo amálgama vestibular + resina distal)
@@ -166,7 +166,6 @@ Ou carregue-o com um import dinâmico somente client-side: `dynamic(() => import
 - 🦷 Cárie/subcárie como uma máquina de estados por face: uma face cariada sem restauração é renderizada como cárie primária (opacidade em níveis ICDAS); assim que essa face tem uma restauração, ela é renderizada como cárie secundária (recorrente) (camada `subcaries-{surface}`, pontuada por CARS) — as duas nunca ficam ativas ao mesmo tempo na mesma face
 - 🎯 Gravidade unificada por face (`cariesSeverity`, 0–6, substituindo os antigos campos separados de profundidade ICDAS e CARS): lida como profundidade ICDAS em uma face primária, como pontuação CARS nomeada (Hígido … Cavidade extensa) em uma recorrente, por meio de um popup contextual que mostra apenas a escala relevante para o estado atual da face
 - 🌱 Cárie radicular (`rootCaries`: none / active / arrested / active-cavitated), que ativa a camada de ilustração dedicada de cárie radicular com opacidade determinada pela gravidade (active 0,5 / arrested 0,7 / active-cavitated opacidade total)
-- 📡 Profundidade radiográfica da cárie (`radiographicDepth`: none / E1 / E2 / D1 / D2 / D3 por face), independente da escala visual de gravidade ICDAS/CARS, exibida como um emblema e sincronizada por meio de sua própria Observation FHIR
 - 🎚️ Três configurações de granularidade de cárie (`secondaryCariesMode`, `rootCariesMode`, `radiographicDepthMode`) além de um alternador `cariesDepthEnabled`, que reduzem cada escala a uma visão de seletor mais simples sem perder o valor armazenado
 - 🩹 Linha de resumo de subcárie no painel de restaurações: lista, abaixo dos controles de restauração, qualquer dente selecionado com cárie secundária e suas faces (ex.: "36 (O) tem subcárie na restauração.")
 - 🪛 Defeitos de restauração por face (`fillingDefect`: none / marginal / fracture / wear) em restaurações diretas, independentes da cárie secundária — registrados por meio de um indicador por face no cartão de Restaurações (espelhando o indicador de profundidade de cárie, com sua lista de opções empilhada verticalmente), renderizados no odontograma e exibidos na dica (tooltip) e no resumo de restaurações de boca inteira com um rótulo explícito (ex.: "36 (O) – Defeito de restauração: O: marginal"), da mesma forma que a cárie secundária é rotulada na linha de Cárie; o cartão de Restaurações também exibe uma nota de dica para qualquer dente selecionado com um defeito de restauração registrado (ex.: "O dente 36 tem um defeito de restauração registrado."), em paralelo à nota de dica de subcárie já existente
@@ -525,96 +524,10 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
   grade dentária); as demais mantêm seu próprio documento e continuam totalmente legíveis e
   graváveis pela sua API de sessão.
 
-**Dialetos FHIR — uma projeção pura e opcional:**
+**FHIR / Dental Core:**
 
-A conversão FHIR é um adaptador puro sobre o documento: sem DOM, sem rede, sem relógio do
-sistema, sem aleatoriedade e sem preocupações de transporte, autenticação ou persistência
-dentro do componente.
+FHIR conversion is a pure optional projection of the UI-domain document. This package supports only generated Dental Core `de.cognovis.fhir.dental.core#0.3.0` bundles. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date; `parseDentalCoreBundle` fails closed for unsupported or malformed bundles.
 
-```ts
-import {
-  DentalCoreBundleRejectedError,
-  buildDentalDeBundle,
-  buildFhirBundle,
-  parseFhirBundle,
-} from "react-advanced-odontogram/fhir";
-
-const legacy = buildFhirBundle(session.getDocument());
-
-const canonical = buildFhirBundle(session.getDocument(), {
-  dialect: "dental-de", subject: "Patient/123", effectiveDateTime: "2026-08-08",
-});
-
-const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
-  effectiveDateTime: "2026-08-08",
-});
-
-const dentalCore = buildFhirBundle(session.getDocument(), {
-  dialect: "dental-core", subject: "Patient/123", effectiveDateTime: "2026-08-08",
-});
-
-function parseImportedBundle(candidate: unknown) {
-  try {
-    return parseFhirBundle(candidate);
-  } catch (error) {
-    if (error instanceof DentalCoreBundleRejectedError) return undefined;
-    throw error;
-  }
-}
-```
-
-Um bundle que declara Dental Core, mas está fora do contrato compatível produzido pelo módulo, lança o `DentalCoreBundleRejectedError` exportado; o host pode capturá-lo sem substituir o odontograma atual.
-
-O dialeto `dental-de` emite `OdontogramObservationDE`, `CariesObservationDE` e
-`DentalFindingDE` com os slices de componente de `OdontogramComponentCS`, identidade
-dentária FDI (`ToothIdentificationFDICS`), escores ICDAS (`ICDASCariesScoreCS`) e a
-extensão repetível `ToothSurfacesExt` sobre o HL7 `FDI-surface`. A codificação de
-superfícies depende do dente: a superfície de mastigação é `I` (incisal) em um dente
-anterior e `O` (oclusal) em um posterior; na importação, `I` volta para a chave `occlusal`
-do motor, `V` para `buccal`, e os códigos combinados `MO`/`DO`/`DI`/`MOD` são divididos em
-seus membros.
-
-Onde a IG não define um valor codificado, o adaptador usa `CodeableConcept.text` sob o
-binding **extensible** correspondente — nunca um código inventado — e onde um binding
-**required** não tem conceito equivalente, nada é emitido. Ambos os casos aparecem em
-`report.textFallback` e `report.unmapped`, com o dente, o campo, o valor preservado e o
-motivo, de modo que nada se degrada em silêncio. O valor em si permanece sempre no
-documento de domínio da interface e sobrevive à ida e volta por JSON.
-
-**Cobertura SNOMED verificada (a partir da 2.5.0):** um valor clínico só é
-codificado quando os ValueSets do próprio GI admitem o conceito E o seu
-significado foi verificado; `SCT_PROVENANCE` em `dentalDeCodesystems.ts` registra,
-para cada código emitido, o ValueSet que o admite e a fonte da verificação. Cárie
-radicular, reabsorção radicular interna e cervical externa, periodontite apical e
-os achados de integridade da restauração são codificados nessa base. A avaliação
-de origem exata permanece sempre em `CodeableConcept.text`, e nenhum
-`Coding.display` é inventado, porque o GI não os publica.
-
-**Exportação periodontal canônica (a partir da 2.6.0):** um dente natural registrado
-é exportado como `PeriodontalObservationDE` e uma posição de implante como
-`PeriImplantObservationDE`, junto com o dispositivo `DentalImplantDE` a que ela se
-refere — profundidade de sondagem em seis pontos, nível com sinal da margem
-gengival em relação à junção amelocementária, nível de inserção derivado,
-sangramento e supuração à sondagem, o grau de furca de Glickman com sua entrada,
-presença de placa, os índices de Silness-Löe e Löe-Silness, a largura de gengiva
-queratinizada e os índices peri-implantares de Mombelli, cada um qualificado por
-`PeriodontalMeasurementSiteExt` ou `ToothSurfacesExt` da IG. Um achado avaliado como
-normal é um `false`/`0` explícito e uma lacuna registrada é um `dataAbsentReason`
-padrão. A recessão gengival (a partir da 2.8.0) é
-emitida por sítio, mas apenas onde a margem com sinal é uma recessão real; a
-margem continua sendo a fonte da verdade, portanto um componente de recessão
-importado nunca é lido de volta para ela.
-
-A entrada opcional `react-advanced-odontogram/fhir` fornece exatamente três
-dialetos: `legacy` (o padrão), `dental-de` e `dental-core` para
-`de.cognovis.fhir.dental.core#0.3.0`. `dental-core` exige
-`effectiveDateTime`. O download FHIR integrado à UI permanece deliberadamente
-no padrão legacy e não oferece seletor para Dental Core.
-
-`parseFhirBundle` lê recursos legacy e Dental-DE, inclusive em um bundle misto,
-e reconhece somente bundles Odontogram Dental Core 0.3.0 produzidos pelo módulo.
-Não é um importador FHIR genérico: rejeita um marcador enganoso, recurso sem
-perfil ou recurso não compatível.
 **Exames datados, status de avaliação e registro peri-implantar (a partir de 2.4.0):**
 
 Um caso periodontal é reexaminado ao longo de anos, então um documento pode agora carregar a

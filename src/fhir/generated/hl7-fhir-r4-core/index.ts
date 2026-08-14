@@ -1,7 +1,3 @@
-// Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
-// Cognovis fork - https://github.com/cognovis/React-Odontogram-Modul
-// Dirk Saeger, Malte Sussdorff 2026
-
 export type { Account, AccountCoverage, AccountGuarantor } from "./Account";
 export { isAccount } from "./Account";
 export type { ActivityDefinition, ActivityDefinitionDynamicValue, ActivityDefinitionParticipant } from "./ActivityDefinition";

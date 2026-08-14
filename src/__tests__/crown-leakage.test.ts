@@ -91,33 +91,3 @@ describe("crown-leakage axis: state hydration/serialization", () => {
     expect(__getToothStateForTest(29)!.crownLeakage).toBe(false); // falsy raw value -> false
   });
 });
-
-describe("crown-leakage axis: FHIR round-trip", () => {
-  it("a crown with crownLeakage:true emits a crown-leakage Observation and round-trips", () => {
-    const payload: OdontogramExportPayload = {
-      version: "2.1",
-      teeth: { "11": { toothSelection: "tooth-base", toothSubstrate: "crownprep", restorationType: "crown", restorationMaterial: "zircon", crownLeakage: true } },
-    };
-    const bundle = buildFhirBundle(payload);
-    const finding = bundle.entry
-      ?.map((e) => e.resource)
-      .find((r: any) => r?.code?.coding?.[0]?.code === "crown-leakage");
-    expect(finding).toBeTruthy();
-    expect((finding as any)?.valueBoolean).toBe(true);
-
-    const out = parseFhirBundle(bundle);
-    expect(out.teeth["11"].crownLeakage).toBe(true);
-  });
-
-  it("crownLeakage:false emits no Observation (boolean axes only emit when true)", () => {
-    const payload: OdontogramExportPayload = {
-      version: "2.1",
-      teeth: { "12": { toothSelection: "tooth-base", toothSubstrate: "crownprep", restorationType: "crown", restorationMaterial: "zircon", crownLeakage: false } },
-    };
-    const bundle = buildFhirBundle(payload);
-    const finding = bundle.entry
-      ?.map((e) => e.resource)
-      .find((r: any) => r?.code?.coding?.[0]?.code === "crown-leakage");
-    expect(finding).toBeFalsy();
-  });
-});

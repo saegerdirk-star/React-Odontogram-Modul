@@ -151,96 +151,10 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
   unique lié à une grille dentaire) ; les autres conservent leur propre document et restent
   entièrement lisibles et modifiables via leur API de session.
 
-**Dialectes FHIR — une projection pure et facultative :**
+**FHIR / Dental Core:**
 
-La conversion FHIR est un adaptateur pur au-dessus du document : pas de DOM, pas de réseau,
-pas d'horloge système, pas d'aléatoire, et aucune préoccupation de transport,
-d'authentification ou de persistance à l'intérieur du composant.
+FHIR conversion is a pure optional projection of the UI-domain document. This package supports only generated Dental Core `de.cognovis.fhir.dental.core#0.3.0` bundles. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date; `parseDentalCoreBundle` fails closed for unsupported or malformed bundles.
 
-```ts
-import {
-  DentalCoreBundleRejectedError,
-  buildDentalDeBundle,
-  buildFhirBundle,
-  parseFhirBundle,
-} from "react-advanced-odontogram/fhir";
-
-const legacy = buildFhirBundle(session.getDocument());
-
-const canonical = buildFhirBundle(session.getDocument(), {
-  dialect: "dental-de", subject: "Patient/123", effectiveDateTime: "2026-08-08",
-});
-
-const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
-  effectiveDateTime: "2026-08-08",
-});
-
-const dentalCore = buildFhirBundle(session.getDocument(), {
-  dialect: "dental-core", subject: "Patient/123", effectiveDateTime: "2026-08-08",
-});
-
-function parseImportedBundle(candidate: unknown) {
-  try {
-    return parseFhirBundle(candidate);
-  } catch (error) {
-    if (error instanceof DentalCoreBundleRejectedError) return undefined;
-    throw error;
-  }
-}
-```
-
-Un bundle qui revendique Dental Core mais sort du contrat pris en charge et produit par le module lève l’exception exportée `DentalCoreBundleRejectedError` ; l’hôte peut l’intercepter sans remplacer l’odontogramme courant.
-
-Le dialecte `dental-de` émet `OdontogramObservationDE`, `CariesObservationDE` et
-`DentalFindingDE` avec les tranches de composants d'`OdontogramComponentCS`, l'identité
-dentaire FDI (`ToothIdentificationFDICS`), les scores ICDAS (`ICDASCariesScoreCS`) et
-l'extension répétable `ToothSurfacesExt` sur `FDI-surface` de HL7. Le codage des faces
-dépend de la dent : la face de mastication est `I` (incisive) sur une dent antérieure et
-`O` (occlusale) sur une postérieure ; à l'import, `I` revient à la clé `occlusal` du moteur,
-`V` à `buccal`, et les codes combinés `MO`/`DO`/`DI`/`MOD` sont scindés en leurs membres.
-
-Là où l'IG ne définit aucune valeur codée, l'adaptateur utilise `CodeableConcept.text` sous
-la liaison **extensible** correspondante — jamais un code inventé — et là où une liaison
-**required** n'a pas de concept équivalent, il n'émet rien. Les deux cas figurent dans
-`report.textFallback` et `report.unmapped`, avec la dent, le champ, la valeur préservée et
-la raison, de sorte que rien ne se dégrade en silence. La valeur elle-même reste toujours
-dans le document du domaine de l'interface et survit à l'aller-retour JSON.
-
-**Couverture SNOMED vérifiée (à partir de 2.5.0) :** une valeur clinique n'est
-codée que si les ValueSets du GI admettent le concept ET que sa signification a
-été vérifiée ; `SCT_PROVENANCE` dans `dentalDeCodesystems.ts` consigne, pour
-chaque code émis, le ValueSet qui l'admet et la source de vérification. La carie
-radiculaire, la résorption radiculaire interne et cervicale externe, la
-parodontite apicale et les constats d'intégrité de la restauration sont codés sur
-cette base. L'évaluation source exacte reste toujours dans
-`CodeableConcept.text`, et aucun `Coding.display` n'est inventé, car le GI n'en
-publie pas.
-
-**Export parodontal canonique (à partir de 2.6.0) :** une dent naturelle relevée est
-exportée en `PeriodontalObservationDE` et une position implantaire en
-`PeriImplantObservationDE` accompagnée du dispositif `DentalImplantDE` qu'elle vise
-— profondeur de sondage en six points, niveau signé du bord gingival par rapport à
-la jonction émail-cément, niveau d'attache dérivé, saignement et suppuration au
-sondage, le degré de furcation de Glickman avec son entrée, présence de plaque, les
-indices de Silness-Löe et Löe-Silness, la largeur de gencive kératinisée et les
-indices péri-implantaires de Mombelli, chacun qualifié par
-`PeriodontalMeasurementSiteExt` ou `ToothSurfacesExt` de l'IG. Un constat évalué
-comme normal est un `false`/`0` explicite et une lacune enregistrée un
-`dataAbsentReason` standard. La récession gingivale (depuis 2.8.0) est
-émise par site, mais uniquement là où le bord gingival signé constitue une
-véritable récession ; le bord reste la source de vérité, un composant de
-récession importé n'y est donc jamais relu.
-
-L'entrée facultative `react-advanced-odontogram/fhir` propose exactement trois
-dialectes : `legacy` (par défaut), `dental-de` et `dental-core` pour
-`de.cognovis.fhir.dental.core#0.3.0`. `dental-core` exige
-`effectiveDateTime`. Le téléchargement FHIR intégré à l'UI reste délibérément
-sur legacy par défaut et ne propose aucun sélecteur Dental Core.
-
-`parseFhirBundle` lit les ressources legacy et Dental-DE, y compris dans un
-bundle mixte, et ne reconnaît que les bundles Odontogram Dental Core 0.3.0
-produits par le module. Ce n'est pas un importateur FHIR générique : un marqueur
-trompeur, une ressource sans profil ou non prise en charge est rejeté.
 **Examens datés, statut d'évaluation et relevé péri-implantaire (à partir de 2.4.0) :**
 
 Un cas parodontal est réexaminé pendant des années : un document peut désormais porter
@@ -315,7 +229,7 @@ péri-implantaires.
 - 🔗 Éléments de rétention pour prothèse amovible : crochet, attachement, pilier de barre (crochet dessiné sur la couronne ; travée de barre dérivée, pilier implantaire et naturel mélangés)
 - 📐 **Analyse des modèles** (`odontogram-c51.1`) : Tonn et Bolton à partir des largeurs mésio-distales, avec la somme incisive cible, la discordance de taille dentaire et l'arcade porteuse de l'excès. Saisie sur une arcade ou en liste — deux vues d'un même enregistrement. Une dent absente du modèle (non éruptée, perdue, sous la gencive) reprend la largeur de sa controlatérale, signalée comme hypothèse. Plus le surplomb, le recouvrement et la déviation de la ligne médiane par arcade
 - 🩻 **Céphalométrie** (`odontogram-c51.2`) : un répertoire de points commun, les mesures définies dessus, et les analyses comme profils au-dessus — une nouvelle école est un nouveau profil, les points ne bougent pas. Chaque mesure porte sa source et son codage FHIR ; une norme sans publication n'est pas livrée. Sont dérivées la position des maxillaires par rapport au crâne (type facial selon Björk, harmonie, classe sagittale face à la norme de population **et** à la norme individuelle) et le schéma de croissance comme vote entre tous les indicateurs dotés d'une norme sourcée. Les valeurs peuvent être reprises de l'évaluation imprimée d'un autre programme en collant son texte — rien n'est appliqué sans confirmation
-- ⚠️ Les deux sont pour l'instant un **état de session** : aucun porteur Dental-DE publié n'existe, ils ne font donc pas partie du payload d'export plutôt que d'en inventer un local
+- ⚠️ Les deux sont pour l'instant un **état de session** : aucun profil Dental Core publié n'existe, ils ne font donc pas partie du payload d'export plutôt que d'en inventer un local
 - 🔗 Exportation/Importation HL7 FHIR R4 et JSON
 - 🖼️ Exportation d'images PNG / JPG / SVG et rapport PDF
 - 🔢 Numérotation FDI / Universelle / Palmer

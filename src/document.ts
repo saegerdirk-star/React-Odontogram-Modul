@@ -42,8 +42,7 @@ export interface ToothRecord {
   // SP-perio PG-D Task 3: gingival thickness phenotype (unknown|thin|medium|thick)
   // and Miller recession class (none|i|ii|iii|iv). Declarative enum axes like
   // `cejVisibility`/`rootConcavity` above, and — like them — deliberately NOT
-  // projected into the canonical dental-de dialect (bead odontogram-5cz): the
-  // IG's alignment matrix records that neither has an automatic migration.
+  // represented only when Dental Core has a generated, admitted mapping.
   gingivalThickness?: string;
   millerClass?: string;
   // SP14 Task 1: orthodontic axes foundation (additive; see registry/axes.ts).

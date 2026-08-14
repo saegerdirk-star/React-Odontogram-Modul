@@ -155,7 +155,7 @@ O cárgalo con un import dinámico solo de cliente: `dynamic(() => import("./Odo
 - 💾 Exportación/importación de estado en JSON (versión 2.20; las importaciones siguen aceptando las versiones heredadas 1.4 y 2.0 a 2.19, y se migran automáticamente, con estados personalizados de plugins y notas por diente)
 - 📐 **Análisis de modelos** (`odontogram-c51.1`): Tonn y Bolton a partir de las anchuras mesiodistales, con la suma incisiva objetivo, la discrepancia dentaria y qué arcada lleva el exceso. Las anchuras se introducen en una arcada o como lista — dos vistas de un mismo registro. Un diente que no está en el modelo (no erupcionado, perdido, bajo la encía) toma la anchura de su homólogo contralateral, marcada visiblemente como suposición. Además resalte, sobremordida y desviación de la línea media dentaria por arcada
 - 🩻 **Cefalometría** (`odontogram-c51.2`): un único repertorio de puntos, las medidas definidas sobre él y los análisis como perfiles por encima — una escuela nueva es un perfil nuevo, los puntos no se mueven. Cada medida lleva su fuente y su codificación FHIR; una norma sin publicación no se entrega, la medida se registra sin objetivo. Se derivan la posición de los maxilares respecto al cráneo (tipo facial según Björk, armonía, clase sagital frente a la norma poblacional **y** a la individual) y el patrón de crecimiento como votación entre todos los indicadores con norma documentada. Los valores pueden tomarse de la evaluación impresa de otro programa pegando su texto — nada se aplica sin confirmación
-- ⚠️ Ambos son de momento **estado de sesión**: no existe portador Dental-DE publicado para ellos, por lo que no forman parte del payload de exportación en lugar de inventar uno local
+- ⚠️ Ambos son de momento **estado de sesión**: no existe perfil Dental Core publicado para ellos, por lo que no forman parte del payload de exportación en lugar de inventar uno local
 - 🔗 Exportación HL7 FHIR R4 (Bundle de colección con Observations por diente, codificación dental ISO 3950 para dentición permanente, sistema de códigos local — mapeo SNOMED CT planificado)
 - ✚ Selección de superficies en cruz (B/M/O/D/L) para caries y obturaciones
 - 🧱 Materiales de obturación por superficie (obturaciones mixtas, p. ej. bucal amalgama + distal composite)
@@ -163,7 +163,6 @@ O cárgalo con un import dinámico solo de cliente: `dynamic(() => import("./Odo
 - 🦷 Caries/subcaries como máquina de estados por superficie: una superficie cariada sin obturación se renderiza como caries primaria (opacidad por niveles ICDAS); en cuanto esa superficie tiene una obturación, se renderiza como caries recurrente (capa `subcaries-{surface}`, puntuada con CARS) — ambas nunca están activas a la vez en la misma superficie
 - 🎯 Severidad unificada por superficie (`cariesSeverity`, 0–6, sustituye los antiguos campos separados de profundidad ICDAS + CARS): se lee como profundidad ICDAS en una superficie primaria y como puntuación CARS con nombre (Sana … Cavidad extensa) en una recurrente, mediante un popup contextual que muestra solo la escala relevante para el estado actual de la superficie
 - 🌱 Caries radicular (`rootCaries`: none / active / arrested / active-cavitated), que activa la capa de ilustración dedicada de caries radicular con una opacidad según la severidad (active 0.5 / arrested 0.7 / active-cavitated completa)
-- 📡 Profundidad radiográfica de caries (`radiographicDepth`: none / E1 / E2 / D1 / D2 / D3 por superficie), independiente de la escala visual ICDAS/CARS, mostrada como una insignia y recuperable mediante su propia Observation FHIR
 - 🎚️ Tres ajustes de granularidad de caries (`secondaryCariesMode`, `rootCariesMode`, `radiographicDepthMode`) más un interruptor `cariesDepthEnabled`, que reducen cada escala a una vista de selector más simple sin perder el valor almacenado
 - 🩹 Línea de resumen de subcaries en el panel de obturaciones: lista, debajo de los controles de obturación, cualquier diente seleccionado con caries recurrente y sus superficies (p. ej. "36 (O) tiene subcaries junto a su obturación.")
 - 🪛 Defectos de obturación por superficie (`fillingDefect`: none / marginal / fracture / wear) en restauraciones directas, independientes de la caries recurrente — se registran mediante un indicador por superficie en la tarjeta de Obturaciones (espejo del indicador de profundidad de caries, con su lista de opciones apilada verticalmente), se renderizan en el odontograma y se muestran en el tooltip y en el resumen de obturaciones de toda la boca con una etiqueta explícita (p. ej. "36 (O) – Defecto de obturación: O: marginal"), igual que la caries recurrente se etiqueta en la línea de Caries; la tarjeta de Obturaciones también muestra una nota para cualquier diente seleccionado con un defecto de obturación registrado (p. ej. "En 36 hay un defecto de obturación registrado."), en paralelo a la nota de subcaries ya existente
@@ -207,7 +206,6 @@ O cárgalo con un import dinámico solo de cliente: `dynamic(() => import("./Odo
 
 ![Odontograma periodontal de boca completa — español](screenshot_es_perio.png)
 
-- 🩺 Registro periodontal: **profundidad de sondaje**, **margen gingival** y **sangrado al sondaje** (+ supuración) por sitio, en los seis sitios estándar de cada diente, con un **nivel de inserción clínica derivado (CAL = PD + margen gingival)**, recesión y **%BOP** de toda la boca. Un **odontograma periodontal gráfico de boca completa** — cada arcada se dibuja como **dos SVG independientes, bucal y palatino/lingual** (reutilizando el arte dental con una orientación uniforme de corona hacia la banda en ambos aspectos; un **gráfico de implante** para los dientes con implante) con una **línea CEJ** roja, una **cuadrícula numerada en milímetros** y una **curva de margen gingival/profundidad de bolsa** sobre los dientes, dividida por una **banda central de índices periodontales** (etiquetada `▲ Buccal … Lingual/Palatal ▼`) que agrupa los índices compartidos por diente — la **clase de Miller** en la parte superior, y **Placa/PI/GI/mPI/mBI** representados como una **loseta romboidal anatómica** por diente (vértice bucal arriba, vértice lingual abajo, mesial/distal de la fila central intercambiados según el lado para que mesial siempre apunte hacia la línea media de la arcada); las filas numéricas (con los nombres completos de los índices — PD/GM/CAL/BOP + movilidad + furca — en celdas más grandes y táctiles) alineadas en columnas, y un resumen (PD/CAL promedio, %BOP, %PI), con entrada por **avance automático de teclado**; el odontograma **se escala dinámicamente para llenar el ancho disponible**, siendo responsivo en cualquier tamaño de ventana. Se presenta como un **selector de vista** `Odontogram | Periodontal Status`, cuyo panel derecho se reconvierte en una **barra lateral de contexto periodontal** (datos del paciente, la clasificación de 2017 y el resumen de toda la boca) mientras esa vista está activa (una opción de Ajustes permite volver a toda la presentación como **ventana emergente**), y sigue siendo un **componente invocable por separado** (exportación `PerioChart`) para que una aplicación anfitriona pueda abrir el odontograma periodontal de forma independiente del odontograma base. Exportación **FHIR** por sitio mediante el panel periodontal LOINC (`74029-0`; PD `32910-2`, recesión `32911-0`, CAL `32912-8`)
 - 🅿️ Estilo de propuesta: en el modo Plan, los hallazgos que el plan **añade** respecto al estado actual (corona planificada, extracción, movimiento ortodóntico, prótesis, …) se renderizan con un **contorno "propuesto" distintivo, punteado y con tinte**, de modo que el plan se lea como intención y no como hecho — con una leyenda "punteado = propuesto" en la tarjeta del odontograma. El renderizado en modo Estado es idéntico byte a byte; el tratamiento visual es exclusivo del plan y se restablece por completo al volver al estado
 - 🚦 Restricción del modo Plan: el odontograma de Plan solo muestra lo que un dentista puede *hacer* — el selector base ofrece únicamente Ausente / Permanente / Implante, y los hallazgos de solo estado (caries, desgaste dental, decoloración, y todo el bloque periodontal — movilidad, cuadrícula de sondaje de seis sitios, modificadores de inflamación/periodontales, cálculo, estado periimplantario) quedan ocultos; el control de pulpa/endo conserva el **tratamiento** endodóntico (conducto / poste / apicectomía / pin parapulpar) mientras oculta el **diagnóstico** pulpar/apical y la reabsorción radicular. La restauración, la prótesis, la ortodoncia, la necesidad/reemplazo de corona y el plan de extracción siguen siendo planificables
 - 🧪 1746 pruebas automatizadas superadas (1 prueba adicional omitida) (Vitest) en 164 archivos de test (165 en total), para numeración, traducciones, plantillas, i18n, componente App, tema, táctil, plugins, accesibilidad y paridad de ejes clínicos/diagnósticos
@@ -532,98 +530,10 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
   a una rejilla dental); las demás conservan su propio documento y siguen siendo
   totalmente legibles y modificables mediante su API de sesión.
 
-**Dialectos FHIR — una proyección pura y opcional:**
+**FHIR / Dental Core:**
 
-La conversión a FHIR es un adaptador puro sobre el documento: sin DOM, sin red, sin reloj
-del sistema, sin aleatoriedad y sin preocupaciones de transporte, autenticación o
-persistencia dentro del componente.
+FHIR conversion is a pure optional projection of the UI-domain document. This package supports only generated Dental Core `de.cognovis.fhir.dental.core#0.3.0` bundles. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date; `parseDentalCoreBundle` fails closed for unsupported or malformed bundles.
 
-```ts
-import {
-  DentalCoreBundleRejectedError,
-  buildDentalDeBundle,
-  buildFhirBundle,
-  parseFhirBundle,
-} from "react-advanced-odontogram/fhir";
-
-const legacy = buildFhirBundle(session.getDocument());
-
-const canonical = buildFhirBundle(session.getDocument(), {
-  dialect: "dental-de", subject: "Patient/123", effectiveDateTime: "2026-08-08",
-});
-
-const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
-  effectiveDateTime: "2026-08-08",
-});
-
-const dentalCore = buildFhirBundle(session.getDocument(), {
-  dialect: "dental-core", subject: "Patient/123", effectiveDateTime: "2026-08-08",
-});
-
-function parseImportedBundle(candidate: unknown) {
-  try {
-    return parseFhirBundle(candidate);
-  } catch (error) {
-    if (error instanceof DentalCoreBundleRejectedError) return undefined;
-    throw error;
-  }
-}
-```
-
-Un bundle que declara Dental Core pero queda fuera del contrato compatible producido por el módulo lanza el `DentalCoreBundleRejectedError` exportado; el host puede capturarlo sin sustituir el odontograma actual.
-
-El dialecto `dental-de` emite `OdontogramObservationDE`, `CariesObservationDE` y
-`DentalFindingDE` con los cortes de componente de `OdontogramComponentCS`, la identidad
-dental FDI (`ToothIdentificationFDICS`), las puntuaciones ICDAS (`ICDASCariesScoreCS`) y la
-extensión repetible `ToothSurfacesExt` sobre HL7 `FDI-surface`. La codificación de
-superficies depende del diente: la superficie de masticación es `I` (incisal) en un diente
-anterior y `O` (oclusal) en uno posterior; al importar, `I` vuelve a la clave `occlusal`
-del motor, `V` a `buccal`, y los códigos combinados `MO`/`DO`/`DI`/`MOD` se dividen en sus
-miembros.
-
-Donde la IG no define un valor codificado, el adaptador usa `CodeableConcept.text` bajo el
-enlace **extensible** correspondiente — nunca un código inventado —, y donde un enlace
-**required** no tiene concepto equivalente no emite nada. Ambos casos aparecen en
-`report.textFallback` y `report.unmapped`, con el diente, el campo, el valor preservado y
-el motivo, de modo que nada se degrada en silencio. El valor permanece siempre en el
-documento de dominio de interfaz y sobrevive al viaje de ida y vuelta por JSON.
-
-**Cobertura SNOMED verificada (desde 2.5.0):** un valor clínico solo se codifica
-cuando los ValueSets de la propia GI admiten el concepto Y su significado ha
-sido verificado; `SCT_PROVENANCE` en `dentalDeCodesystems.ts` registra, por cada
-código emitido, el ValueSet que lo admite y la fuente de verificación. La caries
-radicular, la reabsorción radicular interna y cervical externa, la periodontitis
-apical y los hallazgos de integridad de la restauración se codifican sobre esa
-base. La valoración de origen exacta permanece siempre en
-`CodeableConcept.text`, y no se inventa ningún `Coding.display`, porque la GI no
-publica displays.
-
-**Exportación periodontal canónica (desde 2.6.0):** un diente natural registrado se
-exporta como `PeriodontalObservationDE` y una posición de implante como
-`PeriImplantObservationDE` junto con el dispositivo `DentalImplantDE` al que apunta
-— profundidad de sondaje en seis puntos, nivel con signo del margen gingival
-respecto a la unión amelocementaria, nivel de inserción derivado, sangrado y
-supuración al sondaje, el grado de furcación de Glickman con su entrada, presencia
-de placa, los índices de Silness-Löe y Löe-Silness, la anchura de encía
-queratinizada y los índices periimplantarios de Mombelli, cada uno cualificado por
-`PeriodontalMeasurementSiteExt` o `ToothSurfacesExt` de la IG. Un hallazgo evaluado
-como normal es un `false`/`0` explícito y una laguna registrada es un
-`dataAbsentReason` estándar. La recesión gingival (desde 2.8.0) se emite
-por sitio, pero solo donde el margen con signo es una recesión real; el margen
-sigue siendo la fuente de verdad, así que un componente de recesión importado
-nunca se vuelca en él.
-
-La entrada opcional `react-advanced-odontogram/fhir` ofrece exactamente tres
-dialectos: `legacy` (el predeterminado), `dental-de` y `dental-core` para
-`de.cognovis.fhir.dental.core#0.3.0`. `dental-core` exige
-`effectiveDateTime`. La descarga FHIR integrada de la UI permanece
-deliberadamente en el valor predeterminado legacy y no ofrece un selector de
-Dental Core.
-
-`parseFhirBundle` lee recursos legacy y Dental-DE, incluso en un bundle mixto, y
-reconoce solo bundles Odontogram Dental Core 0.3.0 producidos por el módulo. No
-es un importador FHIR genérico: rechaza un marcador engañoso, recursos sin perfil
-o recursos no compatibles.
 **Exámenes fechados, estado de valoración y registro periimplantario (desde 2.4.0):**
 
 Un caso periodontal se reexamina durante años, por lo que un documento puede llevar ahora la

@@ -155,7 +155,7 @@ Or load it with a client-only dynamic import: `dynamic(() => import("./Odontogra
 - 💾 Status export/import in JSON (version 2.20; imports still accept legacy 1.4 and 2.0 through 2.19 and migrate automatically, with plugin custom states and per-tooth notes)
 - 📐 **Model analysis** (`odontogram-c51.1`): Tonn and Bolton from the mesiodistal crown widths, with the target incisor sum, the tooth-size discrepancy and which arch carries the surplus. Widths are entered on an arch or as a list — two views of one record. A tooth that is not on the model (not erupted, lost, under the gum) borrows its contralateral partner's width, visibly marked as an assumption. Plus overjet, overbite and the dental midline deviation per arch
 - 🩻 **Cephalometry** (`odontogram-c51.2`): one shared landmark stock, measures defined over it, and the analyses as profiles above those — a new school is a new profile, the landmarks do not move. Every measure carries its source and its FHIR coding; a norm without a publication is not shipped, and the measure is recorded with no target instead. Derived: where the jaws sit against the skull (facial type after Björk, harmony, sagittal class against the population norm **and** the individual one, which disagree exactly where individualisation earns its keep) and the growth pattern as a vote across every indicator with a sourced norm. Values can be taken from another program's printed evaluation by pasting its text — nothing is applied without confirmation, because a printed sheet has three number columns and some rows carry only a norm
-- ⚠️ Both are **session state** for now: no published Dental-DE carrier authors model analysis or cephalometry, so neither is part of the export payload rather than inventing a local one
+- ⚠️ Both are **session state** for now: the generated Dental Core package has related profile families, but this adapter does not project these module-specific records until their mappings are deliberately supported
 - 🔗 HL7 FHIR R4 export (collection Bundle of per-tooth Observations, ISO 3950 tooth coding for permanent dentition, local code system — SNOMED CT mapping planned)
 - ✚ Cross/plus surface selection UI (B/M/O/D/L) for caries and fillings
 - 🧱 Per-surface restoration materials (mixed fillings, e.g. buccal amalgam + distal composite)
@@ -163,7 +163,7 @@ Or load it with a client-only dynamic import: `dynamic(() => import("./Odontogra
 - 🦷 Caries/subcaries is a per-surface state machine: a caried surface with no filling renders as primary caries (ICDAS-tiered opacity); once a filling is present on that surface it renders as recurrent caries instead (the `subcaries-{surface}` layer, CARS-scored) — the two are never both active on the same surface
 - 🎯 Unified per-surface severity (`cariesSeverity`, 0–6, replacing the old separate ICDAS-depth + CARS fields): read as ICDAS depth on a primary surface, as a named CARS score (Sound … Extensive cavity) on a recurrent one, via a contextual popup that shows only the scale relevant to the surface's current state
 - 🌱 Root caries (`rootCaries`: none / active / arrested / active-cavitated), wiring the dedicated root-caries artwork layer at a severity-driven opacity (active 0.5 / arrested 0.7 / active-cavitated full)
-- 📡 Radiographic caries depth (`radiographicDepth`: none / E1 / E2 / D1 / D2 / D3 per surface), independent of the visual ICDAS/CARS severity scale, surfaced as a badge and round-tripped through its own FHIR Observation
+- 📡 Radiographic caries depth (`radiographicDepth`: none / E1 / E2 / D1 / D2 / D3 per surface), independent of the visual ICDAS/CARS severity scale and surfaced as a badge
 - 🎚️ Three caries granularity settings (`secondaryCariesMode`, `rootCariesMode`, `radiographicDepthMode`) plus a `cariesDepthEnabled` toggle, collapsing each scale to a simpler picker view without losing the stored value
 - 🩹 Fillings-panel subcaries summary line: lists any selected tooth with recurrent caries and its surfaces below the filling controls (e.g. "36 (O) has subcaries set on its filling.")
 - 🪛 Per-surface filling defects (`fillingDefect`: none / marginal / fracture / wear) on direct restorations, independent of recurrent caries — authored via a per-surface indicator on the Fillings card (mirroring the caries-depth indicator, its option list stacked vertically), rendered on the chart, and shown in the tooltip and the whole-mouth fillings summary with an explicit label (e.g. "36 (O) – Filling defect: O: marginal"), the same way recurrent caries is labeled on the Caries line; the Fillings card also shows a hint note for any selected tooth with a recorded filling defect (e.g. "36 has a filling defect recorded."), parallel to the existing subcaries hint note
@@ -207,7 +207,6 @@ Or load it with a client-only dynamic import: `dynamic(() => import("./Odontogra
 
 ![Full-mouth periodontal chart — English](screenshot_en_perio.png)
 
-- 🩺 Periodontal charting: per-site **probing depth**, **gingival margin**, **bleeding on probing** (+ suppuration) at the six standard sites per tooth, with derived **clinical attachment level (CAL = PD + gingival margin)**, recession, and whole-mouth **%BOP**. A **graphical full-mouth perio chart** — each arch drawn as **two separate buccal/palatal(lingual) SVGs** (reusing the tooth artwork with a uniform crowns-to-band orientation on both aspects; an **implant graphic** for implant teeth) with a red **CEJ line**, a **numbered millimeter guide grid**, and a **gingival-margin / pocket-depth curve** over the teeth, split by a **central perio index band** (labeled `▲ Buccal … Lingual/Palatal ▼`) that carries the shared per-tooth indices — **Miller class** at the very top, and **Plaque/PI/GI/mPI/mBI** rendered as an **anatomical diamond tile** per tooth (buccal tip up, lingual tip down, mesial/distal on the middle row swapped per side so mesial always points toward the arch midline); the number rows (full index names — PD/GM/CAL/BOP + mobility + furcation — in larger, more touch-friendly cells) aligned in columns and a summary (avg PD/CAL, %BOP, PI%), with **keyboard auto-advance** entry; the chart **dynamically scales to fill the available width**, responsive at any window size. Presented as an `Odontogram | Periodontal Status` **view toggle**, whose right panel is repurposed into a **perio-context sidebar** (patient data, the 2017 classification, and the whole-mouth summary) while that view is active (a Settings option switches the whole presentation back to a **popup**), and still a **separately-invocable component** (`PerioChart` export) so a host app can call up the perio chart independently of the base odontogram. Per-site **FHIR** export via the LOINC periodontal panel (`74029-0`; PD `32910-2`, recession `32911-0`, CAL `32912-8`)
 - 🅿️ Proposed styling: in Plan mode, findings the plan **adds** vs the current status (planned crown, extraction, orthodontic movement, prosthesis, …) render with a distinct **dashed, tinted "proposed" outline** so the plan reads as intent, not fact — with a "dashed = proposed" legend in the chart card. Status-mode rendering is byte-identical; the treatment is plan-only and fully reset on switching back
 - 🚦 Plan-mode gating: the Plan chart shows only what a dentist can *do* — the base picker offers only Missing / Permanent / Implant, and status-only findings (caries, tooth wear, discoloration, and the whole periodontal block — mobility, six-site probing grid, inflammation/parodontal mods, calculus, peri-implant status) are hidden; the pulp/endo control keeps endodontic **treatment** (root canal / post / apicoectomy / parapulpal pin) while hiding pulp/apical **diagnosis** and root resorption. Restoration, prosthesis, orthodontics, crown-need/replace and extraction-plan stay plannable
 - 🧪 1746 automated tests passing (1 additional test skipped) (Vitest) across 164 test files (165 total) covering numbering, translations, presets, i18n, App component, theme, touch, plugins, accessibility, and clinical-axis/diagnosis parity
@@ -532,113 +531,9 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
   engine bound to one tooth grid); the others keep their own document and stay
   fully readable and writable through their session API.
 
-**FHIR dialects — a pure, optional projection:**
+**FHIR / Dental Core:**
 
-FHIR conversion is a pure adapter over the document: no DOM, no network, no wall
-clock, no randomness, and no transport, authentication or persistence concerns
-inside the component.
-
-```ts
-import {
-  DentalCoreBundleRejectedError,
-  buildDentalDeBundle,
-  buildFhirBundle,
-  parseFhirBundle,
-} from "react-advanced-odontogram/fhir";
-
-// Default dialect: the engine-local representation this package has always emitted.
-const legacy = buildFhirBundle(session.getDocument());
-
-// Canonical fhir-dental-de (de.cognovis.fhir.dental) profiles and extensions.
-const canonical = buildFhirBundle(session.getDocument(), {
-  dialect: "dental-de", subject: "Patient/123", effectiveDateTime: "2026-08-08",
-});
-
-// Same bundle plus a report of everything the IG has no coded value for.
-const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
-  effectiveDateTime: "2026-08-08",
-});
-
-const dentalCore = buildFhirBundle(session.getDocument(), {
-  dialect: "dental-core", subject: "Patient/123", effectiveDateTime: "2026-08-08",
-});
-
-function parseImportedBundle(candidate: unknown) {
-  try {
-    return parseFhirBundle(candidate);
-  } catch (error) {
-    if (error instanceof DentalCoreBundleRejectedError) return undefined;
-    throw error;
-  }
-}
-```
-
-A bundle that claims Dental Core but is outside the supported module-produced contract throws the exported `DentalCoreBundleRejectedError`; a host can catch it without replacing its current chart.
-
-The `dental-de` dialect emits `OdontogramObservationDE`, `CariesObservationDE`
-and `DentalFindingDE` with the IG's `OdontogramComponentCS` component slices, FDI
-tooth identity (`ToothIdentificationFDICS`), ICDAS scores
-(`ICDASCariesScoreCS`) and the repeatable `ToothSurfacesExt` over HL7
-`FDI-surface`. Surface coding is tooth-aware: the biting surface is `I`
-(incisal) on an anterior tooth and `O` (occlusal) on a posterior one; on import,
-`I` folds back to the engine's `occlusal` key, `V` to `buccal`, and the combo
-codes `MO`/`DO`/`DI`/`MOD` are split into their members.
-
-Where the IG defines no coded value, the adapter uses `CodeableConcept.text`
-under the relevant **extensible** binding — never an invented code — and where a
-**required** binding has no matching concept it emits nothing at all. Both cases
-are listed in `report.textFallback` and `report.unmapped`, with the tooth, the
-field, the preserved value and the reason, so nothing degrades silently. The
-value itself always stays in the UI-domain document and round-trips through JSON.
-
-**Canonical Dental-DE patient sessions and save boundary (since 2.10.0):**
-
-`createDentalDeOdontogramSession(bundle, { readOnly })` validates the supported
-Dental-DE profiles and one-patient ownership before creating an isolated
-session. Read-only is the default. An editable session supports local changes,
-`cancel()` back to the imported baseline, `export(options)` for one complete
-canonical save candidate, and deterministic `destroy()`. Export retains
-unchanged imported resources, preserves IDs and `meta.versionId` on controlled
-updates, and reports additions, updates, removals, compatibility, and loss.
-There is no network or persistence in the adapter: the host validates and saves
-the candidate conflict-safely, then reloads and compares the persisted result.
-`session.patient.reference` is normalized; `sourceReference` retains a single
-alternate form such as a Bundle URN. Manifest carriers are primary routes and
-may vary by value and tooth context. A missing tooth slot in a direct export
-means healthy present. Unmount the component before `session.destroy()`.
-
-**Verified SNOMED coverage (from 2.5.0):** a clinical value is coded only when
-the IG's own ValueSets admit the concept AND its meaning has been verified;
-`SCT_PROVENANCE` in `dentalDeCodesystems.ts` records the admitting ValueSet and
-the verification source for every emitted code. Root caries, internal and
-external cervical root resorption, apical periodontitis and the
-restoration-integrity findings are coded on that basis. The exact source
-assessment always stays in `CodeableConcept.text`, and no `Coding.display` is
-invented, because the IG omits displays.
-
-**Canonical periodontal export (from 2.6.0):** a charted natural tooth exports a
-`PeriodontalObservationDE` and an implant position a `PeriImplantObservationDE`
-plus the `DentalImplantDE` device it focuses on — six-site probing depth, the
-signed gingival-margin-to-CEJ level, derived attachment level, bleeding and
-suppuration on probing, the Glickman furcation grade with its entrance, plaque
-presence, the Silness-Loe and Loe-Silness indices, keratinized-gingiva width and
-the Mombelli peri-implant indices, each qualified by the IG's
-`PeriodontalMeasurementSiteExt` or `ToothSurfacesExt`. An assessed-normal finding
-is an explicit `false`/`0`; a recorded gap is a standard `dataAbsentReason`. Gingival
-recession (from 2.8.0) is emitted per site, but only where the signed margin
-is an actual recession; the margin remains the source of truth, so an imported
-recession component is never read back into it.
-
-The optional `react-advanced-odontogram/fhir` entry provides exactly three
-dialects: `legacy` (the default), `dental-de`, and `dental-core` for
-`de.cognovis.fhir.dental.core#0.3.0`. `dental-core` requires
-`effectiveDateTime`. The built-in UI FHIR download deliberately remains
-legacy-default and has no Dental Core selector.
-
-`parseFhirBundle` reads legacy and Dental-DE resources, including a bundle that
-mixes them, and recognizes only module-produced Odontogram Dental Core 0.3.0
-bundles. It is not a generic FHIR importer: a misleading marker, unprofiled
-resource, or unsupported resource is rejected.
+FHIR conversion is a pure optional projection of the UI-domain document. This package supports only generated Dental Core `de.cognovis.fhir.dental.core#0.3.0` bundles. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date; `parseDentalCoreBundle` fails closed for unsupported or malformed bundles.
 
 **Dated examinations, assessment status and peri-implant capture (from 2.4.0):**
 

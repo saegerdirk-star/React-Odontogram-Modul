@@ -155,7 +155,7 @@ Alebo ho načítajte pomocou dynamického importu iba na strane klienta: `dynami
 - 💾 Export/import stavu v JSON (verzia 2.20; import stále akceptuje staršie verzie 1.4 a 2.0 až 2.19 a automaticky ich migruje, s vlastnými stavmi pluginov a poznámkami ku každému zubu)
 - 📐 **Vyhodnotenie modelu** (`odontogram-c51.1`): Tonn a Bolton z meziodistálnych šírok zubov, s cieľovým súčtom rezákov, rozdielom šírky zubov a tým, ktorá čeľusť nesie prebytok. Šírky sa zadávajú na zubnom oblúku alebo v zozname — dva pohľady na jeden záznam. Zub, ktorý na modeli nie je (neprerezaný, stratený, pod ďasnom), preberá šírku kontralaterálneho zuba, viditeľne označenú ako predpoklad. K tomu horizontálny a vertikálny prekryt a odchýlka stredovej čiary na čeľusť
 - 🩻 **Kefalometria** (`odontogram-c51.2`): jeden spoločný súbor meracích bodov, nad ním merané veličiny a nad nimi metódy ako profily — nová škola je nový profil, body sa nemenia. Každá veličina nesie svoj zdroj a svoje FHIR kódovanie; norma bez publikácie sa nedodáva. Odvodené: poloha čeľustí voči lebke (typ tváre podľa Björka, harmónia, sagitálna trieda voči populačnej **aj** individuálnej norme) a rastový vzorec ako hlasovanie medzi všetkými indikátormi s doloženou normou. Hodnoty možno prevziať z tlačeného vyhodnotenia iného programu vložením textu — nič sa neuplatní bez potvrdenia
-- ⚠️ Oboje je zatiaľ **stav relácie**: neexistuje publikovaný Dental-DE nosič, preto nie sú súčasťou exportného payloadu namiesto vymýšľania lokálneho
+- ⚠️ Oboje je zatiaľ **stav relácie**: neexistuje publikovaný Dental Core profile, preto nie sú súčasťou exportného payloadu namiesto vymýšľania lokálneho
 - 🔗 Export HL7 FHIR R4 (kolekcia Bundle s Observations pre každý zub, kódovanie zubov ISO 3950 pre trvalý chrup, lokálny systém kódov — mapovanie SNOMED CT plánované)
 - ✚ Krížový výber plôch (B/M/O/D/L) pre kaz a výplne
 - 🧱 Materiály reštaurácie pre každú plochu (zmiešané výplne, napr. bukálny amalgám + distálny kompozit)
@@ -163,7 +163,6 @@ Alebo ho načítajte pomocou dynamického importu iba na strane klienta: `dynami
 - 🦷 Kaz/sekundárny kaz ako stavový automat na každú plochu: kazivá plocha bez výplne sa zobrazuje ako primárny kaz (priehľadnosť odstupňovaná podľa ICDAS); hneď ako má táto plocha výplň, zobrazuje sa namiesto toho ako sekundárny (rekurentný) kaz (vrstva `subcaries-{surface}`, so skóre CARS) — obidva nikdy nie sú aktívne súčasne na tej istej ploche
 - 🎯 Zjednotená závažnosť na plochu (`cariesSeverity`, 0–6, nahrádza pôvodné oddelené polia hĺbky ICDAS a CARS): na primárnej ploche sa číta ako hĺbka ICDAS, na rekurentnej ako pomenované skóre CARS (Zdravý … Rozsiahla kavita), prostredníctvom kontextového popupu, ktorý zobrazuje iba škálu relevantnú pre aktuálny stav plochy
 - 🌱 Kaz koreňa (`rootCaries`: none / active / arrested / active-cavitated), aktivujúci vyhradenú vrstvu ilustrácie kazu koreňa s priehľadnosťou závislou od závažnosti (active 0,5 / arrested 0,7 / active-cavitated plná priehľadnosť)
-- 📡 Rádiografická hĺbka kazu (`radiographicDepth`: none / E1 / E2 / D1 / D2 / D3 na plochu), nezávislá od vizuálnej škály závažnosti ICDAS/CARS, zobrazená ako odznak a obojsmerne prenášaná cez vlastný FHIR Observation
 - 🎚️ Tri nastavenia podrobnosti kazu (`secondaryCariesMode`, `rootCariesMode`, `radiographicDepthMode`) a prepínač `cariesDepthEnabled`, ktoré zbaľujú každú škálu do jednoduchšieho výberu bez straty uloženej hodnoty
 - 🩹 Súhrnný riadok sekundárneho kazu v paneli výplní: pod ovládacími prvkami výplní vypíše každý vybraný zub so sekundárnym kazom a jeho plochy (napr. „36 (O) má pri výplni nastavený sekundárny kaz.")
 - 🪛 Poruchy výplne na každú plochu (`fillingDefect`: none / marginal / fracture / wear) na priamych reštauráciách, nezávislé od sekundárneho kazu — zaznamenávané cez indikátor pre každú plochu na karte Výplne (podľa vzoru indikátora hĺbky kazu, so zvislo usporiadaným zoznamom možností), zobrazené na odontograme a v tooltipe aj v súhrne výplní za celé ústa s explicitným popiskom (napr. „36 (O) – Porucha výplne: O: okrajová"), rovnakým spôsobom, akým je označený sekundárny kaz v riadku Kaz; karta Výplne tiež zobrazuje upozorňujúcu poznámku pre každý vybraný zub so zaznamenanou poruchou výplne (napr. „36 má zaznamenanú poruchu výplne."), paralelne s existujúcou poznámkou o sekundárnom kaze
@@ -207,7 +206,6 @@ Alebo ho načítajte pomocou dynamického importu iba na strane klienta: `dynami
 
 ![Parodontologická karta celých úst (slovenčina)](screenshot_sk_perio.png)
 
-- 🩺 Parodontálne vyšetrenie: pre každé miesto **hĺbka sondáže (PD)**, **gingiválny okraj**, **krvácanie pri sondáži** (+ supurácia) na šiestich štandardných miestach na zub, s odvodenou **klinickou úrovňou prichytenia (CAL = PD + gingiválny okraj)**, recesiou a celoústnym **%BOP**. **Grafický parodontálny graf pre celé ústa** — každý oblúk je vykreslený ako **dve samostatné bukálne/palatinálne(linguálne) SVG** (opätovne využívajúce ilustráciu zuba s jednotnou orientáciou korunky smerom k pásu na oboch stranách; **grafika implantátu** pre implantátové zuby) s červenou **CEJ čiarou**, **číslovanou milimetrovou vodiacou mriežkou** a **krivkou gingiválneho okraja / hĺbky vačku** nad zubmi, oddelenou **centrálnym pásom parodontálnych indexov** (s popiskom `▲ Buccal … Lingual/Palatal ▼`), ktorý nesie spoločné indexy pre každý zub — **Millerova trieda** úplne navrchu a **Plak/PI/GI/mPI/mBI** vykreslené ako **anatomická dlaždica v tvare diamantu** pre každý zub (bukálny hrot hore, linguálny dole, meziálna/distálna strana v strednom riadku prehodené podľa strany, takže meziálna vždy smeruje k stredovej línii oblúka); riadky s číslami (plné názvy indexov — PD/GM/CAL/BOP + mobilita + furkácia — vo väčších, dotyku prívetivejších bunkách) zarovnané do stĺpcov a súhrn (priemerné PD/CAL, %BOP, PI%), so zadávaním s **automatickým posunom klávesnicou**; graf sa **dynamicky prispôsobuje dostupnej šírke**, responzívny pri akejkoľvek veľkosti okna. Prezentovaný ako **prepínač zobrazenia** `Odontogram | Periodontal Status`, ktorého pravý panel sa počas tohto zobrazenia mení na **bočný panel parodontálneho kontextu** (údaje pacienta, klasifikácia 2017 a súhrn za celé ústa) (voľba v Nastaveniach prepína celé zobrazenie späť na **vyskakovacie okno**), a stále ide o **samostatne vyvolateľný komponent** (export `PerioChart`), takže hostiteľská aplikácia môže vyvolať parodontálny graf nezávisle od základného odontogramu. Export **FHIR** pre každé miesto cez parodontálny panel LOINC (`74029-0`; PD `32910-2`, recesia `32911-0`, CAL `32912-8`)
 - 🅿️ Navrhovaný štýl: v režime Plán sa nálezy, ktoré plán **pridáva** oproti aktuálnemu stavu (plánovaná korunka, extrakcia, ortodontický pohyb, protetika, …), vykresľujú s výrazným prerušovaným, tónovaným „navrhovaným" obrysom, aby bolo zrejmé, že ide o zámer, nie fakt — s legendou „prerušovane = navrhované" na karte grafu. Vykresľovanie v režime Stav je bajtovo identické; ošetrenie existuje iba v pláne a pri prepnutí späť sa úplne resetuje
 - 🚦 Obmedzenie v režime Plán: graf Plán zobrazuje iba to, čo zubár môže *vykonať* — základný výber ponúka iba Chýbajúci / Trvalý / Implantát a nálezy iba pre stav (kaz, opotrebenie zuba, zafarbenie a celý parodontálny blok — mobilita, šesťmiestna sondovacia mriežka, modifikácie zápalu/parodontu, zubný kameň, stav peri-implantátu) sú skryté; ovládací prvok drene/endo ponecháva endodontické **ošetrenie** (koreňový kanálik / kolík / apikektómia / parapulpálny kolík), pričom skrýva **diagnózu** drene/apikálnej oblasti a resorpciu koreňa. Náhrada, protetika, ortodoncia, potreba/výmena korunky a plán extrakcie zostávajú plánovateľné
 - 🧪 1746 prebiehajúcich automatizovaných testov (1 ďalší test preskočený) (Vitest) v 164 testovacích súboroch (165 spolu) pokrývajúcich číslovanie, preklady, predvoľby, i18n, komponent App, tému, dotyk, pluginy, prístupnosť a paritu klinických osí/diagnóz
@@ -531,93 +529,10 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
   jednu mriežku zubov); ostatné si ponechávajú vlastný dokument a zostávajú plne čitateľné
   a zapisovateľné cez svoje API relácie.
 
-**Dialekty FHIR — čistá, voliteľná projekcia:**
+**FHIR / Dental Core:**
 
-Konverzia do FHIR je čistý adaptér nad dokumentom: bez DOM, bez siete, bez systémových
-hodín, bez náhodnosti a bez otázok prenosu, autentifikácie či perzistencie vnútri
-komponentu.
+FHIR conversion is a pure optional projection of the UI-domain document. This package supports only generated Dental Core `de.cognovis.fhir.dental.core#0.3.0` bundles. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date; `parseDentalCoreBundle` fails closed for unsupported or malformed bundles.
 
-```ts
-import {
-  DentalCoreBundleRejectedError,
-  buildDentalDeBundle,
-  buildFhirBundle,
-  parseFhirBundle,
-} from "react-advanced-odontogram/fhir";
-
-const legacy = buildFhirBundle(session.getDocument());
-
-const canonical = buildFhirBundle(session.getDocument(), {
-  dialect: "dental-de", subject: "Patient/123", effectiveDateTime: "2026-08-08",
-});
-
-const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
-  effectiveDateTime: "2026-08-08",
-});
-
-const dentalCore = buildFhirBundle(session.getDocument(), {
-  dialect: "dental-core", subject: "Patient/123", effectiveDateTime: "2026-08-08",
-});
-
-function parseImportedBundle(candidate: unknown) {
-  try {
-    return parseFhirBundle(candidate);
-  } catch (error) {
-    if (error instanceof DentalCoreBundleRejectedError) return undefined;
-    throw error;
-  }
-}
-```
-
-Bundle, ktorý deklaruje Dental Core, ale je mimo podporovaného kontraktu vytvoreného modulom, vyhodí exportovanú chybu `DentalCoreBundleRejectedError`; hostiteľ ju môže zachytiť bez nahradenia aktuálneho odontogramu.
-
-Dialekt `dental-de` vydáva `OdontogramObservationDE`, `CariesObservationDE` a
-`DentalFindingDE` so slice-mi komponentov z `OdontogramComponentCS`, identitou zuba podľa
-FDI (`ToothIdentificationFDICS`), skóre ICDAS (`ICDASCariesScoreCS`) a opakovateľným
-rozšírením `ToothSurfacesExt` nad HL7 `FDI-surface`. Kódovanie plôch závisí od zuba:
-žuvacia plocha je `I` (rezáková) na prednom zube a `O` (okluzálna) na zadnom; pri importe
-sa `I` vracia na kľúč `occlusal` enginu, `V` na `buccal` a kombinované kódy
-`MO`/`DO`/`DI`/`MOD` sa rozdelia na svoje členy.
-
-Tam, kde IG nedefinuje kódovanú hodnotu, adaptér použije `CodeableConcept.text` v rámci
-príslušnej **extensible** väzby — nikdy vymyslený kód — a tam, kde **required** väzba nemá
-zodpovedajúci pojem, nevydá nič. Oba prípady sú uvedené v `report.textFallback` a
-`report.unmapped` so zubom, poľom, zachovanou hodnotou a dôvodom, takže sa nič nestratí
-potichu. Samotná hodnota vždy zostáva v dokumente domény rozhrania a prežije cestu cez JSON.
-
-**Overené pokrytie SNOMED (od 2.5.0):** klinická hodnota sa kóduje iba vtedy, keď
-ValueSety samotného IG daný koncept pripúšťajú A jeho význam bol overený;
-`SCT_PROVENANCE` v `dentalDeCodesystems.ts` pre každý vydaný kód zaznamenáva
-pripúšťajúci ValueSet a zdroj overenia. Koreňový kaz, vnútorná a vonkajšia
-cervikálna resorpcia koreňa, apikálna parodontitída a nálezy o celistvosti výplne
-sa kódujú na tomto základe. Presné zdrojové hodnotenie zostáva vždy v
-`CodeableConcept.text` a žiadny `Coding.display` sa nevymýšľa, pretože IG ich
-nezverejňuje.
-
-**Kanonický parodontálny export (od 2.6.0):** vyšetrený prirodzený zub sa exportuje
-ako `PeriodontalObservationDE` a pozícia implantátu ako `PeriImplantObservationDE`
-spolu so zariadením `DentalImplantDE`, na ktoré sa odkazuje — hĺbka sondáže v
-šiestich bodoch, znamienková úroveň gingiválneho okraja voči sklovinovo-cementovej
-hranici, odvodená úroveň attachmentu, krvácanie a hnisanie pri sondáži, Glickmanov
-stupeň furkácie so vstupom, prítomnosť plaku, indexy Silness-Löe a Löe-Silness,
-šírka keratinizovanej gingívy a periimplantátové Mombelliho indexy, každý
-kvalifikovaný rozšírením `PeriodontalMeasurementSiteExt` alebo `ToothSurfacesExt` z
-IG. Vyšetrený normálny nález je explicitné `false`/`0` a zaznamenaná medzera
-štandardný `dataAbsentReason`. Gingiválna recesia (od 2.8.0) sa vydáva
-pre každé miesto, ale len tam, kde je znamienkový gingiválny okraj skutočnou
-recesiou; zdrojom pravdy zostáva okraj, takže importovaný komponent recesie sa
-doň nikdy nezapisuje späť.
-
-Voliteľný vstup `react-advanced-odontogram/fhir` poskytuje presne tri dialekty:
-`legacy` (predvolený), `dental-de` a `dental-core` pre
-`de.cognovis.fhir.dental.core#0.3.0`. `dental-core` vyžaduje
-`effectiveDateTime`. Zabudované stiahnutie FHIR v UI zámerne ostáva predvolene
-legacy a nemá volič Dental Core.
-
-`parseFhirBundle` číta legacy a Dental-DE zdroje, aj v zmiešanom bundle, a
-rozpoznáva iba modulu vytvorené bundle Odontogram Dental Core 0.3.0. Nie je to
-všeobecný FHIR importér: zavádzajúci marker, neprofilovaný alebo nepodporovaný
-zdroj odmietne.
 **Datované vyšetrenia, stav posúdenia a peri-implantátový záznam (od 2.4.0):**
 
 Parodontálny prípad sa vyšetruje opakovane počas rokov, preto dokument teraz nesie vlastnú

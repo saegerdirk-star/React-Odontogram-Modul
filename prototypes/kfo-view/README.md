@@ -26,7 +26,7 @@ With the development server running at its default address:
 - F — Occlusion schema: <http://127.0.0.1:5173/prototypes/kfo-view/?variant=F>
 - G — KFO cockpit: <http://127.0.0.1:5173/prototypes/kfo-view/?variant=G>
 
-The prototype assumes the planned `fhir-dental-de` KFO carriers are available. Badges distinguish
+The prototype assumes planned Dental Core KFO carriers are available. Badges distinguish
 already published carriers from the target contract. The KIG matrix records only manual clinician
 selection; it does not perform automatic KIG derivation.
 
