@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.10.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.11.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -535,7 +535,12 @@ FHIR 转换是文档之上的纯适配器：不访问 DOM、不联网、不读�
 组件内部也不涉及传输、鉴权或持久化。
 
 ```ts
-import { buildFhirBundle, parseFhirBundle, buildDentalDeBundle } from "./App";
+import {
+  DentalCoreBundleRejectedError,
+  buildDentalDeBundle,
+  buildFhirBundle,
+  parseFhirBundle,
+} from "react-advanced-odontogram/fhir";
 
 const legacy = buildFhirBundle(session.getDocument());
 
@@ -546,7 +551,22 @@ const canonical = buildFhirBundle(session.getDocument(), {
 const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
   effectiveDateTime: "2026-08-08",
 });
+
+const dentalCore = buildFhirBundle(session.getDocument(), {
+  dialect: "dental-core", subject: "Patient/123", effectiveDateTime: "2026-08-08",
+});
+
+function parseImportedBundle(candidate: unknown) {
+  try {
+    return parseFhirBundle(candidate);
+  } catch (error) {
+    if (error instanceof DentalCoreBundleRejectedError) return undefined;
+    throw error;
+  }
+}
 ```
+
+声称使用 Dental Core、但不符合本模块所支持生成契约的 Bundle 会抛出已导出的 `DentalCoreBundleRejectedError`；宿主可以捕获它，而不替换当前牙位图。
 
 `dental-de` 方言输出 `OdontogramObservationDE`、`CariesObservationDE` 和
 `DentalFindingDE`，使用 IG 的 `OdontogramComponentCS` 组件切片、FDI 牙位标识
@@ -577,7 +597,15 @@ const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
 标准的 `dataAbsentReason`。牙龈退缩（自 2.8.0 起）按测量位点输出，但仅在带符号的龈缘确为退缩之处输出；
 龈缘仍是唯一可信来源，因此导入的退缩组件绝不会回写到龈缘。
 
-`parseFhirBundle` 可读取**两种**方言，包括混合的 Bundle，因此此前导出的 Bundle 仍可原样导入。
+可选入口 `react-advanced-odontogram/fhir` 提供且仅提供三种方言：默认的
+`legacy`、`dental-de`，以及用于
+`de.cognovis.fhir.dental.core#0.3.0` 的 `dental-core`。`dental-core` 必须
+提供 `effectiveDateTime`。内置 UI FHIR 下载有意保持 legacy 默认值，且没有
+Dental Core 选择器。
+
+`parseFhirBundle` 可读取 legacy 与 Dental-DE 资源（包括混合 Bundle），并且仅
+识别本模块生成的 Odontogram Dental Core 0.3.0 Bundle。它不是通用 FHIR 导入器：
+误导性的标记、无 profile 的资源或不支持的资源都会被拒绝。
 **带日期的检查、评估状态与种植体周围记录（自 2.4.0 起）：**
 
 牙周病例会在数年间反复复查，因此文档现在可以携带这次检查自身的标识，以及既往检查的存档：

@@ -1,12 +1,34 @@
 import type { ToothRecord } from "../document";
 
 export const DENTAL_CORE = "https://fhir.cognovis.de/dental-core";
+export const DENTAL_CORE_PACKAGE_VERSION = "0.3.0";
+export const DENTAL_CORE_BUNDLE_IDENTIFIER = `odontogram-dental-core-${DENTAL_CORE_PACKAGE_VERSION}`;
 export const PROFILE = `${DENTAL_CORE}/StructureDefinition`;
 export const PROPERTY_SYSTEM = `${DENTAL_CORE}/CodeSystem/dental-chart-property`;
 export const VALUE_SYSTEM = `${DENTAL_CORE}/CodeSystem/dental-chart-value`;
 export const COMPONENT_SYSTEM = `${DENTAL_CORE}/CodeSystem/dental-component`;
 export const PROVENANCE_SYSTEM = `${DENTAL_CORE}/CodeSystem/dental-provenance-activity`;
 export const FDI_SYSTEM = `${DENTAL_CORE}/CodeSystem/tooth-position-fdi`;
+
+const permanentFdi = [1, 2, 3, 4].flatMap((quadrant) =>
+  Array.from({ length: 8 }, (_, index) => `${quadrant}${index + 1}`),
+);
+const primaryFdi = [5, 6, 7, 8].flatMap((quadrant) =>
+  Array.from({ length: 5 }, (_, index) => `${quadrant}${index + 1}`),
+);
+const FDI_CODES = new Set([...permanentFdi, ...primaryFdi]);
+const DIAGNOSIS_CODES = new Set(["health", "gingivitis", "periodontitis"]);
+
+export const isDentalCoreFdi = (value: string): boolean => FDI_CODES.has(value);
+export const isDentalCoreDiagnosis = (value: string): boolean => DIAGNOSIS_CODES.has(value);
+
+export function isDentalCoreRiskValue(code: string, value: number): boolean {
+  if (!Number.isFinite(value)) return false;
+  if (code === "cigarettes-per-day") return Number.isInteger(value) && value >= 0 && value <= 99;
+  if (code === "periodontitis-attributed-tooth-loss") return Number.isInteger(value) && value >= 0 && value <= 32;
+  if (code === "maximum-radiographic-bone-loss") return value >= 0 && value <= 100;
+  return false;
+}
 
 type SupportedField = keyof ToothRecord;
 export interface ChartMapping {

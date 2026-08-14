@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.10.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.11.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -538,7 +538,12 @@ hodín, bez náhodnosti a bez otázok prenosu, autentifikácie či perzistencie 
 komponentu.
 
 ```ts
-import { buildFhirBundle, parseFhirBundle, buildDentalDeBundle } from "./App";
+import {
+  DentalCoreBundleRejectedError,
+  buildDentalDeBundle,
+  buildFhirBundle,
+  parseFhirBundle,
+} from "react-advanced-odontogram/fhir";
 
 const legacy = buildFhirBundle(session.getDocument());
 
@@ -549,7 +554,22 @@ const canonical = buildFhirBundle(session.getDocument(), {
 const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
   effectiveDateTime: "2026-08-08",
 });
+
+const dentalCore = buildFhirBundle(session.getDocument(), {
+  dialect: "dental-core", subject: "Patient/123", effectiveDateTime: "2026-08-08",
+});
+
+function parseImportedBundle(candidate: unknown) {
+  try {
+    return parseFhirBundle(candidate);
+  } catch (error) {
+    if (error instanceof DentalCoreBundleRejectedError) return undefined;
+    throw error;
+  }
+}
 ```
+
+Bundle, ktorý deklaruje Dental Core, ale je mimo podporovaného kontraktu vytvoreného modulom, vyhodí exportovanú chybu `DentalCoreBundleRejectedError`; hostiteľ ju môže zachytiť bez nahradenia aktuálneho odontogramu.
 
 Dialekt `dental-de` vydáva `OdontogramObservationDE`, `CariesObservationDE` a
 `DentalFindingDE` so slice-mi komponentov z `OdontogramComponentCS`, identitou zuba podľa
@@ -588,8 +608,16 @@ pre každé miesto, ale len tam, kde je znamienkový gingiválny okraj skutočno
 recesiou; zdrojom pravdy zostáva okraj, takže importovaný komponent recesie sa
 doň nikdy nezapisuje späť.
 
-`parseFhirBundle` číta **oba** dialekty vrátane zmiešaného balíka, takže už exportované
-balíky sa importujú nezmenene.
+Voliteľný vstup `react-advanced-odontogram/fhir` poskytuje presne tri dialekty:
+`legacy` (predvolený), `dental-de` a `dental-core` pre
+`de.cognovis.fhir.dental.core#0.3.0`. `dental-core` vyžaduje
+`effectiveDateTime`. Zabudované stiahnutie FHIR v UI zámerne ostáva predvolene
+legacy a nemá volič Dental Core.
+
+`parseFhirBundle` číta legacy a Dental-DE zdroje, aj v zmiešanom bundle, a
+rozpoznáva iba modulu vytvorené bundle Odontogram Dental Core 0.3.0. Nie je to
+všeobecný FHIR importér: zavádzajúci marker, neprofilovaný alebo nepodporovaný
+zdroj odmietne.
 **Datované vyšetrenia, stav posúdenia a peri-implantátový záznam (od 2.4.0):**
 
 Parodontálny prípad sa vyšetruje opakovane počas rokov, preto dokument teraz nesie vlastnú

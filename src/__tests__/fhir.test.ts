@@ -1,7 +1,8 @@
 // Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
 // Created by Zoltan Dul (https://github.com/ZoliQua) 2025-2026
 
-import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { describe, it, expect, vi } from "vitest";
 import { LOCAL_VALUE_MAPS, LOCAL_SYSTEM, FDI_SYSTEM } from "../fhir/codesystems";
 
 // Mirror of the engine's VALID_* sets (src/odontogram.ts:2145-2153).
@@ -85,11 +86,20 @@ describe("FHIR field mappings", () => {
 });
 
 import { buildFhirBundle } from "../fhir/toFhir";
+import { DentalCoreBundleRejectedError as PublicDentalCoreBundleRejectedError } from "../fhir";
 import type { OdontogramExportPayload } from "../fhir/types";
-import { parseFhirBundle } from "../fhir/fromFhir";
+import { DentalCoreBundleRejectedError, parseFhirBundle } from "../fhir/fromFhir";
+import { parseDentalCoreBundle } from "../fhir/fromFhirDentalCore";
+import { CHART_MAPPINGS } from "../fhir/dentalCoreContract";
+import { __resetChartStateForTest, __setToothStateForTest, getStatusChart, importFhirBundle } from "../odontogram";
 
 const emptyPayload: OdontogramExportPayload = { version: "1.3", globals: {}, teeth: {} };
 const dentalCoreOptions = { dialect: "dental-core" as const, effectiveDateTime: "2026-08-13T12:00:00Z" };
+const fhirTestFileUrl = import.meta.url;
+const dentalCoreContract = JSON.parse(readFileSync(new URL("./dental-core-0.3.0-contract.json", fhirTestFileUrl), "utf8")) as {
+  propertyCodes: string[];
+  valueCodes: string[];
+};
 
 const DENTAL_CORE_VALUES: Record<string, unknown[]> = {
   endoResection: [true], mods: [["inflammation", "parodontal", "mobility"]],
@@ -103,7 +113,100 @@ const DENTAL_CORE_VALUES: Record<string, unknown[]> = {
   resorptionType: ["internal", "external-cervical"], retention: ["clasp", "attachment", "bar-abutment"], retentionSide: ["mesial", "distal", "both"],
 };
 
-describe("Dental Core 0.2 lossless carrier dialect", () => {
+describe("Dental Core 0.3 lossless carrier dialect", () => {
+  it("exports the typed Dental Core rejection through the public FHIR entry", () => {
+    expect(PublicDentalCoreBundleRejectedError).toBe(DentalCoreBundleRejectedError);
+  });
+
+  it("labels emitted bundles with the released Dental Core package version", () => {
+    const bundle = buildFhirBundle({ version: "2.25", teeth: {} }, dentalCoreOptions);
+
+    expect(bundle.identifier).toEqual({
+      system: "https://fhir.cognovis.de/dental-core",
+      value: "odontogram-dental-core-0.3.0",
+    });
+  });
+
+  it("fails closed at the strict and public parser boundaries for unsupported Dental Core bundles", () => {
+    const bundle = buildFhirBundle({ version: "2.25", teeth: { "16": { endoResection: true } } }, dentalCoreOptions);
+    const misleadingMarker = structuredClone(bundle);
+    misleadingMarker.identifier = { system: "https://example.invalid/dental-core", value: "odontogram-dental-core-0.3.0" };
+    const unprofiled = {
+      resourceType: "Bundle",
+      identifier: bundle.identifier,
+      entry: [{ resource: { resourceType: "Observation", status: "final" } }],
+    };
+    const unlistedType = {
+      resourceType: "Bundle",
+      identifier: bundle.identifier,
+      entry: [{ resource: { resourceType: "MedicationRequest", id: "unsupported-medication", status: "active", intent: "order" } }],
+    };
+    const wrongPatientId = structuredClone(bundle);
+    const patient = wrongPatientId.entry?.find((entry) => entry.resource?.resourceType === "Patient");
+    if (patient?.resource) patient.resource.id = "other-patient";
+    const oldMarker = structuredClone(bundle);
+    oldMarker.identifier = { system: bundle.identifier?.system, value: "odontogram-dental-core-0.2.0" };
+
+    for (const rejected of [misleadingMarker, unprofiled, unlistedType, wrongPatientId, oldMarker]) {
+      expect(parseDentalCoreBundle(rejected)).toBeUndefined();
+      expect(() => parseFhirBundle(rejected)).toThrow(/rejected Dental Core bundle/i);
+    }
+  });
+
+  it("does not replace the current chart when UI import rejects a Dental Core bundle", () => {
+    __resetChartStateForTest();
+    __setToothStateForTest(16, { endoResection: true });
+    const before = getStatusChart();
+    const rejected = buildFhirBundle({ version: "2.25", teeth: { "16": { endoResection: true } } }, dentalCoreOptions);
+    rejected.entry?.push({ resource: { resourceType: "MedicationRequest", status: "active", intent: "order" } as never });
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    expect(importFhirBundle(rejected)).toBe(false);
+    expect(getStatusChart()).toEqual(before);
+    expect(error).toHaveBeenCalledWith(expect.stringMatching(/rejected Dental Core bundle/i));
+    error.mockRestore();
+  });
+
+  it("omits invalid FDI, diagnosis, and out-of-range risk evidence values", () => {
+    const bundle = buildFhirBundle({
+      version: "2.25",
+      teeth: { "99": { endoResection: true }, abc: { fissureSealing: true } },
+      case: { cigarettesPerDay: -1, toothLossPerio: 33, maxRblPercent: 101, diagnosisOverride: "not-a-diagnosis" },
+    } as OdontogramExportPayload, dentalCoreOptions);
+
+    expect(JSON.stringify(bundle)).not.toContain('"code":"99"');
+    expect(JSON.stringify(bundle)).not.toContain('"code":"abc"');
+    expect(bundle.entry?.some((entry) => entry.resource?.resourceType === "Condition")).toBe(false);
+    expect(bundle.entry?.some((entry) => entry.resource?.id?.startsWith("dental-core-cigarettes-per-day") || entry.resource?.id?.startsWith("dental-core-periodontitis-attributed-tooth-loss") || entry.resource?.id?.startsWith("dental-core-maximum-radiographic-bone-loss"))).toBe(false);
+  });
+
+  it("rejects out-of-range risk evidence on import", () => {
+    const bundle = buildFhirBundle({ version: "2.25", teeth: {}, case: { cigarettesPerDay: 1 } }, dentalCoreOptions);
+    const evidence = bundle.entry?.find((entry) => entry.resource?.id === "dental-core-cigarettes-per-day")?.resource as import("fhir/r4").Observation | undefined;
+    if (evidence?.resourceType === "Observation") evidence.valueInteger = -1;
+
+    expect(parseDentalCoreBundle(bundle)).toBeUndefined();
+    expect(() => parseFhirBundle(bundle)).toThrow(/rejected Dental Core bundle/i);
+  });
+
+  it("requires an effective date when Dental Core content needs one", () => {
+    expect(() => buildFhirBundle({ version: "2.25", teeth: { "16": { endoResection: true } } }, { dialect: "dental-core" })).toThrow(
+      "Dental Core export requires an effective date from the export options or examination context",
+    );
+  });
+
+  it("keeps every emitted chart property and value inside the released 0.3.0 CodeSystems", () => {
+    const propertyCodes = new Set(dentalCoreContract.propertyCodes);
+    const valueCodes = new Set(dentalCoreContract.valueCodes);
+
+    for (const mapping of CHART_MAPPINGS) {
+      expect(propertyCodes.has(mapping.property), `unknown Dental Core property ${mapping.property}`).toBe(true);
+      for (const code of Object.values(mapping.values ?? {})) {
+        expect(valueCodes.has(code), `unknown Dental Core value ${code}`).toBe(true);
+      }
+    }
+  });
+
   for (const [field, values] of Object.entries(DENTAL_CORE_VALUES)) {
     for (const value of values) {
       it(`roundtrips ${field}=${JSON.stringify(value)}`, () => {
@@ -142,6 +245,23 @@ describe("Dental Core 0.2 lossless carrier dialect", () => {
     expect(bundle.entry?.find((entry) => entry.resource?.resourceType === "CarePlan")?.resource).toMatchObject({
       activity: [{ reference: { reference: "ServiceRequest/dental-core-request-16" } }],
     });
+  });
+
+  it("keeps a clinician diagnosis override as an unprofiled FHIR companion rather than claiming an incomplete Dental Core profile", () => {
+    const bundle = buildFhirBundle({
+      version: "2.25",
+      teeth: {},
+      case: { diagnosisOverride: "periodontitis" },
+    }, dentalCoreOptions);
+
+    const condition = bundle.entry?.find((entry) => entry.resource?.resourceType === "Condition")?.resource;
+    const provenance = bundle.entry?.find((entry) => entry.resource?.resourceType === "Provenance")?.resource;
+
+    expect(condition?.meta?.profile).toBeUndefined();
+    expect(provenance?.meta?.profile).toContain(
+      "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-clinical-provenance",
+    );
+    expect(provenance).toMatchObject({ target: [{ reference: "Condition/dental-core-periodontal-diagnosis" }] });
   });
 
   it("emits truthful companion resources for performed work and retained devices", () => {

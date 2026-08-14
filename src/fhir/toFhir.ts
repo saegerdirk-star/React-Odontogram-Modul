@@ -9,7 +9,9 @@ import { buildDentalCoreBundle } from "./toFhirDentalCore";
 
 /**
  * Convert a serialized odontogram payload into a FHIR R4 collection Bundle.
- * Pure: no DOM, no network. Tolerant of malformed input (never throws).
+ * Pure: no DOM, no network. Tolerant of malformed input for the legacy and
+ * Dental-DE dialects. Dental Core throws when clinical content has no effective
+ * date because inventing one would make the emitted clinical record untruthful.
  *
  * SP-perio P1 Task 3: per-site periodontal probing (`ToothRecord.perio`)
  * does not fit the registry's one-field-per-tooth axis shape, so it is

@@ -10346,14 +10346,21 @@ export function __importStatusForTest(data: Any): void {
   adoptImportAsBaseline(broughtItsOwnArchive);
 }
 
-/** Import a FHIR R4 Bundle (object or JSON string) produced by this module. */
-export function importFhirBundle(input: Any){
+/** Import a FHIR R4 Bundle produced by this module; return whether it was applied. */
+export function importFhirBundle(input: Any): boolean {
   let bundle = input;
   if(typeof input === "string"){
-    try{ bundle = JSON.parse(input); }catch(e){ console.error("Invalid FHIR JSON", e); return; }
+    try{ bundle = JSON.parse(input); }catch(e){ console.error("Invalid FHIR JSON", e); return false; }
   }
-  const payload = parseFhirBundle(bundle);
+  let payload;
+  try{
+    payload = parseFhirBundle(bundle);
+  }catch(e){
+    console.error(e instanceof Error ? e.message : "FHIR import failed");
+    return false;
+  }
   importStatus(payload);
+  return true;
 }
 
 function applyStatusExtra(option: Any){

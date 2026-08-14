@@ -152,4 +152,13 @@ describe("odontogram-z4y: package-lock.json tracks the released version", () => 
     expect(lock.version).toBe(pkg.version);
     expect(lock.packages[""].version).toBe(pkg.version);
   });
+
+  it("every README version badge tracks package.json", () => {
+    const pkg = JSON.parse(readFileSync(`${REPO_ROOT}package.json`, "utf8")) as { version: string };
+    const readmes = ["README.md", ...readdirSync(`${REPO_ROOT}lang`).filter((name) => /^README-.*\.md$/.test(name)).map((name) => `lang/${name}`)];
+
+    for (const readme of readmes) {
+      expect(readFileSync(`${REPO_ROOT}${readme}`, "utf8"), readme).toContain(`version-${pkg.version}-green`);
+    }
+  });
 });
