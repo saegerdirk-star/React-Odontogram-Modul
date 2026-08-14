@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.10.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.11.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -539,7 +539,12 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 وبلا أي شواغل نقل أو مصادقة أو تخزين داخل المكوّن.
 
 ```ts
-import { buildFhirBundle, parseFhirBundle, buildDentalDeBundle } from "./App";
+import {
+  DentalCoreBundleRejectedError,
+  buildDentalDeBundle,
+  buildFhirBundle,
+  parseFhirBundle,
+} from "react-advanced-odontogram/fhir";
 
 const legacy = buildFhirBundle(session.getDocument());
 
@@ -550,7 +555,22 @@ const canonical = buildFhirBundle(session.getDocument(), {
 const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
   effectiveDateTime: "2026-08-08",
 });
+
+const dentalCore = buildFhirBundle(session.getDocument(), {
+  dialect: "dental-core", subject: "Patient/123", effectiveDateTime: "2026-08-08",
+});
+
+function parseImportedBundle(candidate: unknown) {
+  try {
+    return parseFhirBundle(candidate);
+  } catch (error) {
+    if (error instanceof DentalCoreBundleRejectedError) return undefined;
+    throw error;
+  }
+}
 ```
+
+تؤدي الحزمة التي تدّعي Dental Core لكنها خارج عقد الحزم المدعوم الذي ينتجه المكوّن إلى رمي `DentalCoreBundleRejectedError` المُصدَّر؛ ويمكن للمضيف التقاطه دون استبدال المخطط الحالي.
 
 تُصدر لهجة `dental-de` موارد `OdontogramObservationDE` و`CariesObservationDE`
 و`DentalFindingDE` بشرائح المكوّنات من `OdontogramComponentCS`، وهوية السن وفق FDI
@@ -587,8 +607,16 @@ Löe-Silness، وعرض اللثة المتقرنة، ومؤشرات Mombelli ح
 حافة اللثة ذات الإشارة انحسارًا فعليًا؛ وتبقى الحافة مصدر الحقيقة، فلا يُقرأ
 مكوِّن الانحسار المستورد داخلها أبدًا.
 
-يقرأ `parseFhirBundle` **كلتا** اللهجتين، بما في ذلك الحزمة المختلطة، فتظل الحزم
-المُصدَّرة سابقًا قابلة للاستيراد دون تغيير.
+توفر نقطة الدخول الاختيارية `react-advanced-odontogram/fhir` ثلاث لهجات فقط:
+`legacy` (الافتراضية) و`dental-de` و`dental-core` للحزمة
+`de.cognovis.fhir.dental.core#0.3.0`. تتطلب `dental-core` قيمة
+`effectiveDateTime`. يظل تنزيل FHIR المدمج في الواجهة على legacy افتراضيًا عن
+قصد، ولا يحتوي على محدد Dental Core.
+
+تقرأ `parseFhirBundle` موارد legacy وDental-DE، بما في ذلك bundle مختلط، ولا
+تتعرف إلا على bundles Odontogram Dental Core 0.3.0 التي ينتجها هذا المكون. وهي
+ليست مستورد FHIR عامًا: يُرفض أي marker مضلل أو مورد بلا profile أو مورد غير
+مدعوم.
 **فحوص مؤرَّخة وحالة التقييم وتسجيل ما حول الزرعة (اعتباراً من 2.4.0):**
 
 تُعاد فحوص الحالة اللثوية على مدى سنوات، لذا صار بإمكان المستند أن يحمل هوية الفحص نفسه

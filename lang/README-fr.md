@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.10.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.11.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -158,7 +158,12 @@ pas d'horloge système, pas d'aléatoire, et aucune préoccupation de transport,
 d'authentification ou de persistance à l'intérieur du composant.
 
 ```ts
-import { buildFhirBundle, parseFhirBundle, buildDentalDeBundle } from "./App";
+import {
+  DentalCoreBundleRejectedError,
+  buildDentalDeBundle,
+  buildFhirBundle,
+  parseFhirBundle,
+} from "react-advanced-odontogram/fhir";
 
 const legacy = buildFhirBundle(session.getDocument());
 
@@ -169,7 +174,22 @@ const canonical = buildFhirBundle(session.getDocument(), {
 const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
   effectiveDateTime: "2026-08-08",
 });
+
+const dentalCore = buildFhirBundle(session.getDocument(), {
+  dialect: "dental-core", subject: "Patient/123", effectiveDateTime: "2026-08-08",
+});
+
+function parseImportedBundle(candidate: unknown) {
+  try {
+    return parseFhirBundle(candidate);
+  } catch (error) {
+    if (error instanceof DentalCoreBundleRejectedError) return undefined;
+    throw error;
+  }
+}
 ```
+
+Un bundle qui revendique Dental Core mais sort du contrat pris en charge et produit par le module lève l’exception exportée `DentalCoreBundleRejectedError` ; l’hôte peut l’intercepter sans remplacer l’odontogramme courant.
 
 Le dialecte `dental-de` émet `OdontogramObservationDE`, `CariesObservationDE` et
 `DentalFindingDE` avec les tranches de composants d'`OdontogramComponentCS`, l'identité
@@ -211,8 +231,16 @@ comme normal est un `false`/`0` explicite et une lacune enregistrée un
 véritable récession ; le bord reste la source de vérité, un composant de
 récession importé n'y est donc jamais relu.
 
-`parseFhirBundle` lit **les deux** dialectes, y compris un bundle qui les mélange, si bien
-que les bundles déjà exportés continuent de s'importer sans changement.
+L'entrée facultative `react-advanced-odontogram/fhir` propose exactement trois
+dialectes : `legacy` (par défaut), `dental-de` et `dental-core` pour
+`de.cognovis.fhir.dental.core#0.3.0`. `dental-core` exige
+`effectiveDateTime`. Le téléchargement FHIR intégré à l'UI reste délibérément
+sur legacy par défaut et ne propose aucun sélecteur Dental Core.
+
+`parseFhirBundle` lit les ressources legacy et Dental-DE, y compris dans un
+bundle mixte, et ne reconnaît que les bundles Odontogram Dental Core 0.3.0
+produits par le module. Ce n'est pas un importateur FHIR générique : un marqueur
+trompeur, une ressource sans profil ou non prise en charge est rejeté.
 **Examens datés, statut d'évaluation et relevé péri-implantaire (à partir de 2.4.0) :**
 
 Un cas parodontal est réexaminé pendant des années : un document peut désormais porter

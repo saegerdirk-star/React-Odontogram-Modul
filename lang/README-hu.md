@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.10.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.11.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -538,7 +538,12 @@ rendszeróra, nincs véletlenszerűség, és nincs szállítási, hitelesítési
 szempont a komponensben.
 
 ```ts
-import { buildFhirBundle, parseFhirBundle, buildDentalDeBundle } from "./App";
+import {
+  DentalCoreBundleRejectedError,
+  buildDentalDeBundle,
+  buildFhirBundle,
+  parseFhirBundle,
+} from "react-advanced-odontogram/fhir";
 
 const legacy = buildFhirBundle(session.getDocument());
 
@@ -549,7 +554,22 @@ const canonical = buildFhirBundle(session.getDocument(), {
 const { bundle, report } = buildDentalDeBundle(session.getDocument(), {
   effectiveDateTime: "2026-08-08",
 });
+
+const dentalCore = buildFhirBundle(session.getDocument(), {
+  dialect: "dental-core", subject: "Patient/123", effectiveDateTime: "2026-08-08",
+});
+
+function parseImportedBundle(candidate: unknown) {
+  try {
+    return parseFhirBundle(candidate);
+  } catch (error) {
+    if (error instanceof DentalCoreBundleRejectedError) return undefined;
+    throw error;
+  }
+}
 ```
+
+A Dental Core-ként megjelölt, de a támogatott, modul által előállított szerződésen kívüli bundle az exportált `DentalCoreBundleRejectedError` hibát dobja; a gazda ezt az aktuális odontogram lecserélése nélkül elkaphatja.
 
 A `dental-de` nyelvjárás `OdontogramObservationDE`, `CariesObservationDE` és
 `DentalFindingDE` erőforrásokat állít elő az `OdontogramComponentCS` komponens-szeleteivel,
@@ -590,8 +610,16 @@ mérési pontonként kerül kiadásra, de csak ott, ahol az előjeles ínyszél 
 recesszió; a mérvadó továbbra is az ínyszél, ezért importált recesszió-komponens
 soha nem íródik vissza bele.
 
-A `parseFhirBundle` **mindkét** nyelvjárást olvassa, a vegyes köteget is, így a korábban
-exportált kötegek változatlanul importálhatók.
+A választható `react-advanced-odontogram/fhir` belépési pont pontosan három
+nyelvjárást ad: `legacy` (az alapértelmezett), `dental-de` és `dental-core` a
+`de.cognovis.fhir.dental.core#0.3.0` csomaghoz. A `dental-core` használatához
+`effectiveDateTime` kötelező. A beépített UI FHIR-letöltés szándékosan legacy
+alapértelmezett marad, és nincs Dental Core választója.
+
+A `parseFhirBundle` legacy és Dental-DE erőforrásokat olvas, vegyes kötegben is,
+és csak a modul által létrehozott Odontogram Dental Core 0.3.0 kötegeket ismeri
+fel. Nem általános FHIR-importáló: a megtévesztő jelölőt, profil nélküli vagy nem
+támogatott erőforrást elutasítja.
 **Dátumozott vizsgálatok, felmérési státusz és peri-implantáris rögzítés (2.4.0-tól):**
 
 Egy parodontális esetet éveken át újravizsgálnak, ezért a dokumentum mostantól hordozza a

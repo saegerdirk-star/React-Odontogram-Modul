@@ -25,17 +25,22 @@ const consumerDirectory = mkdtempSync(join(root, ".odontogram-library-consumer-"
 try {
   writeFileSync(join(consumerDirectory, "consumer.ts"), [
     'import Odontogram, { createDentalDeOdontogramSession } from "react-advanced-odontogram";',
-    'import { DENTAL_DE_COMPATIBILITY, DENTAL_DE_IMPORT_MANIFEST, importDentalDeBundle, exportDentalDeBundle } from "react-advanced-odontogram/fhir";',
-    'import type { DentalDeExportOptions, SupportedDentalDeBundle } from "react-advanced-odontogram/fhir";',
+    'import { DENTAL_DE_COMPATIBILITY, DENTAL_DE_IMPORT_MANIFEST, DentalCoreBundleRejectedError, buildFhirBundle, importDentalDeBundle, exportDentalDeBundle, parseFhirBundle } from "react-advanced-odontogram/fhir";',
+    'import type { DentalDeExportOptions, FhirDialect, SupportedDentalDeBundle } from "react-advanced-odontogram/fhir";',
     "const options: DentalDeExportOptions = { patient: \"Patient/example\", effectiveDateTime: \"2026-08-12\" };",
+    'const dialect: FhirDialect = "dental-core";',
     "void Odontogram;",
     "void createDentalDeOdontogramSession;",
     "void importDentalDeBundle;",
     "void exportDentalDeBundle;",
+    "void buildFhirBundle;",
+    "void parseFhirBundle;",
+    "void DentalCoreBundleRejectedError;",
     "void DENTAL_DE_COMPATIBILITY;",
     "void DENTAL_DE_IMPORT_MANIFEST;",
     "void (null as SupportedDentalDeBundle | null);",
     "void options;",
+    "void dialect;",
     "",
   ].join("\n"));
 

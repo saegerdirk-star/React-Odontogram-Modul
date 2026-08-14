@@ -1,6 +1,6 @@
 import type { Bundle, BundleEntry, CarePlan, Condition, Device, Observation, Procedure, Provenance, Resource, ServiceRequest } from "fhir/r4";
 import type { FhirExportOptions, OdontogramExportPayload, ToothRecord } from "./types";
-import { CHART_MAPPINGS, COMPONENT_SYSTEM, DENTAL_CORE, FDI_SYSTEM, PROFILE, PROPERTY_SYSTEM, PROVENANCE_SYSTEM, VALUE_SYSTEM } from "./dentalCoreContract";
+import { CHART_MAPPINGS, COMPONENT_SYSTEM, DENTAL_CORE, DENTAL_CORE_BUNDLE_IDENTIFIER, FDI_SYSTEM, isDentalCoreDiagnosis, isDentalCoreFdi, isDentalCoreRiskValue, PROFILE, PROPERTY_SYSTEM, PROVENANCE_SYSTEM, VALUE_SYSTEM } from "./dentalCoreContract";
 
 const subjectReference = (options: FhirExportOptions): string => options.subject ?? "urn:uuid:odontogram-subject";
 const effective = (payload: OdontogramExportPayload, options: FhirExportOptions): string => {
@@ -117,7 +117,7 @@ function riskEvidence(payload: OdontogramExportPayload, options: FhirExportOptio
     ["periodontitis-attributed-tooth-loss", payload.case?.toothLossPerio, "integer"],
     ["maximum-radiographic-bone-loss", payload.case?.maxRblPercent, "percent"],
   ] as const;
-  return values.flatMap(([code, value, kind]) => typeof value !== "number" ? [] : [{
+  return values.flatMap(([code, value, kind]) => typeof value !== "number" || !isDentalCoreRiskValue(code, value) ? [] : [{
     resourceType: "Observation" as const, id: `dental-core-${code}`, meta: { profile: profile("dental-risk-evidence") }, status: "final" as const,
     code: { coding: [coding(COMPONENT_SYSTEM, code)] }, subject: { reference: subjectReference(options) }, effectiveDateTime: effective(payload, options),
     ...(kind === "integer" ? { valueInteger: value } : { valueQuantity: { value, system: "http://unitsofmeasure.org", code: "%", unit: "%" } }),
@@ -126,7 +126,7 @@ function riskEvidence(payload: OdontogramExportPayload, options: FhirExportOptio
 
 function diagnosis(payload: OdontogramExportPayload, options: FhirExportOptions): Resource[] {
   const selected = payload.case?.diagnosisOverride;
-  if (!selected) return [];
+  if (!selected || !isDentalCoreDiagnosis(selected)) return [];
   const condition: Condition = { resourceType: "Condition", id: "dental-core-periodontal-diagnosis", meta: { tag: [coding(VALUE_SYSTEM, selected)] }, clinicalStatus: { coding: [coding("http://terminology.hl7.org/CodeSystem/condition-clinical", "active")] }, verificationStatus: { coding: [coding("http://terminology.hl7.org/CodeSystem/condition-ver-status", "confirmed")] }, code: { text: selected }, subject: { reference: subjectReference(options) }, recordedDate: effective(payload, options) };
   const clinician = payload.examination?.recorder ?? payload.examination?.performer;
   const provenance: Provenance = { resourceType: "Provenance", meta: { profile: profile("dental-clinical-provenance") }, target: [{ reference: "Condition/dental-core-periodontal-diagnosis" }], recorded: effective(payload, options), activity: { coding: [coding(PROVENANCE_SYSTEM, "clinician-selected")] }, agent: [{ who: clinician ? { reference: clinician } : { display: "Unspecified clinician" } }] };
@@ -137,14 +137,14 @@ export function buildDentalCoreBundle(payload: OdontogramExportPayload, options:
   const safe = payload && typeof payload === "object" ? payload : ({ version: "", teeth: {} } as OdontogramExportPayload);
   const entries: BundleEntry[] = [];
   if (!options.subject) entries.push({ fullUrl: "urn:uuid:odontogram-subject", resource: { resourceType: "Patient", id: "odontogram-subject" } });
-  for (const [fdi, record] of Object.entries(safe.teeth ?? {})) {
+  for (const [fdi, record] of Object.entries(safe.teeth ?? {}).filter(([fdi]) => isDentalCoreFdi(fdi))) {
     const chart = chartState(record, fdi, safe, options, false);
     if (chart) entries.push({ resource: chart });
     for (const resource of [...procedure(record, fdi, safe, options), ...devices(record, fdi, options), ...observedFindings(record, fdi, safe, options)]) entries.push({ resource });
   }
   if (safe.plan && Object.keys(safe.plan).length) {
     const activity = Object.entries(safe.plan)
-      .filter(([, record]) => Object.keys(record).length > 0)
+      .filter(([fdi, record]) => isDentalCoreFdi(fdi) && Object.keys(record).length > 0)
       .map(([fdi]) => ({ reference: { reference: `ServiceRequest/dental-core-request-${fdi}` } }));
     const plan: CarePlan = {
       resourceType: "CarePlan", id: "dental-core-plan", status: "active", intent: "plan",
@@ -152,12 +152,12 @@ export function buildDentalCoreBundle(payload: OdontogramExportPayload, options:
     };
     entries.push({ resource: plan });
   }
-  for (const [fdi, record] of Object.entries(safe.plan ?? {})) {
+  for (const [fdi, record] of Object.entries(safe.plan ?? {}).filter(([fdi]) => isDentalCoreFdi(fdi))) {
     const chart = chartState(record, fdi, safe, options, true);
     if (chart) entries.push({ resource: chart });
     const request = plannedRequest(fdi, record, options);
     if (request) entries.push({ resource: request });
   }
   for (const resource of [...riskEvidence(safe, options), ...diagnosis(safe, options)]) entries.push({ resource });
-  return { resourceType: "Bundle", type: "collection", identifier: { system: DENTAL_CORE, value: "odontogram-dental-core-0.2.0" }, entry: entries };
+  return { resourceType: "Bundle", type: "collection", identifier: { system: DENTAL_CORE, value: DENTAL_CORE_BUNDLE_IDENTIFIER }, entry: entries };
 }

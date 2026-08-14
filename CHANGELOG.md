@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.11.0] - 2026-08-14
+
+### Added
+
+- Dental Core `de.cognovis.fhir.dental.core#0.3.0` as the third optional FHIR
+  dialect. The public `react-advanced-odontogram/fhir` entry can export it with
+  `dialect: "dental-core"`; it requires `effectiveDateTime` and labels the
+  module-produced bundle with the released package version.
+- Strict Dental Core bundle import: only module-produced Odontogram Dental Core
+  0.3.0 bundles are accepted. A misleading identifier, unprofiled resource, or
+  unsupported resource is rejected rather than treating this adapter as a
+  generic FHIR importer. The optional FHIR entry exports the typed
+  `DentalCoreBundleRejectedError` for hosts that call `parseFhirBundle`
+  directly; the built-in importer catches it, preserves the current chart, and
+  reports failure through its boolean return value.
+
+### Changed
+
+- The built-in UI FHIR download remains deliberately legacy-default and does
+  not expose a Dental Core selector, preserving existing UI behavior.
+
 ## [2.10.0] - 2026-08-12
 
 ### Added

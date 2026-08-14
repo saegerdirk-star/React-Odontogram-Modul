@@ -1,0 +1,14 @@
+{
+  "package": "de.cognovis.fhir.dental.core@0.3.0",
+  "packageSha512": "12e2292e8d3c33907cde013fb1730a79cd276e25076fad8399e1df1e1f1addbc9b20c81a504839f78c3102bfdaad3d460f4f969d98eae97a7f277dce604733cb",
+  "source": [
+    "CodeSystem-dental-chart-property.json",
+    "CodeSystem-dental-chart-value.json"
+  ],
+  "propertyCodes": [
+    "apicoectomy-performed", "bridge-abutment-role", "cej-identifiability", "cervical-wear-type", "diagnosis-selection-mode", "distal-contact-defect", "distal-tooth-fracture-present", "edentulous-space-closed", "extraction-wound-present", "fissure-sealant-state", "horizontal-tooth-displacement", "incisal-occlusal-wear-type", "incisal-tooth-fracture-present", "legacy-latin-pulp-diagnosis", "legacy-tooth-modifier", "mesial-contact-defect", "mesial-tooth-fracture-present", "orthodontic-appliance-type", "parapulpal-pin-present", "periapical-lesion-type", "periodontal-diagnosis", "prosthesis-retention-element", "retention-engaged-side", "root-concavity-category", "root-resorption-type", "tooth-discoloration-type", "tooth-rotation-present", "unqualified-gingival-phenotype", "vertical-tooth-displacement"
+  ],
+  "valueCodes": [
+    "abfraction", "abrasion", "attachment", "attrition", "band", "bar-abutment", "both", "bracket", "clasp", "clinician-selected", "deep", "derived", "detectable", "distal", "erosion", "external-cervical", "extrinsic-staining", "extrusion", "fluorosis", "gangraena-pulpae", "gingivitis", "granuloma", "health", "hyperaemia-pulpae", "incisal", "inflammation", "internal", "intrusion", "medium", "mesial", "mild", "mobility", "necrosis-pulpae", "none", "nonvital-darkening", "not-detectable", "other-discoloration", "periapical-abscess", "periodontal-involvement", "periodontitis", "pulpa-sana", "pulpitis-acuta-purulenta", "pulpitis-acuta-serosa", "pulpitis-chronica-clausa", "pulpitis-chronica-hyperplastica", "pulpitis-chronica-ulcerosa", "radicular-cyst", "tetracycline-staining", "thick", "thin"
+  ]
+}

@@ -4,7 +4,7 @@
 
 /** Optional standalone FHIR adapter entry point. */
 export { buildFhirBundle } from "./toFhir";
-export { parseFhirBundle } from "./fromFhir";
+export { DentalCoreBundleRejectedError, parseFhirBundle } from "./fromFhir";
 export { buildDentalDeBundle } from "./toFhirDentalDe";
 export { buildDentalCoreBundle } from "./toFhirDentalCore";
 export { parseDentalCoreBundle } from "./fromFhirDentalCore";
