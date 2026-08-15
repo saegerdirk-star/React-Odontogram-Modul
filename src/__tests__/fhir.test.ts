@@ -20,7 +20,7 @@ import {
 } from "../fhir/generated/dental-core-contract";
 import type { FhirDialect, OdontogramExportPayload } from "../fhir/types";
 import { createOdontogramSession } from "../index";
-import { __resetChartStateForTest, __setToothStateForTest, getStatusChart, importFhirBundle } from "../odontogram";
+import { __importStatusForTest, __resetChartStateForTest, __setToothStateForTest, getStatusChart, importFhirBundle } from "../odontogram";
 
 const options = { subject: "Patient/example", effectiveDateTime: "2026-08-14T17:00:31Z", dialect: "dental-core" as const };
 const testFileUrl = import.meta.url;
@@ -231,6 +231,150 @@ describe("configured FHIR codecs", () => {
     expect(exported.entry?.map((entry) => (entry.resource as { effectiveDateTime?: string } | undefined)?.effectiveDateTime).filter(Boolean)).toEqual(
       expect.arrayContaining([options.effectiveDateTime]),
     );
+  });
+
+  it("preserves opaque Aidbox identity and resolves its internal relations through a configured Dental Core session", () => {
+    const aidboxBundle = structuredClone(buildFhirBundle(fixture(), options));
+    const entries = aidboxBundle.entry ?? [];
+    const replacement = new Map<string, string>();
+    const expectedIdentity = new Map<string, { id: string; versionId: string; fullUrl: string }>();
+
+    for (const [index, entry] of entries.entries()) {
+      const resource = entry.resource as { resourceType: string; id?: string; meta?: { versionId?: string } };
+      const original = `${resource.resourceType}/${resource.id}`;
+      const originalFullUrl = entry.fullUrl;
+      const id = `aidbox-${index + 1}`;
+      const fullUrl = `https://aidbox.example/fhir/${resource.resourceType}/${id}`;
+      const versionId = `version-${index + 1}`;
+      replacement.set(original, fullUrl);
+      if (originalFullUrl) replacement.set(originalFullUrl, fullUrl);
+      expectedIdentity.set(fullUrl, { id, versionId, fullUrl });
+      resource.id = id;
+      resource.meta = { ...resource.meta, versionId };
+      entry.fullUrl = fullUrl;
+    }
+
+    for (const entry of entries) {
+      const resource = entry.resource as {
+        basedOn?: Array<{ reference?: string }>;
+        activity?: Array<{ reference?: { reference?: string } }>;
+        target?: Array<{ reference?: string }>;
+      };
+      for (const reference of Array.isArray(resource.basedOn) ? resource.basedOn : []) {
+        if (reference.reference) reference.reference = replacement.get(reference.reference) ?? reference.reference;
+      }
+      for (const activity of Array.isArray(resource.activity) ? resource.activity : []) {
+        const reference = activity.reference?.reference;
+        if (reference && activity.reference) activity.reference.reference = replacement.get(reference) ?? reference;
+      }
+      for (const target of Array.isArray(resource.target) ? resource.target : []) {
+        if (target.reference) target.reference = replacement.get(target.reference) ?? target.reference;
+      }
+    }
+
+    const session = createOdontogramSession(undefined, {
+      fhir: { dialect: "dental-core", exportOptions: { subject: options.subject, effectiveDateTime: options.effectiveDateTime } },
+    });
+
+    expect(session.importFhirBundle(aidboxBundle)).toBe(true);
+    const document = session.getDocument() as OdontogramExportPayload & {
+      fhirIdentity?: { resources?: Record<string, { id?: string; versionId?: string; fullUrl?: string }> };
+    };
+    expect(Object.values(document.fhirIdentity?.resources ?? {})).toEqual(expect.arrayContaining([...expectedIdentity.values()]));
+    expect(Object.keys(document.fhirIdentity?.resources ?? {})).toHaveLength(expectedIdentity.size);
+    expect(JSON.parse(JSON.stringify(document))).toEqual(document);
+
+    const exported = session.exportFhirBundle();
+    expect(Object.fromEntries((exported.entry ?? []).map((entry) => [entry.fullUrl, {
+      id: entry.resource?.id,
+      versionId: entry.resource?.meta?.versionId,
+      fullUrl: entry.fullUrl,
+    }]))).toEqual(Object.fromEntries(expectedIdentity));
+    const exportedPlan = exported.entry?.find((entry) => entry.resource?.resourceType === "CarePlan")?.resource as import("fhir/r4").CarePlan | undefined;
+    const exportedRequest = exported.entry?.find((entry) => entry.resource?.resourceType === "ServiceRequest")?.resource as import("fhir/r4").ServiceRequest | undefined;
+    const exportedPlannedChart = exported.entry?.find((entry) => entry.resource?.resourceType === "Observation" && Array.isArray((entry.resource as import("fhir/r4").Observation | undefined)?.basedOn))?.resource as import("fhir/r4").Observation | undefined;
+    const exportedCondition = exported.entry?.find((entry) => entry.resource?.resourceType === "Condition")?.resource as import("fhir/r4").Condition | undefined;
+    const exportedProvenance = exported.entry?.find((entry) => entry.resource?.resourceType === "Provenance")?.resource as import("fhir/r4").Provenance | undefined;
+    const exportedPlanFullUrl = exported.entry?.find((entry) => entry.resource === exportedPlan)?.fullUrl;
+    const exportedRequestFullUrl = exported.entry?.find((entry) => entry.resource === exportedRequest)?.fullUrl;
+    const exportedConditionFullUrl = exported.entry?.find((entry) => entry.resource === exportedCondition)?.fullUrl;
+    expect(exportedPlan?.activity?.[0]?.reference?.reference).toBe(exportedRequestFullUrl);
+    expect(exportedRequest?.basedOn?.[0]?.reference).toBe(exportedPlanFullUrl);
+    expect(exportedPlannedChart?.basedOn?.[0]?.reference).toBe(exportedPlanFullUrl);
+    expect(exportedProvenance?.target?.[0]?.reference).toBe(exportedConditionFullUrl);
+
+    const changed = session.getDocument();
+    changed.teeth["17"] = { endoResection: true };
+    session.setDocument(changed);
+    const withNewResource = session.exportFhirBundle();
+    const newEntries = (withNewResource.entry ?? []).filter((entry) => !expectedIdentity.has(entry.fullUrl ?? ""));
+    expect(newEntries).not.toHaveLength(0);
+    expect(newEntries.every((entry) => !entry.resource?.id && /^urn:uuid:/.test(entry.fullUrl ?? ""))).toBe(true);
+    expect(new Set(newEntries.map((entry) => entry.fullUrl)).size).toBe(newEntries.length);
+  });
+
+  it("clears a live session's imported identity when a status import replaces its document", () => {
+    const session = createOdontogramSession({
+      version: "2.25",
+      globals: {},
+      teeth: { "16": { endoResection: true } },
+      fhirIdentity: { resources: { "Observation/chart/status/16": { id: "host-a-chart", versionId: "17", fullUrl: "https://aidbox.example/fhir/Observation/host-a-chart" } } },
+    }, { fhir: { dialect: "dental-core", exportOptions: options } });
+
+    session.activate();
+    try {
+      __importStatusForTest({ version: "2.25", globals: {}, teeth: { "16": { fissureSealing: true } } });
+      expect(session.getDocument().fhirIdentity).toBeUndefined();
+    } finally {
+      session.release();
+    }
+  });
+
+  it("keeps relative references for imported persistent resources without entry fullUrls", () => {
+    const relativeBundle = structuredClone(buildFhirBundle(fixture(), options));
+    const references = new Map<string, string>();
+    for (const [index, entry] of (relativeBundle.entry ?? []).entries()) {
+      const resource = entry.resource as { resourceType: string; id?: string; meta?: { versionId?: string } };
+      const relative = `${resource.resourceType}/persistent-${index + 1}`;
+      if (entry.fullUrl) references.set(entry.fullUrl, relative);
+      resource.id = `persistent-${index + 1}`;
+      resource.meta = { ...resource.meta, versionId: `version-${index + 1}` };
+      delete entry.fullUrl;
+    }
+    for (const entry of relativeBundle.entry ?? []) {
+      const resource = entry.resource as {
+        basedOn?: Array<{ reference?: string }>;
+        activity?: Array<{ reference?: { reference?: string } }>;
+        target?: Array<{ reference?: string }>;
+      };
+      for (const reference of Array.isArray(resource.basedOn) ? resource.basedOn : []) {
+        if (reference.reference) reference.reference = references.get(reference.reference) ?? reference.reference;
+      }
+      for (const activity of Array.isArray(resource.activity) ? resource.activity : []) {
+        const reference = activity.reference?.reference;
+        if (reference && activity.reference) activity.reference.reference = references.get(reference) ?? reference;
+      }
+      for (const target of Array.isArray(resource.target) ? resource.target : []) {
+        if (target.reference) target.reference = references.get(target.reference) ?? target.reference;
+      }
+    }
+
+    const session = createOdontogramSession(undefined, {
+      fhir: { dialect: "dental-core", exportOptions: options },
+    });
+    expect(session.importFhirBundle(relativeBundle)).toBe(true);
+
+    const exported = session.exportFhirBundle();
+    expect((exported.entry ?? []).every((entry) => entry.fullUrl === undefined)).toBe(true);
+    const plan = exported.entry?.find((entry) => entry.resource?.resourceType === "CarePlan")?.resource as import("fhir/r4").CarePlan | undefined;
+    const request = exported.entry?.find((entry) => entry.resource?.resourceType === "ServiceRequest")?.resource as import("fhir/r4").ServiceRequest | undefined;
+    const plannedChart = exported.entry?.find((entry) => entry.resource?.resourceType === "Observation" && Array.isArray((entry.resource as import("fhir/r4").Observation | undefined)?.basedOn))?.resource as import("fhir/r4").Observation | undefined;
+    const condition = exported.entry?.find((entry) => entry.resource?.resourceType === "Condition")?.resource as import("fhir/r4").Condition | undefined;
+    const provenance = exported.entry?.find((entry) => entry.resource?.resourceType === "Provenance")?.resource as import("fhir/r4").Provenance | undefined;
+    expect(plan?.activity?.[0]?.reference?.reference).toBe(`ServiceRequest/${request?.id}`);
+    expect(request?.basedOn?.[0]?.reference).toBe(`CarePlan/${plan?.id}`);
+    expect(plannedChart?.basedOn?.[0]?.reference).toBe(`CarePlan/${plan?.id}`);
+    expect(provenance?.target?.[0]?.reference).toBe(`Condition/${condition?.id}`);
   });
 
   it("fails closed instead of silently dropping unsupported populated Core state", () => {
