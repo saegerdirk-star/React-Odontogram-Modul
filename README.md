@@ -95,26 +95,26 @@ every module-level entry point (`exportStatus`, `importStatus`, `getStatusChart`
 > through their session API. Ownership passes to a waiting instance when the
 > current one unmounts.
 
-### FHIR is a pure, optional Dental Core projection
+### FHIR is a pure, optional projection
 
-FHIR conversion is a pure adapter over the UI-domain document: it performs no DOM access, network I/O, wall-clock reads, randomness, transport, persistence, or authentication. The package supports only the generated Dental Core contract `de.cognovis.fhir.dental.core#0.3.0`.
+FHIR conversion is a pure adapter over the UI-domain document: it performs no DOM access, network I/O, wall-clock reads, randomness, transport, persistence, or authentication. Standalone sessions use the upstream-compatible `legacy` codec by default. Configure `dental-core` explicitly for `de.cognovis.fhir.dental.core#0.3.0`; a Dental Core session rejects Legacy input rather than falling back, and rejects an export when populated clinical state has no admitted Core carrier.
+
+The optional `buildFhirBundle` and `parseFhirBundle` helpers accept the same codec selection when a host does not use a session.
 
 ```ts
-import { DentalCoreBundleRejectedError, buildFhirBundle, parseFhirBundle } from "react-advanced-odontogram/fhir";
+import { createOdontogramSession } from "react-advanced-odontogram";
 
-const bundle = buildFhirBundle(session.getDocument(), {
-  subject: "Patient/123",
-  effectiveDateTime: "2026-08-08",
+const session = createOdontogramSession(undefined, {
+  fhir: {
+    dialect: "dental-core",
+    exportOptions: { subject: "Patient/123", effectiveDateTime: "2026-08-08" },
+  },
 });
-
-try {
-  const document = parseFhirBundle(bundle);
-} catch (error) {
-  if (error instanceof DentalCoreBundleRejectedError) throw error;
-}
+const bundle = session.exportFhirBundle();
+if (!session.importFhirBundle(bundle)) throw new Error("FHIR import rejected");
 ```
 
-A clinical export requires an effective date supplied by the caller or stored in the examination context. Input is accepted only when every resource satisfies the generated Dental Core profiles and terminology; unsupported or malformed bundles are rejected.
+A clinical Dental Core export requires an effective date supplied by the caller or stored in the session configuration. Legacy is intentionally limited to its upstream-supported fields and may omit newer Cognovis fields; Dental Core is the complete strict path. Input is accepted only when every Dental Core resource satisfies the generated profiles and terminology; unsupported or malformed claimed Core Bundles are rejected.
 
 ## 🦷 Periodontal charting
 

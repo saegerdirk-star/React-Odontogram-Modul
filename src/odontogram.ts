@@ -8,7 +8,7 @@ import { type OdontogramPlugin, getQuadrant, LAYER_Z } from "./plugin";
 import { sanitizePluginSvg } from "./pluginSanitize";
 import { buildFhirBundle } from "./fhir/toFhir";
 import { parseFhirBundle } from "./fhir/fromFhir";
-import type { FhirExportOptions } from "./fhir/types";
+import { resolveFhirDialect, type Bundle, type FhirDialect, type FhirExportOptions } from "./fhir/types";
 import type { OdontogramDocument, ExaminationSnapshotRecord } from "./document";
 import { PAYLOAD_VERSION } from "./document";
 export type { OdontogramDocument } from "./document";
@@ -10151,12 +10151,7 @@ export function exportStatus(){
  *   caller-supplied or examination-supplied effective date.
  */
 export function exportFhir(options?: FhirExportOptions){
-  const payload = collectExportPayload();
-  const caseExamDate = typeof payload.case?.examDate === "string" ? payload.case.examDate : undefined;
-  const examinationDate = typeof payload.examination?.effectiveDateTime === "string" ? payload.examination.effectiveDateTime : undefined;
-  const effectiveDateTime = options?.effectiveDateTime ?? examinationDate ?? caseExamDate;
-  const bundle = buildFhirBundle(payload, { ...options, effectiveDateTime });
-  downloadJson(bundle, "odontogram-fhir");
+  downloadJson(getActiveOdontogramSession().exportFhirBundle(options), "odontogram-fhir");
 }
 
 /**
@@ -10357,15 +10352,7 @@ export function importFhirBundle(input: Any): boolean {
   if(typeof input === "string"){
     try{ bundle = JSON.parse(input); }catch(e){ console.error("Invalid FHIR JSON", e); return false; }
   }
-  let payload;
-  try{
-    payload = parseFhirBundle(bundle);
-  }catch(e){
-    console.error(e instanceof Error ? e.message : "FHIR import failed");
-    return false;
-  }
-  importStatus(payload);
-  return true;
+  return getActiveOdontogramSession().importFhirBundle(bundle);
 }
 
 function applyStatusExtra(option: Any){
@@ -12137,6 +12124,8 @@ export { setOcclusalVisible, setWisdomVisible, setShowBase, setHealthyPulpVisibl
 export interface OdontogramSession {
   /** Stable identity, useful for logging and React keys. */
   readonly id: string;
+  /** Immutable FHIR configuration shared by host calls and the built-in buttons. */
+  readonly fhir: Readonly<OdontogramSessionFhirConfiguration>;
   /** The current UI-domain document. Always a detached copy. */
   getDocument(): OdontogramDocument;
   /** Replace the whole document. `null`/`undefined` resets to a blank chart. */
@@ -12149,6 +12138,19 @@ export interface OdontogramSession {
   activate(): void;
   /** Give the engine back to the session that was live before `activate()`. */
   release(): void;
+  /** Export the current document through this session's configured codec. */
+  exportFhirBundle(options?: FhirExportOptions): Bundle;
+  /** Import through this session's configured codec without replacing state on rejection. */
+  importFhirBundle(input: unknown): boolean;
+}
+
+export interface OdontogramSessionFhirConfiguration {
+  dialect: FhirDialect;
+  exportOptions?: FhirExportOptions;
+}
+
+export interface OdontogramSessionOptions {
+  fhir?: Partial<OdontogramSessionFhirConfiguration>;
 }
 
 function blankDocument(): OdontogramDocument {
@@ -12234,15 +12236,21 @@ let sessionCounter = 0;
 
 class ClinicalSession implements OdontogramSession {
   readonly id: string;
+  readonly fhir: Readonly<OdontogramSessionFhirConfiguration>;
   /** The document while this session is NOT live. Ignored while live, where
    *  the engine's own state is the single source of truth.
    *  @internal — module-private; not part of the public session contract. */
   stored: OdontogramDocument;
   private readonly listeners = new Set<(doc: OdontogramDocument) => void>();
 
-  constructor(initial?: OdontogramDocument | null, id?: string){
+  constructor(initial?: OdontogramDocument | null, id?: string, options?: OdontogramSessionOptions){
     this.id = id ?? `odontogram-session-${++sessionCounter}`;
     this.stored = initial ? cloneDocument(initial) : blankDocument();
+    const exportOptions = options?.fhir?.exportOptions;
+    this.fhir = Object.freeze({
+      dialect: resolveFhirDialect(options?.fhir?.dialect),
+      ...(exportOptions ? { exportOptions: Object.freeze({ ...exportOptions }) } : {}),
+    });
   }
 
   getDocument(): OdontogramDocument {
@@ -12272,6 +12280,25 @@ class ClinicalSession implements OdontogramSession {
   activate(): void { activateSession(this); }
 
   release(): void { releaseSession(this); }
+
+  exportFhirBundle(options?: FhirExportOptions): Bundle {
+    return buildFhirBundle(this.getDocument(), {
+      ...this.fhir.exportOptions,
+      ...options,
+      dialect: this.fhir.dialect,
+    });
+  }
+
+  importFhirBundle(input: unknown): boolean {
+    try {
+      const payload = parseFhirBundle(input, { dialect: this.fhir.dialect });
+      this.setDocument(payload);
+      return true;
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : "FHIR import failed");
+      return false;
+    }
+  }
 
   /** Internal: fan a change out to this session's own subscribers only. */
   notify(): void {
@@ -12323,8 +12350,8 @@ function releaseSession(session: ClinicalSession): void {
  * Two sessions never share clinical state: an edit made through one is
  * invisible to the other, in both directions.
  */
-export function createOdontogramSession(initial?: OdontogramDocument | null): OdontogramSession {
-  return new ClinicalSession(initial);
+export function createOdontogramSession(initial?: OdontogramDocument | null, options?: OdontogramSessionOptions): OdontogramSession {
+  return new ClinicalSession(initial, undefined, options);
 }
 
 /** The session backing the module-level standalone API. */

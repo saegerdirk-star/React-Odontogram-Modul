@@ -2,5 +2,5 @@
 
 ## Unreleased
 
-- Removed the deprecated predecessor adapter, generated artifacts, import and export APIs, tests, and documentation.
-- Added the generated Dental Core-only FHIR contract for `de.cognovis.fhir.dental.core#0.3.0`.
+- Added immutable per-session FHIR codec configuration: standalone sessions use upstream-compatible `legacy`, and hosts can explicitly select generated Dental Core `de.cognovis.fhir.dental.core#0.3.0`.
+- Routed programmatic and built-in FHIR import/export through the same active session codec; Dental Core accepts profile-admitted Aidbox collection Bundles and rejects lossy, malformed, or cross-codec data without replacing the chart.

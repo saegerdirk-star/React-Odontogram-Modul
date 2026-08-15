@@ -4,9 +4,8 @@
 // SP3a Task 4 + SP3b Task 3: explicit new-behavior / migration assertions for the
 // crown-material -> toothSubstrate + restorationType x restorationMaterial swap,
 // including implant fixed crowns/bridges folding into the same axis (SP3b Task 3,
-// which removes the SP3a interim implant-crown deferral). Parity goldens
-// (svg-fingerprints.json / fhir-golden.json / roundtrip-golden.json) already cover
-// this broadly via the matrix; these tests pin down the specific, human-readable
+// which removes the SP3a interim implant-crown deferral). The SVG parity golden
+// already covers this broadly via the matrix; these tests pin down the specific, human-readable
 // behaviors using the real hydrate (via __renderActiveLayers, the only exported
 // seam that runs hydrateState) and FHIR-export entry points (same as
 // render-seam.test.ts / fhir.test.ts).

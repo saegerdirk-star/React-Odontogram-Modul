@@ -9,6 +9,13 @@ import { DentalRiskEvidenceProfile } from "./generated/de-cognovis-fhir-dental-c
 import { DentalServiceRequestProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/ServiceRequest_DentalServiceRequest";
 import { CHART_MAPPINGS, COMPONENT_SYSTEM, DENTAL_CORE, DENTAL_CORE_BUNDLE_IDENTIFIER, DENTAL_CORE_PROFILES, FDI_SYSTEM, isDentalCoreDiagnosis, isDentalCoreFdi, isDentalCoreRiskValue, PROPERTY_SYSTEM, PROVENANCE_SYSTEM, VALUE_SYSTEM } from "./dentalCoreContract";
 
+export class UnsupportedDentalCoreContentError extends Error {
+  constructor(field: string) {
+    super(`Dental Core cannot faithfully represent populated field: ${field}`);
+    this.name = "UnsupportedDentalCoreContentError";
+  }
+}
+
 const subjectReference = (options: FhirExportOptions): string => options.subject ?? "urn:uuid:odontogram-subject";
 const effective = (payload: OdontogramExportPayload, options: FhirExportOptions): string => {
   const value = options.effectiveDateTime ?? payload.examination?.effectiveDateTime ?? payload.case?.examDate;
@@ -19,6 +26,64 @@ const coding = (system: string, code: string) => ({ system, code });
 const profile = (id: keyof typeof DENTAL_CORE_PROFILES) => [DENTAL_CORE_PROFILES[id]];
 const generated = <T>(profileType: { apply(resource: never): { toResource(): unknown } }, resource: T): T =>
   profileType.apply(resource as never).toResource() as T;
+
+const supportedToothFields = new Set(CHART_MAPPINGS.map((mapping) => mapping.field));
+const supportedCaseFields = new Set(["cigarettesPerDay", "toothLossPerio", "maxRblPercent", "diagnosisOverride"]);
+const supportedExaminationFields = new Set(["subject", "effectiveDateTime"]);
+const nonClinicalToothFields = new Set(["cariesActiveDepth", "fillingMaterial"]);
+
+function hasClinicalValue(value: unknown, field?: string): boolean {
+  if (value === undefined || value === null || value === false || value === "") return false;
+  if (typeof value === "string") {
+    const emptyValues = field === "toothSelection"
+      ? ["tooth-base"]
+      : ["none", "unknown", "normal", "natural", "tooth-base"];
+    return !emptyValues.includes(value);
+  }
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "object") return Object.entries(value as Record<string, unknown>)
+    .some(([nestedField, nestedValue]) => hasClinicalValue(nestedValue, nestedField));
+  return true;
+}
+
+function assertMappedTooth(record: ToothRecord, label: string): void {
+  for (const [field, value] of Object.entries(record)) {
+    if (nonClinicalToothFields.has(field)) continue;
+    if (!supportedToothFields.has(field as keyof ToothRecord)) {
+      if (hasClinicalValue(value, field)) throw new UnsupportedDentalCoreContentError(`${label}.${field}`);
+      continue;
+    }
+    const mapping = CHART_MAPPINGS.find((candidate) => candidate.field === field);
+    if (!mapping) throw new UnsupportedDentalCoreContentError(`${label}.${field}`);
+    if (mapping.kind === "boolean") {
+      if (typeof value !== "boolean") throw new UnsupportedDentalCoreContentError(`${label}.${field}`);
+    } else if (mapping.kind === "set") {
+      if (!Array.isArray(value) || value.some((item) => typeof item !== "string" || !mapping.values?.[item])) {
+        throw new UnsupportedDentalCoreContentError(`${label}.${field}`);
+      }
+    } else if (typeof value !== "string" || !mapping.values?.[value]) {
+      throw new UnsupportedDentalCoreContentError(`${label}.${field}`);
+    }
+  }
+}
+
+function assertDentalCoreComplete(payload: OdontogramExportPayload): void {
+  for (const [fdi, record] of Object.entries(payload.teeth ?? {})) {
+    if (!isDentalCoreFdi(fdi) && hasClinicalValue(record)) throw new UnsupportedDentalCoreContentError(`teeth.${fdi}`);
+    assertMappedTooth(record, `teeth.${fdi}`);
+  }
+  for (const [fdi, record] of Object.entries(payload.plan ?? {})) {
+    if (!isDentalCoreFdi(fdi) && hasClinicalValue(record)) throw new UnsupportedDentalCoreContentError(`plan.${fdi}`);
+    assertMappedTooth(record, `plan.${fdi}`);
+  }
+  if (payload.globals?.edentulous === true) throw new UnsupportedDentalCoreContentError("globals.edentulous");
+  for (const [field, value] of Object.entries(payload.case ?? {})) {
+    if (!supportedCaseFields.has(field) && hasClinicalValue(value)) throw new UnsupportedDentalCoreContentError(`case.${field}`);
+  }
+  for (const [field, value] of Object.entries(payload.examination ?? {})) {
+    if (!supportedExaminationFields.has(field) && hasClinicalValue(value)) throw new UnsupportedDentalCoreContentError(`examination.${field}`);
+  }
+}
 
 function chartComponents(record: ToothRecord): Observation["component"] {
   const components: NonNullable<Observation["component"]> = [];
@@ -145,6 +210,7 @@ function diagnosis(payload: OdontogramExportPayload, options: FhirExportOptions)
 
 export function buildDentalCoreBundle(payload: OdontogramExportPayload, options: FhirExportOptions = {}): Bundle {
   const safe = payload && typeof payload === "object" ? payload : ({ version: "", teeth: {} } as OdontogramExportPayload);
+  assertDentalCoreComplete(safe);
   const entries: BundleEntry[] = [];
   if (!options.subject) entries.push({ fullUrl: "urn:uuid:odontogram-subject", resource: { resourceType: "Patient", id: "odontogram-subject" } });
   for (const [fdi, record] of Object.entries(safe.teeth ?? {}).filter(([fdi]) => isDentalCoreFdi(fdi))) {

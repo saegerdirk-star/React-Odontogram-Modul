@@ -38,7 +38,7 @@ describe("SP6 Task 1: payload version 2.4", () => {
   });
 
   it("parseFhirBundle (fromFhir) emits version 2.4, independent of the input payload's own version tag", () => {
-    const bundle = buildFhirBundle({ version: "1.4", teeth: {} } as never);
+    const bundle = buildFhirBundle({ version: "1.4", teeth: {} } as never, { dialect: "dental-core" });
     const out = parseFhirBundle(bundle);
     expect(out.version).toBe("2.25");
   });

@@ -24,6 +24,8 @@ import {
   VALUE_SYSTEM,
 } from "./dentalCoreContract";
 
+const dentalCoreProfileValues = new Set<string>(Object.values(DENTAL_CORE_PROFILES));
+
 type ResourceRecord = Resource & Record<string, unknown>;
 type GeneratedProfile = { from(resource: never): unknown };
 
@@ -31,8 +33,10 @@ const codeAt = (resource: { coding?: Array<{ system?: string; code?: string }> }
   resource?.coding?.find((coding) => coding.system === system)?.code;
 const inverse = (values: Record<string, string> | undefined, code: string) =>
   Object.entries(values ?? {}).find(([, mapped]) => mapped === code)?.[0];
-const hasSingleProfile = (resource: ResourceRecord, expected: string): boolean =>
-  Array.isArray(resource.meta?.profile) && resource.meta.profile.length === 1 && resource.meta.profile[0] === expected;
+const hasAdmittedProfileResource = (resource: ResourceRecord, expected: string): boolean =>
+  Array.isArray(resource.meta?.profile)
+  && resource.meta.profile.includes(expected)
+  && resource.meta.profile.every((profile) => typeof profile !== "string" || profile === expected || !dentalCoreProfileValues.has(profile));
 const validGeneratedProfile = (profile: GeneratedProfile, resource: ResourceRecord): boolean => {
   try {
     profile.from(resource as never);
@@ -136,7 +140,13 @@ function applyFinding(record: ToothRecord, resource: ResourceRecord): boolean {
 
 export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload | undefined {
   const bundle = input as Bundle;
-  if (bundle?.resourceType !== "Bundle" || bundle.type !== "collection" || bundle.identifier?.system !== DENTAL_CORE || bundle.identifier?.value !== DENTAL_CORE_BUNDLE_IDENTIFIER || !Array.isArray(bundle.entry)) return undefined;
+  if (bundle?.resourceType !== "Bundle" || bundle.type !== "collection" || !Array.isArray(bundle.entry)) return undefined;
+  const hasBundleMarker = bundle.identifier?.system === DENTAL_CORE && bundle.identifier?.value === DENTAL_CORE_BUNDLE_IDENTIFIER;
+  const hasAdmittedProfile = bundle.entry.some((entry) => {
+    const profiles = (entry.resource as ResourceRecord | undefined)?.meta?.profile;
+    return Array.isArray(profiles) && profiles.some((profile) => typeof profile === "string" && dentalCoreProfileValues.has(profile));
+  });
+  if (!hasBundleMarker && !hasAdmittedProfile) return undefined;
   const payload: OdontogramExportPayload = { version: "2.25", globals: {}, teeth: {} };
   const identifiers = new Set<string>();
   const placeholderPatients = bundle.entry.filter((entry) => {
@@ -146,6 +156,7 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
   if (placeholderPatients.length > 1 || (placeholderPatients.length === 1 && placeholderPatients[0]?.resource?.id !== "odontogram-subject")) return undefined;
   const hasPlaceholderPatient = placeholderPatients.length === 1;
   let expectedSubject: string | undefined = hasPlaceholderPatient ? "urn:uuid:odontogram-subject" : undefined;
+  const effectiveDates = new Set<string>();
   let hasPlan = false;
   let planActivities: Set<string> | undefined;
   const planRequests = new Set<string>();
@@ -174,6 +185,8 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
     const subject = subjectReference(resource);
     if (!subject || (expectedSubject && expectedSubject !== subject)) return undefined;
     expectedSubject = subject;
+    const date = resource.effectiveDateTime ?? resource.performedDateTime ?? resource.recordedDate;
+    if (isIsoDateTime(date)) effectiveDates.add(date);
   }
 
   for (const entry of bundle.entry) {
@@ -204,11 +217,12 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
       continue;
     }
     if (resource.resourceType === "Provenance") {
-      if (!hasSingleProfile(resource, DENTAL_CORE_PROFILES["dental-clinical-provenance"]) || !validGeneratedProfile(DentalClinicalProvenanceProfile, resource) || provenance || !clinicalDate(resource)) return undefined;
+      if (!hasAdmittedProfileResource(resource, DENTAL_CORE_PROFILES["dental-clinical-provenance"]) || !validGeneratedProfile(DentalClinicalProvenanceProfile, resource) || provenance || !clinicalDate(resource)) return undefined;
       provenance = resource;
+      if (isIsoDateTime(resource.recorded)) effectiveDates.add(resource.recorded);
       continue;
     }
-    if (resource.resourceType === "Observation" && hasSingleProfile(resource, DENTAL_CORE_PROFILES["dental-chart-state"])) {
+    if (resource.resourceType === "Observation" && hasAdmittedProfileResource(resource, DENTAL_CORE_PROFILES["dental-chart-state"])) {
       if (!validGeneratedProfile(DentalChartStateProfile, resource) || resource.status !== "final" || codeAt(resource.code as { coding?: Array<{ system?: string; code?: string }> }, COMPONENT_SYSTEM) !== "chart-state" || !subject || !clinicalDate(resource)) return undefined;
       const fdi = bodySiteFdi(resource);
       if (!fdi || !isDentalCoreFdi(fdi)) return undefined;
@@ -233,7 +247,7 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
       if (planned) plannedFdi.add(fdi);
       continue;
     }
-    if (resource.resourceType === "Observation" && hasSingleProfile(resource, DENTAL_CORE_PROFILES["dental-risk-evidence"])) {
+    if (resource.resourceType === "Observation" && hasAdmittedProfileResource(resource, DENTAL_CORE_PROFILES["dental-risk-evidence"])) {
       if (!validGeneratedProfile(DentalRiskEvidenceProfile, resource) || resource.status !== "final" || !subject || !clinicalDate(resource)) return undefined;
       const code = codeAt(resource.code as { coding?: Array<{ system?: string; code?: string }> }, COMPONENT_SYSTEM);
       const value = code === "maximum-radiographic-bone-loss" ? (resource.valueQuantity as { value?: unknown } | undefined)?.value : resource.valueInteger;
@@ -245,7 +259,7 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
       if (code === "maximum-radiographic-bone-loss") payload.case.maxRblPercent = value;
       continue;
     }
-    if (resource.resourceType === "Observation" && hasSingleProfile(resource, DENTAL_CORE_PROFILES["dental-finding"])) {
+    if (resource.resourceType === "Observation" && hasAdmittedProfileResource(resource, DENTAL_CORE_PROFILES["dental-finding"])) {
       if (!validGeneratedProfile(DentalFindingProfile, resource) || resource.status !== "final" || !subject) return undefined;
       const fdi = bodySiteFdi(resource);
       const property = codeAt(resource.code as { coding?: Array<{ system?: string; code?: string }> }, PROPERTY_SYSTEM);
@@ -257,7 +271,7 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
       if (!mapping || value === undefined || !claim(fdi, mapping.field, value) || !applyFinding((payload.teeth[fdi] ??= {}), resource)) return undefined;
       continue;
     }
-    if (resource.resourceType === "Procedure" && hasSingleProfile(resource, DENTAL_CORE_PROFILES["dental-procedure"])) {
+    if (resource.resourceType === "Procedure" && hasAdmittedProfileResource(resource, DENTAL_CORE_PROFILES["dental-procedure"])) {
       if (!validGeneratedProfile(DentalProcedureProfile, resource) || resource.status !== "completed" || !subject) return undefined;
       const bodySite = Array.isArray(resource.bodySite) ? resource.bodySite[0] as { coding?: Array<{ system?: string; code?: string }> } | undefined : undefined;
       const fdi = codeAt(bodySite, FDI_SYSTEM);
@@ -267,7 +281,7 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
       procedureIds.add(`${fdi}:${field}`);
       continue;
     }
-    if (resource.resourceType === "Device" && hasSingleProfile(resource, DENTAL_CORE_PROFILES["dental-device"])) {
+    if (resource.resourceType === "Device" && hasAdmittedProfileResource(resource, DENTAL_CORE_PROFILES["dental-device"])) {
       if (!validGeneratedProfile(DentalDeviceProfile, resource) || resource.status !== "active" || !subject) return undefined;
       const extension = Array.isArray(resource.extension) ? resource.extension : [];
       const position = extension.find((entry) => (entry as { url?: unknown }).url === DENTAL_CORE_PROFILES["tooth-position"]) as { valueCoding?: { system?: string; code?: string } } | undefined;
@@ -280,7 +294,7 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
       deviceIds.add(`${fdi}:${field}`);
       continue;
     }
-    if (resource.resourceType === "ServiceRequest" && hasSingleProfile(resource, DENTAL_CORE_PROFILES["dental-service-request"])) {
+    if (resource.resourceType === "ServiceRequest" && hasAdmittedProfileResource(resource, DENTAL_CORE_PROFILES["dental-service-request"])) {
       if (!validGeneratedProfile(DentalServiceRequestProfile, resource) || resource.status !== "active" || resource.intent !== "plan" || !subject || !hasPlan) return undefined;
       const fdi = Array.isArray(resource.bodySite) ? codeAt(resource.bodySite[0] as { coding?: Array<{ system?: string; code?: string }> }, FDI_SYSTEM) : undefined;
       if (!fdi || !isDentalCoreFdi(fdi) || !Array.isArray(resource.basedOn) || !(resource.basedOn as Array<{ reference?: unknown }>).some((reference) => reference.reference === "CarePlan/dental-core-plan")) return undefined;
@@ -303,6 +317,10 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
     const target = (provenance?.target as Array<{ reference?: unknown }> | undefined)?.some((reference) => reference.reference === "Condition/dental-core-periodontal-diagnosis");
     if (!diagnosis || !provenance || !target || activity !== "clinician-selected" || !selected || !isDentalCoreDiagnosis(selected)) return undefined;
     payload.case = { ...payload.case, diagnosisOverride: selected };
+  }
+  if (effectiveDates.size > 1) return undefined;
+  if (expectedSubject && effectiveDates.size === 1) {
+    payload.examination = { subject: expectedSubject, effectiveDateTime: [...effectiveDates][0] };
   }
   return payload;
 }
