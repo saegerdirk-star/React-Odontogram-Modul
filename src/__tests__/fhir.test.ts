@@ -1,7 +1,18 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
-import { buildFhirBundle, DentalCoreBundleRejectedError, parseFhirBundle, UnsupportedDentalCoreContentError } from "../fhir";
+import {
+  buildDentalCoreBundle,
+  buildFhirBundle,
+  DENTAL_CORE_CANONICAL,
+  DENTAL_CORE_CODE_SYSTEM_URLS as PUBLIC_DENTAL_CORE_CODE_SYSTEM_URLS,
+  DENTAL_CORE_PACKAGE_VERSION as PUBLIC_DENTAL_CORE_PACKAGE_VERSION,
+  DENTAL_CORE_PROFILES as PUBLIC_DENTAL_CORE_PROFILES,
+  DentalCoreBundleRejectedError,
+  parseDentalCoreBundle,
+  parseFhirBundle,
+  UnsupportedDentalCoreContentError,
+} from "../fhir";
 import {
   CHART_MAPPINGS,
   DENTAL_CORE,
@@ -49,6 +60,53 @@ function fixture(): OdontogramExportPayload {
   };
 }
 
+function clinicalFixture(): OdontogramExportPayload {
+  return {
+    version: "2.25",
+    globals: { wisdomVisible: true, showBase: true, occlusalVisible: true, showHealthyPulp: true },
+    teeth: {
+      "16": {
+        caries: ["caries-occlusal", "caries-mesial"],
+        cariesSeverity: { occlusal: 5, mesial: 2 },
+        rootCaries: "active",
+        fillingSurfaces: ["distal", "buccal"],
+        fillingSurfaceMaterials: { distal: "composite", buccal: "gic" },
+        pulpDx: "necrosis",
+        apicalDx: "acute-apical-abscess",
+        radiographicDepth: { distal: "D2" },
+        cervicalSurfaces: ["buccal"],
+        assessment: { pulp: "assessed" },
+        note: "Monitor distal restoration",
+      },
+      "15": {
+        toothSelection: "implant",
+        periImplant: "peri-implantitis-moderate",
+        mpi: { buccal: 2 },
+        mbi: { mesial: 3 },
+        millerClass: "ii",
+        implantProduct: {
+          manufacturer: "Example Implants",
+          system: "Example Line",
+          diameterMm: 4.1,
+          lengthMm: 10,
+          udi: "(01)07612345678901(17)300630(10)LOT4711",
+          deviceIdentifier: "07612345678901",
+          lot: "LOT4711",
+          serial: "SERIAL-15",
+          expiry: "2030-06-30",
+        },
+      },
+      "17": { toothSelection: "none", extractionPlan: true },
+      "26": { restorationType: "crown", restorationMaterial: "zircon", crownReplace: true },
+      "36": { endo: "endo-filling", crownNeeded: true },
+      "46": {
+        mobility: "m2",
+        perio: { pd: { MB: 5, B: 4 }, gm: { MB: 1, B: 0 }, bop: ["MB"], sup: [] },
+      },
+    },
+  };
+}
+
 describe("generated Dental Core contract", () => {
   it("pins the immutable published package and exposes its profiles and terminology", () => {
     expect(DENTAL_CORE_PACKAGE_NAME).toBe("de.cognovis.fhir.dental.core");
@@ -66,13 +124,120 @@ describe("generated Dental Core contract", () => {
     }
   });
 
+  it("exports the Dental Core compatibility constants from the public FHIR entry point", () => {
+    expect(DENTAL_CORE_CANONICAL).toBe(DENTAL_CORE);
+    expect(PUBLIC_DENTAL_CORE_PROFILES).toBe(DENTAL_CORE_PROFILES);
+    expect(PUBLIC_DENTAL_CORE_PACKAGE_VERSION).toBe(DENTAL_CORE_PACKAGE_VERSION);
+    expect(PUBLIC_DENTAL_CORE_CODE_SYSTEM_URLS).toBe(DENTAL_CORE_CODE_SYSTEM_URLS);
+  });
+
   it("keeps the generated metadata free of copied terminology displays and definitions", () => {
     const contract = readFileSync(fileURLToPath(new URL("../fhir/generated/dental-core-contract.ts", testFileUrl)), "utf8");
-    expect(contract).not.toMatch(/\"display\"|\"definition\"|\"designation\"/);
+    expect(contract).not.toMatch(/"display"|"definition"|"designation"/);
   });
 });
 
 describe("configured FHIR codecs", () => {
+  it("exports a clinically populated chart through the canonical carrier profiles and roundtrips source values", () => {
+    const source = clinicalFixture();
+    const bundle = buildDentalCoreBundle(source, options);
+    const profiles = bundle.entry?.flatMap((entry) => entry.resource?.meta?.profile ?? []) ?? [];
+
+    expect(profiles).toEqual(expect.arrayContaining([
+      DENTAL_CORE_PROFILES["dental-tooth-state"],
+      DENTAL_CORE_PROFILES["dental-caries-finding"],
+      DENTAL_CORE_PROFILES["dental-periodontal-finding"],
+      DENTAL_CORE_PROFILES["dental-implant"],
+      DENTAL_CORE_PROFILES["dental-peri-implant-finding"],
+      DENTAL_CORE_PROFILES["dental-gingival-recession-assessment"],
+    ]));
+
+    const parsed = parseDentalCoreBundle(bundle);
+    expect(parsed).toBeDefined();
+    expect(parsed?.teeth).toEqual(source.teeth);
+  });
+
+  it("uses recorder and case exam date while leaving shared patient resources host-owned", () => {
+    const base: OdontogramExportPayload = {
+      version: "2.25",
+      globals: { edentulous: true },
+      teeth: { "16": { endo: "endo-filling" } },
+      case: {
+        examDate: "2026-08-15",
+        diabetesStatus: "none",
+        hba1c: 6.4,
+        smokingStatus: "former",
+      },
+      examination: { subject: "Patient/example", recorder: "Practitioner/recorder" },
+    };
+    const sharedResources = (diabetesStatus: "none" | "present") => ({
+      diabetesStatus: { fullUrl: "https://aidbox.example/fhir/Condition/host-diabetes", resource: { resourceType: "Condition" as const, id: "host-diabetes", subject: { reference: "Patient/example" }, code: { coding: [{ system: "https://issuer.example/diagnosis", code: "diabetes" }] }, verificationStatus: { coding: [{ system: "http://terminology.hl7.org/CodeSystem/condition-ver-status", code: diabetesStatus === "none" ? "refuted" : "confirmed" }] } } },
+      hba1c: { fullUrl: "https://aidbox.example/fhir/Observation/host-hba1c", resource: { resourceType: "Observation" as const, id: "host-hba1c", status: "final" as const, code: { coding: [{ system: "http://loinc.org", code: "4548-4" }] }, subject: { reference: "Patient/example" }, valueQuantity: { value: 6.4, system: "http://unitsofmeasure.org", code: "%" } } },
+      smokingStatus: { fullUrl: "https://aidbox.example/fhir/Observation/host-smoking", resource: { resourceType: "Observation" as const, id: "host-smoking", status: "final" as const, code: { coding: [{ system: "http://loinc.org", code: "72166-2" }] }, subject: { reference: "Patient/example" }, valueCodeableConcept: { coding: [{ system: "https://github.com/ZoliQua/React-Odontogram-Modul/fhir/CodeSystem/odontogram", code: "former" }] } } },
+      edentulous: { fullUrl: "https://aidbox.example/fhir/Condition/host-edentulous", resource: { resourceType: "Condition" as const, id: "host-edentulous", subject: { reference: "Patient/example" }, code: { coding: [{ system: "https://issuer.example/diagnosis", code: "edentulous" }] } } },
+    });
+
+    const cases = (["none", "present"] as const).map((diabetesStatus) => {
+      const resources = sharedResources(diabetesStatus);
+      const bundle = buildDentalCoreBundle({ ...base, case: { ...base.case, diabetesStatus } }, { subject: "Patient/example", sharedResources: resources });
+      return { bundle, diabetesStatus, resources };
+    });
+    for (const { bundle, diabetesStatus, resources } of cases) {
+      const provenances = bundle.entry?.filter((entry) => entry.resource?.resourceType === "Provenance").map((entry) => entry.resource as import("fhir/r4").Provenance) ?? [];
+      const provenance = provenances.find((resource) => resource.agent[0]?.who.reference === "Practitioner/recorder");
+      const dated = bundle.entry?.find((entry) => "effectiveDateTime" in (entry.resource ?? {}))?.resource as import("fhir/r4").Observation | undefined;
+      expect(provenance?.agent[0]?.who.reference).toBe("Practitioner/recorder");
+      expect(provenance?.recorded).toBe("2026-08-15T00:00:00Z");
+      expect(dated?.effectiveDateTime).toBe("2026-08-15");
+      expect(provenances.flatMap((resource) => resource.target.map((target) => target.reference))).toEqual(expect.arrayContaining(Object.values(resources).map((entry) => entry.fullUrl)));
+      const parsed = parseDentalCoreBundle(bundle);
+      expect(parsed?.examination?.recorder).toBe("Practitioner/recorder");
+      expect(parsed?.case).toMatchObject({ diabetesStatus, hba1c: 6.4, smokingStatus: "former" });
+      expect(parsed?.globals.edentulous).toBe(true);
+      const sharedProvenanceUrls = bundle.entry?.filter((entry) => entry.resource?.resourceType === "Provenance" && (entry.resource as import("fhir/r4").Provenance).agent[0]?.who.display === "Host system").map((entry) => entry.fullUrl);
+      const rebuilt = buildDentalCoreBundle(parsed!, { subject: "Patient/example", sharedResources: resources });
+      expect(rebuilt.entry?.filter((entry) => entry.resource?.resourceType === "Provenance" && (entry.resource as import("fhir/r4").Provenance).agent[0]?.who.display === "Host system").map((entry) => entry.fullUrl)).toEqual(sharedProvenanceUrls);
+    }
+    expect(cases[0].bundle.entry?.map((entry) => entry.resource?.resourceType)).toEqual(
+      cases[1].bundle.entry?.map((entry) => entry.resource?.resourceType),
+    );
+  });
+
+  it("preserves identities for newly supported clinical profiles and assigns bundle-local identity to new ones", () => {
+    const imported = buildDentalCoreBundle(clinicalFixture(), options);
+    const replacement = new Map<string, string>();
+    for (const [index, entry] of (imported.entry ?? []).entries()) {
+      if (entry.resource?.resourceType === "Patient") continue;
+      const previousFullUrl = entry.fullUrl;
+      entry.resource!.id = `host-${index}`;
+      entry.resource!.meta = { ...entry.resource!.meta, versionId: `v-${index}` };
+      entry.fullUrl = `https://aidbox.example/fhir/${entry.resource!.resourceType}/host-${index}`;
+      if (previousFullUrl) replacement.set(previousFullUrl, entry.fullUrl);
+    }
+    for (const entry of imported.entry ?? []) {
+      const resource = entry.resource as { focus?: Array<{ reference?: string }> } | undefined;
+      for (const focus of resource?.focus ?? []) {
+        if (focus.reference) focus.reference = replacement.get(focus.reference) ?? focus.reference;
+      }
+    }
+
+    const parsed = parseDentalCoreBundle(imported);
+    expect(parsed).toBeDefined();
+    const rebuilt = buildDentalCoreBundle(parsed!, options);
+    for (const original of imported.entry ?? []) {
+      if (original.resource?.resourceType === "Patient") continue;
+      const matching = rebuilt.entry?.find((entry) => entry.fullUrl === original.fullUrl);
+      expect(matching?.resource?.id, original.fullUrl).toBe(original.resource?.id);
+      expect(matching?.resource?.meta?.versionId, original.fullUrl).toBe(original.resource?.meta?.versionId);
+    }
+
+    parsed!.teeth["14"] = { endo: "endo-filling" };
+    const withNewResource = buildDentalCoreBundle(parsed!, options);
+    const newEntries = withNewResource.entry?.filter((entry) => !entry.resource?.id) ?? [];
+    expect(newEntries.length).toBeGreaterThan(0);
+    expect(newEntries.every((entry) => /^urn:uuid:/.test(entry.fullUrl ?? ""))).toBe(true);
+  });
+
   it("uses an explicit Dental Core codec and roundtrips every emitted companion resource", () => {
     const source = fixture();
     const bundle = buildFhirBundle(source, options);
@@ -145,7 +310,15 @@ describe("configured FHIR codecs", () => {
       version: "2.25",
       globals: {},
       teeth: { "16": { retention: "clasp" } },
-      plan: { "16": { retention: "attachment" } },
+      plan: { "16": {
+        retention: "attachment",
+        pulpDx: "reversible-pulpitis",
+        rootCaries: "arrested",
+        radiographicDepth: { mesial: "E2" },
+        cervicalSurfaces: ["lingual"],
+        assessment: { pulp: "not-assessed" },
+        note: "Review at next visit",
+      } },
     };
 
     expect(parseFhirBundle(buildFhirBundle(source, options), { dialect: "dental-core" })).toMatchObject(source);
@@ -381,15 +554,98 @@ describe("configured FHIR codecs", () => {
     const unsupported: OdontogramExportPayload = {
       version: "2.25",
       globals: {},
-      teeth: { "16": { pulpDx: "necrosis" } },
+      teeth: { "16": { customStates: { "unsupported-clinical-state": true } } },
     };
 
     expect(() => buildFhirBundle(unsupported, options)).toThrow(UnsupportedDentalCoreContentError);
-    expect(() => buildFhirBundle({
-      version: "2.25",
-      globals: {},
-      teeth: { "16": { toothSelection: "none" } },
-    }, options)).toThrow("teeth.16.toothSelection");
+    expect(() => buildFhirBundle(unsupported, options)).toThrow("teeth.16.customStates");
+  });
+
+  it("rejects hostile clinical profile values and incomplete choice slices", () => {
+    const bundle = buildDentalCoreBundle(clinicalFixture(), options);
+    const toothState = bundle.entry?.find((entry) => entry.resource?.meta?.profile?.includes(DENTAL_CORE_PROFILES["dental-tooth-state"]))?.resource as import("fhir/r4").Observation;
+    const presence = toothState.component?.find((component) => component.code.coding?.some((coding) => coding.code === "tooth-presence"));
+    presence!.valueCodeableConcept!.coding![0].code = "not-an-editor-value";
+    expect(parseDentalCoreBundle(bundle)).toBeUndefined();
+
+    const missingValue = buildDentalCoreBundle(clinicalFixture(), options);
+    const missingState = missingValue.entry?.find((entry) => entry.resource?.meta?.profile?.includes(DENTAL_CORE_PROFILES["dental-tooth-state"]))?.resource as import("fhir/r4").Observation;
+    const missingPresence = missingState.component?.find((component) => component.code.coding?.some((coding) => coding.code === "tooth-presence"));
+    delete missingPresence!.valueCodeableConcept;
+    expect(parseDentalCoreBundle(missingValue)).toBeUndefined();
+
+    const invalidSurface = buildDentalCoreBundle(clinicalFixture(), options);
+    const fillingState = invalidSurface.entry?.find((entry) => {
+      const resource = entry.resource as import("fhir/r4").Observation | undefined;
+      return resource?.meta?.profile?.includes(DENTAL_CORE_PROFILES["dental-tooth-state"])
+        && resource.bodySite?.coding?.some((coding) => coding.code === "16");
+    })?.resource as import("fhir/r4").Observation;
+    const surfaceComponent = fillingState.component?.find((component) => component.extension?.length);
+    surfaceComponent!.extension![0].valueCoding!.system = "http://snomed.info/sct";
+    expect(parseDentalCoreBundle(invalidSurface)).toBeUndefined();
+
+    const invalidRange = buildDentalCoreBundle(clinicalFixture(), options);
+    const periodontal = invalidRange.entry?.find((entry) => entry.resource?.meta?.profile?.includes(DENTAL_CORE_PROFILES["dental-periodontal-finding"]))?.resource as import("fhir/r4").Observation;
+    const probingDepth = periodontal.component?.find((component) => component.code.coding?.some((coding) => coding.code === "32910-2"));
+    probingDepth!.valueQuantity!.value = 9999;
+    expect(parseDentalCoreBundle(invalidRange)).toBeUndefined();
+  });
+
+  it("roundtrips subcrown caries and refuses orphaned severity or peri-implant state", () => {
+    const subcrown: OdontogramExportPayload = {
+      version: "2.25", globals: {}, teeth: { "16": { caries: ["caries-subcrown"], cariesSeverity: { subcrown: 3 } } },
+    };
+    expect(parseDentalCoreBundle(buildDentalCoreBundle(subcrown, options))?.teeth).toEqual(subcrown.teeth);
+    expect(() => buildDentalCoreBundle({ ...subcrown, teeth: { "16": { cariesSeverity: { occlusal: 4 } } } }, options)).toThrow("teeth.16.cariesSeverity.occlusal");
+    expect(() => buildDentalCoreBundle({ ...subcrown, teeth: { "16": { periImplant: "mucositis" } } }, options)).toThrow("teeth.16.periImplant");
+  });
+
+  it("fails closed for plan-only implant fields, targetless recorder, performer, and invalid kg", () => {
+    const empty: OdontogramExportPayload = { version: "2.25", globals: {}, teeth: {} };
+    expect(() => buildDentalCoreBundle({ ...empty, plan: { "15": { toothSelection: "implant", implantProduct: { system: "Line" } } } }, options)).toThrow("plan.15.implantProduct");
+    expect(() => buildDentalCoreBundle({ ...empty, examination: { recorder: "Practitioner/recorder" } }, options)).toThrow("examination.recorder");
+    expect(() => buildDentalCoreBundle({ ...empty, teeth: { "16": { endo: "endo-filling" } }, examination: { performer: "Practitioner/performer" } }, options)).toThrow("examination.performer");
+    expect(() => buildDentalCoreBundle({ ...empty, teeth: { "16": { kg: 42 } } }, options)).toThrow("teeth.16.kg");
+  });
+
+  it("treats unknown or cleared shared fields as uncharted and rejects hostile shared carriers", () => {
+    const source: OdontogramExportPayload = {
+      version: "2.25", globals: {}, teeth: { "16": { endo: "endo-filling" } },
+      case: { diabetesStatus: "unknown", hba1c: null as unknown as number, smokingStatus: "unknown" },
+    };
+    expect(() => buildDentalCoreBundle(source, options)).not.toThrow();
+
+    const sharedBase: OdontogramExportPayload = {
+      version: "2.25", globals: {}, teeth: { "16": { endo: "endo-filling" } }, case: { hba1c: 6.4 },
+    };
+    const hba1c = { fullUrl: "https://aidbox.example/fhir/Observation/hba1c", resource: {
+      resourceType: "Observation" as const, id: "hba1c", status: "final" as const,
+      code: { coding: [{ system: "http://loinc.org", code: "4548-4" }] }, subject: { reference: "Patient/example" },
+      valueQuantity: { value: 6.4, system: "http://unitsofmeasure.org", code: "%" },
+    } };
+    const valid = buildDentalCoreBundle(sharedBase, { ...options, sharedResources: { hba1c } });
+    const invalidRange = structuredClone(valid);
+    const observation = invalidRange.entry?.find((entry) => entry.fullUrl === hba1c.fullUrl)?.resource as import("fhir/r4").Observation;
+    observation.valueQuantity!.value = -5;
+    expect(parseDentalCoreBundle(invalidRange)).toBeUndefined();
+
+    const wrongPatientImport = structuredClone(valid);
+    const importedObservation = wrongPatientImport.entry?.find((entry) => entry.fullUrl === hba1c.fullUrl)?.resource as import("fhir/r4").Observation;
+    importedObservation.subject!.reference = "Patient/someone-else";
+    expect(parseDentalCoreBundle(wrongPatientImport)).toBeUndefined();
+
+    const wrongPatient = structuredClone(hba1c);
+    wrongPatient.resource.subject.reference = "Patient/someone-else";
+    expect(() => buildDentalCoreBundle(sharedBase, { ...options, sharedResources: { hba1c: wrongPatient } })).toThrow("case.hba1c");
+
+    const diagnosisBundle = buildDentalCoreBundle(fixture(), options);
+    const diagnosis = diagnosisBundle.entry?.find((entry) => entry.resource?.resourceType === "Condition");
+    const sharedProvenance = structuredClone(valid.entry?.find((entry) => entry.resource?.resourceType === "Provenance" && (entry.resource as import("fhir/r4").Provenance).agent[0]?.who.display === "Host system"));
+    sharedProvenance!.fullUrl = "urn:uuid:00000000-0000-4000-8000-999999999999";
+    (sharedProvenance!.resource as import("fhir/r4").Provenance).reason = [{ coding: [{ system: "https://github.com/ZoliQua/React-Odontogram-Modul/fhir/CodeSystem/odontogram", code: "shared-resource-edentulous" }] }];
+    (sharedProvenance!.resource as import("fhir/r4").Provenance).target = [{ reference: diagnosis!.fullUrl }];
+    diagnosisBundle.entry?.push(sharedProvenance!);
+    expect(parseDentalCoreBundle(diagnosisBundle)).toBeUndefined();
   });
 
   it("publishes exactly the two supported dialect values", () => {

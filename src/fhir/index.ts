@@ -7,6 +7,14 @@ export { buildFhirBundle } from "./toFhir";
 export { DentalCoreBundleRejectedError, parseFhirBundle } from "./fromFhir";
 export { buildDentalCoreBundle, UnsupportedDentalCoreContentError } from "./toFhirDentalCore";
 export { parseDentalCoreBundle } from "./fromFhirDentalCore";
+export {
+  DENTAL_CORE_CANONICAL,
+  DENTAL_CORE_CODE_SYSTEM_URLS,
+} from "./generated/dental-core-contract";
+export {
+  DENTAL_CORE_PROFILES,
+  DENTAL_CORE_PACKAGE_VERSION,
+} from "./dentalCoreContract";
 export { resolveFhirDialect, UnsupportedFhirDialectError } from "./types";
 export type {
   FhirCodecOptions,
