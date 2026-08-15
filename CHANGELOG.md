@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.12.1 - 2026-08-15
+
+- Declared `@types/fhir` as a published dependency so TypeScript consumers receive
+  the public `fhir/r4` declarations transitively.
+
 ## 2.12.0 - 2026-08-15
 
 - **Breaking:** removed the deprecated predecessor FHIR adapter, including its
