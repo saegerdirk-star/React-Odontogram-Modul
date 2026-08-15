@@ -6,7 +6,7 @@ import { DentalFindingProfile } from "./generated/de-cognovis-fhir-dental-core/p
 import { DentalProcedureProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Procedure_DentalProcedure";
 import { DentalRiskEvidenceProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalRiskEvidence";
 import { DentalServiceRequestProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/ServiceRequest_DentalServiceRequest";
-import type { OdontogramExportPayload, ToothRecord } from "./types";
+import type { DentalCoreResourceIdentity, OdontogramExportPayload, ToothRecord } from "./types";
 import {
   COMPONENT_SYSTEM,
   DENTAL_CORE,
@@ -28,6 +28,7 @@ const dentalCoreProfileValues = new Set<string>(Object.values(DENTAL_CORE_PROFIL
 
 type ResourceRecord = Resource & Record<string, unknown>;
 type GeneratedProfile = { from(resource: never): unknown };
+type ResourceEntry = { resource: ResourceRecord; fullUrl?: string };
 
 const codeAt = (resource: { coding?: Array<{ system?: string; code?: string }> } | undefined, system: string) =>
   resource?.coding?.find((coding) => coding.system === system)?.code;
@@ -148,18 +149,42 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
   });
   if (!hasBundleMarker && !hasAdmittedProfile) return undefined;
   const payload: OdontogramExportPayload = { version: "2.25", globals: {}, teeth: {} };
-  const identifiers = new Set<string>();
-  const placeholderPatients = bundle.entry.filter((entry) => {
+  const entriesByReference = new Map<string, ResourceEntry>();
+  for (const entry of bundle.entry) {
     const resource = entry?.resource as ResourceRecord | undefined;
-    return resource?.resourceType === "Patient";
-  });
-  if (placeholderPatients.length > 1 || (placeholderPatients.length === 1 && placeholderPatients[0]?.resource?.id !== "odontogram-subject")) return undefined;
-  const hasPlaceholderPatient = placeholderPatients.length === 1;
-  let expectedSubject: string | undefined = hasPlaceholderPatient ? "urn:uuid:odontogram-subject" : undefined;
+    if (!resource || typeof resource.resourceType !== "string") return undefined;
+    const resolved = { resource, ...(typeof entry.fullUrl === "string" ? { fullUrl: entry.fullUrl } : {}) };
+    if (typeof resource.id === "string" && resource.id) {
+      const relative = `${resource.resourceType}/${resource.id}`;
+      if (entriesByReference.has(relative)) return undefined;
+      entriesByReference.set(relative, resolved);
+    } else if (!resolved.fullUrl) return undefined;
+    if (resolved.fullUrl) {
+      if (entriesByReference.has(resolved.fullUrl)) return undefined;
+      entriesByReference.set(resolved.fullUrl, resolved);
+    }
+  }
+  const resolveReference = (reference: unknown): ResourceEntry | undefined =>
+    typeof reference === "string" ? entriesByReference.get(reference) : undefined;
+  const referencesResource = (reference: unknown, resource: ResourceRecord | undefined): boolean =>
+    !!resource && resolveReference(reference)?.resource === resource;
+  const identities: Record<string, DentalCoreResourceIdentity> = {};
+  const captureIdentity = (key: string, entry: ResourceEntry, resource: ResourceRecord): void => {
+    identities[key] = {
+      ...(typeof resource.id === "string" && resource.id ? { id: resource.id } : {}),
+      ...(typeof resource.meta?.versionId === "string" ? { versionId: resource.meta.versionId } : {}),
+      ...(entry.fullUrl ? { fullUrl: entry.fullUrl } : {}),
+    };
+  };
+  const identifiers = new Set<string>();
+  const patientEntries = [...new Set(entriesByReference.values())].filter((entry) => entry.resource.resourceType === "Patient");
+  if (patientEntries.length > 1) return undefined;
+  let expectedSubject: string | undefined;
   const effectiveDates = new Set<string>();
   let hasPlan = false;
-  let planActivities: Set<string> | undefined;
-  const planRequests = new Set<string>();
+  let planActivities: Set<ResourceRecord> | undefined;
+  const planRequests = new Set<ResourceRecord>();
+  const planRequestFdi = new Set<string>();
   const plannedFdi = new Set<string>();
   const chartIds = new Set<string>();
   const findingIds = new Set<string>();
@@ -167,6 +192,7 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
   const deviceIds = new Set<string>();
   const riskCodes = new Set<string>();
   const claims = new Map<string, string>();
+  let carePlan: ResourceRecord | undefined;
   let diagnosis: ResourceRecord | undefined;
   let provenance: ResourceRecord | undefined;
 
@@ -183,7 +209,7 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
     const resource = entry?.resource as ResourceRecord | undefined;
     if (!resource || resource.resourceType === "Patient" || resource.resourceType === "Provenance") continue;
     const subject = subjectReference(resource);
-    if (!subject || (expectedSubject && expectedSubject !== subject)) return undefined;
+    if (!subject || (expectedSubject && expectedSubject !== subject && resolveReference(expectedSubject)?.resource !== resolveReference(subject)?.resource)) return undefined;
     expectedSubject = subject;
     const date = resource.effectiveDateTime ?? resource.performedDateTime ?? resource.recordedDate;
     if (isIsoDateTime(date)) effectiveDates.add(date);
@@ -191,43 +217,51 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
 
   for (const entry of bundle.entry) {
     const resource = entry?.resource as ResourceRecord | undefined;
-    if (!resource || typeof resource.resourceType !== "string" || typeof resource.id !== "string" || !resource.id) return undefined;
-    const key = `${resource.resourceType}/${resource.id}`;
+    if (!resource || typeof resource.resourceType !== "string") return undefined;
+    const resolvedEntry = (typeof resource.id === "string" && resource.id ? entriesByReference.get(`${resource.resourceType}/${resource.id}`) : undefined)
+      ?? (typeof entry.fullUrl === "string" ? entriesByReference.get(entry.fullUrl) : undefined);
+    if (!resolvedEntry) return undefined;
+    const key = `${resource.resourceType}/${resource.id ?? entry.fullUrl}`;
     if (identifiers.has(key)) return undefined;
     identifiers.add(key);
     if (resource.resourceType === "Patient") {
-      if (resource.id !== "odontogram-subject") return undefined;
+      captureIdentity("Patient/subject", resolvedEntry, resource);
       continue;
     }
     const subject = subjectReference(resource);
     if (resource.resourceType !== "Provenance" && (!subject || subject !== expectedSubject)) return undefined;
     if (resource.resourceType === "CarePlan") {
-      if (resource.id !== "dental-core-plan" || resource.status !== "active" || resource.intent !== "plan" || !subject) return undefined;
+      if (carePlan || resource.status !== "active" || resource.intent !== "plan" || !subject) return undefined;
       if (!Array.isArray(resource.activity)) return undefined;
       const activities = resource.activity.map((activity) => (activity as { reference?: { reference?: unknown } }).reference?.reference);
-      if (activities.some((reference) => typeof reference !== "string" || !reference.startsWith("ServiceRequest/dental-core-request-"))) return undefined;
-      planActivities = new Set(activities as string[]);
+      const targets = activities.map(resolveReference);
+      if (targets.some((target) => target?.resource.resourceType !== "ServiceRequest")) return undefined;
+      planActivities = new Set(targets.map((target) => target?.resource as ResourceRecord));
       if (planActivities.size !== activities.length) return undefined;
+      carePlan = resource;
       hasPlan = true;
+      captureIdentity("CarePlan/plan", resolvedEntry, resource);
       continue;
     }
     if (resource.resourceType === "Condition") {
-      if (resource.id !== "dental-core-periodontal-diagnosis" || diagnosis || !subject || !isIsoDateTime(resource.recordedDate)) return undefined;
+      if (diagnosis || !subject || !isIsoDateTime(resource.recordedDate)) return undefined;
       diagnosis = resource;
+      captureIdentity("Condition/periodontal-diagnosis", resolvedEntry, resource);
       continue;
     }
     if (resource.resourceType === "Provenance") {
       if (!hasAdmittedProfileResource(resource, DENTAL_CORE_PROFILES["dental-clinical-provenance"]) || !validGeneratedProfile(DentalClinicalProvenanceProfile, resource) || provenance || !clinicalDate(resource)) return undefined;
       provenance = resource;
       if (isIsoDateTime(resource.recorded)) effectiveDates.add(resource.recorded);
+      captureIdentity("Provenance/clinical", resolvedEntry, resource);
       continue;
     }
     if (resource.resourceType === "Observation" && hasAdmittedProfileResource(resource, DENTAL_CORE_PROFILES["dental-chart-state"])) {
       if (!validGeneratedProfile(DentalChartStateProfile, resource) || resource.status !== "final" || codeAt(resource.code as { coding?: Array<{ system?: string; code?: string }> }, COMPONENT_SYSTEM) !== "chart-state" || !subject || !clinicalDate(resource)) return undefined;
       const fdi = bodySiteFdi(resource);
       if (!fdi || !isDentalCoreFdi(fdi)) return undefined;
-      const planned = Array.isArray(resource.basedOn) && resource.basedOn.some((reference) => (reference as { reference?: unknown }).reference === "CarePlan/dental-core-plan");
-      if (planned && !hasPlan) return undefined;
+      const planned = Array.isArray(resource.basedOn) && resource.basedOn.some((reference) => referencesResource((reference as { reference?: unknown }).reference, carePlan));
+      if (Array.isArray(resource.basedOn) && resource.basedOn.length && !planned) return undefined;
       const chartKey = `${planned ? "plan" : "status"}:${fdi}`;
       if (chartIds.has(chartKey)) return undefined;
       chartIds.add(chartKey);
@@ -245,6 +279,7 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
       const target = planned ? (payload.plan ??= {}) : payload.teeth;
       if (!applyChart((target[fdi] ??= {}), resource as unknown as Observation)) return undefined;
       if (planned) plannedFdi.add(fdi);
+      captureIdentity(`Observation/chart/${planned ? "plan" : "status"}/${fdi}`, resolvedEntry, resource);
       continue;
     }
     if (resource.resourceType === "Observation" && hasAdmittedProfileResource(resource, DENTAL_CORE_PROFILES["dental-risk-evidence"])) {
@@ -257,6 +292,7 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
       if (code === "cigarettes-per-day") payload.case.cigarettesPerDay = value;
       if (code === "periodontitis-attributed-tooth-loss") payload.case.toothLossPerio = value;
       if (code === "maximum-radiographic-bone-loss") payload.case.maxRblPercent = value;
+      captureIdentity(`Observation/risk/${code}`, resolvedEntry, resource);
       continue;
     }
     if (resource.resourceType === "Observation" && hasAdmittedProfileResource(resource, DENTAL_CORE_PROFILES["dental-finding"])) {
@@ -269,6 +305,7 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
       const coded = codeAt(resource.valueCodeableConcept as { coding?: Array<{ system?: string; code?: string }> }, VALUE_SYSTEM);
       const value = mapping?.kind === "boolean" ? (coded ? true : resource.valueBoolean) : inverse(mapping?.values, coded ?? "");
       if (!mapping || value === undefined || !claim(fdi, mapping.field, value) || !applyFinding((payload.teeth[fdi] ??= {}), resource)) return undefined;
+      captureIdentity(`Observation/finding/${fdi}/${property}`, resolvedEntry, resource);
       continue;
     }
     if (resource.resourceType === "Procedure" && hasAdmittedProfileResource(resource, DENTAL_CORE_PROFILES["dental-procedure"])) {
@@ -279,6 +316,7 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
       const field = text === "Apicoectomy or root-end resection" ? "endoResection" : text === "Fissure sealing" ? "fissureSealing" : undefined;
       if (!fdi || !field || procedureIds.has(`${fdi}:${field}`) || !isDentalCoreFdi(fdi) || !claim(fdi, field, true) || !applyProcedure((payload.teeth[fdi] ??= {}), resource)) return undefined;
       procedureIds.add(`${fdi}:${field}`);
+      captureIdentity(`Procedure/${fdi}/${field}`, resolvedEntry, resource);
       continue;
     }
     if (resource.resourceType === "Device" && hasAdmittedProfileResource(resource, DENTAL_CORE_PROFILES["dental-device"])) {
@@ -292,29 +330,30 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
       const value = text === "Orthodontic bracket" ? "bracket" : text === "Orthodontic band" ? "band" : text === "Parapulpal pin" || text === "Bridge abutment" ? true : text?.replace("Prosthesis retention ", "");
       if (!fdi || !field || value === undefined || deviceIds.has(`${fdi}:${field}`) || !isDentalCoreFdi(fdi) || !claim(fdi, field, value) || !applyDevice((payload.teeth[fdi] ??= {}), resource)) return undefined;
       deviceIds.add(`${fdi}:${field}`);
+      captureIdentity(`Device/${fdi}/${field}`, resolvedEntry, resource);
       continue;
     }
     if (resource.resourceType === "ServiceRequest" && hasAdmittedProfileResource(resource, DENTAL_CORE_PROFILES["dental-service-request"])) {
       if (!validGeneratedProfile(DentalServiceRequestProfile, resource) || resource.status !== "active" || resource.intent !== "plan" || !subject || !hasPlan) return undefined;
       const fdi = Array.isArray(resource.bodySite) ? codeAt(resource.bodySite[0] as { coding?: Array<{ system?: string; code?: string }> }, FDI_SYSTEM) : undefined;
-      if (!fdi || !isDentalCoreFdi(fdi) || !Array.isArray(resource.basedOn) || !(resource.basedOn as Array<{ reference?: unknown }>).some((reference) => reference.reference === "CarePlan/dental-core-plan")) return undefined;
-      if (resource.id !== `dental-core-request-${fdi}`) return undefined;
-      if (planRequests.has(`ServiceRequest/${resource.id}`)) return undefined;
-      planRequests.add(`ServiceRequest/${resource.id}`);
+      if (!fdi || !isDentalCoreFdi(fdi) || !Array.isArray(resource.basedOn) || !(resource.basedOn as Array<{ reference?: unknown }>).some((reference) => referencesResource(reference.reference, carePlan))) return undefined;
+      if (planRequestFdi.has(fdi)) return undefined;
+      planRequests.add(resource);
+      planRequestFdi.add(fdi);
       (payload.plan ??= {})[fdi] ??= {};
+      captureIdentity(`ServiceRequest/${fdi}`, resolvedEntry, resource);
       continue;
     }
     return undefined;
   }
-  if (hasPlaceholderPatient && expectedSubject !== "urn:uuid:odontogram-subject") return undefined;
   if (hasPlan) {
-    if (!planActivities || planActivities.size !== planRequests.size || [...planActivities].some((reference) => !planRequests.has(reference))) return undefined;
-    if ([...plannedFdi].some((fdi) => !planRequests.has(`ServiceRequest/dental-core-request-${fdi}`))) return undefined;
+    if (!planActivities || planActivities.size !== planRequests.size || [...planActivities].some((request) => !planRequests.has(request))) return undefined;
+    if ([...plannedFdi].some((fdi) => !planRequestFdi.has(fdi))) return undefined;
   }
   if (diagnosis || provenance) {
     const selected = diagnosis?.meta?.tag?.find((tag) => tag.system === VALUE_SYSTEM)?.code;
     const activity = codeAt(provenance?.activity, PROVENANCE_SYSTEM);
-    const target = (provenance?.target as Array<{ reference?: unknown }> | undefined)?.some((reference) => reference.reference === "Condition/dental-core-periodontal-diagnosis");
+    const target = (provenance?.target as Array<{ reference?: unknown }> | undefined)?.some((reference) => referencesResource(reference.reference, diagnosis));
     if (!diagnosis || !provenance || !target || activity !== "clinician-selected" || !selected || !isDentalCoreDiagnosis(selected)) return undefined;
     payload.case = { ...payload.case, diagnosisOverride: selected };
   }
@@ -322,5 +361,6 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
   if (expectedSubject && effectiveDates.size === 1) {
     payload.examination = { subject: expectedSubject, effectiveDateTime: [...effectiveDates][0] };
   }
+  if (Object.keys(identities).length) payload.fhirIdentity = { resources: identities };
   return payload;
 }

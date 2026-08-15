@@ -155,6 +155,8 @@ export interface OdontogramExportPayload {
   examination?: ExaminationContextRecord;
   /** Bead odontogram-2vd: independent, dated whole-mouth snapshots, oldest first. */
   examinations?: ExaminationSnapshotRecord[];
+  /** Opaque host-owned Dental Core instance identity retained across an import/export cycle. */
+  fhirIdentity?: DentalCoreIdentity;
 }
 
 /** Serialized examination identity/context (omit-when-empty per field). */
@@ -175,6 +177,18 @@ export interface ExaminationSnapshotRecord {
   globals: Record<string, boolean>;
   teeth: Record<string, ToothRecord>;
   case?: OdontogramExportPayload["case"];
+}
+
+/** Opaque FHIR instance identity retained when a Dental Core collection is imported. */
+export interface DentalCoreResourceIdentity {
+  id?: string;
+  versionId?: string;
+  fullUrl?: string;
+}
+
+/** JSON-serializable sidecar for host-owned Dental Core resource identity. */
+export interface DentalCoreIdentity {
+  resources?: Record<string, DentalCoreResourceIdentity>;
 }
 
 /** The payload/document version this engine writes. Readers accept earlier versions. */

@@ -10173,6 +10173,7 @@ export function exportFhir(options?: FhirExportOptions){
  * over from before this import.
  */
 function hydrateImportedCharts(data: Any): void {
+  synchronizeActiveFhirIdentity(data.fhirIdentity);
   // FIX 1: only re-infer the legacy caries∩filling recurrent-caries intersection
   // for pre-2.3 payloads. A native ≥2.3 payload (including any FHIR bundle, which
   // parseFhirBundle tags "2.3") carries explicit `secondaryCaries` scores, so an
@@ -12161,6 +12162,10 @@ function cloneDocument(doc: OdontogramDocument): OdontogramDocument {
   return JSON.parse(JSON.stringify(doc)) as OdontogramDocument;
 }
 
+function cloneFhirIdentity(identity: OdontogramDocument["fhirIdentity"]): OdontogramDocument["fhirIdentity"] {
+  return identity ? JSON.parse(JSON.stringify(identity)) as OdontogramDocument["fhirIdentity"] : undefined;
+}
+
 /**
  * @internal
  * Normalize a sparse host document into the exact serialization domain a live
@@ -12241,11 +12246,13 @@ class ClinicalSession implements OdontogramSession {
    *  the engine's own state is the single source of truth.
    *  @internal — module-private; not part of the public session contract. */
   stored: OdontogramDocument;
+  private liveFhirIdentity: OdontogramDocument["fhirIdentity"];
   private readonly listeners = new Set<(doc: OdontogramDocument) => void>();
 
   constructor(initial?: OdontogramDocument | null, id?: string, options?: OdontogramSessionOptions){
     this.id = id ?? `odontogram-session-${++sessionCounter}`;
     this.stored = initial ? cloneDocument(initial) : blankDocument();
+    this.liveFhirIdentity = undefined;
     const exportOptions = options?.fhir?.exportOptions;
     this.fhir = Object.freeze({
       dialect: resolveFhirDialect(options?.fhir?.dialect),
@@ -12254,12 +12261,20 @@ class ClinicalSession implements OdontogramSession {
   }
 
   getDocument(): OdontogramDocument {
-    return this.isActive() ? snapshotLiveDocument() : cloneDocument(this.stored);
+    if (!this.isActive()) return cloneDocument(this.stored);
+    const document = snapshotLiveDocument();
+    if (this.liveFhirIdentity) document.fhirIdentity = cloneFhirIdentity(this.liveFhirIdentity);
+    return document;
+  }
+
+  synchronizeLiveFhirIdentity(identity: OdontogramDocument["fhirIdentity"]): void {
+    this.liveFhirIdentity = cloneFhirIdentity(identity);
   }
 
   setDocument(doc: OdontogramDocument | null | undefined): void {
     const next = doc && typeof doc === "object" ? cloneDocument(doc) : blankDocument();
     if(this.isActive()){
+      this.stored = next;
       loadLiveDocument(next);
       // The live path fans out through notifyStateChange(), which already
       // notifies this session's subscribers — do not notify twice.
@@ -12317,10 +12332,14 @@ let activeSession: ClinicalSession = defaultSession;
 /** Sessions to hand the engine back to, innermost last. */
 const sessionStack: ClinicalSession[] = [];
 
+function synchronizeActiveFhirIdentity(identity: OdontogramDocument["fhirIdentity"]): void {
+  activeSession.synchronizeLiveFhirIdentity(identity);
+}
+
 /** Make `next` the live session, saving the outgoing one's state first. */
 function activateSession(next: ClinicalSession): void {
   if(activeSession === next) return;
-  activeSession.stored = snapshotLiveDocument();
+  activeSession.stored = activeSession.getDocument();
   sessionStack.push(activeSession);
   activeSession = next;
   loadLiveDocument(next.stored);
@@ -12338,7 +12357,7 @@ function releaseSession(session: ClinicalSession): void {
   }
   const previous = sessionStack.pop();
   if(!previous) return; // the default session is never released
-  session.stored = snapshotLiveDocument();
+  session.stored = session.getDocument();
   activeSession = previous;
   loadLiveDocument(previous.stored);
   notifyStateChange();

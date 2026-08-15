@@ -10,6 +10,8 @@ export type {
   ExaminationContextRecord,
   ExaminationSnapshotRecord,
   OdontogramDocument,
+  DentalCoreIdentity,
+  DentalCoreResourceIdentity,
 } from "../document";
 export { PAYLOAD_VERSION } from "../document";
 
