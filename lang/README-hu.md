@@ -531,7 +531,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion supports only generated Dental Core `de.cognovis.fhir.dental.core#0.3.0` bundles and rejects unsupported input.
+FHIR conversion is optional and has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.3.0`. A Dental Core session rejects Legacy, malformed, or unsupported input and refuses exports that would lose populated clinical state.
 
 **Dátumozott vizsgálatok, felmérési státusz és peri-implantáris rögzítés (2.4.0-tól):**
 

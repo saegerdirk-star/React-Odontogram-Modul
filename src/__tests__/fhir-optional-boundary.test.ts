@@ -54,7 +54,7 @@ describe("optional FHIR package boundary", () => {
     expect(packageJson.exports).toHaveProperty("./fhir");
     expect(source("src/fhir/index.ts")).toContain("buildFhirBundle");
     expect(source("vite.lib.config.ts")).toContain("fhir: path.resolve");
-    expect(source("src/fhir/index.ts")).not.toMatch(new RegExp(`${["Dental", "De"].join("")}|${removedDialectPattern.source}|FhirDialect`));
+    expect(source("src/fhir/index.ts")).not.toMatch(new RegExp(`${["Dental", "De"].join("")}|${removedDialectPattern.source}`));
   });
 
   it("maps each package type entry to a declared library entry", () => {

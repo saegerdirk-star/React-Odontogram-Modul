@@ -529,7 +529,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion is a pure optional projection of the UI-domain document. This package supports only generated Dental Core `de.cognovis.fhir.dental.core#0.3.0` bundles. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date; `parseDentalCoreBundle` fails closed for unsupported or malformed bundles.
+FHIR conversion is a pure optional projection of the UI-domain document. It has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.3.0`. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date and refuses exports that would lose populated clinical state; a Dental Core session rejects Legacy, unsupported, or malformed bundles.
 
 **带日期的检查、评估状态与种植体周围记录（自 2.4.0 起）：**
 

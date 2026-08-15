@@ -15,7 +15,7 @@ import {
 export {
   createOdontogramSession, getDefaultOdontogramSession, getActiveOdontogramSession,
 } from "./odontogram";
-export type { OdontogramSession, OdontogramDocument } from "./odontogram";
+export type { OdontogramSession, OdontogramDocument, OdontogramSessionFhirConfiguration, OdontogramSessionOptions } from "./odontogram";
 // Bead odontogram-2vd: examination identity, dated examination snapshots, and
 // the explicit periodontal assessment status (assessed-normal / not assessed /
 // unmeasurable / not applicable).
@@ -29,13 +29,13 @@ export {
 export type { ExaminationContext, AssessmentStatus, PerioAssessmentAxis } from "./odontogram";
 export type { ExaminationSnapshotRecord, ExaminationContextRecord } from "./document";
 import type { EngineClaim } from "./odontogram";
-import type { OdontogramSession, OdontogramDocument } from "./odontogram";
+import type { OdontogramSession, OdontogramDocument, OdontogramSessionOptions } from "./odontogram";
 export { buildFhirBundle } from "./fhir/toFhir";
 export { parseFhirBundle } from "./fhir/fromFhir";
 import type { OdontogramSummary, PulpDetailLevel, SecondaryCariesMode, RootCariesMode, RadiographicDepthMode, ToothDetailLevel, SurfaceNotation, PerioViewMode, PerioRowId, PerioIndexNameMode } from "./odontogram";
 export type { PulpDetailLevel, SecondaryCariesMode, RootCariesMode, RadiographicDepthMode, ToothDetailLevel, SurfaceNotation, PerioViewMode, PerioRowId, PerioIndexNameMode } from "./odontogram";
 export type { OdontogramSummary, OdontogramSummarySection } from "./odontogram";
-export type { FhirExportOptions } from "./fhir/types";
+export type { FhirCodecOptions, FhirDialect, FhirExportOptions } from "./fhir/types";
 import { startIntroTour } from "./tour";
 export { startIntroTour } from "./tour";
 import { useI18n } from "./i18n/useI18n";
@@ -196,6 +196,8 @@ type AppProps = {
    * to it unchanged.
    */
   session?: OdontogramSession;
+  /** Configure the private session created for this component instance. */
+  fhir?: OdontogramSessionOptions["fhir"];
   /**
    * Initialize this instance from a UI-domain document — the same versioned
    * JSON `exportStatus()` produces. Supplying it (without `session`) makes the
@@ -274,6 +276,7 @@ export default function App({
   showStatusCard: showStatusCardProp,
   showOrthoCard: showOrthoCardProp,
   session: sessionProp,
+  fhir: fhirProp,
   document: documentProp,
   onDocumentChange,
 }: AppProps){
@@ -385,7 +388,9 @@ export default function App({
   const ownedSessionRef = useRef<OdontogramSession | null | undefined>(undefined);
   if (ownedSessionRef.current === undefined) {
     ownedSessionRef.current = sessionProp
-      ?? (documentProp !== undefined ? createOdontogramSession(documentProp) : null);
+      ?? (documentProp !== undefined || fhirProp !== undefined
+        ? createOdontogramSession(documentProp ?? null, { fhir: fhirProp })
+        : null);
   }
   const instanceSession = sessionProp ?? ownedSessionRef.current;
   // The session this instance OBSERVES. An instance with no session of its own

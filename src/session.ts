@@ -16,9 +16,11 @@
 //
 // WHAT STAYS OUT. This module exists to make the boundary legible and testable,
 // so it must stay free of transport concerns: no HTTP client, no server URL, no
-// authentication, no audit provenance, no persistence. Converting the document
-// to FHIR is a separate, PURE, optional step (`src/fhir/`), and sending the
-// result anywhere is the host's job, never this package's.
+// authentication, no audit provenance, no persistence. A session may carry an
+// immutable FHIR codec configuration: standalone defaults to upstream-compatible
+// Legacy, while a host explicitly selects Dental Core. Its `importFhirBundle()`
+// and `exportFhirBundle()` methods are the same codec path used by the built-in
+// buttons. Sending any resulting Bundle remains the host's job.
 //
 // The implementation lives in `./odontogram` because it owns the clinical state;
 // this module is the documented public surface for it.
@@ -29,4 +31,9 @@ export {
   getActiveOdontogramSession,
 } from "./odontogram";
 
-export type { OdontogramSession, OdontogramDocument } from "./odontogram";
+export type {
+  OdontogramSession,
+  OdontogramDocument,
+  OdontogramSessionFhirConfiguration,
+  OdontogramSessionOptions,
+} from "./odontogram";
