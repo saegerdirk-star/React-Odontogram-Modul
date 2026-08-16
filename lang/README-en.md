@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.13.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.13.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -533,7 +533,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion is a pure optional projection of the UI-domain document. It has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.3.0`. `buildDentalCoreBundle` accepts an effective date from the caller, examination context, or `case.examDate`; it projects the IG carrier contract across tooth and root caries, restorations, endodontic and diagnostic findings, periodontal and peri-implant findings, implants, treatment requests, assessments, and notes. Diabetes, HbA1c, smoking, and edentulous resources remain host-owned and are never minted by this codec; populated document fields require their existing Condition or Observation entries in `exportOptions.sharedResources`. Compatibility constants are exported from `react-advanced-odontogram/fhir`; unsupported or malformed bundles are rejected instead of silently losing content.
+FHIR conversion is a pure optional projection of the UI-domain document. It has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.3.0`. `buildDentalCoreBundle` accepts an effective date from the caller, examination context, or `case.examDate`; it projects the IG carrier contract across tooth and root caries, restorations, endodontic and diagnostic findings, periodontal and peri-implant findings, implants, treatment requests, assessments, and notes. Diabetes, HbA1c, smoking, and edentulous resources remain host-owned and are never minted by this codec; populated document fields require their existing Condition or Observation entries in `exportOptions.sharedResources`. The smoking-status Observation (LOINC 72166-2) may carry either the LOINC LL2201-3 / IPS Current Smoking Status answer codes or the engine-local codes. Compatibility constants are exported from `react-advanced-odontogram/fhir`; unsupported or malformed bundles are rejected instead of silently losing content.
 
 **Dated examinations, assessment status and peri-implant capture (from 2.4.0):**
 

@@ -14,7 +14,7 @@ import { DentalRiskEvidenceProfile } from "./generated/de-cognovis-fhir-dental-c
 import { DentalServiceRequestProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/ServiceRequest_DentalServiceRequest";
 import { DentalToothStateProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalToothState";
 import { CHART_MAPPINGS, COMPONENT_SYSTEM, DENTAL_CORE, DENTAL_CORE_BUNDLE_IDENTIFIER, DENTAL_CORE_PROFILES, FDI_SYSTEM, isDentalCoreDiagnosis, isDentalCoreFdi, isDentalCoreRiskValue, PROPERTY_SYSTEM, PROVENANCE_SYSTEM, VALUE_SYSTEM } from "./dentalCoreContract";
-import { LOCAL_SYSTEM } from "./codesystems";
+import { LOCAL_SYSTEM, resolveSmokingStatus } from "./codesystems";
 import { LOCAL_VALUE_MAPS } from "../registry/valueCatalog";
 
 export class UnsupportedDentalCoreContentError extends Error {
@@ -277,7 +277,7 @@ function sharedResourceMatches(payload: OdontogramExportPayload, options: FhirEx
     const status = payload.case?.smokingStatus;
     return resource.resourceType === "Observation" && codingCode(resource.code, "http://loinc.org") === "72166-2"
       && typeof status === "string" && ["never", "former", "current"].includes(status)
-      && codingCode(resource.valueCodeableConcept, LOCAL_SYSTEM) === status;
+      && resolveSmokingStatus(resource.valueCodeableConcept) === status;
   }
   if (field === "diabetesStatus") {
     const status = payload.case?.diabetesStatus;
