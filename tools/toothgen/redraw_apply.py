@@ -57,6 +57,29 @@ def anker(datei: Path):
     return out
 
 
+# Stifte muessen GERADE bleiben. Ein Thin-Plate-Spline biegt sie: am Elfer
+# gemessen ging die Abweichung von der Geraden von 0,36 auf 5,07 Einheiten.
+#
+# Klinisch ist das kein Schoenheitsfehler. Ein krummer Stift, der die Kanalwand
+# schneidet, liest sich als VIA FALSA - eine Perforation. Ein Stift darf ein
+# Stueck ueber die Wurzelfuellung hinausstehen, aber die Wurzelkontur NIEMALS
+# durchbrechen. Deshalb bekommt jede Stiftebene eine eigene Aehnlichkeits-
+# abbildung: ihre Achse wird vom Pulpa-Feld mitgenommen, der Stift selbst nur
+# gedreht, verschoben und gleichmaessig skaliert. Nachgewiesen: drei kollineare
+# Punkte bleiben kollinear, Dreiecksflaeche exakt null.
+#
+# Drei weitere Vorgaben von Dirk (16.08.2026), die beim Setzen gelten:
+#   * MILCHZAEHNE bekommen nie einen Stift.
+#   * Eine gekruemmte Wurzel gibt es nur beim Molaren.
+#   * Der Stift wird in den relativ GERADEN Kanal gezeichnet - im Oberkiefer den
+#     palatinalen, im Unterkiefer den distalen. Bei den mehrwurzeligen Zaehnen
+#     ist deshalb zu pruefen, ob die starre Abbildung ihn dort auch hinsetzt;
+#     das Pulpa-Feld allein garantiert es nicht.
+#
+# Offen: ob eine tatsaechliche Via falsa als eigener Befund darstellbar sein
+# soll, wenn sie an einem Zahn vorliegt.
+STIFT_MUSTER = re.compile(r"pin", re.I)
+
 PULPA_MUSTER = re.compile(r"(pulp|endo|parapulpal)", re.I)
 MILCH_MUSTER = re.compile(r"milktooth", re.I)
 
@@ -76,6 +99,32 @@ def pulpa_ebenen(txt: str):
         if PULPA_MUSTER.search(i) and not MILCH_MUSTER.search(i):
             out.append(i)
     return out
+
+
+def starr_aus(feld, P):
+    """Aehnlichkeitsabbildung, die die ACHSE von P so bewegt wie `feld`.
+
+    Nur Drehung, gleichmaessige Skalierung und Verschiebung - was gerade war,
+    bleibt gerade. Die Achse wird ueber die beiden Endpunkte der Laengsausdehnung
+    genommen und mit dem vollen Feld abgebildet; alles andere folgt starr.
+    """
+    i0 = int(np.argmin(P[:, 1])); i1 = int(np.argmax(P[:, 1]))
+    a0, a1 = P[i0], P[i1]
+    b0 = np.array(feld(*a0)); b1 = np.array(feld(*a1))
+    va, vb = a1 - a0, b1 - b0
+    la, lb = float(np.hypot(*va)), float(np.hypot(*vb))
+    if la < 1e-9:
+        return lambda x, y: feld(x, y)
+    k = lb / la
+    wa = np.arctan2(va[1], va[0]); wb = np.arctan2(vb[1], vb[0])
+    dw = wb - wa
+    c, s_ = np.cos(dw) * k, np.sin(dw) * k
+
+    def f(x, y):
+        d = np.array([x, y]) - a0
+        return (float(b0[0] + c * d[0] - s_ * d[1]),
+                float(b0[1] + s_ * d[0] + c * d[1]))
+    return f
 
 
 def verforme_je_element(txt: str, feld_fuer):
@@ -178,9 +227,24 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool) -> str:
 
     p_ids = set(pulpa_ebenen(txt)) if pulpa_feld else set()
 
+    # Stifte: je Ebene eine eigene starre Abbildung, aus ihrer eigenen Achse.
+    stift_feld = {}
+    if pulpa_feld:
+        for i in p_ids:
+            if not STIFT_MUSTER.search(i):
+                continue
+            m = (re.search(r'<path[^>]*\sid="' + re.escape(i) + r'"[^>]*\sd="([^"]+)"', txt)
+                 or re.search(r'<path[^>]*\sd="([^"]+)"[^>]*\sid="' + re.escape(i) + r'"', txt))
+            if m:
+                stift_feld[i] = starr_aus(lambda x, y: pulpa_feld(x, y),
+                                          redraw.polygon(m.group(1)))
+
     def feld_fuer(kette):
         if any(k in redraw.NICHT_VERFORMEN for k in kette):
             return None                      # Zahnfleisch, Knochen: neu gezeichnet
+        for k in kette:
+            if k in stift_feld:
+                return stift_feld[k]         # gerade bleiben, siehe STIFT_MUSTER
         if p_ids and any(k in p_ids for k in kette):
             return lambda x, y: pulpa_feld(x, y)
         return lambda x, y: zahn_feld(x, y)
