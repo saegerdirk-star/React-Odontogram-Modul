@@ -23,6 +23,76 @@ export const FDI_SYSTEM = "urn:iso:std:iso:3950";
 /** SNOMED CT system URL. */
 export const SNOMED_SYSTEM = "http://snomed.info/sct";
 
+/** LOINC system URL. */
+export const LOINC_SYSTEM = "http://loinc.org";
+
+/** The three smoking-status values the engine's own case record carries. */
+export type SmokingStatusValue = "never" | "former" | "current";
+
+/**
+ * LOINC answer list LL2201-3 (the answer list bound to LOINC 72166-2, i.e. the
+ * IPS Current Smoking Status ValueSet), mapped onto the engine's three values.
+ * A real practice record codes the answer this way rather than with the engine's
+ * local codes, so both codings have to be readable.
+ *
+ * Deliberately NOT listed, therefore rejected: `LA18979-7` (smoker, current
+ * status unknown) and `LA18980-5` (unknown if ever smoked). Neither maps onto
+ * never/former/current, and guessing one would file an unknown as a finding.
+ */
+export const SMOKING_ANSWER_CODES: Record<string, SmokingStatusValue> = {
+  "LA18978-9": "never",   // Never smoker
+  "LA15920-4": "former",  // Former smoker
+  "LA18976-3": "current", // Current every day smoker
+  "LA18977-1": "current", // Current some day smoker
+  "LA18981-3": "current", // Heavy tobacco smoker
+  "LA18982-1": "current", // Light tobacco smoker
+};
+
+const LOCAL_SMOKING_VALUES: readonly SmokingStatusValue[] = ["never", "former", "current"];
+
+/** Narrow an arbitrary value to one of the three smoking-status values. */
+const smokingValue = (value: unknown): SmokingStatusValue | undefined =>
+  LOCAL_SMOKING_VALUES.find((candidate) => candidate === value);
+
+/**
+ * Look an answer code up in the table by OWN key only. A plain object literal
+ * inherits `Object.prototype`, so a bare index would resolve `__proto__`,
+ * `constructor`, `toString` and friends to a truthy non-status value — which the
+ * import path would then have filed as a smoking status. The narrowing keeps the
+ * resolver's return type honest whatever the table is later fed.
+ */
+const answerValue = (code: string): SmokingStatusValue | undefined =>
+  Object.prototype.hasOwnProperty.call(SMOKING_ANSWER_CODES, code) ? smokingValue(SMOKING_ANSWER_CODES[code]) : undefined;
+
+/**
+ * Resolve a smoking-status `valueCodeableConcept` to the engine's value, from
+ * EITHER the engine-local coding or the LOINC LL2201-3 answer coding. The single
+ * resolver both the export match and the import read call, so a value that saves
+ * always reads back.
+ *
+ * Returns `undefined` when nothing recognisable is coded, when the code is not
+ * mappable, and when two recognised codings disagree — a disagreement is
+ * rejected rather than resolved by picking a winner. Matching is by system and
+ * code only; display text is never consulted.
+ */
+export function resolveSmokingStatus(concept: unknown): SmokingStatusValue | undefined {
+  const coding = (concept as { coding?: Array<{ system?: string; code?: string }> } | undefined)?.coding;
+  if (!Array.isArray(coding)) return undefined;
+  let resolved: SmokingStatusValue | undefined;
+  for (const item of coding) {
+    let value: SmokingStatusValue | undefined;
+    if (item?.system === LOCAL_SYSTEM) {
+      value = smokingValue(item.code);
+    } else if (item?.system === LOINC_SYSTEM && item.code) {
+      value = answerValue(item.code);
+    }
+    if (!value) continue;
+    if (resolved && resolved !== value) return undefined;
+    resolved = value;
+  }
+  return resolved;
+}
+
 /**
  * ICD-10 (WHO) system URL, per HL7's registered identifier for it. Used by the
  * periodontitis/gingivitis Condition (K05.*). BNO-10 (the Hungarian national

@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
-[![Version](https://img.shields.io/badge/version-2.13.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
+[![Version](https://img.shields.io/badge/version-2.13.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](https://raw.githubusercontent.com/ZoliQua/React-Odontogram-Modul/main/src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
 
@@ -116,7 +116,7 @@ if (!session.importFhirBundle(bundle)) throw new Error("FHIR import rejected");
 
 A clinical Dental Core export requires an effective date supplied by the caller, the examination context, or `case.examDate`. The codec projects the IG carrier contract across tooth and root caries, restorations, endodontic and diagnostic findings, periodontal and peri-implant findings, implant identity, treatment requests, assessments, and notes while retaining host resource identity.
 
-Diabetes, HbA1c, smoking, and edentulous resources remain owned by the host patient record and are never minted by this codec. When those document fields are populated, pass their existing Condition or Observation entries through `exportOptions.sharedResources`; the bundle carries them unchanged, records their references in Provenance, and fails closed if a required host resource is absent or inconsistent.
+Diabetes, HbA1c, smoking, and edentulous resources remain owned by the host patient record and are never minted by this codec. When those document fields are populated, pass their existing Condition or Observation entries through `exportOptions.sharedResources`; the bundle carries them unchanged, records their references in Provenance, and fails closed if a required host resource is absent or inconsistent. The smoking-status Observation (LOINC 72166-2) may carry either the LOINC LL2201-3 / IPS Current Smoking Status answer codes or the engine-local codes.
 
 Hosts can import `DENTAL_CORE_CANONICAL`, `DENTAL_CORE_PROFILES`, `DENTAL_CORE_PACKAGE_VERSION`, and `DENTAL_CORE_CODE_SYSTEM_URLS` from `react-advanced-odontogram/fhir` for compatibility checks. Legacy remains intentionally limited to its upstream-supported fields; unsupported or malformed claimed Core Bundles are rejected rather than silently losing content.
 

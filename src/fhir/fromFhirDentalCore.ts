@@ -12,7 +12,7 @@ import { DentalProcedureProfile } from "./generated/de-cognovis-fhir-dental-core
 import { DentalRiskEvidenceProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalRiskEvidence";
 import { DentalServiceRequestProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/ServiceRequest_DentalServiceRequest";
 import { DentalToothStateProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalToothState";
-import { LOCAL_SYSTEM } from "./codesystems";
+import { LOCAL_SYSTEM, resolveSmokingStatus } from "./codesystems";
 import { LOCAL_VALUE_MAPS } from "../registry/valueCatalog";
 import type { DentalCoreResourceIdentity, OdontogramExportPayload, ToothRecord } from "./types";
 import {
@@ -116,9 +116,9 @@ function applySharedResource(payload: OdontogramExportPayload, field: string, re
     return true;
   }
   if (field === "smokingStatus") {
-    const value = localValue(resource.valueCodeableConcept);
+    const value = resolveSmokingStatus(resource.valueCodeableConcept);
     if (resource.resourceType !== "Observation" || codeAt(resource.code as { coding?: Array<{ system?: string; code?: string }> }, "http://loinc.org") !== "72166-2"
-      || !value || !["never", "former", "current"].includes(value)) return false;
+      || !value) return false;
     payload.case = { ...payload.case, smokingStatus: value };
     return true;
   }

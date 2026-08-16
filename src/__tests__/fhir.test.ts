@@ -203,6 +203,101 @@ describe("configured FHIR codecs", () => {
     );
   });
 
+  it("accepts a shared smoking status coded with the LOINC LL2201-3 answer list", () => {
+    const base: OdontogramExportPayload = {
+      version: "2.25",
+      globals: {},
+      teeth: { "16": { toothSelection: "tooth-base", endo: "endo-filling" } },
+      case: {},
+    };
+    const exportOptions = { subject: "Patient/example", effectiveDateTime: "2026-08-16T00:00:00Z" };
+    const smokingCoded = (coding: Array<{ system: string; code: string }>) => ({
+      smokingStatus: {
+        fullUrl: "https://praxis.example/fhir/Observation/host-smoking",
+        resource: {
+          resourceType: "Observation" as const,
+          id: "host-smoking",
+          status: "final" as const,
+          meta: { profile: ["https://praxis.example/fhir/praxis/StructureDefinition/smoking-status-de"] },
+          code: { coding: [{ system: "http://loinc.org", code: "72166-2" }] },
+          subject: { reference: "Patient/example" },
+          valueCodeableConcept: { coding },
+        },
+      },
+    });
+    const smokingResource = (answer: string, system = "http://loinc.org") => smokingCoded([{ system, code: answer }]);
+    const localCoding = (code: string) => ({ system: "https://github.com/ZoliQua/React-Odontogram-Modul/fhir/CodeSystem/odontogram", code });
+
+    const accepted: Array<[string, "never" | "former" | "current"]> = [
+      ["LA18978-9", "never"],
+      ["LA15920-4", "former"],
+      ["LA18976-3", "current"],
+      ["LA18977-1", "current"],
+      ["LA18981-3", "current"],
+      ["LA18982-1", "current"],
+    ];
+    for (const [answer, status] of accepted) {
+      const payload = { ...base, case: { smokingStatus: status } };
+      const sharedResources = smokingResource(answer);
+      const bundle = buildDentalCoreBundle(payload, { ...exportOptions, sharedResources });
+      expect(parseDentalCoreBundle(bundle)?.case?.smokingStatus).toBe(status);
+    }
+
+    // The engine-local answer coding keeps working alongside the LOINC one.
+    const localShared = {
+      smokingStatus: {
+        fullUrl: "https://praxis.example/fhir/Observation/host-smoking",
+        resource: {
+          resourceType: "Observation" as const,
+          id: "host-smoking",
+          status: "final" as const,
+          code: { coding: [{ system: "http://loinc.org", code: "72166-2" }] },
+          subject: { reference: "Patient/example" },
+          valueCodeableConcept: { coding: [{ system: "https://github.com/ZoliQua/React-Odontogram-Modul/fhir/CodeSystem/odontogram", code: "former" }] },
+        },
+      },
+    };
+    const localBundle = buildDentalCoreBundle({ ...base, case: { smokingStatus: "former" } }, { ...exportOptions, sharedResources: localShared });
+    expect(parseDentalCoreBundle(localBundle)?.case?.smokingStatus).toBe("former");
+
+    // Unmappable answers and payload/answer disagreements stay rejected.
+    for (const answer of ["LA18979-7", "LA18980-5"]) {
+      expect(() => buildDentalCoreBundle({ ...base, case: { smokingStatus: "current" } }, { ...exportOptions, sharedResources: smokingResource(answer) }))
+        .toThrow("case.smokingStatus");
+    }
+    expect(() => buildDentalCoreBundle({ ...base, case: { smokingStatus: "current" } }, { ...exportOptions, sharedResources: smokingResource("LA15920-4") }))
+      .toThrow("case.smokingStatus");
+    expect(() => buildDentalCoreBundle({ ...base, case: { smokingStatus: "former" } }, { ...exportOptions, sharedResources: smokingResource("8517006", "http://snomed.info/sct") }))
+      .toThrow("case.smokingStatus");
+
+    // Two recognised codings must agree; a disagreement is rejected outright.
+    expect(() => buildDentalCoreBundle({ ...base, case: { smokingStatus: "former" } }, {
+      ...exportOptions,
+      sharedResources: smokingCoded([localCoding("former"), { system: "http://loinc.org", code: "LA18978-9" }]),
+    })).toThrow("case.smokingStatus");
+    const agreeing = buildDentalCoreBundle({ ...base, case: { smokingStatus: "former" } }, {
+      ...exportOptions,
+      sharedResources: smokingCoded([localCoding("former"), { system: "http://loinc.org", code: "LA15920-4" }]),
+    });
+    expect(parseDentalCoreBundle(agreeing)?.case?.smokingStatus).toBe("former");
+
+    // An answer naming an Object.prototype member is not a code: rejected on both paths.
+    for (const hostile of ["__proto__", "constructor", "toString", "hasOwnProperty"]) {
+      expect(() => buildDentalCoreBundle({ ...base, case: { smokingStatus: "former" } }, { ...exportOptions, sharedResources: smokingResource(hostile) }))
+        .toThrow("case.smokingStatus");
+    }
+
+    // A bundle whose shared answer is replaced after export is rejected whole, never
+    // parsed with the field silently dropped or filled from a prototype member.
+    for (const answer of ["LA18980-5", "__proto__", "constructor"]) {
+      const exported = buildDentalCoreBundle({ ...base, case: { smokingStatus: "former" } }, { ...exportOptions, sharedResources: smokingResource("LA15920-4") });
+      const shared = exported.entry?.find((entry) => entry.fullUrl === "https://praxis.example/fhir/Observation/host-smoking")?.resource as import("fhir/r4").Observation | undefined;
+      expect(shared).toBeDefined();
+      shared!.valueCodeableConcept = { coding: [{ system: "http://loinc.org", code: answer }] };
+      expect(parseDentalCoreBundle(exported)).toBeUndefined();
+    }
+  });
+
   it("preserves identities for newly supported clinical profiles and assigns bundle-local identity to new ones", () => {
     const imported = buildDentalCoreBundle(clinicalFixture(), options);
     const replacement = new Map<string, string>();
