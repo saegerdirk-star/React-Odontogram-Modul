@@ -14,14 +14,28 @@ What was missing was the map from the old outline to the new one. `make_warp` in
 build.py only bends vertically, which is enough to derive one tooth class from
 another but not to follow a redrawn contour.
 
-CORRESPONDENCE. Two contours, sampled by arc length from a common start, paired
-in order. For a smooth front tooth that is enough - checked on 11, where the
-correspondence lines run parallel and point 0 sits on the apex of both. For a
-molar it is not: on 16 the lines cross the picture, because the root tips differ
-in length and the notches in depth, so arc length distributes differently and
-the pairing drifts from the first notch onward. There the split points come from
-hand-set anchors (`<n>_anker_alt.svg` / `_neu.svg`), and arc length only has to
-carry the stretch between two of them.
+CORRESPONDENCE runs over HEIGHT, not over arc length.
+
+Arc length was the first attempt and it is wrong even for an incisor, which the
+eye does not catch. On 11 the old outline is 34.7 wide and the redrawn one 21.4;
+the wide one therefore spends much more of its perimeter on the near-horizontal
+stretches, so a point at 40 percent of the old perimeter sits at a quite
+different height than one at 40 percent of the new. The outline still matched
+exactly - it is pinned - but the interior sheared: measured along the axis, the
+local vertical stretch fell to 0.29 in the middle of the tooth and rose to 2.26
+in the crown. The pulp came out 35 percent shorter and ended halfway down the
+root, which is what Dirk saw.
+
+A tooth corresponds by height. For each of N heights the outline is cut and its
+left and right edge paired with the left and right edge at the matching height
+of the other outline. Heights are matched relative to three landmarks - apex,
+cervical line, incisal or occlusal edge - so the cervix maps to the cervix even
+when the two teeth divide their length differently.
+
+Anchors add the horizontal counterpart, and only multi-rooted teeth need them:
+at a height that cuts three roots there are six edges, and which of them belongs
+to which is not decided by position alone. `<n>_anker_alt.svg` / `_neu.svg` name
+the root tips and the notches between them, so the runs can be matched in order.
 
 DISPLACEMENT. A thin-plate spline over the paired points. It interpolates the
 contour exactly and stays smooth inside, which matters because every layer in
@@ -149,3 +163,61 @@ def tooth_base_d(txt: str) -> str:
     if not m:
         raise ValueError("kein tooth-base im Template")
     return m.group(1)
+
+
+def _kanten(P: np.ndarray, y: float):
+    """Schnittpunkte der Kontur mit der Waagerechten y, von links nach rechts."""
+    xs = []
+    n = len(P)
+    for i in range(n):
+        x1, y1 = P[i]
+        x2, y2 = P[(i + 1) % n]
+        if (y1 - y) * (y2 - y) < 0:
+            t = (y - y1) / (y2 - y1)
+            xs.append(x1 + (x2 - x1) * t)
+    return sorted(xs)
+
+
+def _laeufe(xs):
+    """Kanten paarweise zu Abschnitten - eine gefuellte Zeile hat gerade viele."""
+    return [(xs[i], xs[i + 1]) for i in range(0, len(xs) - 1, 2)]
+
+
+def paare_ueber_hoehe(P_alt, P_neu, marken_alt=None, marken_neu=None,
+                      stufen: int = 40, rand: float = 0.015):
+    """Punktpaare nach HOEHE statt nach Bogenlaenge.
+
+    `marken_*` sind Hoehen, die aufeinander abgebildet werden sollen - Apex,
+    Zahnhals, Schneidekante, und bei mehrwurzeligen Zaehnen die Furkation.
+    Dazwischen wird linear interpoliert, sodass die Zervix auf die Zervix
+    trifft, auch wenn die beiden Zaehne ihre Laenge verschieden aufteilen.
+    """
+    A, B = np.asarray(P_alt, float), np.asarray(P_neu, float)
+    ya0, ya1 = A[:, 1].min(), A[:, 1].max()
+    yb0, yb1 = B[:, 1].min(), B[:, 1].max()
+    ma = list(marken_alt) if marken_alt else []
+    mb = list(marken_neu) if marken_neu else []
+    stuetz_a = [ya0] + sorted(ma) + [ya1]
+    stuetz_b = [yb0] + sorted(mb) + [yb1]
+
+    def hoehe(y):
+        return float(np.interp(y, stuetz_a, stuetz_b))
+
+    qa, qb = [], []
+    for f in np.linspace(rand, 1.0 - rand, stufen):
+        ya = ya0 + f * (ya1 - ya0)
+        yb = hoehe(ya)
+        la, lb = _laeufe(_kanten(A, ya)), _laeufe(_kanten(B, yb))
+        if not la or not lb:
+            continue
+        if len(la) != len(lb):
+            # Zeile schneidet verschieden viele Wurzeln - auf die Gesamtbreite
+            # zurueckfallen, statt Laeufe falsch zu paaren.
+            la = [(la[0][0], la[-1][1])]
+            lb = [(lb[0][0], lb[-1][1])]
+        for (a0, a1), (b0, b1) in zip(la, lb):
+            qa.append((a0, ya)); qb.append((b0, yb))
+            qa.append((a1, ya)); qb.append((b1, yb))
+            if a1 - a0 > 4.0:
+                qa.append(((a0 + a1) / 2, ya)); qb.append(((b0 + b1) / 2, yb))
+    return np.asarray(qa), np.asarray(qb)

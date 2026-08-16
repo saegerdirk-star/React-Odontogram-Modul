@@ -57,27 +57,62 @@ def anker(datei: Path):
     return out
 
 
-def _halte_zurueck(txt: str, ids):
-    """Layer mit diesen ids gegen Platzhalter tauschen; gibt (text, mapping)."""
-    gehalten = {}
-    for k, ident in enumerate(ids):
-        m = re.search(r'<g[^>]*\sid="' + re.escape(ident) + r'"', txt)
-        if not m:
+PULPA_MUSTER = re.compile(r"(pulp|endo|parapulpal)", re.I)
+MILCH_MUSTER = re.compile(r"milktooth", re.I)
+
+
+def pulpa_ebenen(txt: str):
+    """Ebenen, die der Pulpa folgen - Pulpitis, Wurzelfuellung, Stifte.
+
+    Die milktooth-Ebenen bleiben aussen vor: sie sind der alte Behelf, mit dem
+    ein Milchzahn im Template seines Nachfolgers gezeichnet wurde, und gehoeren
+    nicht zu dieser Pulpa.
+    """
+    out = []
+    for m in re.finditer(r'\sid="([^"]+)"', txt):
+        i = m.group(1)
+        if i.startswith("toothgen-"):
             continue
-        i = m.start()
-        tiefe, j = 0, i
-        while True:
-            mm = re.compile(r"<g\b|</g>").search(txt, j)
-            if not mm:
-                break
-            tiefe += 1 if mm.group(0) == "<g" else -1
-            j = mm.end()
-            if tiefe == 0:
-                break
-        marke = f"<!--HALT{k}-->"
-        gehalten[marke] = txt[i:j]
-        txt = txt[:i] + marke + txt[j:]
-    return txt, gehalten
+        if PULPA_MUSTER.search(i) and not MILCH_MUSTER.search(i):
+            out.append(i)
+    return out
+
+
+def verforme_je_element(txt: str, feld_fuer):
+    """Jedes d-Attribut mit dem Feld verformen, das fuer sein Element gilt.
+
+    `feld_fuer(ids)` bekommt die id des Elements und die seiner umgebenden
+    Gruppen und gibt eine Warp-Funktion zurueck - oder None, dann bleibt das
+    Element unveraendert. So koennen Zahn, Pulpa und Zahnfleisch in EINEM
+    Durchgang verschieden behandelt werden, ohne Bloecke herauszuschneiden.
+    """
+    out = []
+    stapel = []
+    pos = 0
+    for m in re.finditer(r"<(/?)(\w+)([^>]*?)(/?)>", txt):
+        out.append(txt[pos:m.start()])
+        pos = m.end()
+        schliessend, tag, attrs, selbst = m.groups()
+        if schliessend:
+            if tag == "g" and stapel:
+                stapel.pop()
+            out.append(m.group(0))
+            continue
+        ident = re.search(r'\sid="([^"]+)"', attrs)
+        eigen = ident.group(1) if ident else None
+        kette = [x for x in stapel + [eigen] if x]
+        d = re.search(r'\sd="([^"]+)"', attrs)
+        if d:
+            fn = feld_fuer(kette)
+            if fn is not None:
+                ersetzt = svgpath.warp_path_d(d.group(1), fn)
+                # d sucht INNERHALB von attrs - die Indizes sind schon relativ.
+                attrs = attrs[:d.start(1)] + ersetzt + attrs[d.end(1):]
+        out.append(f"<{tag}{attrs}{selbst}>")
+        if tag == "g" and not selbst:
+            stapel.append(eigen)
+    out.append(txt[pos:])
+    return "".join(out)
 
 
 def szg(zahn: str) -> float:
@@ -102,39 +137,65 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool) -> str:
     zeich = (ZEICHNUNGEN / f"{zahn}_zeichnen.svg").read_text()
     neu = redraw.polygon(_pfad(_ebene(zeich, "3 HIER ZEICHNEN")))
 
-    aa = an = None
+    # Zuordnung ueber die HOEHE, nicht ueber die Bogenlaenge. Der erste Versuch
+    # lief ueber den Umfang und scherte das Innere: die Pulpa kam 35 Prozent
+    # kuerzer heraus und endete auf halber Wurzel. Siehe redraw.py.
+    s_spec = spec.SPEC_BY_KEY[template]
+    ya0, ya1 = float(alt[:, 1].min()), float(alt[:, 1].max())
+    oben = zahn[0] in "12"
+    cej_alt = ya0 + s_spec.root_frac * (ya1 - ya0) if oben \
+        else ya1 - s_spec.root_frac * (ya1 - ya0)
+    cej_neu = szg(zahn)
+
+    marken_alt, marken_neu = [cej_alt], [cej_neu]
     if mit_ankern:
         aa = anker(ZEICHNUNGEN / f"{zahn}_anker_alt.svg")
         an = anker(ZEICHNUNGEN / f"{zahn}_anker_neu.svg")
+        for k in sorted(aa):
+            if k.startswith("K") and k in an:
+                marken_alt.append(aa[k][1])
+                marken_neu.append(an[k][1])
 
-    A, B = redraw.paare(alt, neu, aa, an)
-    spline = redraw.Spline(A, B, glaettung=0.0)
+    A, B = redraw.paare_ueber_hoehe(alt, neu, marken_alt, marken_neu)
+    zahn_feld = redraw.Spline(A, B, glaettung=1e-3)
 
-    mitte = float(np.mean(alt[:, 0]))
+    # Zweites Feld fuer die Pulpa: die pulpanahen Ebenen folgen Dirks
+    # gezeichneter Kammer, nicht dem Aussenumriss. Ohne das traegt der Zahn
+    # weiterhin die alte Pulpa, nur mitgezogen.
+    pulpa_feld = None
+    pz = ZEICHNUNGEN / f"{zahn}_pulpa_zeichnen.svg"
+    if pz.exists():
+        gez = re.findall(r'<path[^>]*\sd="([^"]+)"',
+                         _ebene(pz.read_text(), "3 PULPA HIER ZEICHNEN"))
+        m = (re.search(r'<path[^>]*\sid="tooth-healthy-pulp"[^>]*\sd="([^"]+)"', txt)
+             or re.search(r'<path[^>]*\sd="([^"]+)"[^>]*\sid="tooth-healthy-pulp"', txt))
+        if gez and m:
+            alt_p = redraw.polygon(m.group(1))
+            neu_p = redraw.polygon(gez[0]) if len(gez) == 1 else np.vstack(
+                [redraw.polygon(g) for g in gez])
+            PA, PB = redraw.paare_ueber_hoehe(alt_p, neu_p, stufen=30)
+            pulpa_feld = redraw.Spline(PA, PB, glaettung=1e-3)
 
-    def ymap(y: float) -> float:
-        return spline(mitte, y)[1]
+    p_ids = set(pulpa_ebenen(txt)) if pulpa_feld else set()
 
-    vb = re.search(r'viewBox="([^"]*)"', txt).group(1)
-    vb_neu = tuple(float(v) for v in vb.split())
+    def feld_fuer(kette):
+        if any(k in redraw.NICHT_VERFORMEN for k in kette):
+            return None                      # Zahnfleisch, Knochen: neu gezeichnet
+        if p_ids and any(k in p_ids for k in kette):
+            return lambda x, y: pulpa_feld(x, y)
+        return lambda x, y: zahn_feld(x, y)
 
-    gehalten_txt, gehalten = _halte_zurueck(txt, redraw.NICHT_VERFORMEN)
-    out = build.rewrite_svg(gehalten_txt, lambda x, y: spline(x, y), ymap, vb_neu)
-    for marke, block in gehalten.items():
-        out = out.replace(marke, block)
+    out = verforme_je_element(txt, feld_fuer)
 
     # Zahnfleisch und Knochen NEU zeichnen statt mitziehen. Sie gehoeren der
     # Spalte, nicht dem Zahn - die Papille ist zwischen zwei Nachbarn EINE
-    # Struktur auf EINER Hoehe, und ein mitgezogener Rand kann sich mit dem
-    # Nachbarn nicht darauf einigen. gum.py zeichnet sie in Endkoordinaten.
-    s_spec = spec.SPEC_BY_KEY[template]
-    hoehe = vb_neu[3]
+    # Struktur auf EINER Hoehe. gum.py zeichnet sie in Endkoordinaten.
+    vb = re.search(r'viewBox="([^"]*)"', txt).group(1)
+    hoehe = float(vb.split()[3])
     occl = hoehe - build.OCCL_MARGIN
-    cej = szg(zahn)
     cx = float(np.mean([neu[:, 0].min(), neu[:, 0].max()]))
-    band = neu[np.abs(neu[:, 1] - cej) < 1.5]
+    band = neu[np.abs(neu[:, 1] - cej_neu) < 1.5]
     if len(band) < 2:
         band = neu
     neck_half = float(band[:, 0].max() - band[:, 0].min()) / 2.0
-    out = build.replace_gum(out, occl, cej, cx, neck_half, float(s_spec.col_px))
-    return out
+    return build.replace_gum(out, occl, cej_neu, cx, neck_half, float(s_spec.col_px))
