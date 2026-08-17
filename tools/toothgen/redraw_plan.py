@@ -81,8 +81,94 @@ PLAN_OCCL: dict[str, tuple[str, str]] = {
     "84_occl": ("84", "46_occl"), "85_occl": ("85", "46_occl"),
 }
 
-# Praemolaren tragen KEINE Fissuren. Dirk hat sie bewusst ohne gezeichnet, weil
-# die alten Templates vom Oberkiefermolaren abgeleitet waren; mitgezogen laege
-# also weiterhin ein Molarenmuster auf einem Praemolaren. Lieber eine glatte
-# Kauflaeche als eine falsche - nachzuzeichnen, wenn Zeit ist.
-OHNE_FISSUREN = {"14_occl", "15_occl", "44_occl", "45_occl"}
+# Leer, und das ist der Endstand. Einen Zug lang standen die vier Praemolaren
+# hier drin: ihre Fissuren wurden geleert statt mitgezogen, weil die alten
+# Templates vom Oberkiefermolaren abgeleitet waren und ein Molarenmuster auf
+# einem Praemolarenumriss laege. Nachgesehen war die Voraussetzung falsch - in
+# `14_occl_zeichnen.svg` und `15_occl_zeichnen.svg` stehen je sechs Pfade in der
+# Zeichenebene, ein Aussenumriss und fuenf Innenformen, wo der Molar zwoelf
+# traegt. Dirk, 17.08.2026: "Fissuren sind in die 4 Templates eingezeichnet."
+# Sein Relief war da, es wurde nur weggeworfen.
+OHNE_FISSUREN: set[str] = set()
+
+
+# Der Spalt zwischen zwei Kacheln (`gap` an `.tooth-arch` in src/index.css).
+GRID_GAP = 4.0
+
+# Die Spalte, in der jede Position steht, in CSS-Pixeln - und zwar so, dass sich
+# die Nachbarn an ihren KONTAKTPUNKTEN beruehren.
+#
+# Dirk, 17.08.2026: "Kannst du die Zaehne so zusammenruecken, dass sie sich an
+# den Kontaktpunkten beruehren?"
+#
+# Die Spalte ist die groesste mesiodistale Kronenbreite der GEZEICHNETEN Kontur
+# (gemessen zwischen Schmelz-Zement-Grenze und Kaukante) minus dem Spalt, damit
+# Spalte plus Spalt genau die Kronenbreite ergibt. Eine Regel, kein von Hand
+# gesetzter Wert - dieselbe Bauart wie vorher, nur ohne den Zuschlag.
+#
+# Warum es noetig war: die alten Spalten stammten aus den ALTEN Templates. An
+# der neu gezeichneten Kontur gemessen hatte der obere Schneidezahn 27 px Luft
+# und der Sechser 14 - die Front stand auseinander, die Molaren standen fast
+# zusammen. Genau das war im Bogen zu sehen.
+#
+# Die Klasse-I-Verzahnung faellt weiterhin aus den Zahnbreiten heraus und aus
+# nichts sonst: der Zuschlag war auf beiden Seiten jedes Kontakts gleich und hob
+# sich auf, also aendert sein Wegfall nichts an der Beziehung - nur der Bogen
+# wird um die Summe der Zuschlaege schmaler.
+# Und ein ZUSCHLAG auf jede Spalte, gleich gross fuer alle.
+#
+# Dirk, 17.08.2026: "Wir rutschen die Zaehne wieder etwas auseinander, dann ist
+# mehr Platz fuer die okklusalen Ansichten." Bei 0 beruehren sich die Kronen an
+# den Kontaktpunkten - das war der Ausgangspunkt und er stimmte -, aber die
+# Kauflaeche muss in denselben Abstand passen, und an der engsten Stelle des
+# Bogens blieben ihr 33 px.
+#
+# Gleich gross fuer alle ist die Bedingung, unter der die Klasse-I-Verzahnung
+# erhalten bleibt: derselbe Zuschlag liegt auf BEIDEN Seiten jedes Kontakts und
+# hebt sich auf, also bleibt zwischen 13 und 43 die anatomische Differenz
+# stehen. Ein von Hand je Zahn gesetzter Wert taete genau das nicht.
+ZUSCHLAG = 8
+
+_KRONE: dict[int, int] = {
+    11: 31, 12: 28, 13: 31, 14: 31, 15: 27, 16: 54, 17: 50, 18: 46,
+    41: 20, 42: 24, 43: 29, 44: 26, 45: 33, 46: 58, 47: 53, 48: 50,
+}
+SPALTEN: dict[int, int] = {k: v + ZUSCHLAG for k, v in _KRONE.items()}
+
+# Eine Zeichnung, die im Bogen zu schief steht, um eine Zehntel Grad genau
+# gedreht - in Grad, gegen den Uhrzeigersinn im Bildrahmen.
+#
+# Dirk, 17.08.2026: "12 und 22 stehen zu gekippt." (22 ist dieselbe Zeichnung
+# gespiegelt, eine Korrektur trifft beide.) Gemessen stand 12 mit 4,3 Grad
+# schiefer Schneidekante und -25,4 % Wurzelversatz im Bogen - der groesste
+# Versatz ueberhaupt, und der Nachbar 11 kippt mit +6,4 % zur ANDEREN Seite.
+# Gedreht wird auf die waagerechte Schneidekante: das ist ein Kantenmass und
+# damit belastbar, waehrend eine aus dem Umriss abgeleitete ACHSE dort schief
+# geht, wo eine Wurzel seitlich steht.
+#
+# NOCH LEER, und das ist ein Befund: an 12 widersprechen sich die beiden Masse.
+# Die Schneidekante steht 4,3 Grad schief, der Wurzelversatz betraegt -25,4 %,
+# und sie zeigen in ENTGEGENGESETZTE Richtungen. Eine Drehung kann nur eines von
+# beiden richten - auf die waagerechte Kante gedreht wandert die Wurzel noch
+# weiter hinaus, auf die zentrierte Wurzel gedreht steht die Kante bei fast zehn
+# Grad. Welches von beiden "zu gekippt" meint, entscheidet Dirk am Bild.
+NEIGUNG: dict[str, float] = {
+}
+
+
+# Kauflaechen-Zeichnungen, die vestibulaer/palatinal vertauscht vorliegen und
+# vor dem Einsetzen an der waagerechten Achse gespiegelt werden.
+#
+# Dirk, 17.08.2026: "Bei den oberen Praemolaren sind vestibulaer und palatinal
+# vertauscht." Kein Drehfehler: `dreher` in redraw_occl.py prueft nur "gedreht
+# oder nicht", und eine 180-Grad-Drehung wuerde mesial/distal mit vertauschen -
+# das stimmt aber. Vertauscht ist allein die zweite Achse, und dafuer gibt es
+# nur die Spiegelung.
+#
+# ALLE VIER Praemolaren. Zuerst standen hier nur die oberen, mit der Begruendung,
+# die unteren wuerden im Bogen ohnehin um 180 Grad gedreht gezeichnet und kaemen
+# dadurch von selbst richtig heraus. Das war eine Vermutung und sie war falsch:
+# die unteren haben einen ANDEREN Spender (34_occl), ihre Lage haengt also nicht
+# an der der oberen. Sobald die oberen richtig standen, waren die unteren
+# sichtbar verkehrt (Dirk, 17.08.2026: "Und jetzt sind die unteren falsch").
+SPIEGELN_OCCL: set[str] = {"14_occl", "15_occl", "44_occl", "45_occl"}

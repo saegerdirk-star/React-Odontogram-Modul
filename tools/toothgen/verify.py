@@ -645,7 +645,11 @@ def main(argv):
 
     check_occlusal(out_dir, failures)
     check_fillings(out_dir, failures)
-    check_columns(specs, failures)
+    # `check_columns` NICHT mehr hier: die Spalten sind eine Eigenschaft des
+    # AUSGELIEFERTEN Satzes, seit sie aus den gezeichneten Kronenbreiten kommen
+    # (redraw_plan.SPALTEN). Das Zahnfleisch der Spender wird beim Umzeichnen
+    # ohnehin verworfen und neu gezeichnet. Geprueft wird in verify_redraw.py,
+    # und zwar strenger: Spalte gegen Gitter UND gegen die Kronenbreite.
 
     if occl_offsets:
         vals = [v for _, v in occl_offsets]

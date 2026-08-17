@@ -39,8 +39,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import roots  # noqa: E402
 import spec  # noqa: E402
 import verify  # noqa: E402
-from build import ASSETS, SPENDER, curve_extent, tooth_base_d  # noqa: E402
-from redraw_plan import PLAN, PLAN_OCCL  # noqa: E402
+from build import ASSETS, PX_PER_UNIT, SPENDER, curve_extent, tooth_base_d  # noqa: E402
+from redraw_plan import GRID_GAP, PLAN, PLAN_OCCL, SPALTEN, ZUSCHLAG  # noqa: E402
 
 INDEX_CSS = ASSETS.parents[1] / "index.css"
 
@@ -63,6 +63,23 @@ def _implantat_laenge(txt: str) -> float | None:
     pts = [p for d in re.findall(r'\sd="([^"]+)"', im.group(0))
            for s in roots._polylines(d) for p in s]
     return (max(p[1] for p in pts) - min(p[1] for p in pts)) if pts else None
+
+
+def _kronenbreite(txt: str, cej: float, inc: float) -> float | None:
+    """Die groesste mesiodistale Kronenbreite, in CSS-Pixeln.
+
+    Zwischen Schmelz-Zement-Grenze und Kaukante gemessen, an der KURVE - das ist
+    die Stelle, an der zwei Nachbarn einander beruehren.
+    """
+    d = tooth_base_d(txt)
+    breit = 0.0
+    n = 80
+    for i in range(n):
+        y = cej + (inc - 0.5 - cej) * i / (n - 1)
+        xs = roots.crossings_at(d, y)
+        if len(xs) >= 2:
+            breit = max(breit, xs[-1] - xs[0])
+    return breit * PX_PER_UNIT if breit else None
 
 
 def spalten_je_zahn() -> dict[int, float]:
@@ -164,15 +181,36 @@ def main() -> int:
                     f"des Spenders; er wurde mit dem Zahn gedehnt statt starr "
                     f"abgebildet")
 
-        # Die Spalte, in der das Zahnfleisch gezeichnet wurde, kommt aus der
-        # Spec des SPENDERS - das Umzeichnen kennt keine eigene. Sie muss die
-        # Spalte sein, in der dieses Template im Bogen steht.
-        s_spec = spec.SPEC_BY_KEY.get(spender) or spec.PRIMARY_SPEC_BY_KEY[spender]
-        soll = spalten.get(position_von(key))
-        if soll is not None and float(s_spec.col_px) != soll:
+        # Die Spalte, mit der das Zahnfleisch gezeichnet wurde (`SPALTEN`), muss
+        # die Spalte sein, die das Gitter dieser Position gibt - sonst verfehlt
+        # die Papille das Gelenk.
+        pos = position_von(key)
+        soll, hat = spalten.get(pos), SPALTEN.get(pos)
+        if soll is not None and hat is not None and float(hat) != soll:
             failures.append(
-                f"{key}: Zahnfleisch fuer eine {s_spec.col_px:g} px breite Spalte "
-                f"gezeichnet, steht aber in {soll:g} px; die Papille verfehlt das Gelenk")
+                f"{key}: Zahnfleisch fuer eine {hat:g} px breite Spalte gezeichnet, "
+                f"steht aber in {soll:g} px; die Papille verfehlt das Gelenk")
+
+        # Spalte plus Spalt minus dem Zuschlag muss die gezeichnete Kronenbreite
+        # sein. Ohne Zuschlag heisst das: die Nachbarn beruehren sich an ihren
+        # Kontaktpunkten. Mit Zuschlag stehen sie um genau diesen einen Wert
+        # auseinander - und weil er fuer ALLE gleich ist, hebt er sich an jedem
+        # Kontakt auf und die Klasse-I-Verzahnung bleibt, wo sie ist. Was der
+        # Test verhindert, ist ein je Zahn verschiedener Abstand.
+        #
+        # Nur fuer die BLEIBENDEN. Ein Milchzahn steht auf dem Platz seines
+        # Nachfolgers - das ist das Modell, ein Milchgebiss hat keine eigenen
+        # Spalten - und ist dort mal schmaler (81 misst 20,5 px in einer 24er
+        # Spalte), mal breiter (85 misst 50,7 in 37). Von ihm zu verlangen, dass
+        # er anstoesst, hiesse verlangen, dass er so breit ist wie sein
+        # Nachfolger, und das ist er nicht.
+        if hat is not None and int(key) < 50:
+            krone = _kronenbreite(txt, cej, inc)
+            if krone is not None and abs(krone - (hat + GRID_GAP - ZUSCHLAG)) > 1.5:
+                failures.append(
+                    f"{key}: Krone {krone:.1f} px breit, Spalte plus Spalt minus "
+                    f"Zuschlag aber {hat + GRID_GAP - ZUSCHLAG:.1f} px; dieser Zahn "
+                    f"steht anders zu seinen Nachbarn als alle uebrigen")
 
         mark = lambda b: "OK" if b else "!!"  # noqa: E731
         gut_impl = streckung is None or 1 / TOL_IMPLANTAT <= streckung <= TOL_IMPLANTAT

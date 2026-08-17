@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <!-- Created by Zoltan Dul in 2026 - free to use with MIT license. Part of React Odontogram Modul - https://github.com/ZoliQua/React-Odontogram-Modul - SVG Version: 2.5.0 -->
 <!-- toothgen: drawn=53 template=53 src=13 roots=1 apex=4.00 cej=45.00 occl=66.14 root_frac=0.6598 length=62.14 source="Bild 89 (p. 111) / Bild 90 (p. 112) + Bild 83" -->
-<svg data-tooth-template="53" data-root-count="1" xmlns="http://www.w3.org/2000/svg" id="canine_x5F_tooth" version="1.1" viewBox="0.0 0.0 40.3 74.22">
+<svg data-tooth-template="53" data-root-count="1" xmlns="http://www.w3.org/2000/svg" id="canine_x5F_tooth" version="1.1" viewBox="0.31 0.0 40.3 74.22">
   <style>
     [data-active="0"] { display: none; }
   </style>
@@ -173,8 +173,8 @@
       </radialGradient>
     </defs>
   <g id="base" data-active="1">
-    <path id="bone-base" d="M-0.44,-14.78L41.36,-14.78L41.36,32.22L-0.44,32.22Z" data-active="1" style="fill: #fdecc5;" />
-    <path id="gum-base" d="M-0.44,30.22L41.36,30.22L41.36,47.22L38.36,47.22C34.68,47.22 30.99,47.12 27.30,47.00L13.63,47.00C9.94,47.12 6.25,47.22 2.56,47.22L-0.44,47.22Z" data-active="1" style="fill: #f79f9a;" />
+    <path id="bone-base" d="M4.19,-14.78L36.73,-14.78L36.73,32.22L4.19,32.22Z" data-active="1" style="fill: #fdecc5;" />
+    <path id="gum-base" d="M4.19,30.22L36.73,30.22L36.73,47.22L33.73,47.22C31.59,47.22 29.44,47.12 27.30,47.00L13.63,47.00C11.48,47.12 9.33,47.22 7.19,47.22L4.19,47.22Z" data-active="1" style="fill: #f79f9a;" />
     </g>
   <g id="mods" data-active="1">
     <path id="parodontal" d="M10.07,48.81c-.13.3-.3.67-.48,1.05-.16.37-.31.72-.41,1.03-.19.52-.25.97.12,1.28.48.36,1.19.48,1.92.59,1.79.21,3.9.34,5.75.46,1.14.11,2.37.18,3.65.21,1.36.04,2.75.03,4.08-.05,1.28-.08,2.47-.24,3.52-.5.97-.27,1.82-.65,2.56-1.15.27-.25.44-.51.54-.78.1-.32.13-.67.12-1.06-.11-.83-.43-1.61-.61-2.42-.23-.62-.47-1.36-.76-2.23-.17-.5-.33-1.08-.5-1.75-.15-.76-.27-1.6-.38-2.52-.16-1.93-.3-3.97-.46-6-.18-2.05-.41-4.05-.72-5.93-.71-3.79-1.64-7.09-2.89-9.34-.59-1.13-1.2-1.99-1.82-2.48-.56-.48-1.14-.6-1.75-.35-.5.25-1,.9-1.54,1.88-.62,1-1.21,2.29-1.89,3.79-1.41,2.99-2.48,6.76-3.42,10.79-.46,2-.88,4.05-1.29,6.07-.21.98-.41,1.93-.63,2.83-.23.82-.45,1.55-.68,2.17-.22.54-.42,1-.6,1.41-.17.38-.34.74-.49,1.07-.28.65-.55,1.22-.85,1.71l-.01.15-.08-.01h0Z" data-active="1" style="display: none; fill: #ffa46a;" />

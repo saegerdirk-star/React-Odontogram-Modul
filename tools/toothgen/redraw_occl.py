@@ -36,7 +36,10 @@ sys.path.insert(0, str(Path(__file__).parent))
 import redraw          # noqa: E402
 import redraw_apply    # noqa: E402
 import svgpath         # noqa: E402
-from redraw_plan import OHNE_FISSUREN, PLAN_OCCL as PLAN  # noqa: E402
+from redraw_plan import OHNE_FISSUREN, PLAN_OCCL as PLAN, SPIEGELN_OCCL  # noqa: E402
+
+# Schmaler Rand um die zugeschnittene Kauflaeche, in Zeicheneinheiten.
+RAND = 1.5
 
 ZEICHNUNGEN = redraw_apply.ZEICHNUNGEN
 ASSETS = redraw_apply.ASSETS
@@ -76,7 +79,7 @@ def dreher(zeichnung, template):
     return None
 
 
-def umzeichnen(zahn: str, spender: str) -> str:
+def umzeichnen(zahn: str, spender: str, ziel: str | None = None) -> str:
     txt = (ASSETS / f"{spender}.svg").read_text()
     ziel = redraw_apply.umriss_id(txt, "tooth-base")
     alt = redraw.polygon(dict(redraw_apply.elemente_von(txt, "tooth-base"))[ziel])
@@ -113,9 +116,80 @@ def umzeichnen(zahn: str, spender: str) -> str:
             return None
         return lambda x, y: feld(x, y)
 
-    return redraw_apply.verforme_je_element(txt, feld_fuer)
+    out = redraw_apply.verforme_je_element(txt, feld_fuer)
+    fis = offene_pfade(ebene)
+    if dr:
+        fis = [svgpath.warp_path_d(d, dr) for d in fis]
+    out = setze_fissuren(out, fis)
+
+    # Den Rahmen auf die GEZEICHNETE Kauflaeche zuschneiden.
+    #
+    # Dirk, 17.08.2026: "So geht es nicht." - Alle Kauflaechen-Templates teilen
+    # sich einen rund 79 px breiten Rahmen, egal welcher Zahn darin steht: beim
+    # Praemolaren fuellt die Krone davon 35 px, beim Molaren 60. Seit die
+    # Spalten aus den gezeichneten Kronenbreiten kommen (27 bis 58 px), schob
+    # sich dieser Rahmen ueber beide Nachbarn, und die Kauflaechen-Reihen
+    # zerfielen - dreimal hintereinander, weil ich an der Groesse geschraubt
+    # habe statt am Rahmen.
+    #
+    # Zugeschnitten ist der Rahmen die Kauflaeche plus einem schmalen Rand,
+    # womit er von selbst so breit ist wie die Spalte, in der er steht. Keine
+    # Koordinate wird angefasst; das Zahnfleisch, das ueber den Rand hinaus
+    # gezeichnet ist, wird dabei beschnitten - was richtig ist, denn es gehoert
+    # der Spalte und setzt sich am Nachbarn fort.
+    x0, y0, x1, y1 = neu[:, 0].min(), neu[:, 1].min(), neu[:, 0].max(), neu[:, 1].max()
+    rand = RAND
+    return re.sub(
+        r'(viewBox=")[^"]*(")',
+        lambda m: (f"{m.group(1)}{x0 - rand:.2f} {y0 - rand:.2f} "
+                   f"{x1 - x0 + 2 * rand:.2f} {y1 - y0 + 2 * rand:.2f}{m.group(2)}"),
+        out, count=1)
 
 
+
+
+def offene_pfade(ebene: str) -> list[str]:
+    """Die OFFENEN Pfade der Zeichenebene - Dirks Fissurenlinien.
+
+    Seine Kauflaechen-Zeichnung enthaelt dreierlei: den Aussenumriss und die
+    Hoeckerformen, beide geschlossen, und die Fissuren als offene Linien. Am
+    Praemolaren ist es eine, am Molaren sind es fuenf - dieselbe Zahl, die das
+    Molaren-Template traegt. Sie sind fertig gezeichnet und mussten nie
+    abgeleitet werden; der Generator hat nur immer den laengsten Pfad genommen
+    und den Rest verworfen (Dirk, 17.08.2026: "Ich habe doch alle Fissuren
+    eingezeichnet.").
+    """
+    return [d for d in re.findall(r'<path[^>]*\sd="([^"]+)"', ebene)
+            if not d.rstrip().lower().endswith("z")]
+
+
+def setze_fissuren(txt: str, ds: list[str]) -> str:
+    """Dirks Fissurenlinien EINSETZEN, in die Fissur und in die Versiegelung.
+
+    Beide Gruppen tragen dieselbe Geometrie - die Versiegelung ist die Fissur in
+    Blau und mit 2 px Strichbreite - und ihre Pfade sind ANONYM. Ihr Inhalt ist
+    damit frei austauschbar, ohne einen Vertragswert zu beruehren: der
+    Fingerabdruck liest id, opacity und class, und die Zahl der Elemente bleibt,
+    weil alle Linien in den ERSTEN Pfad wandern (als Teilpfade, die einzeln
+    gestrichen werden) und die uebrigen entarten. Dieselbe Mechanik, mit der die
+    Praemolaren einen Zug lang geleert wurden.
+    """
+    if not ds:
+        return txt
+    zusammen = " ".join(ds)
+    for gid in ("fissure", "fissure-sealing-occlusal"):
+        m = re.search(rf'(<g[^>]*\sid="{gid}"[^>]*>)(.*?)(</g>)', txt, re.S)
+        if not m:
+            continue
+        n = [0]
+
+        def ersetze(x):
+            n[0] += 1
+            return x.group(1) + (zusammen if n[0] == 1 else "M-99,-99Z") + x.group(2)
+
+        innen = re.sub(r'(\sd=")[^"]+(")', ersetze, m.group(2))
+        txt = txt[:m.start()] + m.group(1) + innen + m.group(3) + txt[m.end():]
+    return txt
 
 
 def leere_fissuren(txt: str) -> str:
@@ -135,9 +209,63 @@ def leere_fissuren(txt: str) -> str:
     return txt[:m.start()] + m.group(1) + innen + m.group(3) + txt[m.end():]
 
 
+def spiegle_waagerecht(txt: str) -> str:
+    """Das FERTIGE Template an der waagerechten Achse spiegeln.
+
+    Dirk, 17.08.2026: "14, 15, 24, 25 stehen okklusal immer noch auf dem Kopf."
+
+    Zweimal davor habe ich die ZEICHNUNG gespiegelt, und beide Male ohne
+    Wirkung - aus gutem Grund: von Dirk kommen nur der Aussenumriss und die
+    Fissurenlinien, das Hoeckerrelief und alle uebrigen Ebenen kommen vom
+    SPENDER und werden radial auf seinen Umriss gezogen. Eine Verformung dreht
+    nichts um; die vestibulaer/palatinale Lage bleibt die des Spenders, egal was
+    vorher mit der Vorlage geschieht. Gespiegelt werden muss also, was am Ende
+    dasteht - dort bekommen es alle Ebenen zugleich.
+
+    Gespiegelt wird um die Mitte des viewBox, damit nichts aus dem Rahmen
+    faellt. Zahnfleisch und Knochen sind zu diesem Zeitpunkt schon entleert,
+    also gibt es keine Ebene, die ausgenommen werden muesste.
+    """
+    vb = [float(v) for v in re.search(r'viewBox="([^"]+)"', txt).group(1).split()]
+    cy = vb[1] + vb[3] / 2.0
+    return redraw_apply.verforme_je_element(
+        txt, lambda kette: (lambda x, y: (x, 2.0 * cy - y)))
+
+
+def ohne_umgebung(txt: str) -> str:
+    """Zahnfleisch und Knochen aus einer KAUFLAECHE entfernen.
+
+    In der Seitenansicht tragen die beiden die Papille und das Knochenniveau als
+    EINE Linie durch den Bogen - dort sind sie unverzichtbar. Von oben gesehen
+    gibt es weder Papille noch Knochenniveau; das gelbe Feld und der rote Rand
+    sind dort reine Umgebung, breiter gezeichnet als der Zahn, und haben nichts
+    getan, ausser den Nachbarzahn zu verdecken.
+
+    Nachgesehen, bevor sie fallen: beide stehen fest auf `data-active="1"`, kein
+    Zustand schaltet sie, kein Befund haengt daran, und `perioGraphic.ts` wirft
+    sie fuer seine Zahnreihe ausdruecklich mit derselben Begruendung weg.
+
+    Entfernt wird der INHALT, nicht das Element: die Gruppen behalten id,
+    data-active und class, nur ihre Pfade entarten zu einer Strecke weit
+    ausserhalb des viewBox. Der Fingerabdruck liest id, opacity und class - er
+    sieht davon nichts.
+    """
+    for gid in ("gum-base", "bone-base"):
+        m = re.search(rf'(<g[^>]*\sid="{gid}"[^>]*>)(.*?)(</g>)', txt, re.S) \
+            or re.search(rf'(<path[^>]*\sid="{gid}"[^>]*)()(/?>)', txt)
+        if not m:
+            continue
+        innen = re.sub(r'(\sd=")[^"]+(")', lambda x: x.group(1) + "M-99,-99Z" + x.group(2),
+                       m.group(0))
+        txt = txt[:m.start()] + innen + txt[m.end():]
+    return txt
+
+
 def erzeuge(ziel: str, ordner: Path) -> str:
     zahn, spender = PLAN[ziel]
-    txt = umzeichnen(zahn, spender)
+    txt = ohne_umgebung(umzeichnen(zahn, spender, ziel))
+    if ziel in SPIEGELN_OCCL:
+        txt = spiegle_waagerecht(txt)
     if ziel in OHNE_FISSUREN:
         txt = leere_fissuren(txt)
     txt = txt.replace(f'data-tooth-template="{spender}"', f'data-tooth-template="{ziel}"', 1)

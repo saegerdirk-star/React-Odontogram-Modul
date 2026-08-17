@@ -40,7 +40,7 @@ from redraw_plan import PLAN  # noqa: E402
 
 def erzeuge(ziel: str, ordner: Path) -> str:
     zahn, spender, anker = PLAN[ziel]
-    txt = redraw_apply.umzeichnen(zahn, spender, anker)
+    txt = redraw_apply.umzeichnen(zahn, spender, anker, ziel_key=ziel)
     # Der Stempel muss das ZIEL nennen, nicht den Spender - `isPrimaryTemplate`
     # und `syncToothTemplate` lesen ihn, und eine zweite Tabelle daneben waere
     # genau die Sorte Doppelung, die auseinanderlaeuft.

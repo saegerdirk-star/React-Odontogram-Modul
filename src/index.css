@@ -303,21 +303,21 @@ select:focus{
 }
 .upper-arch{
   grid-template-columns:
-    minmax(28px, 63px) minmax(28px, 63px) minmax(28px, 72px)
-    minmax(28px, 51px) minmax(28px, 52px) minmax(28px, 54px)
-    minmax(28px, 49px) minmax(28px, 62px)
-    minmax(28px, 62px) minmax(28px, 49px)
-    minmax(28px, 54px) minmax(28px, 52px) minmax(28px, 51px)
-    minmax(28px, 72px) minmax(28px, 63px) minmax(28px, 63px);
+    minmax(28px, 54px) minmax(28px, 58px) minmax(28px, 62px)
+    minmax(28px, 35px) minmax(28px, 39px) minmax(28px, 39px)
+    minmax(28px, 36px) minmax(28px, 39px) minmax(28px, 39px)
+    minmax(28px, 36px) minmax(28px, 39px) minmax(28px, 39px)
+    minmax(28px, 35px) minmax(28px, 62px) minmax(28px, 58px)
+    minmax(28px, 54px);
 }
 .lower-arch{
   grid-template-columns:
-    minmax(28px, 75px) minmax(28px, 75px) minmax(28px, 75px)
-    minmax(28px, 51px) minmax(28px, 51px) minmax(28px, 54px)
-    minmax(28px, 40px) minmax(28px, 40px)
-    minmax(28px, 40px) minmax(28px, 40px)
-    minmax(28px, 54px) minmax(28px, 51px) minmax(28px, 51px)
-    minmax(28px, 75px) minmax(28px, 75px) minmax(28px, 75px);
+    minmax(28px, 58px) minmax(28px, 61px) minmax(28px, 66px)
+    minmax(28px, 41px) minmax(28px, 34px) minmax(28px, 37px)
+    minmax(28px, 32px) minmax(28px, 28px) minmax(28px, 28px)
+    minmax(28px, 32px) minmax(28px, 37px) minmax(28px, 34px)
+    minmax(28px, 41px) minmax(28px, 66px) minmax(28px, 61px)
+    minmax(28px, 58px);
 }
 /* Engine-owned multi-tooth bridge-span overlay. Absolutely positioned so it does
    not consume a grid cell; sits above the tiles but never intercepts pointer
@@ -505,7 +505,38 @@ select:focus{
    the lower incisor and canine by their 36 px height difference. */
 .tooth-tile.lower-row.side-view .tooth-svg{align-items:flex-start}
 .tooth-tile.occl-view .tooth-svg{height:80px; align-items:center}
-.tooth-tile.occl-view .tooth-svg svg{width:64px;height:64px}
+/* Die Kauflaeche folgt ihrer SPALTE, nicht einem festen Mass.
+   Sie stand auf 64 px, was ging, solange jede Spalte um die 50 bis 75 px breit
+   war. Seit die Spalten aus den gezeichneten Kronenbreiten kommen (20 bis
+   58 px, damit sich die Nachbarn an den Kontaktpunkten beruehren), schoben sich
+   die Kauflaechen uebereinander und ihre undurchsichtigen Baender malten ueber
+   den Nachbarn - die beiden Kauflaechen-Reihen zerfielen. Die Seitenansicht
+   darf ueberstehen, weil sie ausserhalb der Krone leer ist; eine Kauflaeche ist
+   das nicht. */
+/* Alle Kauflaechen gleich breit, und zwar so breit, dass zwei benachbarte
+   Seitenzaehne einander nie ueberlappen.
+   Dirk, 17.08.2026: "Skaliere sie so, dass sie gut passen. Die Kauflaechen
+   duerfen ruhig alle gleich gross sein."
+   41 px ist der engste Abstand zweier benachbarter Seitenzaehne im Bogen
+   (zwischen 15/14) - eine Regel, kein geschaetzter Wert. Der Rahmen ist beim
+   Erzeugen auf die gezeichnete Kauflaeche zugeschnitten, also ist die Hoehe die
+   des jeweiligen Zahns; gleich gross heisst gleich BREIT, nicht in eine Form
+   gepresst. Drei Anlaeufe vorher gingen schief, weil ich an der Groesse
+   geschraubt habe statt am Rahmen: 79 px breite Rahmen in 27 px breiten Spalten
+   malten mit ihren undurchsichtigen Baendern ueber beide Nachbarn. */
+.tooth-tile.occl-view .tooth-svg svg{width:auto;height:50.2px;flex:0 0 auto;overflow:hidden}
+/* `overflow:hidden` NUR auf der Kauflaeche, gegen die Regel eine Zeile weiter
+   oben - und das ist der Punkt, an dem sich die beiden Ansichten unterscheiden.
+   In der Seitenansicht MUSS das Zahnfleisch ueber den Rahmen hinausreichen,
+   sonst laeuft die Gingiva nicht als eine Linie durch den Bogen und die Papille
+   trifft das Gelenk nicht; deshalb steht dort `overflow:visible`. Eine
+   Kauflaeche hat keine Papille und muss nichts zum Nachbarn hinueberreichen.
+   Ihr Rahmen ist beim Erzeugen auf die gezeichnete Kauflaeche zugeschnitten,
+   also schneidet der Browser das gelbe Band genau auf deren Breite zu und der
+   Nachbarzahn wird nicht mehr verdeckt.
+   Dirk, 17.08.2026: "Wenn du die gelbe Flaeche um die Kauflaechen auf die
+   Breite der Kauflaechen reduzierst, wird der Nachbarzahn nicht mehr davon
+   ueberdeckt." */
 /* Emitted by tools/toothgen/build.py — do not round these to whole pixels.
    Every template is drawn at the SAME scale (1.62 px per unit), and that is
    what puts the occlusal plane, the bone level and the gingival crest of

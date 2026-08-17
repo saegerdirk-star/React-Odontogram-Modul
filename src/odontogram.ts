@@ -194,24 +194,33 @@ export const TOOTH_TEMPLATE = new Map([
   [26,{tpl:16,rot:0,mirror:true}],
   [27,{tpl:17,rot:0,mirror:true}],
   [28,{tpl:18,rot:0,mirror:true}],
-  // lower right, as drawn
-  [41,{tpl:41,rot:180,mirror:true}],
-  [42,{tpl:42,rot:180,mirror:true}],
-  [43,{tpl:43,rot:180,mirror:true}],
-  [44,{tpl:44,rot:180,mirror:true}],
-  [45,{tpl:45,rot:180,mirror:true}],
-  [46,{tpl:46,rot:180,mirror:true}],
-  [47,{tpl:47,rot:180,mirror:true}],
-  [48,{tpl:48,rot:180,mirror:true}],
-  // lower left, mirrored
-  [31,{tpl:41,rot:180,mirror:false}],
-  [32,{tpl:42,rot:180,mirror:false}],
-  [33,{tpl:43,rot:180,mirror:false}],
-  [34,{tpl:44,rot:180,mirror:false}],
-  [35,{tpl:45,rot:180,mirror:false}],
-  [36,{tpl:46,rot:180,mirror:false}],
-  [37,{tpl:47,rot:180,mirror:false}],
-  [38,{tpl:48,rot:180,mirror:false}],
+  // lower right (quadrant 4), as drawn
+  //
+  // mirror:false, unlike the upper arch's right side and unlike what stood here
+  // until Dirk saw it: "Du hast den 3. Quadranten in den 4. gestellt." His lower
+  // drawings ARE quadrant 4, and `rahmen_dreher` rotates them 180 degrees into
+  // the template frame - a rotation flips left/right along with top/bottom. The
+  // `rot:180` here undoes exactly that, so the drawing stands as drawn and a
+  // mirror on top of it turns 41 into 31. The transform was inherited from the
+  // position's old entry, which was right for a template built from an UPPER
+  // incisor and wrong for a drawing of the tooth itself.
+  [41,{tpl:41,rot:180,mirror:false}],
+  [42,{tpl:42,rot:180,mirror:false}],
+  [43,{tpl:43,rot:180,mirror:false}],
+  [44,{tpl:44,rot:180,mirror:false}],
+  [45,{tpl:45,rot:180,mirror:false}],
+  [46,{tpl:46,rot:180,mirror:false}],
+  [47,{tpl:47,rot:180,mirror:false}],
+  [48,{tpl:48,rot:180,mirror:false}],
+  // lower left (quadrant 3), mirrored
+  [31,{tpl:41,rot:180,mirror:true}],
+  [32,{tpl:42,rot:180,mirror:true}],
+  [33,{tpl:43,rot:180,mirror:true}],
+  [34,{tpl:44,rot:180,mirror:true}],
+  [35,{tpl:45,rot:180,mirror:true}],
+  [36,{tpl:46,rot:180,mirror:true}],
+  [37,{tpl:47,rot:180,mirror:true}],
+  [38,{tpl:48,rot:180,mirror:true}],
 ]);
 
 // Occlusal artwork has its own viewpoint contract. The source templates place

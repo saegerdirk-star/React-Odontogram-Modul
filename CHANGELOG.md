@@ -25,6 +25,27 @@
   per-template size rule can no longer win on an occlusal tile of the same name.
 - The occlusal and deciduous templates are loaded on demand instead of being
   compiled into every consumer's module graph.
+- Reworked the arch spacing so neighbouring crowns meet at their contact points:
+  every column is the tooth's own drawn mesiodistal crown width plus one uniform
+  slack of 8 px. The slack is the same for all sixteen, so it cancels at every
+  contact and the Class I canine relationship still falls out of the tooth widths
+  alone. The previous columns came from the templates the redraw replaced, which
+  left the incisors 27 px apart and the molars 14.
+- Fixed the lower arch rendering quadrant 3 in quadrant 4: the lower drawings are
+  quadrant 4 and are rotated 180 degrees into the template frame, which flips
+  left/right along with top/bottom, so the render must not mirror them again.
+- Fixed each template's frame being centred on the frame rather than on the
+  tooth: the crown's widest point — the contact point — now sits in the middle of
+  the frame, and the gingival papilla is placed on that same point. Crowns sat up
+  to 7.4 px off centre, which made neighbours drift into each other once the
+  columns were tight enough to show it.
+- Occlusal views: each frame is cropped to the drawn surface, they all render at
+  one height, and the gum/bone context is dropped from them entirely — it carries
+  no finding there (nothing toggles it) and only covered the neighbouring tooth.
+  The four premolar drawings are mirrored buccal/palatal.
+- Fissures drawn by hand are now INSERTED rather than warped from the donor, into
+  both `fissure` and `fissure-sealing-occlusal`, so the sealing still lies exactly
+  on the fissure.
 - `tools/toothgen/build.py` writes to `tools/toothgen/spender/` instead of
   `src/assets/teeth-svgs`: the generated Schumacher templates are now the
   donor stage that the redraw takes its ~200 clinical layers from, not the

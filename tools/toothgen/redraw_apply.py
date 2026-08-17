@@ -22,8 +22,10 @@ sys.path.insert(0, str(Path(__file__).parent))
 import build           # noqa: E402
 import gum             # noqa: E402
 import redraw          # noqa: E402
+import roots           # noqa: E402
 import spec            # noqa: E402
 import svgpath         # noqa: E402
+from redraw_plan import GRID_GAP, NEIGUNG, SPALTEN  # noqa: E402
 
 ZEICHNUNGEN = Path.home() / "dev" / "Odontogram-Anatomie"
 
@@ -493,7 +495,24 @@ def szg(zahn: str) -> float:
 STUFEN = {"46": 65}
 
 
-def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = None) -> str:
+def _neigen(P, grad: float):
+    """Dreht die Zeichnung um `grad` um ihren eigenen Mittelpunkt.
+
+    Nur fuer die Zaehne in `NEIGUNG` - eine Zeichnung, die im Bogen zu schief
+    steht. Die Drehung greift VOR dem Feld an, also folgen Pulpa, Fuellungen und
+    alle uebrigen Ebenen ihr von selbst; das Zahnfleisch nicht, das wird ohnehin
+    danach neu gezeichnet.
+    """
+    a = np.radians(grad)
+    cx = float(P[:, 0].min() + P[:, 0].max()) / 2.0
+    cy = float(P[:, 1].min() + P[:, 1].max()) / 2.0
+    c, s = np.cos(a), np.sin(a)
+    return lambda x, y: (cx + c * (x - cx) - s * (y - cy),
+                         cy + s * (x - cx) + c * (y - cy)), cx
+
+
+def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = None,
+               ziel_key: str | None = None) -> str:
     txt = (ASSETS / f"{template}.svg").read_text()
     alt = redraw.polygon(redraw.tooth_base_d(txt))
 
@@ -502,6 +521,13 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = 
     dreh = rahmen_dreher(redraw.polygon(umriss_d), alt)   # Unterkiefer: siehe dort
     if dreh:
         umriss_d = svgpath.warp_path_d(umriss_d, dreh)
+    # Die Feinneigung KOMMT NACH der Rahmendrehung, damit der Winkel im
+    # Template-Rahmen gilt - in dem er auch gemessen wurde.
+    grad = NEIGUNG.get(ziel_key or zahn)
+    kipp_x = None
+    if grad:
+        kipp, kipp_x = _neigen(redraw.polygon(umriss_d), grad)
+        umriss_d = svgpath.warp_path_d(umriss_d, kipp)
     neu = redraw.polygon(umriss_d)
 
     # Zuordnung ueber die HOEHE, nicht ueber die Bogenlaenge. Der erste Versuch
@@ -517,6 +543,11 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = 
     cej_neu = szg(zahn)
     if dreh:
         cej_neu = dreh(0.0, cej_neu)[1]
+    if grad:
+        # An der MITTE des Zahns ausgewertet, nicht bei x=0: die Zervikallinie
+        # ist waagerecht, nach einer Drehung ist sie es nicht mehr, und ihre
+        # Hoehe in der Zahnmitte ist die einzige, die den Hals meint.
+        cej_neu = kipp(kipp_x, cej_neu)[1]
 
     # Der Bauplan kommt aus den Konturen selbst - siehe redraw.laufmarken.
     lm_alt, lm_neu = redraw.laufmarken(alt, neu)
@@ -767,12 +798,29 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = 
     # schrumpft, der obere Rand bleibt stehen - so kann am Apex nichts
     # abgeschnitten werden, und keine einzige Koordinate wird angefasst.
     hoehe = occl + build.OCCL_MARGIN - vb[1]
-    cx = float(np.mean([neu[:, 0].min(), neu[:, 0].max()]))
+    # WAAGERECHT ausgerichtet wird an der Kronenmitte, nicht an der Mitte des
+    # ganzen Zahns und erst recht nicht an der des Rahmens.
+    #
+    # Der Kontaktpunkt liegt an der breitesten Stelle der Krone; dort beruehren
+    # sich zwei Nachbarn, und dort hat die Papille ihre Spitze. Gemessen sassen
+    # die Kronen bis zu 7,4 Einheiten aus der Rahmenmitte (Template 17), und da
+    # das Gitter den RAHMEN mittig in die Spalte stellt, drifteten die Zaehne
+    # gegeneinander, sobald die Spalten eng genug sind, dass man es sieht: im
+    # oberen rechten Quadranten schoben sich 15, 16 und 17 uebereinander.
+    cx = _kronen_mitte(umriss_d, cej_neu, occl)
     band = neu[np.abs(neu[:, 1] - cej_neu) < 1.5]
     if len(band) < 2:
         band = neu
     neck_half = float(band[:, 0].max() - band[:, 0].min()) / 2.0
-    out = build.replace_gum(out, occl, cej_neu, cx, neck_half, float(s_spec.col_px))
+    # Die Spalte gehoert der POSITION, nicht dem Spender: ein Spender bedient
+    # mehrere Ziele, deren Kronen verschieden breit sind (44 misst 30 px, 45
+    # misst 37). Mit der Spenderspalte gerechnet verfehlte die Papille an einem
+    # der beiden das Gelenk.
+    pos = int(ziel_key or template)
+    if 51 <= pos <= 55 or 81 <= pos <= 85:
+        pos -= 40
+    out = build.replace_gum(out, occl, cej_neu, cx, neck_half,
+                            float(SPALTEN.get(pos, s_spec.col_px)))
 
     # Den Anschluss der Approximalfuellungen an die okklusale NEU rechnen, so
     # wie das Zahnfleisch neu gezeichnet wird.
@@ -790,10 +838,25 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = 
     # `connect_fillings` bekommt die Kaukante des NEUEN Zahns, nicht die Ebene
     # des Rahmens - gestreckt wird auf das okklusale Band dieses Zahns.
     out = build.connect_fillings(out, occl)
+    # Der Rahmen behaelt seine Breite und verschiebt nur seinen linken Rand, so
+    # dass die Kronenmitte in der Rahmenmitte liegt. Keine Koordinate wird
+    # angefasst - der Zahn steht nur anders im Fenster.
     out = re.sub(r'(viewBox=")[^"]*(")',
-                 lambda m: f"{m.group(1)}{vb[0]} {vb[1]} {vb[2]} {hoehe:.2f}{m.group(2)}",
+                 lambda m: f"{m.group(1)}{cx - vb[2] / 2:.2f} {vb[1]} {vb[2]} {hoehe:.2f}{m.group(2)}",
                  out, count=1)
     return _stempel(out, zahn, cej_neu)
+
+
+def _kronen_mitte(d: str, cej: float, occl: float) -> float:
+    """Die Mitte der Krone an ihrer breitesten Stelle - der Kontaktpunkt."""
+    beste = (0.0, None)
+    n = 80
+    for i in range(n):
+        y = cej + (occl - 0.5 - cej) * i / (n - 1)
+        xs = roots.crossings_at(d, y)
+        if len(xs) >= 2 and xs[-1] - xs[0] > beste[0]:
+            beste = (xs[-1] - xs[0], (xs[0] + xs[-1]) / 2.0)
+    return beste[1] if beste[1] is not None else float(np.mean(redraw.polygon(d)[:, 0]))
 
 
 def _stempel(txt: str, zahn: str, cej: float) -> str:

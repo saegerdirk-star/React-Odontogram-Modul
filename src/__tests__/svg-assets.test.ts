@@ -87,9 +87,18 @@ describe("installed tooth SVG assets", () => {
   });
 
   it("new dormant clinical leaves are hidden by default (display:none on the element or an ancestor)", () => {
+    // Parse each file ONCE, not once per layer id. It used to re-parse inside
+    // the loop, which cost 7 x 18 full DOM parses after the template set grew
+    // from nine drawings to sixteen plus ten deciduous - and tipped this test
+    // over the 5 s budget. Same assertions, same files.
+    const docs = new Map<string, Document>();
+    const docFor = (svg: string): Document => {
+      let doc = docs.get(svg);
+      if (!doc) { doc = new DOMParser().parseFromString(svg, "image/svg+xml"); docs.set(svg, doc); }
+      return doc;
+    };
     const isHiddenByDefault = (svg: string, id: string): boolean => {
-      const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
-      const start = doc.getElementById(id);
+      const start = docFor(svg).getElementById(id);
       for (let cur: Element | null = start; cur; cur = cur.parentElement) {
         if (/display\s*:\s*none/i.test(cur.getAttribute("style") || "")) return true;
       }
@@ -137,21 +146,25 @@ describe("installed tooth SVG assets", () => {
     // read off the Odontographie plates. Widths are unchanged, deliberately —
     // the length decision divides itself back out of `width_frac`, so how wide
     // a tooth is drawn did not move.
-    // Measured off the shipped files. The frame's HEIGHT is now derived per
-    // template - it is sized so the drawn incisal/occlusal edge sits a fixed
-    // distance above the bottom edge, which is what puts the occlusal plane of
-    // every tooth on one line across the arch.
+    // Measured off the shipped files. BOTH the frame's height and its left edge
+    // are derived per template now: the height is sized so the drawn
+    // incisal/occlusal edge sits a fixed distance above the bottom edge (which
+    // puts every tooth's occlusal plane on one line), and the left edge is set
+    // so the crown's widest point - the contact point - sits in the middle of
+    // the frame. The grid centres the FRAME in its column, so an off-centre
+    // crown made neighbours drift into each other once the columns were tight
+    // enough to see it.
     const expected = {
-      "14": { roots: "2", viewBox: "0.0 0.0 39.8 89.89" },
-      "15": { roots: "1", viewBox: "0.0 0.0 39.8 82.75" },
-      "16": { roots: "3", viewBox: "0.0 0.0 42.9 91.23" },
-      "17": { roots: "3", viewBox: "0.0 0.0 42.9 88.74" },
-      "18": { roots: "3", viewBox: "0.0 0.0 42.9 87.40" },
-      "44": { roots: "1", viewBox: "0.0 0.0 39.8 83.29" },
-      "45": { roots: "1", viewBox: "0.0 0.0 39.8 80.97" },
-      "46": { roots: "2", viewBox: "0.0 0.0 42.9 90.99" },
-      "47": { roots: "2", viewBox: "0.0 0.0 42.9 84.79" },
-      "48": { roots: "2", viewBox: "0.0 0.0 42.9 83.42" },
+      "14": { roots: "2", viewBox: "-0.09 0.0 39.8 89.89" },
+      "15": { roots: "1", viewBox: "-3.72 0.0 39.8 82.75" },
+      "16": { roots: "3", viewBox: "-2.52 0.0 42.9 91.23" },
+      "17": { roots: "3", viewBox: "-4.54 0.0 42.9 88.74" },
+      "18": { roots: "3", viewBox: "0.44 0.0 42.9 87.40" },
+      "44": { roots: "1", viewBox: "0.82 0.0 39.8 83.29" },
+      "45": { roots: "1", viewBox: "-0.84 0.0 39.8 80.97" },
+      "46": { roots: "2", viewBox: "-0.43 0.0 42.9 90.99" },
+      "47": { roots: "2", viewBox: "-0.53 0.0 42.9 84.79" },
+      "48": { roots: "2", viewBox: "-0.59 0.0 42.9 83.42" },
     } as const;
 
     for (const template of POSTERIOR_SIDE) {
