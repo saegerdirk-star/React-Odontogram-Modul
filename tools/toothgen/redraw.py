@@ -181,6 +181,61 @@ class Spline:
         return float(v[0]), float(v[1])
 
 
+def paare_radial(P_alt, P_neu, strahlen: int = 72, ringe=(1.0, 0.66, 0.33)):
+    """Punktpaare fuer eine KAUFLAECHE - vom Mittelpunkt nach aussen.
+
+    Die Seitenansicht wird ueber die Hoehe zugeordnet, weil sie eine Achse hat:
+    oben Wurzel, unten Krone, dazwischen Zervikallinie und Furkation als Marken.
+    Eine Kauflaeche hat davon nichts. Sie ist ein geschlossener, rundlicher
+    Umriss; waagerechte Zeilen schneiden dort nichts Anatomisches, sondern
+    einmal den mesialen und einmal den distalen Rand, und wo die liegen, ist
+    zwischen zwei Zeichnungen verschieden.
+
+    Was sie stattdessen hat, ist ein Mittelpunkt. Fuer jede Richtung gibt es
+    genau einen Randpunkt, und zwei Kauflaechen entsprechen einander Richtung
+    fuer Richtung. Das ist dieselbe Konstruktion wie ueber die Hoehe, nur um
+    neunzig Grad gedreht und im Kreis geschlossen.
+
+    `ringe` legt zusaetzlich Stuetzstellen auf Bruchteilen des Radius. Ohne die
+    waere nur der Rand festgelegt und das Innere - Hoecker, Fissuren, Fuellungs-
+    flaechen - bliebe dem Spline ueberlassen; genau der Fehler, der in der
+    Seitenansicht die Pulpa zerrissen hat, bevor die Zeilen das Innere hielten.
+    """
+    A, B = np.asarray(P_alt, float), np.asarray(P_neu, float)
+    ma = np.array([A[:, 0].mean(), A[:, 1].mean()])
+    mb = np.array([B[:, 0].mean(), B[:, 1].mean()])
+
+    def rand(P, m, w):
+        """Der Randpunkt in Richtung w, vom Mittelpunkt m aus."""
+        r = np.array([np.cos(w), np.sin(w)])
+        q = P - m
+        # Schnitt jedes Kantenstuecks mit dem Strahl
+        weit = 0.0
+        for i in range(len(q)):
+            a, b = q[i], q[(i + 1) % len(q)]
+            d = b - a
+            n = r[0] * d[1] - r[1] * d[0]
+            if abs(n) < 1e-12:
+                continue
+            t = (a[0] * d[1] - a[1] * d[0]) / n           # Strecke auf dem Strahl
+            u = (a[0] * r[1] - a[1] * r[0]) / n           # Lage auf der Kante
+            if t > 0 and 0.0 <= u <= 1.0:
+                weit = max(weit, t)
+        return weit
+
+    qa, qb = [], []
+    for w in np.linspace(0.0, 2.0 * np.pi, strahlen, endpoint=False):
+        r = np.array([np.cos(w), np.sin(w)])
+        ra, rb = rand(A, ma, w), rand(B, mb, w)
+        if ra <= 0 or rb <= 0:
+            continue
+        for f in ringe:
+            qa.append(tuple(ma + r * ra * f))
+            qb.append(tuple(mb + r * rb * f))
+    qa.append(tuple(ma)); qb.append(tuple(mb))
+    return np.asarray(qa), np.asarray(qb)
+
+
 def tooth_base_d(txt: str) -> str:
     m = (re.search(r'<path[^>]*\sid="tooth-base"[^>]*\sd="([^"]+)"', txt)
          or re.search(r'<path[^>]*\sd="([^"]+)"[^>]*\sid="tooth-base"', txt))
