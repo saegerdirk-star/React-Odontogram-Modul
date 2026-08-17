@@ -8,6 +8,6 @@ export.auto: false
 export.git-add: false
 
 # Use the workstation-wide Dolt service and the Cognovis remote.
-dolt.shared-server: true
+dolt.shared-server: false
 sync.remote: "https://dolt.cognovis.de/beads_odontogram"
 federation.remote: "https://dolt.cognovis.de/beads_odontogram"
