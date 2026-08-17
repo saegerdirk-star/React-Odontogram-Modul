@@ -73,6 +73,61 @@ umgehaengt. Das war vorher genauso - ein Milchmolar zeigte immer die bleibende
 Kauflaeche -, es ist also nichts kaputtgegangen; es ist die eine Stelle, an der
 "je eine Vorlage pro Position" noch nicht gilt.
 
+## HIER GEHT ES WEITER: Hoecker und Fuellungsflaechen aus den Fissuren
+
+Entschieden am 18.08.2026. Dirk zeichnet die Kauflaeche jetzt als **Umriss plus
+Fissurenlinien** - `~/dev/Odontogram-Anatomie/17_occl_fissuren.svg` ist die erste
+fertige Vorlage dieser Art (1 geschlossener Umriss, 4 offene Linien, keine
+Hoeckerflaechen mehr).
+
+**Warum diese Richtung:** aus Flaechen Linien zu machen ist muehsam, aus Linien
+Flaechen zu machen ist ein geloestes Problem. Umriss plus Fissuren zerlegen die
+Kauflaeche in Gebiete, und jedes Gebiet IST ein Hoecker. Daraus faellt beides
+zugleich ab - die Hoecker als Flaechen, und die Fuellungsflaechen entlang der
+Fissur, also entlang der Praeparationsgrenze statt entlang Schumachers
+Zeichnung. Heute sind die Fuellungsflaechen von Hand in `tools/toothgen/source/`
+gezeichnet und werden nur radial auf Dirks Umriss gezogen; sie wissen von seiner
+Kauflaeche nichts.
+
+**Gemessen an 17_occl_fissuren.svg:** jede Verzweigung sitzt (0,11 bis 0,23
+Einheiten - path25/26/27 stossen als T auf path24). Frei bleiben genau die FUENF
+AEUSSEREN Enden, 4,5 bis 12,3 Einheiten vor dem Rand. Das ist Anatomie und kein
+Mangel: eine Fissur endet vor der Randleiste. Beim ersten Messen habe ich das
+als Anschlussfehler gelesen, weil ich nach Dateireihenfolge nummeriert hatte -
+die Zahl allein sagt nicht, ob ein freies Ende nach innen oder nach aussen
+zeigt.
+
+**Dirks Entscheidung (Variante 2):** der Generator verlaengert jedes freie Ende
+geradlinig bis zum Umriss. Mit der Einschraenkung, die den Preis wegnimmt: die
+Verlaengerung ist eine HILFSLINIE fuer die Zerlegung und wird NICHT in `fissure`
+mitgeliefert. Sonst stuende auf der Kauflaeche eine erfundene Fissur, wo
+anatomisch die Randleiste durchlaeuft.
+
+Zu tun:
+
+1. Zerlegung: Umriss + Fissuren + Verlaengerungen -> Gebiete. Die
+   Verlaengerungen nur in der Zerlegung fuehren, nie im Ergebnis.
+2. Hoecker als Flaechen aus den Gebieten.
+3. Fuellungsflaechen daraus ableiten - okklusal der Bereich um die
+   Fissurenkreuzung, MO/OD nehmen den jeweiligen Randbereich dazu. Heute macht
+   `fillings.stretch_to_band` nur den Anschluss; die Flaechen selbst sind
+   Handzeichnung aus `source/`.
+4. Erst wenn das steht, lohnt es, die uebrigen Kauflaechen so neu zu zeichnen.
+
+## Offen aus dem 17.08.2026, ausserhalb dieser Ableitung
+
+* **Vestibulaer/palatinal an den MOLAREN-Kauflaechen** ist ungeprueft. Bei den
+  vier Praemolaren war es vertauscht (`SPIEGELN_OCCL` in `redraw_plan.py`, ein
+  Eintrag je Template). WICHTIG, weil es dreimal danebenging: gespiegelt werden
+  muss das FERTIGE Template, nicht die Zeichnung - von Dirk kommen nur Umriss
+  und Fissurenlinien, das Hoeckerrelief kommt vom Spender und wird radial
+  daraufgezogen. Die Orientierung steht uebrigens auf jeder Vorlage
+  angeschrieben (vestibulaer oben, lingual unten, mesial rechts, distal links);
+  damit ist sie auszurechnen statt zu probieren.
+* **Die Kauflaeche von 14** misst mesiodistal 58 px, dieselbe Strecke in der
+  Seitenansicht 35 px. Zwei Zeichnungen desselben Zahns, die sich widersprechen.
+* **Die vier Milchmolaren-Kauflaechen** sind erzeugt, aber nicht montiert.
+
 ## Die Regel, aus der alles andere folgt
 
 **Was gezeichnet ist, wird EINGESETZT. Gewarpt wird nur, was niemand zeichnet.**
