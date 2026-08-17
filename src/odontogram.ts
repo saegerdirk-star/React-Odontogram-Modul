@@ -2929,6 +2929,8 @@ function setPulpInflamPaths(svg: Any, active: boolean){
 }
 
 // ---- SVG apply logic ----
+let clipNsZaehler = 0;
+
 function applyStateToSvgSingle(toothNo: Any, svg: Any, state: Any = toothState.get(toothNo)){
   if(!state || !svg) return;
 
@@ -3131,6 +3133,72 @@ function applyStateToSvgSingle(toothNo: Any, svg: Any, state: Any = toothState.g
       }
       const base = el.getAttribute("data-base-fill") || "";
       el.style.fill = (tintOn && id === activeId) ? tint : base;
+    }
+  }
+
+  // Laufende Nummer fuer die Beschnitt-ids, siehe unten.
+  // (Modulweit, damit zwei Odontogramme im selben Dokument sich nicht ins
+  // Gehege kommen.)
+  // BESCHNITT: nichts darf ueber den Zahn hinausragen.
+  //
+  // Dirk, 18.08.2026, an 46 mit einer OD-Fuellung: "Das ist leider komplett
+  // druebergezeichnet." Die okklusale Fuellungsflaeche misst dort 44,9
+  // Einheiten bei einer Krone von 36,3 - das Verformungsfeld zieht an genau
+  // diesem Template das gesamte Zahninnere 25 Prozent zu breit (gemessener
+  // Median 1,25 gegen 0,99-1,08 bei allen anderen fuenfzehn; Ursache noch
+  // offen, eigener Bead). Bis die Ursache gefunden ist, haelt der Beschnitt
+  // die Fuellung im Zahn.
+  //
+  // Er ist aber nicht nur ein Notbehelf: eine Fuellung KANN nicht ueber die
+  // Zahnoberflaeche hinausreichen, und eine Pulpa auch nicht. Deshalb wird auf
+  // die GERADE GEZEIGTE Form beschnitten - damit bleibt die Pulpa auch beim
+  // praeparierten Zahn geschlossen, wo sie bisher herausschaute ("Die Pulpa
+  // muss geschlossen bleiben"), und ebenso bei `broken` und `radix`.
+  //
+  // clip-path ist weder id noch opacity noch class - der Fingerabdruck sieht
+  // es nicht, der Beschnitt ist parity-frei.
+  {
+    const shownId = isImplant ? "implant-base"
+      : isMilktooth ? "milktooth-base"
+      : state.toothSubstrate === "radix" && state.toothSelection === "tooth-base" ? "tooth-radix"
+      : state.toothSubstrate === "crownprep" && state.toothSelection === "tooth-base" ? "tooth-crownprep"
+      : brokenVariant && state.toothSelection === "tooth-base" ? brokenVariant
+      : "tooth-base";
+    const shape = svgGetById(svg, shownId) as Any;
+    const d = shape?.getAttribute?.("d") || "";
+    let clipId = "";
+    if(d){
+      // Ein <clipPath> je gezeigter Form, in <defs> abgelegt und
+      // wiederverwendet: der Knoten wird bei jedem Rendern erneut besucht, und
+      // fuer jeden Zustand einen neuen anzulegen liesse sie sich anhaeufen.
+      // Die id muss JE ZAHN eindeutig sein. Alle 32 Zaehne stehen in EINEM
+      // Dokument, und `url(#clip-tooth-base)` greift dann bei jedem den
+      // erstbesten - also die Form eines fremden Zahns. Genau dieselbe Falle,
+      // gegen die `namespacePaintServers` die Gradienten schuetzt; der
+      // Beschnitt entsteht erst beim Rendern und lief daran vorbei.
+      let ns = svg.getAttribute("data-clip-ns");
+      if(!ns){ ns = String(++clipNsZaehler); svg.setAttribute("data-clip-ns", ns); }
+      clipId = `clip-${ns}-${shownId}`;
+      let defs = svg.querySelector("defs");
+      if(!defs){
+        defs = svg.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "defs");
+        svg.insertBefore(defs, svg.firstChild);
+      }
+      let cp = svg.querySelector(`#${clipId}`) as Any;
+      if(!cp){
+        cp = svg.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+        cp.setAttribute("id", clipId);
+        cp.appendChild(svg.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "path"));
+        defs.appendChild(cp);
+      }
+      (cp.firstChild as Any)?.setAttribute?.("d", d);
+    }
+    for(const el of Array.from(svg.querySelectorAll("[id]")) as Any[]){
+      const id = el.getAttribute("id") || "";
+      if(!/^(filling-|caries-|subcaries-|defect-)/.test(id)
+         && id !== "tooth-healthy-pulp" && id !== "milktooth-healthy-pulp") continue;
+      if(clipId) el.setAttribute("clip-path", `url(#${clipId})`);
+      else el.removeAttribute("clip-path");
     }
   }
 
