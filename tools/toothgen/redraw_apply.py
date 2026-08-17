@@ -160,6 +160,62 @@ def rahmen_dreher(zeichnung, template):
     return lambda x, y: (2.0 * cx - x, 2.0 * cy - y)
 
 
+def flaeche_zwischen(region, von: float, bis: float, schritt: float = 0.2) -> str | None:
+    """Das Stueck einer Form zwischen zwei Hoehen, aus ihren eigenen Raendern.
+
+    Zeile fuer Zeile die linke und die rechte Kante nehmen und zu einem
+    geschlossenen Umriss zusammensetzen. Damit folgt die Flaeche der Form,
+    aus der sie stammt, und nicht einer fremden.
+    """
+    ys = np.arange(min(von, bis), max(von, bis), schritt)
+    links, rechts = [], []
+    for y in ys:
+        laeufe = redraw._laeufe(redraw._kanten(region, float(y)))
+        if not laeufe:
+            continue
+        links.append((laeufe[0][0], float(y)))
+        rechts.append((laeufe[-1][1], float(y)))
+    if len(links) < 3:
+        return None
+    punkte = links + rechts[::-1]
+    return ("M" + f"{punkte[0][0]:.2f},{punkte[0][1]:.2f}"
+            + "".join(f"L{x:.2f},{y:.2f}" for x, y in punkte[1:]) + "Z")
+
+
+def veneer_aus(alt_zahn, neu_zahn, alt_veneer):
+    """Das Veneer aus dem GEZEICHNETEN Kronenumriss, nicht aus dem gewarpten.
+
+    Dirk, 17.08.2026: "Bei Veneers ist es ganz einfach. Das Veneer bedeckt die
+    labiale Flaeche und die haben wir dargestellt/gezeichnet."
+
+    Genau so. In der Seitenansicht IST die labiale Flaeche der Kronenumriss;
+    ein Veneer daran nachzubilden, statt es daraus zu nehmen, ist derselbe
+    Umweg wie beim Zahnumriss selbst. Gemessen liegt die gewarpte Veneerform an
+    den Seitenzaehnen zu 0 Prozent auf der Kontur - vorher wie nachher, also
+    Altbestand und kein Schaden des Umbaus.
+
+    NICHT IN GEBRAUCH, und der Grund ist eine Lehre. So gebaut - Zeile fuer
+    Zeile die linke und die rechte Kante des neuen Umrisses - liegt die Form zu
+    100 Prozent auf der Kontur, gegen 0 bis 15 Prozent vorher. Die Zahl ist
+    hervorragend und das Bild ist falsch: das ausgelieferte Veneer ist ringsum
+    EINGERUECKT, mit sichtbarem Zahnrand, und genau das macht es als Veneer
+    kenntlich. Meine Kennzahl misst diesen Rand als Fehler und belohnt eine
+    Form, die bis an die Zahnkante laeuft. Unten kommt dazu eine kantige
+    Zeilenkante heraus, wo die Vorlage eine gerundete Form hat.
+
+    Richtig waere ein VERSATZ: die Form der Vorlage um denselben Abstand nach
+    innen von Dirks Kontur, den sie von der alten hatte. Das ist eine andere
+    Konstruktion als die Kammer, und sie ist noch nicht gebaut.
+    """
+    ya0, ya1 = float(alt_zahn[:, 1].min()), float(alt_zahn[:, 1].max())
+    yn0, yn1 = float(neu_zahn[:, 1].min()), float(neu_zahn[:, 1].max())
+    va0, va1 = float(alt_veneer[:, 1].min()), float(alt_veneer[:, 1].max())
+    anteil = lambda y: (y - ya0) / (ya1 - ya0)
+    return flaeche_zwischen(neu_zahn,
+                            yn0 + anteil(va0) * (yn1 - yn0),
+                            yn0 + anteil(va1) * (yn1 - yn0))
+
+
 def kammer_aus(region, schritt: float = 0.2) -> str | None:
     """Die Pulpakammer als Pfad - der breite Teil, bevor die Kanaele abgehen.
 
@@ -481,6 +537,9 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = 
     if umriss_d not in txt:
         raise ValueError("tooth-base: Pfad nicht ersetzt")
 
+    # Das Veneer wird NOCH NICHT abgeleitet - `veneer_aus` steht bereit, taugt
+    # aber so nicht. Siehe dort.
+
     # Zweites Feld fuer die Pulpa: die pulpanahen Ebenen folgen Dirks
     # gezeichneter Kammer, nicht dem Aussenumriss. Ohne das traegt der Zahn
     # weiterhin die alte Pulpa, nur mitgezogen.
@@ -655,4 +714,21 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = 
     if len(band) < 2:
         band = neu
     neck_half = float(band[:, 0].max() - band[:, 0].min()) / 2.0
-    return build.replace_gum(out, occl, cej_neu, cx, neck_half, float(s_spec.col_px))
+    out = build.replace_gum(out, occl, cej_neu, cx, neck_half, float(s_spec.col_px))
+
+    # Den Anschluss der Approximalfuellungen an die okklusale NEU rechnen, so
+    # wie das Zahnfleisch neu gezeichnet wird.
+    #
+    # Dirks Frage: "Mir ist auch nicht klar, wie die Fuellungsflaechen
+    # abgeleitet werden, oder Inlays." Sie sind von Hand gezeichnet, in
+    # tools/toothgen/source. Was der Generator daran tut, ist der Anschluss:
+    # `fillings.stretch_to_band` zieht die mesiale und die distale Flaeche bis
+    # an die okklusale, damit MO/OD/MOD als EINE Restauration erscheint, und
+    # skaliert dabei um die Mittellinie der Krone - um so viel, wie die Krone
+    # dort schmaler geworden ist.
+    #
+    # Der Anschluss haengt also an der Krone, und die ist jetzt Dirks. Gewarpt
+    # traegt er weiter die Krone des SPENDERS, und der Uebergang sitzt daneben.
+    # `connect_fillings` bekommt die Kaukante des NEUEN Zahns, nicht die Ebene
+    # des Rahmens - gestreckt wird auf das okklusale Band dieses Zahns.
+    return build.connect_fillings(out, float(neu[:, 1].max()))
