@@ -194,7 +194,8 @@ export const TOOTH_TEMPLATE = new Map([
   [26,{tpl:16,rot:0,mirror:true}],
   [27,{tpl:17,rot:0,mirror:true}],
   [28,{tpl:18,rot:0,mirror:true}],
-  // lower right (quadrant 4), as drawn
+  // lower right (quadrant 4). `mirror:true` together with `rot:180` is a pure
+  // VERTICAL flip - it brings the crown up without touching mesial/distal.
   //
   // mirror:false, unlike the upper arch's right side and unlike what stood here
   // until Dirk saw it: "Du hast den 3. Quadranten in den 4. gestellt." His lower
@@ -204,37 +205,44 @@ export const TOOTH_TEMPLATE = new Map([
   // mirror on top of it turns 41 into 31. The transform was inherited from the
   // position's old entry, which was right for a template built from an UPPER
   // incisor and wrong for a drawing of the tooth itself.
-  [41,{tpl:41,rot:180,mirror:false}],
-  [42,{tpl:42,rot:180,mirror:false}],
-  [43,{tpl:43,rot:180,mirror:false}],
-  [44,{tpl:44,rot:180,mirror:false}],
-  [45,{tpl:45,rot:180,mirror:false}],
-  [46,{tpl:46,rot:180,mirror:false}],
-  [47,{tpl:47,rot:180,mirror:false}],
-  [48,{tpl:48,rot:180,mirror:false}],
+  [41,{tpl:41,rot:180,mirror:true}],
+  [42,{tpl:42,rot:180,mirror:true}],
+  [43,{tpl:43,rot:180,mirror:true}],
+  [44,{tpl:44,rot:180,mirror:true}],
+  [45,{tpl:45,rot:180,mirror:true}],
+  [46,{tpl:46,rot:180,mirror:true}],
+  [47,{tpl:47,rot:180,mirror:true}],
+  [48,{tpl:48,rot:180,mirror:true}],
   // lower left (quadrant 3), mirrored
-  [31,{tpl:41,rot:180,mirror:true}],
-  [32,{tpl:42,rot:180,mirror:true}],
-  [33,{tpl:43,rot:180,mirror:true}],
-  [34,{tpl:44,rot:180,mirror:true}],
-  [35,{tpl:45,rot:180,mirror:true}],
-  [36,{tpl:46,rot:180,mirror:true}],
-  [37,{tpl:47,rot:180,mirror:true}],
-  [38,{tpl:48,rot:180,mirror:true}],
+  [31,{tpl:41,rot:180,mirror:false}],
+  [32,{tpl:42,rot:180,mirror:false}],
+  [33,{tpl:43,rot:180,mirror:false}],
+  [34,{tpl:44,rot:180,mirror:false}],
+  [35,{tpl:45,rot:180,mirror:false}],
+  [36,{tpl:46,rot:180,mirror:false}],
+  [37,{tpl:47,rot:180,mirror:false}],
+  [38,{tpl:48,rot:180,mirror:false}],
 ]);
 
 // Occlusal artwork has its own viewpoint contract. The source templates place
 // mesial geometry on the right. These transforms keep mesial toward the arch
 // midline in the standard chart ordering (patient right on the viewer left).
 export const OCCLUSAL_TEMPLATE = new Map([
+  // Keine Drehung mehr, in KEINEM Kiefer. Sie stammte aus der Zeit, als die
+  // unteren Kauflaechen vom Oberkiefer-Template geliehen waren und deshalb
+  // umgedreht werden mussten. Seit Dirk jede Position selbst zeichnet, liegt
+  // jede Zeichnung schon richtig - Oberkiefer bukkal oben, Unterkiefer bukkal
+  // unten, mesial bei beiden rechts -, und der rechte Quadrant braucht gar
+  // keine Transformation. Gedreht statt gespiegelt kam der Unterkiefer mit den
+  // bukkalen Hoeckern nach lingual heraus.
   [14,{tpl:14,rot:0,mirror:false}],[15,{tpl:15,rot:0,mirror:false}],
   [16,{tpl:16,rot:0,mirror:false}],[17,{tpl:17,rot:0,mirror:false}],[18,{tpl:18,rot:0,mirror:false}],
   [24,{tpl:14,rot:0,mirror:true}],[25,{tpl:15,rot:0,mirror:true}],
   [26,{tpl:16,rot:0,mirror:true}],[27,{tpl:17,rot:0,mirror:true}],[28,{tpl:18,rot:0,mirror:true}],
-  [34,{tpl:44,rot:180,mirror:false}],[35,{tpl:45,rot:180,mirror:false}],
-  [36,{tpl:46,rot:180,mirror:false}],[37,{tpl:47,rot:180,mirror:false}],[38,{tpl:48,rot:180,mirror:false}],
-  [44,{tpl:44,rot:180,mirror:true}],[45,{tpl:45,rot:180,mirror:true}],
-  [46,{tpl:46,rot:180,mirror:true}],[47,{tpl:47,rot:180,mirror:true}],[48,{tpl:48,rot:180,mirror:true}],
+  [44,{tpl:44,rot:0,mirror:false}],[45,{tpl:45,rot:0,mirror:false}],
+  [46,{tpl:46,rot:0,mirror:false}],[47,{tpl:47,rot:0,mirror:false}],[48,{tpl:48,rot:0,mirror:false}],
+  [34,{tpl:44,rot:0,mirror:true}],[35,{tpl:45,rot:0,mirror:true}],
+  [36,{tpl:46,rot:0,mirror:true}],[37,{tpl:47,rot:0,mirror:true}],[38,{tpl:48,rot:0,mirror:true}],
 ]);
 
 // The four PRIMARY occlusal drawings (54_occl, 55_occl, 84_occl, 85_occl) are
@@ -2805,6 +2813,62 @@ export function __wearRowAllowedForTest(s: Record<string, unknown>): boolean {
 // SP12: discoloration crown tint. Fill is NOT recorded by the SVG-fingerprint
 // (collectActiveLayers captures id/opacity/cls only) — parity-safe. Applies to the
 // natural crown of a permanent OR milk tooth (no restoration, natural substrate).
+// Pulp diagnosis: TINT the drawn pulp instead of swapping in another shape.
+//
+// Dirk, 18.08.2026: "Ich habe keine Ahnung, wie das abgeleitet wird, aber
+// einfacherweise musst du nur den gezeichneten Pulpa-Umriss anders einfaerben."
+//
+// Until then a diseased pulp showed `tooth-inflam-pulp` — a SEPARATE shape from
+// the donor template, with flame sublayers. It never matched the pulp Dirk drew,
+// which is what `tooth-healthy-pulp` carries, so the pulp changed SHAPE when a
+// diagnosis was set. Tinting keeps his outline and says the diagnosis in colour,
+// the same way SP12 says discoloration on the crown. Fill is not part of the
+// SVG fingerprint (id/opacity/class only), so the tint itself is parity-safe —
+// what does move the fingerprint is that `tooth-inflam-pulp` no longer switches
+// on and `tooth-healthy-pulp` now stays on.
+//
+// Keyed on the LATIN subtype first, because it is the finer statement and
+// Dirk asked for gangrene as its own reading; the AAE value is the fallback.
+const PULP_TINT: Record<string, string> = {
+  // AAE (pulpDx)
+  "reversible-pulpitis": "#e8776a",
+  "irreversible-pulpitis": "#b3241a",
+  necrosis: "#8d7f72",
+  // practical Latin (pulpLatin), where it says more than its AAE parent
+  "hyperaemia-pulpae": "#e8776a",
+  "pulpitis-acuta-serosa": "#c8352a",
+  "pulpitis-acuta-purulenta": "#a81d14",
+  "pulpitis-chronica-clausa": "#b3241a",
+  "pulpitis-chronica-ulcerosa": "#b3241a",
+  "pulpitis-chronica-hyperplastica": "#b3241a",
+  "necrosis-pulpae": "#8d7f72",
+  "gangraena-pulpae": "#5d5a4c",
+};
+
+// Wurzelbehandlung: die gezeichnete Pulpa bekommt die Farbe der Wurzelfuellung.
+//
+// Dirk, 18.08.2026: "Wurzelbehandlung: einfach die blassrosa Pulpa durch die
+// Farbe fuer die Wurzelfuellung ersetzen, oder?" - Die Werte sind aus den
+// Ebenen des Templates abgelesen, nicht gewaehlt, damit die getoente Pulpa und
+// die Endo-Zeichnung darueber dieselbe Farbe haben.
+const ENDO_TINT: Record<string, string> = {
+  "endo-medical-filling": "#ffffff",       // medikamentoese Einlage
+  "endo-filling": "#388aca",               // Wurzelfuellung
+  "endo-filling-incomplete": "#388aca",    // unvollstaendig - dieselbe Farbe, die Ebene sagt es
+  "endo-glass-pin": "#c8c9c9",             // Glasfaserstift
+  "endo-metal-pin": "#3951a3",             // Metallstift
+};
+
+/** The colour the drawn pulp is filled with, or "" when it is untreated and
+ *  healthy. A treated tooth wins over a diagnosis: it has no vital pulp. */
+function pulpTint(s: Any): string {
+  if(s?.endo && s.endo !== "none") return ENDO_TINT[s.endo] || ENDO_TINT["endo-filling"];
+  if(s?.pulpLatin && s.pulpLatin !== "none" && PULP_TINT[s.pulpLatin]) return PULP_TINT[s.pulpLatin];
+  if(s?.pulpDx && s.pulpDx !== "normal") return PULP_TINT[s.pulpDx] || PULP_TINT["irreversible-pulpitis"];
+  return "";
+}
+export function __pulpTintForTest(s: Record<string, unknown>): string { return pulpTint(s); }
+
 const DISCOLORATION_TINT: Record<string, string> = {
   tetracycline: "#9c8f7a", fluorosis: "#d9c9a3", nonvital: "#a89a8a", extrinsic: "#c2a86a", other: "#b5a894",
 };
@@ -2994,12 +3058,10 @@ function applyStateToSvgSingle(toothNo: Any, svg: Any, state: Any = toothState.g
   }else if(isMilktooth){
     setActive(svgGetById(svg, "milktooth-base"), true);
     setActive(svgGetById(svg, "milktooth-beauty"), true);
-    if(pulpDiseased){
-      if(!endoTreated){
-        setActive(svgGetById(svg, "milktooth-inflam-pulp"), true);
-        setPulpInflamPaths(svg, !pulpTierMild);
-      }
-    }else if(showHealthyPulp){
+    // Die GEZEICHNETE Pulpa bleibt stehen, auch wenn sie krank ist - die
+    // Diagnose sagt die Farbe (siehe PULP_TINT). `milktooth-inflam-pulp` wird
+    // nicht mehr eingeblendet; es ist eine andere Form.
+    if(showHealthyPulp || pulpDiseased || endoTreated){
       setActive(svgGetById(svg, "milktooth-healthy-pulp"), true);
     }
   }else if(isToothPresent(state.toothSelection)){
@@ -3016,12 +3078,8 @@ function applyStateToSvgSingle(toothNo: Any, svg: Any, state: Any = toothState.g
       // tooth (the endo artwork represents the filled canal). The healthy-pulp
       // glyph is unchanged (legacy behaviour — a treated tooth may still show it
       // under the endo layer).
-      if(pulpDiseased){
-        if(!endoTreated){
-          setActive(svgGetById(svg, "tooth-inflam-pulp"), true);
-          setPulpInflamPaths(svg, !pulpTierMild);
-        }
-      }else if(showHealthyPulp){
+      // Siehe oben beim Milchzahn: gezeichnete Pulpa behalten, Diagnose faerben.
+      if(showHealthyPulp || pulpDiseased || endoTreated){
         setActive(svgGetById(svg, "tooth-healthy-pulp"), true);
       }
     }
@@ -3073,6 +3131,29 @@ function applyStateToSvgSingle(toothNo: Any, svg: Any, state: Any = toothState.g
       }
       const base = el.getAttribute("data-base-fill") || "";
       el.style.fill = (tintOn && id === activeId) ? tint : base;
+    }
+  }
+
+  // Die Pulpa nach der Diagnose faerben - dieselbe Bauart wie die Verfaerbung
+  // darueber, einschliesslich des capture-once in `data-base-pulpfill`: ein
+  // leerer `style.fill` wuerde die Farbe aus dem Asset LOESCHEN und die Pulpa
+  // schwarz machen, nicht zuruecksetzen. Die Ebene ist am Schneidezahn ein
+  // <path> und am Molaren eine <g> mit mehreren Pfaden, also werden alle
+  // zeichnenden Nachkommen mitgenommen.
+  {
+    const tint = pulpTint(state);
+    for(const id of ["tooth-healthy-pulp", "milktooth-healthy-pulp"]){
+      const wurzel = svgGetById(svg, id) as SVGElement | null;
+      if(!wurzel) continue;
+      const teile: SVGElement[] = wurzel.tagName?.toLowerCase() === "g"
+        ? Array.from(wurzel.querySelectorAll("path, circle, ellipse, polygon, rect")) as Any
+        : [wurzel];
+      for(const el of teile){
+        if(el.getAttribute("data-base-pulpfill") === null){
+          el.setAttribute("data-base-pulpfill", el.style.fill || "");
+        }
+        el.style.fill = tint || (el.getAttribute("data-base-pulpfill") || "");
+      }
     }
   }
 

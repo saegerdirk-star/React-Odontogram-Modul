@@ -165,24 +165,15 @@ NEIGUNG: dict[str, float] = {
 # das stimmt aber. Vertauscht ist allein die zweite Achse, und dafuer gibt es
 # nur die Spiegelung.
 #
-# Kauflaechen-Zeichnungen, die vor dem Einsetzen an der waagerechten Achse
-# gespiegelt werden - und zwar AUSGERECHNET, nicht mehr geraten.
+# LEER, und das ist der Endstand. Drei Runden lang stand hier etwas drin -
+# erst die oberen Praemolaren, dann alle vier, dann der ganze Unterkiefer - und
+# jedes Mal lag es daneben, weil ich an der falschen Stelle gedreht habe.
 #
-# Gemessen am 18.08.2026, nachdem die Beschriftung der Schumacher-Scans in den
-# Zeichnungen selbst nachgesehen war:
-#
-#   Zeichnung Oberkiefer  14 15 16 17 18:  vestibulaer oben, mesial rechts
-#   Zeichnung Unterkiefer 44 45 46 47 48:  LINGUAL oben,     mesial rechts
-#   Spender-Templates (alle vier):          bukkal oben,      mesial rechts
-#
-# Der Oberkiefer liegt also schon richtig; der Unterkiefer steht senkrecht
-# verkehrt, weil seine Vorlage lingual nach oben zeichnet. Waagerecht stimmt
-# beides, mesial liegt ueberall rechts.
-#
-# Davor standen hier die vier PRAEMOLAREN - erst die oberen, dann alle vier -,
-# und beides war falsch. Dirk: "Bei den oberen Praemolaren sind vestibulaer und
-# palatinal vertauscht", dann "und jetzt sind die unteren falsch", dann "Zaehne
-# links und rechts zwischen den Quadranten vertauscht". Drei Runden Raten,
-# waehrend die Angabe die ganze Zeit auf seinen Vorlagen stand.
-SPIEGELN_OCCL: set[str] = {"44_occl", "45_occl", "46_occl", "47_occl", "48_occl",
-                           "84_occl", "85_occl"}
+# Die Zeichnungen liegen bereits anatomisch richtig: Oberkiefer bukkal oben,
+# Unterkiefer bukkal unten, mesial bei beiden rechts (abgelesen von den
+# Schumacher-Scans in den Zeichnungen selbst). Genau so gehoeren sie auch in den
+# Bogen - fuer den rechten Quadranten ohne jede Transformation, fuer den linken
+# nur gespiegelt. Was fehlte, war nicht eine Spiegelung beim Erzeugen, sondern
+# die 180-Grad-Drehung im Bogen wegzunehmen: sie stammte aus der Zeit, als die
+# unteren Kauflaechen vom OBERKIEFER-Template geliehen waren.
+SPIEGELN_OCCL: set[str] = set()

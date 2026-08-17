@@ -43,6 +43,7 @@ from build import ASSETS, PX_PER_UNIT, SPENDER, curve_extent, tooth_base_d  # no
 from redraw_plan import GRID_GAP, PLAN, PLAN_OCCL, SPALTEN, ZUSCHLAG  # noqa: E402
 
 INDEX_CSS = ASSETS.parents[1] / "index.css"
+ZEICHNUNGEN = Path.home() / "dev" / "Odontogram-Anatomie"
 
 # Ueberstand des Lumens ueber den Apex. Nicht null: der Umriss wird EINGESETZT,
 # das Lumen mitgezogen, und beide sind damit unterschiedlich entstanden. Der
@@ -63,6 +64,42 @@ def _implantat_laenge(txt: str) -> float | None:
     pts = [p for d in re.findall(r'\sd="([^"]+)"', im.group(0))
            for s in roots._polylines(d) for p in s]
     return (max(p[1] for p in pts) - min(p[1] for p in pts)) if pts else None
+
+
+def mesial_aus_zeichnung(zahn: str) -> str | None:
+    """Auf welcher Seite die Zeichnung selbst "mesial" oder "m" anschreibt.
+
+    Dirk hat es an 46 drangeschrieben, und diese eine Beschriftung hat einen
+    Schluss widerlegt, auf dem die Haelfte der Unterkiefer-Geometrie stand: aus
+    seiner Ankerkonvention war abgeleitet worden, mesial liege links - es liegt
+    rechts. Wo eine Beschriftung da ist, wird sie gelesen und nicht gedeutet.
+
+    Gibt "rechts", "links" oder None zurueck (keine Beschriftung gefunden).
+    """
+    datei = ZEICHNUNGEN / f"{zahn}_zeichnen.svg"
+    if not datei.exists():
+        return None
+    txt = datei.read_text()
+    beschriftet = None
+    for m in re.finditer(r'<text[^>]*\sx="([-\d.]+)"[^>]*>(.*?)</text>', txt, re.S):
+        wort = re.sub(r"<[^>]+>", "", m.group(2)).strip().lower()
+        if wort in ("m", "mesial"):
+            beschriftet = float(m.group(1))
+    if beschriftet is None:
+        return None
+    # Die Mitte OHNE numpy, denn `verify_redraw` soll ohne den Generator laufen,
+    # den es prueft: die Mitte des viewBox der ZEICHNUNG. Fuer links oder rechts
+    # reicht das, und es ist der einzige Wert, der ohne Pfad-Auswertung stimmt.
+    #
+    # Der erste Versuch nahm die Zahlen der Pfaddaten paarweise als x und y -
+    # falsch, weil Inkscape relativ schreibt und `h`/`v` nur EINE Zahl tragen.
+    # Er meldete mesial links, wo es rechts steht.
+    vb = re.search(r'viewBox="([^"]+)"', txt)
+    if not vb:
+        return None
+    teile = [float(v) for v in vb.group(1).split()]
+    mitte = teile[0] + teile[2] / 2.0
+    return "rechts" if beschriftet > mitte else "links"
 
 
 def _kronenbreite(txt: str, cej: float, inc: float) -> float | None:
@@ -247,6 +284,27 @@ def main() -> int:
             failures.append(f"{key}: die klinischen ids weichen vom Spender {spender} ab")
         if not tags_ok:
             failures.append(f"{key}: die Elementfolge weicht vom Spender {spender} ab")
+
+    # Wo eine Zeichnung "mesial" oder "m" anschreibt, wird sie GELESEN.
+    #
+    # Die Kette setzt voraus, dass mesial in jeder Zeichnung rechts liegt - wie
+    # im Spender. Steht es links, muss zusaetzlich waagerecht gespiegelt werden,
+    # sonst zeichnet das Odontogramm mesial nach distal. Genau dieser Fall hat
+    # einen halben Tag gekostet, weil er aus der Ankerkonvention ERSCHLOSSEN
+    # statt abgelesen wurde.
+    beschriftet = 0
+    for key in PLAN:
+        seite = mesial_aus_zeichnung(key)
+        if seite is None:
+            continue
+        beschriftet += 1
+        if seite != "rechts":
+            failures.append(
+                f"{key}: die Zeichnung schreibt mesial LINKS an, die Kette setzt "
+                f"rechts voraus; ohne waagerechte Spiegelung wird mesial nach "
+                f"distal gezeichnet")
+    print(f"\nZeichnungen mit mesial-Beschriftung: {beschriftet} von {len(PLAN)}"
+          + ("" if beschriftet == len(PLAN) else "  (die uebrigen werden angenommen)"))
 
     verify.check_fillings(ASSETS, failures)
 

@@ -160,11 +160,11 @@ describe("installed tooth SVG assets", () => {
       "16": { roots: "3", viewBox: "-2.52 0.0 42.9 91.23" },
       "17": { roots: "3", viewBox: "-4.54 0.0 42.9 88.74" },
       "18": { roots: "3", viewBox: "0.44 0.0 42.9 87.40" },
-      "44": { roots: "1", viewBox: "0.82 0.0 39.8 83.29" },
-      "45": { roots: "1", viewBox: "-0.84 0.0 39.8 80.97" },
-      "46": { roots: "2", viewBox: "-0.43 0.0 42.9 90.99" },
-      "47": { roots: "2", viewBox: "-0.53 0.0 42.9 84.79" },
-      "48": { roots: "2", viewBox: "-0.59 0.0 42.9 83.42" },
+      "44": { roots: "1", viewBox: "0.85 0.0 39.8 83.29" },
+      "45": { roots: "1", viewBox: "-0.89 0.0 39.8 80.97" },
+      "46": { roots: "2", viewBox: "-0.55 0.0 42.9 90.99" },
+      "47": { roots: "2", viewBox: "-0.51 0.0 42.9 84.79" },
+      "48": { roots: "2", viewBox: "-0.58 0.0 42.9 83.42" },
     } as const;
 
     for (const template of POSTERIOR_SIDE) {

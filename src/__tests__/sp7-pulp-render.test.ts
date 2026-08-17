@@ -1,5 +1,13 @@
 // Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
 // Created by Zoltan Dul (https://github.com/ZoliQua) 2025-2026
+// ANGEPASST am 18.08.2026. Eine kranke Pulpa blendet nicht mehr eine ZWEITE
+// Form ein (`tooth-inflam-pulp` mit seinen Flammen-Unterebenen), sondern behaelt
+// Dirks gezeichnete Pulpa und sagt die Diagnose in der FARBE - siehe PULP_TINT
+// in odontogram.ts. Dirk, 18.08.2026: "einfacherweise musst du nur den
+// gezeichneten Pulpa-Umriss anders einfaerben." Der Grund: die eingeblendete
+// Form stammt vom Spender-Template und hat nie zu der Pulpa gepasst, die er
+// gezeichnet hat, also wechselte die Pulpa beim Setzen einer Diagnose die Form.
+
 
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
@@ -30,20 +38,22 @@ describe("SP7 Task 3: endo treatment suppresses the pulp glyph", () => {
   });
   it("endo=none keeps the diseased pulp glyph", () => {
     const layers = render({ toothSelection: "tooth-base", endo: "none", pulpDx: "irreversible-pulpitis" });
-    expect(ids(layers)).toContain("tooth-inflam-pulp");
+    expect(ids(layers)).not.toContain("tooth-inflam-pulp");
+    expect(ids(layers)).toContain("tooth-healthy-pulp");
   });
 });
 
 describe("SP7 Task 3: reversible pulpitis renders a reduced glyph", () => {
-  it("reversible-pulpitis activates tooth-inflam-pulp but not the flame paths", () => {
+  it("reversible-pulpitis keeps the drawn pulp and tints it, no second shape", () => {
     const layers = render({ toothSelection: "tooth-base", endo: "none", pulpDx: "reversible-pulpitis" });
-    expect(ids(layers)).toContain("tooth-inflam-pulp");
+    expect(ids(layers)).not.toContain("tooth-inflam-pulp");
+    expect(ids(layers)).toContain("tooth-healthy-pulp");
     expect(ids(layers)).not.toContain("pulp-inflam-path-1");
     expect(ids(layers)).not.toContain("pulp-inflam-path-11");
   });
   it("irreversible-pulpitis keeps the flame paths", () => {
     const layers = render({ toothSelection: "tooth-base", endo: "none", pulpDx: "irreversible-pulpitis" });
-    expect(ids(layers)).toContain("pulp-inflam-path-1");
+    expect(ids(layers)).not.toContain("pulp-inflam-path-1");
   });
 });
 
@@ -75,14 +85,14 @@ describe("SP7 review fix: sticky flame-path deactivation on a reused SVG node", 
     expect(ids(mild)).not.toContain("pulp-inflam-path-1");
 
     const full = __renderActiveLayersOnNode(svg, 11, { toothSelection: "tooth-base", pulpDx: "necrosis" });
-    expect(ids(full)).toContain("pulp-inflam-path-1");
-    expect(ids(full)).toContain("pulp-inflam-path-8");
+    expect(ids(full)).not.toContain("pulp-inflam-path-1");
+    expect(ids(full)).not.toContain("pulp-inflam-path-1");
   });
 
   it("full render then mild render on the SAME node deactivates the flame paths", () => {
     const svg = __parseSvgForTest(svgText);
     const full = __renderActiveLayersOnNode(svg, 11, { toothSelection: "tooth-base", pulpDx: "irreversible-pulpitis" });
-    expect(ids(full)).toContain("pulp-inflam-path-1");
+    expect(ids(full)).not.toContain("pulp-inflam-path-1");
 
     const mild = __renderActiveLayersOnNode(svg, 11, { toothSelection: "tooth-base", pulpDx: "reversible-pulpitis" });
     expect(ids(mild)).not.toContain("pulp-inflam-path-1");
@@ -92,11 +102,13 @@ describe("SP7 review fix: sticky flame-path deactivation on a reused SVG node", 
   it("milktooth: mild render then full-severity render on the SAME node re-activates the flame paths", () => {
     const svg = __parseSvgForTest(svgText);
     const mild = __renderActiveLayersOnNode(svg, 11, { toothSelection: "milktooth", pulpDx: "reversible-pulpitis" });
-    expect(ids(mild)).toContain("milktooth-inflam-pulp");
+    expect(ids(mild)).not.toContain("milktooth-inflam-pulp");
+    expect(ids(mild)).toContain("milktooth-healthy-pulp");
     expect(ids(mild)).not.toContain("pulp-inflam-path-11");
 
     const full = __renderActiveLayersOnNode(svg, 11, { toothSelection: "milktooth", pulpDx: "necrosis" });
-    expect(ids(full)).toContain("milktooth-inflam-pulp");
-    expect(ids(full)).toContain("pulp-inflam-path-11");
+    expect(ids(full)).not.toContain("milktooth-inflam-pulp");
+    expect(ids(full)).toContain("milktooth-healthy-pulp");
+    expect(ids(full)).not.toContain("pulp-inflam-path-1");
   });
 });

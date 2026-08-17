@@ -1,5 +1,13 @@
 // Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
 // Created by Zoltan Dul (https://github.com/ZoliQua) 2025-2026
+// ANGEPASST am 18.08.2026. Eine kranke Pulpa blendet nicht mehr eine ZWEITE
+// Form ein (`tooth-inflam-pulp` mit seinen Flammen-Unterebenen), sondern behaelt
+// Dirks gezeichnete Pulpa und sagt die Diagnose in der FARBE - siehe PULP_TINT
+// in odontogram.ts. Dirk, 18.08.2026: "einfacherweise musst du nur den
+// gezeichneten Pulpa-Umriss anders einfaerben." Der Grund: die eingeblendete
+// Form stammt vom Spender-Template und hat nie zu der Pulpa gepasst, die er
+// gezeichnet hat, also wechselte die Pulpa beim Setzen einer Diagnose die Form.
+
 
 // SP4 Task 3 byte-identical proof: `pulpDx` (enum) replaces the retired
 // `pulpInflam` boolean. Any non-"normal" pulpDx value must activate the SAME
@@ -15,7 +23,7 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { __renderActiveLayers, __setShowHealthyPulpForTest } from "../odontogram";
+import { __renderActiveLayers, __setShowHealthyPulpForTest, __pulpTintForTest } from "../odontogram";
 
 const testFileUrl = import.meta.url;
 const svgText = readFileSync(
@@ -35,8 +43,8 @@ describe("SP4 Task 3: pulpDx renders byte-identical to the retired pulpInflam bo
     const legacy = render({ toothSelection: "tooth-base", pulpInflam: true });
     const modern = render({ toothSelection: "tooth-base", pulpDx: "irreversible-pulpitis" });
     expect(modern).toEqual(legacy);
-    expect(legacy.some(l => l.id === "tooth-inflam-pulp")).toBe(true);
-    expect(legacy.some(l => l.id === "tooth-healthy-pulp")).toBe(false);
+    expect(legacy.some(l => l.id === "tooth-inflam-pulp")).toBe(false);
+    expect(legacy.some(l => l.id === "tooth-healthy-pulp")).toBe(true);
   });
 
   it("pulpDx:normal === legacy pulpInflam:false, showHealthyPulp ON (activates tooth-healthy-pulp)", () => {
@@ -62,17 +70,30 @@ describe("SP4 Task 3: pulpDx renders byte-identical to the retired pulpInflam bo
     const legacy = render({ toothSelection: "tooth-base", pulpInflam: true });
     const modern = render({ toothSelection: "tooth-base", pulpDx: "irreversible-pulpitis" });
     expect(modern).toEqual(legacy);
-    expect(legacy.some(l => l.id === "tooth-inflam-pulp")).toBe(true);
+    expect(legacy.some(l => l.id === "tooth-inflam-pulp")).toBe(false);
   });
 
-  it("necrosis activates the SAME single tooth-inflam-pulp layer (with flame sublayers) as irreversible-pulpitis (visually identical); reversible-pulpitis renders a reduced glyph (SP7: no flame sublayers)", () => {
+  // Jede Diagnose aktiviert jetzt DIESELBEN Ebenen - die gezeichnete Pulpa -
+  // und unterscheidet sich allein in der FARBE, die der Fingerabdruck nicht
+  // liest. Was frueher drei verschiedene Ebenensaetze waren (voller Glyph,
+  // reduzierter Glyph, gar keiner), ist jetzt ein Satz und drei Toene.
+  it("every pulp diagnosis activates the same drawn pulp; only the tint differs", () => {
     const irreversible = render({ toothSelection: "tooth-base", pulpDx: "irreversible-pulpitis" });
     const reversible = render({ toothSelection: "tooth-base", pulpDx: "reversible-pulpitis" });
     const necrosis = render({ toothSelection: "tooth-base", pulpDx: "necrosis" });
     expect(necrosis).toEqual(irreversible);
-    expect(irreversible.some(l => l.id === "pulp-inflam-path-1")).toBe(true);
-    expect(reversible.some(l => l.id === "tooth-inflam-pulp")).toBe(true);
-    expect(reversible.some(l => l.id === "pulp-inflam-path-1")).toBe(false);
+    expect(reversible).toEqual(irreversible);
+    expect(irreversible.some(l => l.id === "pulp-inflam-path-1")).toBe(false);
+    expect(irreversible.some(l => l.id === "tooth-healthy-pulp")).toBe(true);
+    // Und die Farben SIND verschieden - sonst waere die Diagnose unsichtbar.
+    const toene = new Set([
+      __pulpTintForTest({ pulpDx: "reversible-pulpitis" }),
+      __pulpTintForTest({ pulpDx: "irreversible-pulpitis" }),
+      __pulpTintForTest({ pulpDx: "necrosis" }),
+      __pulpTintForTest({ pulpLatin: "gangraena-pulpae" }),
+    ]);
+    expect(toene.size).toBe(4);
+    expect(__pulpTintForTest({ pulpDx: "normal" })).toBe("");
   });
 
   it("hydrateState migration: a modern payload's own pulpDx wins over a stray legacy pulpInflam", () => {
@@ -91,8 +112,8 @@ describe("SP4 Task 3: pulpDx renders byte-identical to the retired pulpInflam bo
     const legacy = render({ toothSelection: "milktooth", pulpInflam: true });
     const modern = render({ toothSelection: "milktooth", pulpDx: "irreversible-pulpitis" });
     expect(modern).toEqual(legacy);
-    expect(legacy.some(l => l.id === "milktooth-inflam-pulp")).toBe(true);
-    expect(legacy.some(l => l.id === "milktooth-healthy-pulp")).toBe(false);
+    expect(legacy.some(l => l.id === "milktooth-inflam-pulp")).toBe(false);
+    expect(legacy.some(l => l.id === "milktooth-healthy-pulp")).toBe(true);
   });
 
   it("pulpDx:normal === legacy pulpInflam:false on a milktooth, showHealthyPulp ON", () => {
@@ -117,6 +138,6 @@ describe("SP4 Task 3: pulpDx renders byte-identical to the retired pulpInflam bo
     const legacy = render({ toothSelection: "milktooth", pulpInflam: true });
     const modern = render({ toothSelection: "milktooth", pulpDx: "irreversible-pulpitis" });
     expect(modern).toEqual(legacy);
-    expect(legacy.some(l => l.id === "milktooth-inflam-pulp")).toBe(true);
+    expect(legacy.some(l => l.id === "milktooth-inflam-pulp")).toBe(false);
   });
 });

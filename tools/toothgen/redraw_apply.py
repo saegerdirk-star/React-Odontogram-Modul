@@ -163,9 +163,27 @@ def rahmen_dreher(zeichnung, template):
     """
     if _wurzel_oben(zeichnung) == _wurzel_oben(template):
         return None
-    cx = float(zeichnung[:, 0].min() + zeichnung[:, 0].max()) / 2.0
+    # SPIEGELUNG an der waagerechten Achse, nicht Drehung.
+    #
+    # Zu tun ist genau eines: die Krone nach unten bringen, weil alle Templates
+    # mit der Wurzel nach oben liegen. Das ist die senkrechte Achse. Eine
+    # Drehung kippt die waagerechte mit und vertauscht mesial und distal.
+    #
+    # Hier stand eine 180-Grad-Drehung mit einer langen Begruendung ueber Dirks
+    # Ankerkonvention, aus der geschlossen wurde, in seinen Zeichnungen von 46,
+    # 47 und 48 liege mesial LINKS. Das war falsch: er hat "mesial" in
+    # 46_zeichnen.svg drangeschrieben, bei x=40,5 neben einer Zeichnung, die bis
+    # x=40,1 reicht - mesial liegt RECHTS, wie im Spender. Eine Schlussfolgerung
+    # gegen eine Beschriftung, und die Beschriftung war die ganze Zeit da.
+    #
+    # Die Drehung hat den Widerspruch erzeugt, den Dirk in zwei Haelften
+    # gemeldet hat: mit zusaetzlicher Kachel-Spiegelung stand "der 3. Quadrant
+    # im 4.", ohne sie wurde "mesial nach distal gezeichnet". Beides zugleich
+    # ging nicht, weil die Datei um genau eine waagerechte Spiegelung daneben
+    # lag. Diese Spiegelung hier UND `mirror:true` fuer den vierten Quadranten
+    # in TOOTH_TEMPLATE gehoeren zusammen - einzeln ist jede von beiden falsch.
     cy = float(zeichnung[:, 1].min() + zeichnung[:, 1].max()) / 2.0
-    return lambda x, y: (2.0 * cx - x, 2.0 * cy - y)
+    return lambda x, y: (x, 2.0 * cy - y)
 
 
 def flaeche_zwischen(region, von: float, bis: float, schritt: float = 0.2) -> str | None:
