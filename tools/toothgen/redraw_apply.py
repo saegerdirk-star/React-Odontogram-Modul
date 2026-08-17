@@ -83,9 +83,34 @@ def umriss_id(txt: str, ident: str) -> str:
     return aussen[0]
 
 
-def _schmales_ende_oben(P) -> bool:
-    """Liegt das schmale Ende - die Wurzel - bei kleinem y?"""
+def _wurzel_oben(P) -> bool:
+    """Zeigen die Wurzeln nach oben, also zu kleinem y?
+
+    Zuerst ueber die ZWEIGE: ein Zahn zerfaellt an seinem Wurzelende in mehrere
+    Laeufe, und die Spitzen dieses Bandes zeigen nach apikal. Das ist Anatomie
+    und keine Faustregel.
+
+    Vorher stand hier ein Breitenvergleich - schmales Ende gleich Wurzel. Am
+    Milchmolaren geht der schief: 54 misst oben 20,5 und unten 18,3, weil die
+    Wurzeln weit gespreizt sind, und der Vergleich wird zum Muenzwurf. Er hat
+    ihn verloren, 54 wurde gedreht und 55 nicht - zwei obere Milchmolaren, die
+    Dirk am selben Tag gleich gezeichnet hat. Beides kann nicht stimmen, und
+    genau daran hat er es gesehen: "54 ist komplett falsch mit der Pulpa."
+
+    Nur wo es keine Zweige gibt - die einwurzeligen Zaehne - entscheidet weiter
+    die Breite, und dort ist sie eindeutig (3,3 gegen 19,9 am Fuenfziger).
+    """
     y0, y1 = float(P[:, 1].min()), float(P[:, 1].max())
+    mittel = lambda b: sum(abs(z["spitze"] - z["gabel"]) for z in b["zweige"]) / len(b["zweige"])
+    baender = redraw.baender(P)
+    if baender:
+        # Das Band mit den LAENGSTEN Zweigen ist das Wurzelband - aber nur, wenn
+        # die auch die Laenge einer Wurzel haben. Die Hoeckerkerbe der Krone ist
+        # ebenfalls ein Band; an einem einwurzeligen Zahn ist sie das einzige,
+        # und ungeprueft gewann sie und drehte den Fuenfzehner auf den Kopf.
+        lang = max(baender, key=mittel)
+        if mittel(lang) >= 0.15 * (y1 - y0):
+            return bool(lang["spitzen_unten"])
     breit = []
     for f in (0.05, 0.15, 0.85, 0.95):
         k = redraw._kanten(P, y0 + f * (y1 - y0))
@@ -128,7 +153,7 @@ def rahmen_dreher(zeichnung, template):
     Gibt None zurueck, wenn Zeichnung und Template schon gleich herum liegen -
     der ganze Oberkiefer.
     """
-    if _schmales_ende_oben(zeichnung) == _schmales_ende_oben(template):
+    if _wurzel_oben(zeichnung) == _wurzel_oben(template):
         return None
     cx = float(zeichnung[:, 0].min() + zeichnung[:, 0].max()) / 2.0
     cy = float(zeichnung[:, 1].min() + zeichnung[:, 1].max()) / 2.0
