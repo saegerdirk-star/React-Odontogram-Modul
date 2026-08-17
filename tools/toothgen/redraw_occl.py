@@ -48,8 +48,14 @@ PLAN: dict[str, tuple[str, str]] = {
     "44_occl": ("44", "34_occl"), "45_occl": ("45", "34_occl"),
     "46_occl": ("46", "46_occl"), "47_occl": ("47", "46_occl"),
     "48_occl": ("48", "46_occl"),
-    "54_occl": ("54", "14_occl"), "55_occl": ("55", "16_occl"),
-    "84_occl": ("84", "34_occl"), "85_occl": ("85", "46_occl"),
+    # Die Milchmolaren nehmen den MOLAREN als Spender, nicht den Praemolaren -
+    # auch der erste. Dirk, 17.08.2026: "84 und 54 haben das Template vom
+    # Praemolaren, richtig? Da wuerde ich vorschlagen, dass wir das von 85 / 55
+    # nutzen." Ein erster Milchmolar ist ein Molar; sein Fissurenmuster ist
+    # keines mit zwei Hoeckern. Dieselbe Korrektur hatte er in der
+    # Seitenansicht schon einmal angesagt.
+    "54_occl": ("54", "16_occl"), "55_occl": ("55", "16_occl"),
+    "84_occl": ("84", "46_occl"), "85_occl": ("85", "46_occl"),
 }
 
 
