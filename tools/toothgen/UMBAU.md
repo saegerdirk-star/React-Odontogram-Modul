@@ -1,83 +1,77 @@
 # Anatomie-Umbau: Stand und naechste Schritte
 
-Branch `feat/anatomie-neuzeichnung`, abgezweigt von `6f40991` (Version 2.13.1).
-Stand 16.08.2026, 21:15.
+Branch `feat/anatomie-neuzeichnung`. Stand 17.08.2026, Abend.
 
-## Wo wir stehen
+## SOFORT LESEN: hier geht es weiter
 
-**Das Werkzeug traegt, das Ergebnis fehlt.** Drei Commits, und **kein einziges
-Template im Repo ist angefasst**. Der bisherige Ertrag ist ein Probelauf an 11,
-der nach `/tmp/` ging.
+**40 Templates sind fertig erzeugt und liegen in `/tmp/Neu`** - 16 bleibende
+Seitenansichten, 10 Milchzaehne, 14 Kauflaechen. **Kein einziges ist im Repo.**
+Erzeugt werden sie mit zwei Aufrufen, beide wiederholbar:
 
-Gruene Grundlinie vor dem Umbau, auf diesem Branch gemessen:
+```
+python3 tools/toothgen/redraw_alle.py /tmp/Neu     # 26 Seitenansichten
+python3 tools/toothgen/redraw_occl.py  /tmp/Neu    # 14 Kauflaechen
+```
 
-| | |
-|---|---|
-| `npm test` | 1976 gruen, 1 uebersprungen |
-| `uv run tools/toothgen/verify.py` | All checks passed |
-| `uv run tools/toothgen/check_roundtrip.py` | 4516 Pfade, Abweichung 0,0000 |
+Beide Skripte tragen ihren Plan als Tabelle (`PLAN`): je Ziel die Zeichnung und
+den SPENDER, von dem die rund 200 klinischen Ebenen kommen. Dauer zusammen etwa
+vier Minuten.
 
-Die Zeichnungen liegen in `~/dev/Odontogram-Anatomie` (eigenes Repo, privater
-Remote). Der Zeichenablauf steht dort in `ANLEITUNG.md`.
+Der Modellumbau selbst ist NICHT begonnen. Er ist als EIN Block zu machen,
+sonst muessen die Digests zweimal eingefroren werden. Reihenfolge:
 
-## 16 ist durchgelaufen (17.08.)
+1. **Die 40 Dateien nach `src/assets/teeth-svgs`.** Dabei ausmustern: `31.svg`,
+   `71.svg`, `74.svg`, `75.svg`, `34_occl.svg` - ihre Positionen haben jetzt
+   eigene Templates.
+2. **`src/odontogram.ts`**: `TOOTH_TEMPLATE` auf je eine Position (11-18 und
+   41-48, Gegenseite weiter durch `mirror`), `PRIMARY_TEMPLATE` auf 51-55 und
+   81-85, `OCCLUSAL_TEMPLATE` auf die 14. Der untere Milcheckzahn lief bisher
+   auf dem OBEREN (53) - das ist der auffaelligste Einzelfall.
+3. **`src/perioGraphic.ts`**: die `TemplateNo`-Union erweitern. Der Compiler
+   erzwingt danach beide Ankerkarten (`CEJ_Y`, `IMPLANT_CEJ_Y`) - je Template
+   ein Wert, gemessen an der koronalen Kante von `gum-base`.
+4. **`tools/toothgen/spec.py`**: Eintraege fuer die neuen Templates in `SPECS`
+   und `PRIMARY_SPECS`, `col_px` gegen `grid-template-columns` in
+   `src/index.css` pruefen (verify.py tut das).
+5. **Digests EINMAL neu einfrieren** in `verify.py`, dann `npm test`,
+   `npx tsc -b --noEmit`, `check_roundtrip.py`, `npm run build`.
+6. **Die Parity-Fingerabdruecke** aendern sich zwangslaeufig - sie haengen an
+   den alten Templates. Die Verschiebung VORLEGEN, nicht stillschweigend neu
+   einfrieren; sonst ist genau die Pruefung wertlos, die vor unbemerkten
+   Aenderungen schuetzt.
+7. **Die Boegen zusammengesetzt ansehen lassen.** Alle ernsten Fehler dieses
+   Tages haben so angefangen, und kein einziger haette ein Tor rot gemacht.
 
-Sechs Fehler, fuenf davon still. Der Befund im Einzelnen steht im Commit
-`286f983`; hier nur, was daraus fuer die uebrigen Zaehne folgt.
+## Die Regel, aus der alles andere folgt
 
-**Der Umriss sitzt.** Median 0,04 Einheiten Abstand zu Dirks Kontur,
-Ordnungsspruenge 0 (vorher 7). Drei Wurzeln, richtige Krone.
+**Was gezeichnet ist, wird EINGESETZT. Gewarpt wird nur, was niemand zeichnet.**
 
-**Die Pulpa nicht.** Sie liegt im Zahn und haengt zusammen, aber ihre Kanaele
-sitzen noch nicht in ihren Wurzeln - der mittlere ist zu breit und beult nach
-distal aus. Das ist der naechste Schritt.
+Erst galt sie fuer die Pulpa, dann fuer den Zahnumriss, dann okklusal. Jeder
+Fehler dieses Tages, der etwas gekostet hat, kam daher, dass sie an einer Stelle
+noch nicht galt. Umgekehrt gilt sie NICHT unbegrenzt: das Veneer sollte nach
+demselben Muster abgeleitet werden und wurde dadurch schlechter - siehe
+`veneer_aus`.
 
-**Dabei eine Frage an Dirk, die vieles einfacher machen koennte:** Dirk hat die
-Pulpa GEZEICHNET. Fuer `tooth-healthy-pulp` liesse sie sich direkt einsetzen,
-statt die alte Pulpa auf sie zu ziehen. Ein Feld braucht es dann immer noch fuer
-die abgeleiteten Ebenen - Pulpitis, Wurzelfuellung, Stifte -, aber die koennten
-aus SEINER Form abgeleitet werden statt aus der alten gewarpt. Das ist eine
-Entscheidung, keine Rechnung.
+## Was heute gemessen wurde und was es wert war
 
-**Die Dehnungspruefung taugt nicht als Kriterium.** Gemessen: die Variante ohne
-jeden Anker hatte die gleichmaessigste Dehnung von allen (0,98 bis 1,01) und die
-Furkation 15 Einheiten daneben. Die Anker sind ja gerade dazu da, eine
-Ungleichmaessigkeit zu erzwingen. Was zaehlt:
+Die harten Vertraege - id, class, opacity, `data-active`, viewBox,
+Gradientenzahl - waren an jedem einzelnen Fehler dieses Tages GRUEN. Sie sehen
+die klinisch wichtigen Fehler nicht. Was sie sieht:
 
-1. **Abstand des geschriebenen Pfades zu Dirks Kontur** - dicht abgetastet, und
-   zwar der PFAD, nicht das Feld. Am Feld gemessen kam Median 0,016 heraus,
-   waehrend der Zahn sichtbar zerrissen war.
-2. **Ordnungsspruenge** - laeuft der Bildpunkt auf der Zielkontur monoton
-   weiter? Das ist die Zahl, die das Verheddern der Wurzeln sieht; jeder
-   Abstandsmedian bleibt dabei klein, weil jeder Punkt nahe an IRGENDEINER
-   Stelle der Zielkontur liegt.
-3. **Faltung** - Jacobi-Determinante des Feldes, INNERHALB der Kontur
-   abgetastet. Ausserhalb faltet ein Spline immer, das sagt nichts.
-4. **Sitzt der Stift im palatinalen Kanal?** Oben palatinal, unten distal.
-5. **Bild ansehen** und Dirk zeigen.
+* **Ueberstand** - wie weit ragt eine Ebene ueber den Zahn hinaus. Fand die
+  Frontzaehne mit 63 Einheiten Ausreisser und die Milchmolaren mit 68.
+* **Ordnungsspruenge** - laeuft der Bildpunkt monoton auf der Zielkontur
+  weiter? Sieht das Verheddern der Wurzeln, das jeder Abstandsmedian verdeckt.
+* **Faltung** - Jacobi-Determinante INNERHALB der Kontur.
 
-## Danach, der Reihe nach
+Und drei Warnungen zu den Messungen selbst, alle heute bezahlt:
 
-1. **Die uebrigen 14 bleibenden Zaehne.** Ohne Anker: 11, 12, 13, 15, 41, 42,
-   43, 44, 45. Mit Ankern: 14, 16, 17, 18, 46, 47, 48.
-2. **Die 10 Milchzaehne.** Templates 51-55, 71, 74, 75; Zuordnung der Positionen
-   siehe `PRIMARY_TEMPLATE` in `src/odontogram.ts`.
-3. **Die 14 Kauflaechen** - und dafuer gibt es **noch kein Verfahren**. Ihr
-   Umriss ist geschlossen und rund, ohne Wurzeln und ohne Zervikallinie; die
-   Zuordnung ueber die Hoehe greift dort nicht. Fuer die Fissuren gibt es eine
-   radiale Uebertragung (`fissuren_uebertragen.py` im Zeichnungs-Repo), fuer den
-   Umriss noch nichts.
-4. **Modelaenderungen** (Verhalten, nicht nur Geometrie):
-   * eigene Templates fuer **18**, **43** und die unteren Praemolaren - dort
-     bedient ein geteiltes Template messbar verschiedene Zaehne
-   * die **vier Milchzahn-Kauflaechen** in den Code: `TEMPLATES_OCCL`
-     erweitern, eine Zuordnung Position -> Milchzahn-Okklusaltemplate,
-     `addRowOccl` auf den Zustand schauen lassen, Nachladen wie
-     `syncToothTemplate`. Fuenfteilige Liste in `ANLEITUNG.md`.
-   * **`spec.py` nachfuehren**: zwei Muster in den Wurzelanteilen deuten darauf
-     hin, dass die Normwerte und nicht die Zeichnungen nachzuziehen sind.
-   * **Digests neu einfrieren** in `verify.py` - einmal fuer alles, nicht pro
-     Teillieferung.
+* Eine Kennzahl, die ihr Ziel nicht kennt, macht Fehler, die es nicht gibt.
+  "Wie viel der Veneerkante liegt auf der Kontur" hatte den Sollwert null und
+  wurde als Mangel gelesen.
+* `polygon()` liest ein `d` mit zwei Teilpfaden als EINEN Ring, und ein
+  Innen/Aussen-Test auf Randpunkten ist ein Muenzwurf.
+* Wo eine Messung ueberrascht, erst die Messung pruefen.
 
 ## Kauflaechen: was eingesetzt wird und was abgeleitet gehoert
 
