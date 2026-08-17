@@ -492,6 +492,34 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = 
                 raise ValueError(f"{k}: Kammer nicht eingesetzt")
             unberuehrt.add(k)
 
+        # Die GESUNDE Pulpa ist durchgehend blassrosa.
+        #
+        # Dirk, 17.08.2026: "Ich denke, das dunkle Rot ist die grafische Anzeige
+        # der Pulpitis, ob jetzt reversibel oder irreversibel. Ich moechte alle
+        # 'gesunden' Pulpen komplett in der blassrosa Farbe."
+        #
+        # Er hat es an der Kammer gesehen, die ich am Morgen auf seinen Wunsch
+        # flaechig gefuellt hatte - und zwar in `tooth-healthy-pulp-1`, dem
+        # dunkleren Rot des Templates. Ein Zahn ohne Befund sah damit aus, als
+        # haette er eine Pulpitis. Die Entzuendung hat ihre eigenen, schaltbaren
+        # Ebenen (`tooth-inflam-pulp-base-1/2`, #ffa46a und #ff422a); ein
+        # zweiter Rotton in der gesunden Pulpa konkurriert damit.
+        #
+        # Ueber die FUELLUNG, nicht ueber das Weglassen der Ebene: id, Deckkraft
+        # und class bleiben, und der Fingerabdruck kennt nur diese drei. Neben-
+        # ertrag: die vier einwurzeligen Templates (11, 12, 13, 31) fuehren nur
+        # EINEN Pulpapfad und hatten das dunklere Rot noch nie - jetzt stimmen
+        # sie mit den uebrigen ueberein, ohne dass ihnen eine id hinzugefuegt
+        # werden muesste.
+        blass = re.search(r'<path[^>]*\sid="' + re.escape(ziel) + r'"[^>]*style="[^"]*?fill:\s*([^;"]+)',
+                          txt)
+        if blass:
+            for i, _ in elemente_von(txt, "tooth-healthy-pulp"):
+                if i == ziel:
+                    continue
+                txt = re.sub(r'(<path[^>]*\sid="' + re.escape(i) + r'"[^>]*style="[^"]*?fill:\s*)[^;"]+',
+                             lambda m: m.group(1) + blass.group(1).strip(), txt, count=1)
+
     p_ids = set(pulpa_ebenen(txt)) if pulpa_feld else set()
 
     # Stifte: je Ebene eine eigene starre Abbildung, aus ihrer eigenen Achse.
