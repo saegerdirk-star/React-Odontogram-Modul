@@ -303,21 +303,21 @@ select:focus{
 }
 .upper-arch{
   grid-template-columns:
-    minmax(28px, 63px) minmax(28px, 63px) minmax(28px, 72px)
-    minmax(28px, 51px) minmax(28px, 52px) minmax(28px, 54px)
-    minmax(28px, 49px) minmax(28px, 62px)
-    minmax(28px, 62px) minmax(28px, 49px)
-    minmax(28px, 54px) minmax(28px, 52px) minmax(28px, 51px)
-    minmax(28px, 72px) minmax(28px, 63px) minmax(28px, 63px);
+    minmax(28px, 54px) minmax(28px, 58px) minmax(28px, 62px)
+    minmax(28px, 35px) minmax(28px, 39px) minmax(28px, 39px)
+    minmax(28px, 36px) minmax(28px, 39px) minmax(28px, 39px)
+    minmax(28px, 36px) minmax(28px, 39px) minmax(28px, 39px)
+    minmax(28px, 35px) minmax(28px, 62px) minmax(28px, 58px)
+    minmax(28px, 54px);
 }
 .lower-arch{
   grid-template-columns:
-    minmax(28px, 75px) minmax(28px, 75px) minmax(28px, 75px)
-    minmax(28px, 51px) minmax(28px, 51px) minmax(28px, 54px)
-    minmax(28px, 40px) minmax(28px, 40px)
-    minmax(28px, 40px) minmax(28px, 40px)
-    minmax(28px, 54px) minmax(28px, 51px) minmax(28px, 51px)
-    minmax(28px, 75px) minmax(28px, 75px) minmax(28px, 75px);
+    minmax(28px, 58px) minmax(28px, 61px) minmax(28px, 66px)
+    minmax(28px, 41px) minmax(28px, 34px) minmax(28px, 37px)
+    minmax(28px, 32px) minmax(28px, 28px) minmax(28px, 28px)
+    minmax(28px, 32px) minmax(28px, 37px) minmax(28px, 34px)
+    minmax(28px, 41px) minmax(28px, 66px) minmax(28px, 61px)
+    minmax(28px, 58px);
 }
 /* Engine-owned multi-tooth bridge-span overlay. Absolutely positioned so it does
    not consume a grid cell; sits above the tiles but never intercepts pointer
@@ -505,39 +505,76 @@ select:focus{
    the lower incisor and canine by their 36 px height difference. */
 .tooth-tile.lower-row.side-view .tooth-svg{align-items:flex-start}
 .tooth-tile.occl-view .tooth-svg{height:80px; align-items:center}
-.tooth-tile.occl-view .tooth-svg svg{width:64px;height:64px}
+/* Die Kauflaeche folgt ihrer SPALTE, nicht einem festen Mass.
+   Sie stand auf 64 px, was ging, solange jede Spalte um die 50 bis 75 px breit
+   war. Seit die Spalten aus den gezeichneten Kronenbreiten kommen (20 bis
+   58 px, damit sich die Nachbarn an den Kontaktpunkten beruehren), schoben sich
+   die Kauflaechen uebereinander und ihre undurchsichtigen Baender malten ueber
+   den Nachbarn - die beiden Kauflaechen-Reihen zerfielen. Die Seitenansicht
+   darf ueberstehen, weil sie ausserhalb der Krone leer ist; eine Kauflaeche ist
+   das nicht. */
+/* Alle Kauflaechen gleich breit, und zwar so breit, dass zwei benachbarte
+   Seitenzaehne einander nie ueberlappen.
+   Dirk, 17.08.2026: "Skaliere sie so, dass sie gut passen. Die Kauflaechen
+   duerfen ruhig alle gleich gross sein."
+   41 px ist der engste Abstand zweier benachbarter Seitenzaehne im Bogen
+   (zwischen 15/14) - eine Regel, kein geschaetzter Wert. Der Rahmen ist beim
+   Erzeugen auf die gezeichnete Kauflaeche zugeschnitten, also ist die Hoehe die
+   des jeweiligen Zahns; gleich gross heisst gleich BREIT, nicht in eine Form
+   gepresst. Drei Anlaeufe vorher gingen schief, weil ich an der Groesse
+   geschraubt habe statt am Rahmen: 79 px breite Rahmen in 27 px breiten Spalten
+   malten mit ihren undurchsichtigen Baendern ueber beide Nachbarn. */
+.tooth-tile.occl-view .tooth-svg svg{width:auto;height:50.2px;flex:0 0 auto;overflow:hidden}
+/* `overflow:hidden` NUR auf der Kauflaeche, gegen die Regel eine Zeile weiter
+   oben - und das ist der Punkt, an dem sich die beiden Ansichten unterscheiden.
+   In der Seitenansicht MUSS das Zahnfleisch ueber den Rahmen hinausreichen,
+   sonst laeuft die Gingiva nicht als eine Linie durch den Bogen und die Papille
+   trifft das Gelenk nicht; deshalb steht dort `overflow:visible`. Eine
+   Kauflaeche hat keine Papille und muss nichts zum Nachbarn hinueberreichen.
+   Ihr Rahmen ist beim Erzeugen auf die gezeichnete Kauflaeche zugeschnitten,
+   also schneidet der Browser das gelbe Band genau auf deren Breite zu und der
+   Nachbarzahn wird nicht mehr verdeckt.
+   Dirk, 17.08.2026: "Wenn du die gelbe Flaeche um die Kauflaechen auf die
+   Breite der Kauflaechen reduzierst, wird der Nachbarzahn nicht mehr davon
+   ueberdeckt." */
 /* Emitted by tools/toothgen/build.py — do not round these to whole pixels.
    Every template is drawn at the SAME scale (1.62 px per unit), and that is
    what puts the occlusal plane, the bone level and the gingival crest of
    sixteen different graphics on one line. Rounding the two sides independently
    gives each template a slightly different scale, `preserveAspectRatio` centres
    the shortfall, and every shared line across the arch steps at every tile. */
-.tooth-tile.tpl-11 .tooth-svg svg{width:64.31px;height:131.06px}
-.tooth-tile.tpl-12 .tooth-svg svg{width:64.31px;height:128.14px}
-.tooth-tile.tpl-31 .tooth-svg svg{width:64.31px;height:125.39px}
-.tooth-tile.tpl-13 .tooth-svg svg{width:65.29px;height:138.67px}
-.tooth-tile.tpl-14 .tooth-svg svg{width:64.48px;height:144.83px}
-.tooth-tile.tpl-15 .tooth-svg svg{width:64.48px;height:132.84px}
-.tooth-tile.tpl-16 .tooth-svg svg{width:69.50px;height:141.43px}
-.tooth-tile.tpl-17 .tooth-svg svg{width:69.50px;height:140.45px}
-.tooth-tile.tpl-46 .tooth-svg svg{width:69.50px;height:144.34px}
+.tooth-tile.tpl-11 .tooth-svg svg{width:64.31px;height:131.38px}
+.tooth-tile.tpl-12 .tooth-svg svg{width:64.31px;height:132.95px}
+.tooth-tile.tpl-13 .tooth-svg svg{width:65.29px;height:141.57px}
+.tooth-tile.tpl-14 .tooth-svg svg{width:64.48px;height:145.62px}
+.tooth-tile.tpl-15 .tooth-svg svg{width:64.48px;height:134.06px}
+.tooth-tile.tpl-16 .tooth-svg svg{width:69.50px;height:147.79px}
+.tooth-tile.tpl-17 .tooth-svg svg{width:69.50px;height:143.76px}
+.tooth-tile.tpl-18 .tooth-svg svg{width:69.50px;height:141.59px}
+.tooth-tile.tpl-41 .tooth-svg svg{width:64.31px;height:124.74px}
+.tooth-tile.tpl-42 .tooth-svg svg{width:64.31px;height:130.26px}
+.tooth-tile.tpl-43 .tooth-svg svg{width:65.29px;height:139.64px}
+.tooth-tile.tpl-44 .tooth-svg svg{width:64.48px;height:134.93px}
+.tooth-tile.tpl-45 .tooth-svg svg{width:64.48px;height:131.17px}
+.tooth-tile.tpl-46 .tooth-svg svg{width:69.50px;height:147.40px}
+.tooth-tile.tpl-47 .tooth-svg svg{width:69.50px;height:137.36px}
+.tooth-tile.tpl-48 .tooth-svg svg{width:69.50px;height:135.14px}
 /* primary dentition — mounted in place of the successor's template while a
    tooth is charted as a milk tooth (PRIMARY_TEMPLATE in odontogram.ts) */
-.tooth-tile.tpl-51 .tooth-svg svg{width:64.31px;height:107.08px}
-.tooth-tile.tpl-52 .tooth-svg svg{width:64.31px;height:104.65px}
-.tooth-tile.tpl-53 .tooth-svg svg{width:65.29px;height:114.05px}
-.tooth-tile.tpl-54 .tooth-svg svg{width:64.48px;height:115.18px}
-.tooth-tile.tpl-55 .tooth-svg svg{width:69.50px;height:117.13px}
-.tooth-tile.tpl-71 .tooth-svg svg{width:64.31px;height:102.38px}
-.tooth-tile.tpl-74 .tooth-svg svg{width:69.50px;height:116.80px}
-.tooth-tile.tpl-75 .tooth-svg svg{width:69.50px;height:117.94px}
-/* The lower primary canine is not drawn separately — it is template 53 shown
-   about a tenth smaller, which is the observed difference between the arches
-   and saves a drawing that would differ in nothing else. The origin is the
-   OCCLUSAL PLANE, not the tile edge: every template puts that plane 7.5 units
-   from the viewBox edge, which is 12.1px at this tile size, and scaling about
-   the tile edge instead lifted the two canines 1.3px clear of the arch. */
-.tooth-tile.lower-row.tpl-53 .tooth-svg svg{transform:scale(.9);transform-origin:center 12.1px}
+.tooth-tile.tpl-51 .tooth-svg svg{width:64.31px;height:114.16px}
+.tooth-tile.tpl-52 .tooth-svg svg{width:64.31px;height:102.17px}
+.tooth-tile.tpl-53 .tooth-svg svg{width:65.29px;height:120.24px}
+.tooth-tile.tpl-54 .tooth-svg svg{width:64.48px;height:111.00px}
+.tooth-tile.tpl-55 .tooth-svg svg{width:69.50px;height:111.33px}
+.tooth-tile.tpl-81 .tooth-svg svg{width:64.31px;height:105.14px}
+.tooth-tile.tpl-82 .tooth-svg svg{width:64.31px;height:104.62px}
+.tooth-tile.tpl-83 .tooth-svg svg{width:65.29px;height:119.60px}
+.tooth-tile.tpl-84 .tooth-svg svg{width:69.50px;height:109.04px}
+.tooth-tile.tpl-85 .tooth-svg svg{width:69.50px;height:120.80px}
+/* The lower primary canine used to be template 53 shown a tenth smaller — one
+   drawing standing in for both arches. Dirk drew 83 himself on 2026-08-17, so
+   the scale rule that stood here is gone: it would now shrink his drawing on
+   top of the size it was drawn at. */
 .tooth-tile.wisdom-hidden{opacity:.45; pointer-events:none}
 .tooth-tile.wisdom-hidden .tooth-svg svg{opacity:0}
 .tooth-tile.occl-hidden{display:none !important}

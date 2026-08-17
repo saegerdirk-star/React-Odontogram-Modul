@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.13.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.14.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -396,22 +396,31 @@ export default function OdontogramClient() {
 | **الأسنان الدائمة** | |
 | `11.svg` | 11, 21 |
 | `12.svg` | 12, 22 |
-| `31.svg` | 31, 32, 41, 42 |
-| `13.svg` | 13, 23, 33, 43 (الأنياب) |
+| `13.svg` | 13, 23 |
 | `14.svg` / `14_occl.svg` | 14, 24 |
-| `15.svg` | 15, 25, 34, 35, 44, 45 |
+| `15.svg` / `15_occl.svg` | 15, 25 |
 | `16.svg` / `16_occl.svg` | 16, 26 |
-| `17.svg` | 17, 18, 27, 28 |
-| `46.svg` | 36, 37, 38, 46, 47, 48 |
+| `17.svg` / `17_occl.svg` | 17, 27 |
+| `18.svg` / `18_occl.svg` | 18, 28 |
+| `41.svg` | 41, 31 |
+| `42.svg` | 42, 32 |
+| `43.svg` | 43, 33 |
+| `44.svg` / `44_occl.svg` | 44, 34 |
+| `45.svg` / `45_occl.svg` | 45, 35 |
+| `46.svg` / `46_occl.svg` | 46, 36 |
+| `47.svg` / `47_occl.svg` | 47, 37 |
+| `48.svg` / `48_occl.svg` | 48, 38 |
 | **الأسنان اللبنية** | |
 | `51.svg` | 51, 61 |
 | `52.svg` | 52, 62 |
-| `53.svg` | 53, 63, 73, 83 (الأنياب اللبنية) |
+| `53.svg` | 53, 63 |
 | `54.svg` | 54, 64 |
 | `55.svg` | 55, 65 |
-| `71.svg` | 71, 72, 81, 82 (القواطع اللبنية) |
-| `74.svg` | 74, 84 |
-| `75.svg` | 75, 85 (الأرحاء اللبنية) |
+| `81.svg` | 81, 71 |
+| `82.svg` | 82, 72 |
+| `83.svg` | 83, 73 |
+| `84.svg` | 84, 74 |
+| `85.svg` | 85, 75 |
 
 يُرسم السن المسجَّل كسن لبني من قالب خاص به يحل محل القالب الدائم؛ تُدار القوالب الدائمة 180 درجة للفك السفلي وتُعكس أفقيًا للجهة اليسرى، وتتبع القوالب اللبنية التخطيط نفسه.
 

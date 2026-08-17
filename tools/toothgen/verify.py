@@ -16,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import roots  # noqa: E402
-from build import ASSETS, SOURCE, curve_extent, tooth_base_d  # noqa: E402
+from build import ASSETS, SOURCE, SPENDER, curve_extent, tooth_base_d  # noqa: E402
 from spec import PRIMARY_SPECS, SPECS, display_targets  # noqa: E402
 
 TOL_FRAC = 0.015
@@ -449,7 +449,11 @@ def main(argv):
     if which in ("primary", "all"):
         specs += PRIMARY_SPECS
 
-    out_dir = Path(argv[1]) if len(argv) > 1 else ASSETS
+    # Gemessen wird der SPENDER-Satz, nicht das Ausgelieferte. `SPECS`
+    # beschreibt, was `build.py` aus den Schumacher-Konturen baut; die
+    # ausgelieferten Templates sind seit dem Umzeichnen Dirks Zeichnungen,
+    # und deren Vertrag steht in verify_redraw.py.
+    out_dir = Path(argv[1]) if len(argv) > 1 else SPENDER
     failures = []
     occl_offsets = []
 
@@ -641,7 +645,11 @@ def main(argv):
 
     check_occlusal(out_dir, failures)
     check_fillings(out_dir, failures)
-    check_columns(specs, failures)
+    # `check_columns` NICHT mehr hier: die Spalten sind eine Eigenschaft des
+    # AUSGELIEFERTEN Satzes, seit sie aus den gezeichneten Kronenbreiten kommen
+    # (redraw_plan.SPALTEN). Das Zahnfleisch der Spender wird beim Umzeichnen
+    # ohnehin verworfen und neu gezeichnet. Geprueft wird in verify_redraw.py,
+    # und zwar strenger: Spalte gegen Gitter UND gegen die Kronenbreite.
 
     if occl_offsets:
         vals = [v for _, v in occl_offsets]
