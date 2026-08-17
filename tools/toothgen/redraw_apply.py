@@ -211,11 +211,14 @@ def veneer_aus(alt_zahn, neu_zahn, alt_veneer):
     Sechsundvierzigers quer durch die Krone lief; eine Zeilenkonstruktion kann
     ein spitzes Ende nicht abschliessen.
 
-    Richtig waere ein VERSATZ: die Form der Vorlage um denselben Abstand nach
-    innen von Dirks Kontur, den sie von der alten hatte. Damit bleiben BEIDE
-    Eigenschaften erhalten, die diese Konstruktion verliert - der eingerueckte
-    Rand ringsum und der gerundete Abschluss an der Spitze. Andere Konstruktion
-    als die Kammer, und sie ist noch nicht gebaut.
+    Und dann war gar nichts zu tun. Richtig gemessen - nicht "wie viel liegt auf
+    der Kontur", sondern "wie breit ist der eingerueckte Rand" - haelt die
+    gewarpte Form ihn zu 59 bis 85 Prozent (Median 68). Er schrumpft, weil Dirks
+    Kronen anders geschnitten sind und das Feld ihn mitzieht, aber er ist da.
+    Die 0 Prozent, mit denen die Sache anfing, waren die richtige Antwort auf
+    eine falsche Frage: fuer ein eingerruecktes Veneer IST null der Sollwert.
+
+    Bleibt stehen als Warnung, nicht als Werkzeug.
     """
     ya0, ya1 = float(alt_zahn[:, 1].min()), float(alt_zahn[:, 1].max())
     yn0, yn1 = float(neu_zahn[:, 1].min()), float(neu_zahn[:, 1].max())
