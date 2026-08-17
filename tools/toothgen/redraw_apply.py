@@ -415,11 +415,31 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = 
                                     stufen=stufen or STUFEN.get(template, 40))
     zahn_feld = redraw.Spline(A, B, glaettung=1e-3)
 
+    # Der GEZEICHNETE Umriss wird eingesetzt, nicht nachgebildet.
+    #
+    # Dirk, 17.08.2026: "46 Kontur, warum nachgezeichnet, warum nicht die blaue
+    # Linie nutzen. Es ist doch eine korrekte Kontur vorhanden. Wo ist dein
+    # Denkfehler?" - Der Denkfehler war, das Template auf seine Kontur zu ziehen
+    # und das Ergebnis dann gegen genau diese Kontur zu messen. Dieser Umweg
+    # kann nur verlieren: die Kauflaeche kam als Sehne heraus, die Kronenlinie
+    # von 14, 15, 16 und 17 verstuemmelt. `tooth-base` IST seine Zeichnung.
+    #
+    # Das Feld wird weiterhin gebraucht, aber nur noch fuer das, wofuer es je
+    # gedacht war - die rund zweihundert Ebenen, die niemand nachzeichnet.
+    # Dieselbe Entscheidung wie bei der Pulpa, nur eine Ebene frueher.
+    unberuehrt: set[str] = {"tooth-base"}
+    txt = re.sub(r'(<path[^>]*\sid="tooth-base"[^>]*\sd=")[^"]+(")',
+                 lambda m: m.group(1) + umriss_d + m.group(2), txt, count=1)
+    if umriss_d not in txt:
+        txt = re.sub(r'(<path[^>]*\sd=")[^"]+("[^>]*\sid="tooth-base")',
+                     lambda m: m.group(1) + umriss_d + m.group(2), txt, count=1)
+    if umriss_d not in txt:
+        raise ValueError("tooth-base: Pfad nicht ersetzt")
+
     # Zweites Feld fuer die Pulpa: die pulpanahen Ebenen folgen Dirks
     # gezeichneter Kammer, nicht dem Aussenumriss. Ohne das traegt der Zahn
     # weiterhin die alte Pulpa, nur mitgezogen.
     pulpa_feld = None
-    unberuehrt: set[str] = set()
     pz = ZEICHNUNGEN / f"{zahn}_pulpa_zeichnen.svg"
     if pz.exists():
         gez = re.findall(r'<path[^>]*\sd="([^"]+)"',
