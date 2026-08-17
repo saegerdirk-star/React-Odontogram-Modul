@@ -79,6 +79,40 @@ Ungleichmaessigkeit zu erzwingen. Was zaehlt:
    * **Digests neu einfrieren** in `verify.py` - einmal fuer alles, nicht pro
      Teillieferung.
 
+## Beim Zusammenbau anzusehen: Neigungen
+
+Dirk, 17.08.2026: "12 kippt mit der Wurzel nach mesial bzw. die Schneidekante
+ist nicht voellig horizontal. Da muessen wir darauf achten, wenn alles
+zusammengesetzt ist."
+
+Einzeln faellt so etwas kaum auf, im Bogen nebeneinander sofort. Damit es beim
+Zusammenbau nicht beim Eindruck bleibt, hier die Messung an allen 16 bleibenden
+Templates. Die Kante ist die Ausgleichsgerade durch die untersten 5 Prozent der
+Kontur; der Versatz ist der Abstand zwischen der Mitte der Wurzelspitze und der
+Mitte der Krone, in Prozent der Zahnbreite. **Beides sind Kantenmasse, keine
+Achsenmasse** - die Achse eines Zahns aus dem Umriss abzuleiten geht schief,
+sobald eine Wurzel seitlich steht (siehe die Warnung weiter unten).
+
+  Tpl   Kante      Versatz        Tpl   Kante      Versatz
+   11    1,4 Grad    8,0 %         41    0,1 Grad   -5,4 %
+   12    3,6 Grad   -8,4 %  <--    42   -1,0 Grad   18,5 %
+   13   -1,6 Grad  -10,5 %         43   -0,5 Grad    8,1 %
+   14   -1,9 Grad   -0,3 %         44    1,5 Grad    9,3 %
+   15   -0,2 Grad   20,4 %  <--    45    4,0 Grad   20,1 %  <--
+   16    2,9 Grad   -1,0 %         46   -2,5 Grad    3,0 %
+   17    1,5 Grad    5,8 %         47   -1,1 Grad   -2,7 %
+   18    2,1 Grad   -6,3 %         48   -1,4 Grad   -8,5 %
+
+12 ist mit 3,6 Grad die zweitschiefste Kante, und der Versatz zeigt bei ihm nach
+der anderen Seite als bei seinem Nachbarn 11 (-8,4 gegen +8,0 Prozent) - im
+Bogen stehen die beiden Wurzeln damit auseinander. **15 und 45 haben mit 20
+Prozent den groessten Versatz ueberhaupt**, 45 zusaetzlich die schiefste Kante;
+die beiden sind also mindestens so genau anzusehen wie 12.
+
+Was davon Anatomie ist und was eine schiefe Unterlage, entscheidet Dirk am
+zusammengesetzten Bogen. Die Zahlen sind nur dazu da, dass die Frage nicht
+verlorengeht und dass eine Korrektur nachher messbar ist.
+
 ## Was nicht verlorengehen darf
 
 **Die Frontzahn-Differenz ist von rund 10 auf 13,9 mm gewachsen.** Die
