@@ -83,6 +83,46 @@ def umriss_id(txt: str, ident: str) -> str:
     return aussen[0]
 
 
+def kammer_aus(region, schritt: float = 0.2) -> str | None:
+    """Die Pulpakammer als Pfad - der breite Teil, bevor die Kanaele abgehen.
+
+    Dirk, 17.08.2026: "Kann man nicht einfach den gesamten, breiten Bereich der
+    Pulpa, bevor die Kanaele in die Wurzel abgehen, rot einzeichnen." Kann man,
+    und es ist verlaesslicher als das Bisherige: die Kammerzeichnung des
+    Templates wurde mit dem Pulpafeld verzogen und sass kantig in einer Kammer,
+    die sie nie gesehen hat.
+
+    Die Hoehe, auf der die Kanaele zusammenlaufen, ist die Gabel des apikalen
+    Zweigbandes - dieselbe Groesse, mit der die Wurzeln einander zugeordnet
+    werden. Koronal davon ist die gezeichnete Pulpa genau EIN Lauf, und aus
+    dessen linker und rechter Kante Zeile fuer Zeile entsteht der Umriss.
+
+    Gibt None zurueck, wo es keine Kammer in diesem Sinn gibt - ein
+    einwurzeliger Zahn hat keine Gabel, und sein Template traegt darum auch
+    keine eigene Kammerebene.
+    """
+    baender = [b for b in redraw.baender(region) if b["spitzen_unten"]]
+    if not baender:
+        return None
+    gabel = baender[0]["gabel"]
+    ende = max(float(Q[:, 1].max()) for Q in redraw._alle(region))
+    if ende - gabel < schritt * 3:
+        return None
+    ys = np.arange(gabel, ende, schritt)
+    links, rechts = [], []
+    for y in ys:
+        laeufe = redraw._laeufe(redraw._kanten(region, float(y)))
+        if not laeufe:
+            continue
+        links.append((laeufe[0][0], float(y)))
+        rechts.append((laeufe[-1][1], float(y)))
+    if len(links) < 3:
+        return None
+    punkte = links + rechts[::-1]
+    return ("M" + f"{punkte[0][0]:.2f},{punkte[0][1]:.2f}"
+            + "".join(f"L{x:.2f},{y:.2f}" for x, y in punkte[1:]) + "Z")
+
+
 def pfade_von(txt: str, ident: str) -> list[str]:
     """Alle d-Attribute einer Ebene - sie kann ein <path> ODER eine <g> sein.
 
@@ -343,6 +383,22 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool) -> str:
         if eingesetzt not in txt:
             raise ValueError(f"{ziel}: Pfad nicht ersetzt")
         unberuehrt.add(ziel)
+
+        # Und die zweite Ebene der Pulpa, wo es sie gibt, wird die KAMMER -
+        # siehe kammer_aus. Bisher war das die verzogene Kammerzeichnung des
+        # Templates; sie sass kantig in einer Kammer, die sie nie gesehen hat.
+        kammer = kammer_aus(redraw.region(gez))
+        uebrig = [i for i, _ in elemente_von(txt, "tooth-healthy-pulp") if i != ziel]
+        if kammer and len(uebrig) == 1:
+            k = uebrig[0]
+            txt = re.sub(r'(<path[^>]*\sid="' + re.escape(k) + r'"[^>]*\sd=")[^"]+(")',
+                         lambda m: m.group(1) + kammer + m.group(2), txt, count=1)
+            if kammer not in txt:
+                txt = re.sub(r'(<path[^>]*\sd=")[^"]+("[^>]*\sid="' + re.escape(k) + r'")',
+                             lambda m: m.group(1) + kammer + m.group(2), txt, count=1)
+            if kammer not in txt:
+                raise ValueError(f"{k}: Kammer nicht eingesetzt")
+            unberuehrt.add(k)
 
     p_ids = set(pulpa_ebenen(txt)) if pulpa_feld else set()
 
