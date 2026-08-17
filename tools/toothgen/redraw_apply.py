@@ -40,6 +40,49 @@ def _pfad(txt: str) -> str:
     return re.search(r'\sd="([^"]+)"', txt).group(1)
 
 
+def elemente_von(txt: str, ident: str) -> list[tuple[str, str]]:
+    """Wie `pfade_von`, aber mit der id jedes Pfades."""
+    m = re.search(r'<path[^>]*\sid="' + re.escape(ident) + r'"[^>]*?/?>', txt) \
+        or re.search(r'<path[^>]*\sd="[^"]*"[^>]*\sid="' + re.escape(ident) + r'"[^>]*?/?>', txt)
+    if m:
+        d = re.search(r'\sd="([^"]+)"', m.group(0))
+        return [(ident, d.group(1))] if d else []
+    g = re.search(r'<g[^>]*\sid="' + re.escape(ident) + r'"[^>]*>', txt)
+    if not g:
+        return []
+    tiefe, out = 0, []
+    for t in re.finditer(r"<(/?)(\w+)([^>]*?)(/?)>", txt[g.end():]):
+        schliessend, tag, attrs, selbst = t.groups()
+        if tag == "g":
+            if schliessend and tiefe == 0:
+                break
+            tiefe += -1 if schliessend else (0 if selbst else 1)
+        d = re.search(r'\sd="([^"]+)"', attrs)
+        i = re.search(r'\sid="([^"]+)"', attrs)
+        if d and i and not schliessend:
+            out.append((i.group(1), d.group(1)))
+    return out
+
+
+def umriss_id(txt: str, ident: str) -> str:
+    """Die id des Pfades, der die Ebene UMRANDET - nicht ihrer Binnenzeichnung.
+
+    Am Molaren traegt `tooth-healthy-pulp` zwei Pfade: `-2` den ganzen
+    Pulpaumriss, `-1` die Zeichnung des Kammerbodens in einem anderen Rot.
+    Dirks Zeichnung gehoert in den ersten. Am Schneidezahn ist die Ebene selbst
+    der Pfad und die Frage stellt sich nicht.
+    """
+    stuecke = elemente_von(txt, ident)
+    if not stuecke:
+        raise ValueError(f"{ident} nicht gefunden")
+    polys = {i: redraw.polygon(d) for i, d in stuecke}
+    aussen = [i for i in polys
+              if not any(j != i and redraw._liegt_in(polys[i], polys[j]) for j in polys)]
+    if len(aussen) != 1:
+        raise ValueError(f"{ident}: {len(aussen)} Umrisspfade, erwartet genau einer")
+    return aussen[0]
+
+
 def pfade_von(txt: str, ident: str) -> list[str]:
     """Alle d-Attribute einer Ebene - sie kann ein <path> ODER eine <g> sein.
 
@@ -129,7 +172,10 @@ def anker(datei: Path):
 # soll, wenn sie an einem Zahn vorliegt.
 STIFT_MUSTER = re.compile(r"pin", re.I)
 
-PULPA_MUSTER = re.compile(r"(pulp|endo|parapulpal)", re.I)
+PULPA_MUSTER = re.compile(r"(pulp|endo)", re.I)
+# Parapulpaer heisst NEBEN der Pulpa - im Dentin, nicht im Kanal. Die Ebene
+# folgt deshalb dem Zahn und nicht der Pulpa.
+PARAPULPAL_MUSTER = re.compile(r"parapulpal", re.I)
 MILCH_MUSTER = re.compile(r"milktooth", re.I)
 
 
@@ -263,6 +309,7 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool) -> str:
     # gezeichneter Kammer, nicht dem Aussenumriss. Ohne das traegt der Zahn
     # weiterhin die alte Pulpa, nur mitgezogen.
     pulpa_feld = None
+    unberuehrt: set[str] = set()
     pz = ZEICHNUNGEN / f"{zahn}_pulpa_zeichnen.svg"
     if pz.exists():
         gez = re.findall(r'<path[^>]*\sd="([^"]+)"',
@@ -275,22 +322,52 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool) -> str:
         PA, PB = redraw.paare_ueber_hoehe(redraw.region(alt_d), redraw.region(gez), stufen=30)
         pulpa_feld = redraw.Spline(PA, PB, glaettung=1e-3)
 
+        # Die gezeichnete Pulpa wird EINGESETZT, nicht angenaehert (Dirk,
+        # 17.08.2026: "Da steckt eine Menge Arbeit drin"). Sie geht als
+        # Teilpfade in denselben Pfad, der den Umriss schon trug - id,
+        # data-active und style bleiben, also auch der Fingerabdruck aus id,
+        # Deckkraft und class. Beide Teilpfade laufen gleichsinnig und
+        # ueberlappen nur an der Kammerdecke; unter der Nonzero-Regel gibt das
+        # ihre Vereinigung und kein Loch.
+        #
+        # Das Feld bleibt trotzdem noetig: die abgeleiteten Ebenen - Pulpitis,
+        # Wurzelfuellung, Stifte und die Zeichnung des Kammerbodens - muessen in
+        # DIESE Form hinein, und die zeichnet niemand einzeln nach.
+        ziel = umriss_id(txt, "tooth-healthy-pulp")
+        eingesetzt = " ".join(svgpath.serialize(svgpath.to_absolute(g), 2) for g in gez)
+        txt = re.sub(r'(<path[^>]*\sid="' + re.escape(ziel) + r'"[^>]*\sd=")[^"]+(")',
+                     lambda m: m.group(1) + eingesetzt + m.group(2), txt, count=1)
+        if eingesetzt not in txt:
+            txt = re.sub(r'(<path[^>]*\sd=")[^"]+("[^>]*\sid="' + re.escape(ziel) + r'")',
+                         lambda m: m.group(1) + eingesetzt + m.group(2), txt, count=1)
+        if eingesetzt not in txt:
+            raise ValueError(f"{ziel}: Pfad nicht ersetzt")
+        unberuehrt.add(ziel)
+
     p_ids = set(pulpa_ebenen(txt)) if pulpa_feld else set()
 
     # Stifte: je Ebene eine eigene starre Abbildung, aus ihrer eigenen Achse.
+    #
+    # Wovon die Abbildung ausgeht, entscheidet die LAGE des Stiftes, nicht sein
+    # Name. Ein Wurzelstift steckt im Kanal und folgt der Pulpa. Ein PARA-
+    # pulpaerer Stift steckt daneben, im Dentin - mit dem Pulpafeld gerechnet
+    # wanderte er am Sechser um 14 Einheiten nach mesial, weil ein Spline
+    # ausserhalb seiner Stuetzstellen frei extrapoliert. Er gehoert ans
+    # Zahnfeld.
     stift_feld = {}
-    if pulpa_feld:
-        for i in p_ids:
-            if not STIFT_MUSTER.search(i):
-                continue
-            ds = pfade_von(txt, i)          # auch der Stift ist mal <g>, mal <path>
-            if ds:
-                stift_feld[i] = starr_aus(lambda x, y: pulpa_feld(x, y),
-                                          np.vstack([redraw.polygon(d) for d in ds]))
+    for i in set(pulpa_ebenen(txt)) | {i for i, _ in elemente_von(txt, "endos")}:
+        if not STIFT_MUSTER.search(i):
+            continue
+        ds = pfade_von(txt, i)              # auch der Stift ist mal <g>, mal <path>
+        if not ds:
+            continue
+        im_kanal = pulpa_feld is not None and not PARAPULPAL_MUSTER.search(i)
+        basis = (lambda x, y: pulpa_feld(x, y)) if im_kanal else (lambda x, y: zahn_feld(x, y))
+        stift_feld[i] = starr_aus(basis, np.vstack([redraw.polygon(d) for d in ds]))
 
     def feld_fuer(kette):
-        if any(k in redraw.NICHT_VERFORMEN for k in kette):
-            return None                      # Zahnfleisch, Knochen: neu gezeichnet
+        if any(k in redraw.NICHT_VERFORMEN or k in unberuehrt for k in kette):
+            return None                      # Zahnfleisch, Knochen, gezeichnete Pulpa
         for k in kette:
             if k in stift_feld:
                 return stift_feld[k]         # gerade bleiben, siehe STIFT_MUSTER
