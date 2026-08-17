@@ -569,6 +569,15 @@ def paare_ueber_hoehe(P_alt, P_neu, marken_alt=None, marken_neu=None,
     for m in ma:
         hoehen += [m - saum, m + saum]
 
+    # Zeilen NICHT dichter an die Enden legen, auch wenn es naheliegt: die
+    # Kauflaeche des Sechsundvierzigers wird als gerade Sehne gezogen, weil
+    # unterhalb der letzten Zeile nichts mehr festliegt. Gemessen wird es davon
+    # schlechter, nicht besser - mit sechs zusaetzlichen Zeilen je Ende stieg
+    # der Sechser von 2,63 auf 7,99 und bekam vier Ordnungsspruenge, der
+    # Siebener sechs. Dicht beieinander liegende Stuetzstellen mit
+    # verschiedenem x machen den Spline instabil. Der Weg dorthin fuehrt ueber
+    # die Zuordnung, nicht ueber die Aufloesung.
+
     # Zweigbaender: jede Wurzel bekommt ihre EIGENE Hoehenzuordnung, von ihrer
     # eigenen Spitze zur gemeinsamen Gabel. Sonst trifft die laengste Wurzel des
     # einen Zahns die laengste des anderen, und am oberen Sechser sind das
