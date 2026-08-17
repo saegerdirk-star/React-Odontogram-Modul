@@ -131,10 +131,27 @@ def paare(P_alt: np.ndarray, P_neu: np.ndarray,
 
 
 class Spline:
-    """Thin-Plate-Spline ueber Punktpaare. Interpoliert die Stuetzstellen exakt."""
+    """Thin-Plate-Spline ueber Punktpaare. Interpoliert die Stuetzstellen exakt.
 
-    def __init__(self, quelle: np.ndarray, ziel: np.ndarray, glaettung: float = 0.0):
+    AUSSERHALB der Stuetzstellen geht er in die Affinabbildung ueber. Ein
+    Thin-Plate-Spline waechst dort sonst unbegrenzt, und ein Zahn traegt reichlich
+    Ebenen, die ueber seinen Rand hinausreichen: Veneerraender, Bruecken- und
+    Implantatverbinder, Zahnstein, die Kronenrand-Leckage. Am Einunddreissiger
+    landeten sie bis zu 63 Einheiten neben einem 17 Einheiten breiten Zahn -
+    als Strich, der aus der Krone haengt. Dirk: "die Umrisslinie ist nicht sauber
+    an der Krone".
+
+    Der radiale Anteil wird deshalb mit dem Abstand zur naechsten Stuetzstelle
+    ausgeblendet, der affine bleibt. Innen aendert sich nichts - dort ist der
+    Abstand klein und das Gewicht 1, die Kontur wird weiterhin exakt getroffen.
+    """
+
+    def __init__(self, quelle: np.ndarray, ziel: np.ndarray, glaettung: float = 0.0,
+                 zaehmen: bool = True):
         self.Q = np.asarray(quelle, float)
+        spanne = float(max(np.ptp(self.Q[:, 0]), np.ptp(self.Q[:, 1]))) if len(self.Q) else 0.0
+        self.d0 = 0.25 * spanne if zaehmen else float("inf")
+        self.d1 = 0.70 * spanne if zaehmen else float("inf")
         n = len(self.Q)
         d2 = ((self.Q[:, None, :] - self.Q[None, :, :]) ** 2).sum(-1)
         K = np.where(d2 > 0, d2 * np.log(np.maximum(d2, 1e-12)) * 0.5, 0.0)
@@ -152,8 +169,15 @@ class Spline:
     def __call__(self, x: float, y: float):
         p = np.array([x, y], float)
         d2 = ((self.Q - p) ** 2).sum(1)
+        affin = self.W[-3] + self.W[-2] * x + self.W[-1] * y
+        nah = float(np.sqrt(d2.min()))
+        if nah >= self.d1:
+            return float(affin[0]), float(affin[1])
         U = np.where(d2 > 0, d2 * np.log(np.maximum(d2, 1e-12)) * 0.5, 0.0)
-        v = U @ self.W[:len(self.Q)] + self.W[-3] + self.W[-2] * x + self.W[-1] * y
+        radial = U @ self.W[:len(self.Q)]
+        if nah > self.d0:
+            radial = radial * 0.5 * (1.0 + np.cos(np.pi * (nah - self.d0) / (self.d1 - self.d0)))
+        v = affin + radial
         return float(v[0]), float(v[1])
 
 
@@ -246,10 +270,28 @@ def stufen_profil(P, n: int = 1200):
     nacheinander auf), spaeter 3 -> 1 (Furkation) und in der Krone noch einmal
     1 -> 2 -> 1 (die Hoeckerkerbe). Diese Folge IST der Bauplan des Zahns.
     """
-    ys = np.linspace(min(float(Q[:, 1].min()) for Q in _alle(P)) + 1e-4,
-                     max(float(Q[:, 1].max()) for Q in _alle(P)) - 1e-4, n)
+    y0 = min(float(Q[:, 1].min()) for Q in _alle(P))
+    y1 = max(float(Q[:, 1].max()) for Q in _alle(P))
+    ys = np.linspace(y0 + 1e-4, y1 - 1e-4, n)
     k = [len(_laeufe(_kanten(P, y))) for y in ys]
-    return [((ys[i] + ys[i - 1]) / 2, k[i - 1], k[i]) for i in range(1, n) if k[i] != k[i - 1]]
+    st = [((ys[i] + ys[i - 1]) / 2, k[i - 1], k[i]) for i in range(1, n) if k[i] != k[i - 1]]
+
+    # Kerben, die zu klein sind, um Anatomie zu sein, wieder herausnehmen.
+    # Am Template des Einunddreissigers gibt es auf halber Hoehe eine Delle von
+    # einer Einheit, in Dirks Zeichnung an der Schneidekante eine von 0,05 -
+    # `laufmarken` hat die beiden miteinander gepaart und damit die Zahnmitte
+    # auf die Schneidekante abgebildet. Der Umriss sass danach immer noch
+    # (Median 0,03), das Innere war zerrissen: Ebenen der Krone landeten 50
+    # Einheiten neben dem Zahn.
+    mindest = 0.025 * (y1 - y0)
+    while True:
+        for i in range(len(st) - 1):
+            if st[i + 1][0] - st[i][0] < mindest and st[i + 1][2] == st[i][1]:
+                del st[i:i + 2]
+                break
+        else:
+            break
+    return st
 
 
 def baender(P, n: int = 1600):
@@ -421,6 +463,12 @@ def laufmarken(P_alt, P_neu):
     kommt weiter aus Dirks gezeichneter SZG-Linie.
     """
     A, B = stufen_profil(P_alt), stufen_profil(P_neu)
+
+    def lage(P, y):
+        y0 = min(float(Q[:, 1].min()) for Q in _alle(P))
+        y1 = max(float(Q[:, 1].max()) for Q in _alle(P))
+        return (y - y0) / (y1 - y0)
+
     n = min(len(A), len(B))
     vorne = 0
     while vorne < n and A[vorne][1:] == B[vorne][1:]:
@@ -437,7 +485,16 @@ def laufmarken(P_alt, P_neu):
         mb.append(sum(t[0] for t in mitte_b) / len(mitte_b))
     ma += [t[0] for t in A[len(A) - hinten:]]
     mb += [t[0] for t in B[len(B) - hinten:]]
-    return ma, mb
+
+    # Zwei Marken, die auf sehr verschiedener relativer Hoehe sitzen, beschreiben
+    # nicht dieselbe Struktur. Die Paarung laeuft ueber die Reihenfolge, und wo
+    # die beiden Folgen baulich verschieden sind, ist die Reihenfolge kein
+    # Argument. Ein Viertel der Zahnhoehe Unterschied ist reichlich - die
+    # Furkation des Sechsers wandert um 0,16 und bleibt drin, die falsch
+    # gepaarten Kerben des Einunddreissigers lagen 0,32 auseinander.
+    paare = [(a, b) for a, b in zip(ma, mb)
+             if abs(lage(P_alt, a) - lage(P_neu, b)) <= 0.25]
+    return [a for a, _ in paare], [b for _, b in paare]
 
 
 def mitteln(marken_alt, marken_neu, nah: float = 0.0):
