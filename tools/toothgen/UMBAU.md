@@ -20,25 +20,41 @@ Gruene Grundlinie vor dem Umbau, auf diesem Branch gemessen:
 Die Zeichnungen liegen in `~/dev/Odontogram-Anatomie` (eigenes Repo, privater
 Remote). Der Zeichenablauf steht dort in `ANLEITUNG.md`.
 
-## Der naechste Schritt
+## 16 ist durchgelaufen (17.08.)
 
-**16 durchlaufen lassen** - dreiwurzelig, mit Ankern, der schwierigste Fall.
+Sechs Fehler, fuenf davon still. Der Befund im Einzelnen steht im Commit
+`286f983`; hier nur, was daraus fuer die uebrigen Zaehne folgt.
 
-```
-python3 -c "import sys; sys.path.insert(0,'tools/toothgen'); import redraw_apply;
-open('/tmp/16_neu.svg','w').write(redraw_apply.umzeichnen('16','16',True))"
-```
+**Der Umriss sitzt.** Median 0,04 Einheiten Abstand zu Dirks Kontur,
+Ordnungsspruenge 0 (vorher 7). Drei Wurzeln, richtige Krone.
 
-Drei Pruefungen daran, in dieser Reihenfolge:
+**Die Pulpa nicht.** Sie liegt im Zahn und haengt zusammen, aber ihre Kanaele
+sitzen noch nicht in ihren Wurzeln - der mittlere ist zu breit und beult nach
+distal aus. Das ist der naechste Schritt.
 
-1. **Dehnung entlang der Achse** muss nahe bei 1 liegen. Das ist die Pruefung,
-   die den schwersten Fehler des Tages gefunden haette und die keine der harten
-   Vertragspruefungen leistet - siehe unten.
-2. **Sitzt der Stift im palatinalen Kanal?** Dirks Vorgabe: der Stift gehoert in
-   den geraden Kanal, oben palatinal, unten distal. Bei einem dreiwurzeligen
-   Zahn entscheidet das Pulpa-Feld allein nicht, wo er landet.
-3. **Bild ansehen** und Dirk zeigen. Die drei Fehler des Tages hat alle er
-   gefunden, keiner davon meine Pruefsummen.
+**Dabei eine Frage an Dirk, die vieles einfacher machen koennte:** Dirk hat die
+Pulpa GEZEICHNET. Fuer `tooth-healthy-pulp` liesse sie sich direkt einsetzen,
+statt die alte Pulpa auf sie zu ziehen. Ein Feld braucht es dann immer noch fuer
+die abgeleiteten Ebenen - Pulpitis, Wurzelfuellung, Stifte -, aber die koennten
+aus SEINER Form abgeleitet werden statt aus der alten gewarpt. Das ist eine
+Entscheidung, keine Rechnung.
+
+**Die Dehnungspruefung taugt nicht als Kriterium.** Gemessen: die Variante ohne
+jeden Anker hatte die gleichmaessigste Dehnung von allen (0,98 bis 1,01) und die
+Furkation 15 Einheiten daneben. Die Anker sind ja gerade dazu da, eine
+Ungleichmaessigkeit zu erzwingen. Was zaehlt:
+
+1. **Abstand des geschriebenen Pfades zu Dirks Kontur** - dicht abgetastet, und
+   zwar der PFAD, nicht das Feld. Am Feld gemessen kam Median 0,016 heraus,
+   waehrend der Zahn sichtbar zerrissen war.
+2. **Ordnungsspruenge** - laeuft der Bildpunkt auf der Zielkontur monoton
+   weiter? Das ist die Zahl, die das Verheddern der Wurzeln sieht; jeder
+   Abstandsmedian bleibt dabei klein, weil jeder Punkt nahe an IRGENDEINER
+   Stelle der Zielkontur liegt.
+3. **Faltung** - Jacobi-Determinante des Feldes, INNERHALB der Kontur
+   abgetastet. Ausserhalb faltet ein Spline immer, das sagt nichts.
+4. **Sitzt der Stift im palatinalen Kanal?** Oben palatinal, unten distal.
+5. **Bild ansehen** und Dirk zeigen.
 
 ## Danach, der Reihe nach
 
