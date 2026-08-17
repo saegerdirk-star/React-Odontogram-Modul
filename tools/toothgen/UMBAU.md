@@ -129,6 +129,28 @@ Daraus folgt zweierlei, und beides ist noch NICHT getan:
     Kontur, vorher wie nachher; das ist Altbestand und faellt mit der Ableitung
     von selbst weg.
 
+## Versiegelung: schon schmal, schon stimmig - und was wirklich offen ist
+
+Dirk auf die Frage schmal oder breit: "auf jeden Fall schmal". Gemessen ist sie
+das bereits. `fissure-sealing-occlusal` ist keine eigene Flaeche, sondern
+DIESELBE Geometrie wie `fissure`, nur in Blau und mit 2 px Strichbreite
+gezeichnet - der Abstand zwischen beiden ist 0,00. Sie ist also so schmal wie
+die Fissurenlinie selbst und wandert mit ihr, ohne dass etwas abzuleiten waere.
+Beide Gruppen enthalten ANONYME Pfade, ihr Inhalt ist damit auch frei
+austauschbar, ohne einen Vertragswert zu beruehren.
+
+Offen ist etwas anderes, und es ist mehr Arbeit als gedacht: **Dirk zerlegt die
+Kauflaeche in FLAECHEN, das Template in LINIEN.** Seine Molarenzeichnungen
+tragen neben dem Aussenumriss elf geschlossene Formen - die Hoecker. Das
+Template zeichnet stattdessen die Fissuren als offene Striche. Die Fissur ist in
+seiner Zerlegung die gemeinsame GRENZE zweier Hoecker, also der Teil einer
+Hoeckerkontur, der nicht auf dem Aussenumriss liegt.
+
+Das laesst sich ableiten - innere Grenzsegmente sammeln und zusammensetzen -,
+ist aber eine eigene Konstruktion und kein Einsetzen. Solange sie nicht steht,
+bleiben Fissuren und Versiegelung gewarpt, und beide bleiben zueinander
+stimmig, weil sie dieselbe Geometrie sind.
+
 ## Beim Zusammenbau anzusehen: Neigungen
 
 Dirk, 17.08.2026: "12 kippt mit der Wurzel nach mesial bzw. die Schneidekante
