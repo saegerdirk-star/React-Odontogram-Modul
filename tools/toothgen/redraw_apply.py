@@ -178,12 +178,30 @@ def kammer_aus(region, schritt: float = 0.2) -> str | None:
     einwurzeliger Zahn hat keine Gabel, und sein Template traegt darum auch
     keine eigene Kammerebene.
     """
-    baender = [b for b in redraw.baender(region) if b["spitzen_unten"]]
-    if not baender:
-        return None
-    gabel = baender[0]["gabel"]
-    ende = max(float(Q[:, 1].max()) for Q in redraw._alle(region))
-    if ende - gabel < schritt * 3:
+    # Von der Krone her laufen, solange die Pulpa EIN Lauf ist. Genau das ist
+    # die Kammer - und nichts anderes.
+    #
+    # Vorher stand hier die Gabel des Zweigbandes. Am Milchmolaren 84 saetzte
+    # die 23 Einheiten zu weit apikal, und weil die Kammer aus der linken und
+    # der rechten AUSSENkante je Zeile gebaut wird, fuellte sie den Spalt
+    # ZWISCHEN den beiden Kanaelen mit auf. Dirks Wort dafuer: "Die Pulpa
+    # franst aus." Die Kanaele sind dort haarduenn gezeichnet, und ein Band
+    # laesst sich an haarduennen Laeufen nicht verlaesslich festmachen; die
+    # Laufzahl dagegen schon.
+    y_alle = redraw._alle(region)
+    apikal = min(float(Q[:, 1].min()) for Q in y_alle)
+    ende = max(float(Q[:, 1].max()) for Q in y_alle)
+    # Nur eine AUFTEILUNG beendet den Lauf. Null Laeufe heisst bloss, dass die
+    # Zeile die Form noch nicht trifft - an der ersten Zeile unter der Kaukante
+    # ist das die Regel, und daran brach die Suche vorher sofort ab.
+    gabel = apikal
+    y = ende - schritt
+    while y > apikal:
+        if len(redraw._laeufe(redraw._kanten(region, y))) >= 2:
+            gabel = y
+            break
+        y -= schritt
+    if ende - gabel < schritt * 3 or gabel <= apikal:
         return None
     ys = np.arange(gabel, ende, schritt)
     links, rechts = [], []
