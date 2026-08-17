@@ -40,6 +40,55 @@ def _pfad(txt: str) -> str:
     return re.search(r'\sd="([^"]+)"', txt).group(1)
 
 
+def pfade_von(txt: str, ident: str) -> list[str]:
+    """Alle d-Attribute einer Ebene - sie kann ein <path> ODER eine <g> sein.
+
+    Am Schneidezahn ist `tooth-healthy-pulp` ein einzelner <path>; am Molaren
+    ist es eine <g> mit `tooth-healthy-pulp-1` und `-2` darin. Die Suche kannte
+    nur den <path>, fand am Molaren nichts und lief STILL weiter: ohne
+    Pulpafeld wurde Dirks gezeichnete Kammer nie eingesetzt, und weil die
+    Stift-Sicherung am selben Fund haengt, lief auch die nie. Kein Fehler, kein
+    Hinweis, nur ein falsches Bild - deshalb wirft `umzeichnen` jetzt, wenn
+    hier nichts herauskommt.
+    """
+    m = re.search(r'<path[^>]*\sid="' + re.escape(ident) + r'"[^>]*?/?>', txt) \
+        or re.search(r'<path[^>]*\sd="[^"]*"[^>]*\sid="' + re.escape(ident) + r'"[^>]*?/?>', txt)
+    if m:
+        d = re.search(r'\sd="([^"]+)"', m.group(0))
+        return [d.group(1)] if d else []
+    g = re.search(r'<g[^>]*\sid="' + re.escape(ident) + r'"[^>]*>', txt)
+    if not g:
+        return []
+    tiefe, pos, out = 0, g.end(), []
+    for t in re.finditer(r"<(/?)(\w+)([^>]*?)(/?)>", txt[g.end():]):
+        schliessend, tag, attrs, selbst = t.groups()
+        if tag == "g":
+            if schliessend and tiefe == 0:
+                break
+            tiefe += -1 if schliessend else (0 if selbst else 1)
+        d = re.search(r'\sd="([^"]+)"', attrs)
+        if d and not schliessend:
+            out.append(d.group(1))
+    return out
+
+
+def _paaren(alt_d: list[str], neu_d: list[str]):
+    """Alte und gezeichnete Pulpapfade einander zuordnen - der breite zum breiten.
+
+    Am oberen Molaren zeichnet Dirk die Kammer mit den beiden bukkalen Kanaelen
+    als einen Pfad und den palatinalen Kanal als zweiten, genau wie das Template
+    sie fuehrt. Zusammengeworfen (`np.vstack`) ergaeben sie EIN Polygon, dessen
+    Waagerechte das Ende des einen mit dem Anfang des anderen verbindet - die
+    Laeufe sind dann frei erfunden. Also je Paar eine eigene Zuordnung.
+    """
+    if len(alt_d) != len(neu_d):
+        raise ValueError(f"Pulpa: {len(alt_d)} Pfade im Template gegen "
+                         f"{len(neu_d)} gezeichnete - nicht zuzuordnen")
+    breit = lambda d: (lambda P: float(P[:, 0].max() - P[:, 0].min()))(redraw.polygon(d))
+    return list(zip(sorted(alt_d, key=breit, reverse=True),
+                    sorted(neu_d, key=breit, reverse=True)))
+
+
 def anker(datei: Path):
     txt = datei.read_text()
     kopf = re.search(r'(<g[^>]*label="2 ANKER[^"]*"[^>]*>)(.*?)</g>', txt, re.S)
@@ -196,7 +245,9 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool) -> str:
         else ya1 - s_spec.root_frac * (ya1 - ya0)
     cej_neu = szg(zahn)
 
-    marken_alt, marken_neu = [cej_alt], [cej_neu]
+    # Der Bauplan kommt aus den Konturen selbst - siehe redraw.laufmarken.
+    lm_alt, lm_neu = redraw.laufmarken(alt, neu)
+    marken_alt, marken_neu = [cej_alt] + lm_alt, [cej_neu] + lm_neu
     if mit_ankern:
         aa = anker(ZEICHNUNGEN / f"{zahn}_anker_alt.svg")
         an = anker(ZEICHNUNGEN / f"{zahn}_anker_neu.svg")
@@ -216,14 +267,13 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool) -> str:
     if pz.exists():
         gez = re.findall(r'<path[^>]*\sd="([^"]+)"',
                          _ebene(pz.read_text(), "3 PULPA HIER ZEICHNEN"))
-        m = (re.search(r'<path[^>]*\sid="tooth-healthy-pulp"[^>]*\sd="([^"]+)"', txt)
-             or re.search(r'<path[^>]*\sd="([^"]+)"[^>]*\sid="tooth-healthy-pulp"', txt))
-        if gez and m:
-            alt_p = redraw.polygon(m.group(1))
-            neu_p = redraw.polygon(gez[0]) if len(gez) == 1 else np.vstack(
-                [redraw.polygon(g) for g in gez])
-            PA, PB = redraw.paare_ueber_hoehe(alt_p, neu_p, stufen=30)
-            pulpa_feld = redraw.Spline(PA, PB, glaettung=1e-3)
+        alt_d = pfade_von(txt, "tooth-healthy-pulp")
+        if not alt_d:
+            raise ValueError(f"{template}.svg: tooth-healthy-pulp nicht gefunden")
+        if not gez:
+            raise ValueError(f"{zahn}_pulpa_zeichnen.svg: nichts in der Zeichenebene")
+        PA, PB = redraw.paare_ueber_hoehe(redraw.region(alt_d), redraw.region(gez), stufen=30)
+        pulpa_feld = redraw.Spline(PA, PB, glaettung=1e-3)
 
     p_ids = set(pulpa_ebenen(txt)) if pulpa_feld else set()
 
@@ -233,11 +283,10 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool) -> str:
         for i in p_ids:
             if not STIFT_MUSTER.search(i):
                 continue
-            m = (re.search(r'<path[^>]*\sid="' + re.escape(i) + r'"[^>]*\sd="([^"]+)"', txt)
-                 or re.search(r'<path[^>]*\sd="([^"]+)"[^>]*\sid="' + re.escape(i) + r'"', txt))
-            if m:
+            ds = pfade_von(txt, i)          # auch der Stift ist mal <g>, mal <path>
+            if ds:
                 stift_feld[i] = starr_aus(lambda x, y: pulpa_feld(x, y),
-                                          redraw.polygon(m.group(1)))
+                                          np.vstack([redraw.polygon(d) for d in ds]))
 
     def feld_fuer(kette):
         if any(k in redraw.NICHT_VERFORMEN for k in kette):
