@@ -46,6 +46,36 @@
 - Fissures drawn by hand are now INSERTED rather than warped from the donor, into
   both `fissure` and `fissure-sealing-occlusal`, so the sealing still lies exactly
   on the fissure.
+- **Pulp diagnosis and root treatment are now a COLOUR, not a second shape.** A
+  diseased pulp used to swap in `tooth-inflam-pulp` — a separate outline from the
+  donor template, with flame sublayers — which never matched the pulp the
+  dentist drew, so the pulp changed shape when a diagnosis was set. The drawn
+  pulp now stays and is tinted per `pulpDx` / `pulpLatin`; an endodontically
+  treated tooth is tinted in the root-filling colour and wins over a diagnosis
+  (a treated tooth has no vital pulp). **This deliberately breaks the SP4
+  migration guarantee that `pulpDx` renders byte-identical to the retired
+  `pulpInflam` boolean** — `pulp-parity.test.ts` states the new contract. Fill is
+  not part of the SVG fingerprint, so the tint itself is parity-safe; the changed
+  layer activation is what moves it.
+- Fillings, caries, defects and the pulp are clipped to the tooth shape that is
+  actually shown (`clip-path`), so nothing can be drawn past the tooth surface
+  and the pulp stays enclosed on a prepared, broken or radix tooth. The clip id
+  is namespaced per tooth — all 32 live in one document, so a shared id would
+  clip every tooth to its neighbour's outline.
+- Occlusal tiles are no longer rotated in either jaw, and the lower side-view
+  drawings are mirrored rather than rotated into the template frame. Both
+  rotations dated from when the lower artwork was borrowed from the upper jaw; a
+  180° rotation flips left/right along with top/bottom and therefore swapped
+  mesial and distal. Mesial now faces the arch midline in all four quadrants, in
+  both views, checked against the anatomically named `filling-composite-*`
+  layers.
+- Hand-drawn fissure lines are INSERTED into `fissure` and
+  `fissure-sealing-occlusal` instead of being warped from the donor, each path
+  made absolute before the group's paths are joined (Inkscape writes a relative
+  `m`, so every fissure after the first landed displaced).
+- `tools/toothgen/hoecker.py` derives the cusps as regions from the drawn
+  outline plus fissures, extending each free fissure end to the outline as an
+  auxiliary line that is used for the subdivision but never shipped.
 - `tools/toothgen/build.py` writes to `tools/toothgen/spender/` instead of
   `src/assets/teeth-svgs`: the generated Schumacher templates are now the
   donor stage that the redraw takes its ~200 clinical layers from, not the
