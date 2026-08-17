@@ -389,7 +389,9 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = 
     # Zuordnung ueber die HOEHE, nicht ueber die Bogenlaenge. Der erste Versuch
     # lief ueber den Umfang und scherte das Innere: die Pulpa kam 35 Prozent
     # kuerzer heraus und endete auf halber Wurzel. Siehe redraw.py.
-    s_spec = spec.SPEC_BY_KEY[template]
+    # Milchzaehne haben ihre eigene Spec-Tabelle - acht eigene Templates
+    # (51-55, 71, 74, 75), nicht die milktooth-Ebenen im Nachfolger.
+    s_spec = spec.SPEC_BY_KEY.get(template) or spec.PRIMARY_SPEC_BY_KEY[template]
     ya0, ya1 = float(alt[:, 1].min()), float(alt[:, 1].max())
     oben = zahn[0] in "12"
     cej_alt = ya0 + s_spec.root_frac * (ya1 - ya0) if oben \
@@ -440,6 +442,7 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = 
     # gezeichneter Kammer, nicht dem Aussenumriss. Ohne das traegt der Zahn
     # weiterhin die alte Pulpa, nur mitgezogen.
     pulpa_feld = None
+    R_alt = None
     pz = ZEICHNUNGEN / f"{zahn}_pulpa_zeichnen.svg"
     if pz.exists():
         gez = re.findall(r'<path[^>]*\sd="([^"]+)"',
@@ -451,8 +454,35 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = 
             raise ValueError(f"{template}.svg: tooth-healthy-pulp nicht gefunden")
         if not gez:
             raise ValueError(f"{zahn}_pulpa_zeichnen.svg: nichts in der Zeichenebene")
-        PA, PB = redraw.paare_ueber_hoehe(redraw.region(alt_d), redraw.region(gez), stufen=30)
+        R_alt, R_neu = redraw.region(alt_d), redraw.region(gez)
+        PA, PB = redraw.paare_ueber_hoehe(R_alt, R_neu, stufen=30)
         pulpa_feld = redraw.Spline(PA, PB, glaettung=1e-3)
+
+        # Das Pulpafeld PRUEFEN, bevor rund zwanzig Ebenen darauf reiten.
+        #
+        # An den Milchmolaren 54 und 55 teilt sich die gezeichnete Pulpa ganz
+        # anders auf als die des Templates - bei 54 findet die Zuordnung gar
+        # keine gemeinsame Marke. Das Feld wird dann unbrauchbar, und mit ihm
+        # flogen Wurzelresorption, Resektion und Wurzelfuellung bis zu 68
+        # Einheiten neben den Zahn. Die gezeichnete Pulpa selbst merkt davon
+        # nichts, weil sie eingesetzt und nicht gerechnet wird - der Fehler
+        # steckt genau in dem, was man nicht zeichnet und deshalb nicht ansieht.
+        #
+        # Geprueft wird das Naheliegende: bleibt die alte Pulpa, durch das Feld
+        # geschickt, in der Naehe der gezeichneten? Wenn nicht, ist das
+        # Zahnfeld die bessere schlechte Antwort - eine etwas zu grosse Pulpa
+        # im Zahn ist harmlos, eine neben dem Zahn nicht.
+        umschlag = np.vstack(R_neu)
+        breit = float(np.ptp(umschlag[:, 0])), float(np.ptp(umschlag[:, 1]))
+        probe = np.vstack([np.asarray([pulpa_feld(x, y) for x, y in Q[::7]]) for Q in R_alt])
+        daneben = min(
+            float(probe[:, 0].min() - (umschlag[:, 0].min() - breit[0])),
+            float((umschlag[:, 0].max() + breit[0]) - probe[:, 0].max()),
+            float(probe[:, 1].min() - (umschlag[:, 1].min() - breit[1])),
+            float((umschlag[:, 1].max() + breit[1]) - probe[:, 1].max()),
+        )
+        if daneben < 0:
+            pulpa_feld = None
 
         # Die gezeichnete Pulpa wird EINGESETZT, nicht angenaehert (Dirk,
         # 17.08.2026: "Da steckt eine Menge Arbeit drin"). Sie geht als
@@ -521,6 +551,24 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = 
                              lambda m: m.group(1) + blass.group(1).strip(), txt, count=1)
 
     p_ids = set(pulpa_ebenen(txt)) if pulpa_feld else set()
+
+    # Eine pulpanahe Ebene, die groesstenteils AUSSERHALB der Pulpa liegt, folgt
+    # dem Zahn und nicht der Pulpa. Dieselbe Regel wie beim parapulpaeren Stift,
+    # nur allgemein: das Pulpafeld gilt innerhalb der Pulpa, draussen
+    # extrapoliert es. Am Milchmolaren 55 flogen Wurzelresorption und Resektion
+    # so 68 Einheiten neben einen 30 Einheiten breiten Zahn - beides Formen, die
+    # an der Wurzelspitze sitzen und die Pulpa nur streifen.
+    if p_ids and R_alt is not None:
+        for i in sorted(p_ids):
+            punkte = [redraw.polygon(d) for d in pfade_von(txt, i)]
+            if not punkte:
+                continue
+            P = np.vstack(punkte)[::5]
+            drin = np.zeros(len(P), bool)
+            for Q in R_alt:
+                drin |= np.array([redraw._liegt_in(np.array([p]), Q) for p in P])
+            if drin.mean() < 0.5:
+                p_ids.discard(i)
 
     # Stifte: je Ebene eine eigene starre Abbildung, aus ihrer eigenen Achse.
     #
