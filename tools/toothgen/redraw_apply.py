@@ -366,7 +366,16 @@ def szg(zahn: str) -> float:
     return float(re.search(r'<line[^>]*y1="([-\d.]+)"', txt).group(1))
 
 
-def umzeichnen(zahn: str, template: str, mit_ankern: bool) -> str:
+# Zeilenzahl der Zuordnung, je Template gemessen. EINE Zahl passt nicht fuer
+# alle: 65 Zeilen bringen den Sechsundvierziger von 6,56 auf 2,80 herunter und
+# treiben den Sechser von 2,63 auf 7,73 mit zwei Ordnungspruengen hoch. Das
+# haengt daran, wie die Zeilen auf die Zweigstruktur des jeweiligen Zahns
+# fallen. Statt einen Mittelwert zu waehlen, der beiden schadet, steht hier je
+# Template der gemessene Wert.
+STUFEN = {"46": 65}
+
+
+def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = None) -> str:
     txt = (ASSETS / f"{template}.svg").read_text()
     alt = redraw.polygon(redraw.tooth_base_d(txt))
 
@@ -402,7 +411,8 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool) -> str:
                 marken_alt.append(aa[k][1])
                 marken_neu.append(an[k][1])
 
-    A, B = redraw.paare_ueber_hoehe(alt, neu, marken_alt, marken_neu)
+    A, B = redraw.paare_ueber_hoehe(alt, neu, marken_alt, marken_neu,
+                                    stufen=stufen or STUFEN.get(template, 40))
     zahn_feld = redraw.Spline(A, B, glaettung=1e-3)
 
     # Zweites Feld fuer die Pulpa: die pulpanahen Ebenen folgen Dirks

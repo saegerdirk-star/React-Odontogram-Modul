@@ -497,6 +497,53 @@ def laufmarken(P_alt, P_neu):
     return [a for a, _ in paare], [b for _, b in paare]
 
 
+def _kappe(P, y: float, x0: float, x1: float, oben: bool):
+    """Das Stueck Kontur jenseits der Hoehe y zwischen den Kanten x0 und x1.
+
+    Also die Wurzelspitze ueber der obersten Zeile, oder die Kaukante unter der
+    untersten - der Bogen, der einen Lauf oben beziehungsweise unten schliesst.
+    """
+    if isinstance(P, (list, tuple)):
+        # Mehrere Teilkonturen: die nehmen, deren Kanten am besten passen.
+        treffer = [(_kappe(Q, y, x0, x1, oben), Q) for Q in P]
+        gut = [t for t, _ in treffer if t is not None]
+        return min(gut, key=lambda t: abs(t[0][0] - x0) + abs(t[-1][0] - x1)) if gut else None
+    A = np.asarray(P, float)
+    n = len(A)
+    schnitte = []
+    for i in range(n):
+        y0, y1 = A[i][1], A[(i + 1) % n][1]
+        if (y0 - y) * (y1 - y) < 0:
+            t = (y - y0) / (y1 - y0)
+            schnitte.append((i, A[i][0] + (A[(i + 1) % n][0] - A[i][0]) * t))
+    if not schnitte:
+        return None
+    start = min(schnitte, key=lambda s: abs(s[1] - x0))
+    ende = min(schnitte, key=lambda s: abs(s[1] - x1))
+    if start[0] == ende[0]:
+        return None
+    jenseits = (lambda p: p[1] < y) if oben else (lambda p: p[1] > y)
+    for richtung in (1, -1):
+        pfad, i = [], start[0]
+        for _ in range(n):
+            i = (i + richtung) % n
+            if i == ende[0]:
+                return np.asarray(pfad) if len(pfad) >= 2 else None
+            if not jenseits(A[i]):
+                break
+            pfad.append(A[i])
+    return None
+
+
+def _nach_bogen(P, m: int):
+    """m Punkte, gleichmaessig nach Bogenlaenge, auf einem offenen Polygonzug."""
+    s = np.concatenate([[0.0], np.cumsum(np.hypot(*np.diff(P, axis=0).T))])
+    if s[-1] <= 0:
+        return None
+    ziel = np.linspace(0.0, s[-1], m)
+    return np.column_stack([np.interp(ziel, s, P[:, 0]), np.interp(ziel, s, P[:, 1])])
+
+
 def mitteln(marken_alt, marken_neu, nah: float = 0.0):
     """Marken paarweise ordnen und je Hoehenebene zu EINER Marke mitteln.
 
@@ -638,4 +685,35 @@ def paare_ueber_hoehe(P_alt, P_neu, marken_alt=None, marken_neu=None,
             qa.append((a1, ya)); qb.append((b1, yb))
             if a1 - a0 > 4.0:
                 qa.append(((a0 + a1) / 2, ya)); qb.append(((b0 + b1) / 2, yb))
+
+    # Die ENDKAPPEN ueber die Bogenlaenge zuordnen, nicht ueber die Hoehe.
+    # Jenseits der obersten und der untersten Zeile liegt sonst nichts fest, und
+    # dort sitzen genau die drei Fehler, die Dirk gesehen hat: die Kauflaeche des
+    # Sechsundvierzigers als gerade Sehne quer durch die Krone, und die
+    # Wurzelspitze der Frontzaehne oben flach gekappt statt geschlossen.
+    #
+    # Ueber die Hoehe geht es dort nicht: eine Kappe ist ein Bogen, der in der
+    # Hoehe kaum Ausdehnung hat und in der Breite viel. Zusaetzliche Zeilen
+    # helfen deshalb nicht - sie stapeln Stuetzstellen fast aufeinander und
+    # machen den Spline instabil (gemessen: der Sechser stieg dabei von 2,63 auf
+    # 7,99). Ueber die Bogenlaenge liegen dieselben Punkte verteilt.
+    genutzt = sorted(h for h in hoehen if ya0 < h < ya1)
+    for ya, oben in ((genutzt[0], True), (genutzt[-1], False)):
+        la = _laeufe(_kanten(A, ya))
+        lb = _laeufe(_kanten(B, hoehe(ya)))
+        if len(la) != len(lb):
+            continue
+        for (a0, a1), (b0, b1) in zip(la, lb):
+            ka = _kappe(A, ya, a0, a1, oben)
+            kb = _kappe(B, hoehe(ya), b0, b1, oben)
+            if ka is None or kb is None:
+                continue
+            pa, pb = _nach_bogen(ka, 7), _nach_bogen(kb, 7)
+            if pa is None or pb is None:
+                continue
+            # Erster und letzter Kappenpunkt liegen auf den Kanten, die die
+            # Zeile selbst schon gepaart hat. Doppelte Stuetzstellen mit leicht
+            # verschiedenem Ziel machen den Spline schlecht konditioniert - der
+            # Elfer sprang davon von 0,29 auf 7,72. Nur das Innere der Kappe.
+            qa.extend(map(tuple, pa[1:-1])); qb.extend(map(tuple, pb[1:-1]))
     return np.asarray(qa), np.asarray(qb)
