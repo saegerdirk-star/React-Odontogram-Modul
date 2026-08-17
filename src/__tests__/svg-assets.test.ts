@@ -6,8 +6,11 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath, URL as NodeURL } from "node:url";
 import { namespacePaintServers, OCCLUSAL_TEMPLATE, TOOTH_TEMPLATE } from "../odontogram";
 
-const SIDE = ["11", "12", "13", "14", "15", "16", "17", "31", "46"] as const;
-const POSTERIOR_SIDE = ["14", "15", "16", "17", "46"] as const;
+const SIDE = [
+  "11", "12", "13", "14", "15", "16", "17", "18",
+  "41", "42", "43", "44", "45", "46", "47", "48",
+] as const;
+const POSTERIOR_SIDE = ["14", "15", "16", "17", "18", "44", "45", "46", "47", "48"] as const;
 const ALL = [...SIDE, "14_occl", "16_occl"] as const;
 
 function readSvg(name: string): string {
@@ -134,16 +137,21 @@ describe("installed tooth SVG assets", () => {
     // read off the Odontographie plates. Widths are unchanged, deliberately —
     // the length decision divides itself back out of `width_frac`, so how wide
     // a tooth is drawn did not move.
+    // Measured off the shipped files. The frame's HEIGHT is now derived per
+    // template - it is sized so the drawn incisal/occlusal edge sits a fixed
+    // distance above the bottom edge, which is what puts the occlusal plane of
+    // every tooth on one line across the arch.
     const expected = {
-      "14": { roots: "2", viewBox: "0.0 0.0 39.8 89.4" },
-      // Still shorter than its neighbours relative to its class because the
-      // root is grafted from the canine instead of converted from the
-      // premolar's two roots (odontogram-ay4): the converted root left lumen
-      // standing above the apex, and the viewBox had to reach up to it.
-      "15": { roots: "1", viewBox: "0.0 0.0 39.8 82.0" },
-      "16": { roots: "3", viewBox: "0.0 0.0 42.9 87.3" },
-      "17": { roots: "3", viewBox: "0.0 0.0 42.9 86.7" },
-      "46": { roots: "2", viewBox: "0.0 0.0 42.9 89.1" },
+      "14": { roots: "2", viewBox: "0.0 0.0 39.8 89.89" },
+      "15": { roots: "1", viewBox: "0.0 0.0 39.8 82.75" },
+      "16": { roots: "3", viewBox: "0.0 0.0 42.9 91.23" },
+      "17": { roots: "3", viewBox: "0.0 0.0 42.9 88.74" },
+      "18": { roots: "3", viewBox: "0.0 0.0 42.9 87.40" },
+      "44": { roots: "1", viewBox: "0.0 0.0 39.8 83.29" },
+      "45": { roots: "1", viewBox: "0.0 0.0 39.8 80.97" },
+      "46": { roots: "2", viewBox: "0.0 0.0 42.9 90.99" },
+      "47": { roots: "2", viewBox: "0.0 0.0 42.9 84.79" },
+      "48": { roots: "2", viewBox: "0.0 0.0 42.9 83.42" },
     } as const;
 
     for (const template of POSTERIOR_SIDE) {
@@ -153,12 +161,19 @@ describe("installed tooth SVG assets", () => {
     }
   });
 
-  it("maps each admitted posterior tooth class to its anatomy template", () => {
-    for (const toothNo of [14, 24]) expect(TOOTH_TEMPLATE.get(toothNo)?.tpl).toBe(14);
-    for (const toothNo of [15, 25, 34, 35, 44, 45]) expect(TOOTH_TEMPLATE.get(toothNo)?.tpl).toBe(15);
-    for (const toothNo of [16, 26]) expect(TOOTH_TEMPLATE.get(toothNo)?.tpl).toBe(16);
-    for (const toothNo of [17, 18, 27, 28]) expect(TOOTH_TEMPLATE.get(toothNo)?.tpl).toBe(17);
-    for (const toothNo of [36, 37, 38, 46, 47, 48]) expect(TOOTH_TEMPLATE.get(toothNo)?.tpl).toBe(46);
+  // One template per POSITION since 2026-08-17: the upper right and lower right
+  // quadrants are drawn, the other two are those drawings mirrored. Nothing is
+  // shared across the jaws any more - 18 no longer draws itself as 17, and the
+  // lower premolars no longer as 15.
+  it("maps every tooth to the template of its own position", () => {
+    for (const toothNo of [11, 12, 13, 14, 15, 16, 17, 18]) {
+      expect(TOOTH_TEMPLATE.get(toothNo)?.tpl, String(toothNo)).toBe(toothNo);
+      expect(TOOTH_TEMPLATE.get(toothNo + 10)?.tpl, String(toothNo + 10)).toBe(toothNo);
+    }
+    for (const toothNo of [41, 42, 43, 44, 45, 46, 47, 48]) {
+      expect(TOOTH_TEMPLATE.get(toothNo)?.tpl, String(toothNo)).toBe(toothNo);
+      expect(TOOTH_TEMPLATE.get(toothNo - 10)?.tpl, String(toothNo - 10)).toBe(toothNo);
+    }
   });
 
   // Pinned independently of OCCLUSAL_TEMPLATE. Iterating the map alone would
@@ -172,10 +187,13 @@ describe("installed tooth SVG assets", () => {
       34, 35, 36, 37, 38,
       44, 45, 46, 47, 48,
     ]);
-    // Four occlusal templates: upper and lower premolar, upper and lower molar
-    // (odontogram-vlw). Before that, two drawings carried all twenty teeth.
-    for (const placement of OCCLUSAL_TEMPLATE.values()) {
-      expect([14, 34, 16, 46]).toContain(placement.tpl);
+    // Ten occlusal drawings for the twenty posterior teeth - one per position
+    // in the upper and lower right quadrant, the other side mirrored. It was
+    // two before odontogram-vlw, then four, and now one per position.
+    for (const [toothNo, placement] of OCCLUSAL_TEMPLATE) {
+      const quadrant = Math.floor(toothNo / 10);
+      const own = quadrant === 2 ? toothNo - 10 : quadrant === 3 ? toothNo + 10 : toothNo;
+      expect(placement.tpl, String(toothNo)).toBe(own);
     }
   });
 
@@ -194,12 +212,28 @@ describe("installed tooth SVG assets", () => {
     }
   });
 
-  it("preserves the complete clinical layer sequence for split posterior templates", () => {
-    expect(clinicalElementIds(readSvg("12"))).toEqual(clinicalElementIds(readSvg("11")));
-    expect(clinicalElementIds(readSvg("31"))).toEqual(clinicalElementIds(readSvg("11")));
-    expect(clinicalElementIds(readSvg("15"))).toEqual(clinicalElementIds(readSvg("14")));
-    expect(clinicalElementIds(readSvg("17"))).toEqual(clinicalElementIds(readSvg("16")));
-    expect(clinicalElementIds(readSvg("46"))).toEqual(clinicalElementIds(readSvg("16")));
+  // Every position has its own drawing since 2026-08-17, and every one of them
+  // takes its ~200 clinical layers from a donor template. That the layer
+  // sequence survived the redraw is what keeps the SVG-fingerprint parity
+  // contract true across sixteen files instead of nine, so it is asserted for
+  // all of them at once rather than for a handful of pairs.
+  // Grouped by DONOR, not globally: an anterior template carries no fissure
+  // sealing and no per-surface resorption, so the sequences differ BETWEEN the
+  // families and must be identical WITHIN one. That is the property the redraw
+  // had to preserve, and the one the SVG-fingerprint parity contract rests on.
+  it("preserves the complete clinical layer sequence within each donor family", () => {
+    const families = [
+      ["11", "12", "41", "42"],
+      ["13", "43"],
+      ["14", "15", "44", "45"],
+      ["16", "17", "18", "46", "47", "48"],
+    ];
+    expect(families.flat().sort()).toEqual([...SIDE].sort());
+    for (const family of families) {
+      const reference = clinicalElementIds(readSvg(family[0]));
+      expect(reference.length, family[0]).toBeGreaterThan(100);
+      for (const n of family) expect(clinicalElementIds(readSvg(n)), n).toEqual(reference);
+    }
   });
 
   it("keeps paint-server ids unique across side-view templates", () => {

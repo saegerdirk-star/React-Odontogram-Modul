@@ -28,45 +28,14 @@ zeichnet.
 """
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 import redraw_apply  # noqa: E402
+from redraw_plan import PLAN  # noqa: E402
 
-# Ziel-Template -> (Zeichnung, Spender, Anker vorhanden)
-PLAN: dict[str, tuple[str, str, bool]] = {
-    # Oberkiefer, bleibend
-    "11": ("11", "11", False),
-    "12": ("12", "12", False),
-    "13": ("13", "13", False),
-    "14": ("14", "14", True),
-    "15": ("15", "15", False),
-    "16": ("16", "16", True),
-    "17": ("17", "17", True),
-    "18": ("18", "17", True),
-    # Unterkiefer, bleibend
-    "41": ("41", "31", False),
-    "42": ("42", "31", False),
-    "43": ("43", "13", False),
-    "44": ("44", "15", False),
-    "45": ("45", "15", False),
-    "46": ("46", "46", True),
-    "47": ("47", "46", True),
-    "48": ("48", "46", True),
-    # Oberkiefer, Milch
-    "51": ("51", "51", False),
-    "52": ("52", "52", False),
-    "53": ("53", "53", False),
-    "54": ("54", "54", False),
-    "55": ("55", "55", False),
-    # Unterkiefer, Milch
-    "81": ("81", "71", False),
-    "82": ("82", "71", False),
-    "83": ("83", "53", False),
-    "84": ("84", "74", False),
-    "85": ("85", "75", False),
-}
 
 
 def erzeuge(ziel: str, ordner: Path) -> str:
@@ -76,6 +45,12 @@ def erzeuge(ziel: str, ordner: Path) -> str:
     # und `syncToothTemplate` lesen ihn, und eine zweite Tabelle daneben waere
     # genau die Sorte Doppelung, die auseinanderlaeuft.
     txt = txt.replace(f'data-tooth-template="{spender}"', f'data-tooth-template="{ziel}"', 1)
+    # Dasselbe im toothgen-Kopf. Er ist kein Kommentar: `verify.py` sucht den
+    # Block ueber `template=`, und die Ankertabellen der Parodontalkarte kommen
+    # aus seinen Zahlen. `src=` bleibt der Spender-Quelle, `drawn=` nennt die
+    # Zeichnung - siehe redraw_apply._stempel.
+    txt = re.sub(rf"(<!-- toothgen:[^>]*?\btemplate=){re.escape(spender)}\b",
+                 lambda m: m.group(1) + ziel, txt, count=1)
     # Die Gradienten-ids tragen den Spendernamen und muessen je Datei eindeutig
     # bleiben, sonst greift in einem Dokument mit mehreren Zaehnen der falsche.
     txt = txt.replace(f"toothgen-{spender}-", f"toothgen-{ziel}-")

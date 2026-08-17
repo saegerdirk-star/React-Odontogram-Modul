@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.13.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.14.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -394,24 +394,33 @@ export default function OdontogramClient() {
 | 模板 | 使用该模板的牙位 |
 |---|---|
 | **恒牙** | |
-| `11.svg` | 11、21 |
-| `12.svg` | 12、22 |
-| `31.svg` | 31、32、41、42 |
-| `13.svg` | 13、23、33、43（尖牙） |
-| `14.svg` / `14_occl.svg` | 14、24 |
-| `15.svg` | 15、25、34、35、44、45 |
-| `16.svg` / `16_occl.svg` | 16、26 |
-| `17.svg` | 17、18、27、28 |
-| `46.svg` | 36、37、38、46、47、48 |
+| `11.svg` | 11, 21 |
+| `12.svg` | 12, 22 |
+| `13.svg` | 13, 23 |
+| `14.svg` / `14_occl.svg` | 14, 24 |
+| `15.svg` / `15_occl.svg` | 15, 25 |
+| `16.svg` / `16_occl.svg` | 16, 26 |
+| `17.svg` / `17_occl.svg` | 17, 27 |
+| `18.svg` / `18_occl.svg` | 18, 28 |
+| `41.svg` | 41, 31 |
+| `42.svg` | 42, 32 |
+| `43.svg` | 43, 33 |
+| `44.svg` / `44_occl.svg` | 44, 34 |
+| `45.svg` / `45_occl.svg` | 45, 35 |
+| `46.svg` / `46_occl.svg` | 46, 36 |
+| `47.svg` / `47_occl.svg` | 47, 37 |
+| `48.svg` / `48_occl.svg` | 48, 38 |
 | **乳牙** | |
-| `51.svg` | 51、61 |
-| `52.svg` | 52、62 |
-| `53.svg` | 53、63、73、83（乳尖牙） |
-| `54.svg` | 54、64 |
-| `55.svg` | 55、65 |
-| `71.svg` | 71、72、81、82（乳切牙） |
-| `74.svg` | 74、84 |
-| `75.svg` | 75、85（乳磨牙） |
+| `51.svg` | 51, 61 |
+| `52.svg` | 52, 62 |
+| `53.svg` | 53, 63 |
+| `54.svg` | 54, 64 |
+| `55.svg` | 55, 65 |
+| `81.svg` | 81, 71 |
+| `82.svg` | 82, 72 |
+| `83.svg` | 83, 73 |
+| `84.svg` | 84, 74 |
+| `85.svg` | 85, 75 |
 
 标记为乳牙的牙齿使用自己的模板绘制，替换恒牙模板挂载；恒牙模板在下颌旋转 180 度、在左侧水平镜像，乳牙模板遵循相同的映射。
 
@@ -780,7 +789,7 @@ npm run docs           # 在 docs/ 目录生成 TypeDoc 文档
 - `src/perioPdf.ts` - `exportPdf()` 的纯 jsPDF 报告组装器（`assemblePdf`）
 - `src/ExportOptionsModal.tsx` - “PDF report…”导出设置弹窗
 - `src/__tests__/` + `src/registry/__tests__/` - Vitest 测试套件（1704 个测试通过，1 个跳过，共 163 个文件）
-- `src/assets/teeth-svgs/` - SVG 牙齿模板（6 个文件：切牙、尖牙、前磨牙、磨牙 + 咬合面视图）
+- `src/assets/teeth-svgs/` - SVG 牙齿模板（40 个文件：每个位置一个——16 个恒牙侧面视图、10 个乳牙、14 个咬合面视图）
 - `src/assets/icon-svgs/` - 工具栏图标 SVG（5 个文件）
 
 ### ⚙️ 技术栈

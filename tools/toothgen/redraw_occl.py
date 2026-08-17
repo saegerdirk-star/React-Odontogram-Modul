@@ -36,27 +36,11 @@ sys.path.insert(0, str(Path(__file__).parent))
 import redraw          # noqa: E402
 import redraw_apply    # noqa: E402
 import svgpath         # noqa: E402
+from redraw_plan import OHNE_FISSUREN, PLAN_OCCL as PLAN  # noqa: E402
 
 ZEICHNUNGEN = redraw_apply.ZEICHNUNGEN
 ASSETS = redraw_apply.ASSETS
 
-# Ziel -> (Zeichnung, Spender)
-PLAN: dict[str, tuple[str, str]] = {
-    "14_occl": ("14", "14_occl"), "15_occl": ("15", "14_occl"),
-    "16_occl": ("16", "16_occl"), "17_occl": ("17", "16_occl"),
-    "18_occl": ("18", "16_occl"),
-    "44_occl": ("44", "34_occl"), "45_occl": ("45", "34_occl"),
-    "46_occl": ("46", "46_occl"), "47_occl": ("47", "46_occl"),
-    "48_occl": ("48", "46_occl"),
-    # Die Milchmolaren nehmen den MOLAREN als Spender, nicht den Praemolaren -
-    # auch der erste. Dirk, 17.08.2026: "84 und 54 haben das Template vom
-    # Praemolaren, richtig? Da wuerde ich vorschlagen, dass wir das von 85 / 55
-    # nutzen." Ein erster Milchmolar ist ein Molar; sein Fissurenmuster ist
-    # keines mit zwei Hoeckern. Dieselbe Korrektur hatte er in der
-    # Seitenansicht schon einmal angesagt.
-    "54_occl": ("54", "16_occl"), "55_occl": ("55", "16_occl"),
-    "84_occl": ("84", "46_occl"), "85_occl": ("85", "46_occl"),
-}
 
 
 def _norm(P):
@@ -132,11 +116,6 @@ def umzeichnen(zahn: str, spender: str) -> str:
     return redraw_apply.verforme_je_element(txt, feld_fuer)
 
 
-# Praemolaren tragen KEINE Fissuren. Dirk hat sie bewusst ohne gezeichnet, weil
-# die alten Templates vom Oberkiefermolaren abgeleitet waren; mitgezogen laege
-# also weiterhin ein Molarenmuster auf einem Praemolaren. Lieber eine glatte
-# Kauflaeche als eine falsche - nachzuzeichnen, wenn Zeit ist.
-OHNE_FISSUREN = {"14_occl", "15_occl", "44_occl", "45_occl"}
 
 
 def leere_fissuren(txt: str) -> str:
@@ -162,6 +141,12 @@ def erzeuge(ziel: str, ordner: Path) -> str:
     if ziel in OHNE_FISSUREN:
         txt = leere_fissuren(txt)
     txt = txt.replace(f'data-tooth-template="{spender}"', f'data-tooth-template="{ziel}"', 1)
+    # Auch im toothgen-Kopf, siehe redraw_alle. Eine Kauflaeche traegt keine
+    # Zervikallinie, hier ist nur der Name zu berichtigen - und festzuhalten,
+    # wessen Zeichnung eingesetzt wurde.
+    txt = re.sub(rf"(<!-- toothgen:[^>]*?\btemplate=){re.escape(spender)}\b",
+                 lambda m: m.group(1) + ziel, txt, count=1)
+    txt = txt.replace("<!-- toothgen:", f"<!-- toothgen: drawn={zahn}", 1)
     txt = txt.replace(f"toothgen-{spender}-", f"toothgen-{ziel}-")
     (ordner / f"{ziel}.svg").write_text(txt)
     return txt

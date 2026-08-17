@@ -26,7 +26,13 @@ import spec            # noqa: E402
 import svgpath         # noqa: E402
 
 ZEICHNUNGEN = Path.home() / "dev" / "Odontogram-Anatomie"
-ASSETS = Path(__file__).resolve().parents[2] / "src" / "assets" / "teeth-svgs"
+
+# Die Spender liegen in ihrem EIGENEN Ordner, nicht bei den ausgelieferten
+# Templates - siehe build.SPENDER. Zeigte das hier auf src/assets, verformte der
+# zweite Lauf ein bereits umgezeichnetes Template ein zweites Mal, und zwar
+# lautlos: der Umriss wird eingesetzt, also saehe der Zahn danach richtig aus,
+# waehrend alles darin ein zweites Mal durch das Feld gelaufen waere.
+ASSETS = build.SPENDER
 
 
 def _ebene(txt: str, label: str) -> str:
@@ -704,12 +710,33 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = 
         basis = (lambda x, y: pulpa_feld(x, y)) if im_kanal else (lambda x, y: zahn_feld(x, y))
         stift_feld[i] = starr_aus(basis, np.vstack([redraw.polygon(d) for d in ds]))
 
+    # Ein Implantat ist ein Fabrikteil und dehnt sich nicht mit der Wurzel, in
+    # die es gesetzt wird - derselbe Satz wie beim Stift, nur groesser. Gemessen
+    # am Sechser: das Zahnfeld zog den Koerper von 47 auf 96 Einheiten Laenge,
+    # die Plattform elf Einheiten ueber die Schmelz-Zement-Grenze hinauf und das
+    # apikale Ende unter den viewBox-Rand. `IMPLANT_CEJ_Y` in
+    # src/perioGraphic.ts haengt genau an dieser Plattform - die Zervikallinie
+    # der Parodontalkarte laege damit im Kronendrittel.
+    #
+    # Die ganze Gruppe `implant` bekommt EINE Abbildung, nicht jede Ebene ihre
+    # eigene: Aufbau und Koerper sind zusammengeschraubt, und zwei getrennt
+    # gerechnete Aehnlichkeiten fuehren sie auseinander. Der Knochenabbau am
+    # Implantat faehrt mit, weil er um den Koerper herum gezeichnet ist.
+    implantat_ebenen = ("implant", "peri-implant-bone-loss")
+    ds = [d for i in implantat_ebenen for d in pfade_von(txt, i)]
+    implantat_feld = (
+        starr_aus(lambda x, y: zahn_feld(x, y), np.vstack([redraw.polygon(d) for d in ds]))
+        if ds else None
+    )
+
     def feld_fuer(kette):
         if any(k in redraw.NICHT_VERFORMEN or k in unberuehrt for k in kette):
             return None                      # Zahnfleisch, Knochen, gezeichnete Pulpa
         for k in kette:
             if k in stift_feld:
                 return stift_feld[k]         # gerade bleiben, siehe STIFT_MUSTER
+        if implantat_feld is not None and any(k in implantat_ebenen for k in kette):
+            return implantat_feld
         if p_ids and any(k in p_ids for k in kette):
             return lambda x, y: pulpa_feld(x, y)
         return lambda x, y: zahn_feld(x, y)
@@ -719,9 +746,27 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = 
     # Zahnfleisch und Knochen NEU zeichnen statt mitziehen. Sie gehoeren der
     # Spalte, nicht dem Zahn - die Papille ist zwischen zwei Nachbarn EINE
     # Struktur auf EINER Hoehe. gum.py zeichnet sie in Endkoordinaten.
-    vb = re.search(r'viewBox="([^"]*)"', txt).group(1)
-    hoehe = float(vb.split()[3])
-    occl = hoehe - build.OCCL_MARGIN
+    # Die Kaukante ist die GEZEICHNETE, nicht die des Rahmens.
+    #
+    # Bisher stand hier `hoehe - OCCL_MARGIN`, also die Stelle, an der die
+    # Kauebene im Spender lag. Bei Dirks Zeichnungen liegt sie woanders -
+    # gemessen zwischen 3,6 und 13,7 Einheiten ueber dem Rand, wo alle Spender
+    # auf 8,00 liegen. Das Zahnfleisch wurde damit gegen eine Ebene gezeichnet,
+    # die der Zahn gar nicht hat, und im Bogen nebeneinander streuten die
+    # Kronen um zehn Einheiten. Beides faellt weg, wenn der Zahn selbst sagt,
+    # wo seine Kaukante ist.
+    vb = [float(v) for v in re.search(r'viewBox="([^"]*)"', txt).group(1).split()]
+    # Gemessen wird die KURVE, nicht der abgetastete Polygonzug: `polygon`
+    # setzt alle 0,35 Einheiten einen Punkt und trifft den Scheitel einer
+    # Waelbung nur zufaellig. `curve_extent` nimmt dieselbe Ausdehnung, die
+    # verify_redraw nachher prueft - sonst streut die Kauebene um genau die
+    # Differenz zwischen zwei Messungen desselben Randes.
+    occl = build.curve_extent(umriss_d)[3]
+    # Und der Rahmen bekommt genau so viel Hoehe, dass diese Kante wieder
+    # OCCL_MARGIN ueber seinem unteren Rand liegt. Nur die HOEHE waechst oder
+    # schrumpft, der obere Rand bleibt stehen - so kann am Apex nichts
+    # abgeschnitten werden, und keine einzige Koordinate wird angefasst.
+    hoehe = occl + build.OCCL_MARGIN - vb[1]
     cx = float(np.mean([neu[:, 0].min(), neu[:, 0].max()]))
     band = neu[np.abs(neu[:, 1] - cej_neu) < 1.5]
     if len(band) < 2:
@@ -744,4 +789,44 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = 
     # traegt er weiter die Krone des SPENDERS, und der Uebergang sitzt daneben.
     # `connect_fillings` bekommt die Kaukante des NEUEN Zahns, nicht die Ebene
     # des Rahmens - gestreckt wird auf das okklusale Band dieses Zahns.
-    return build.connect_fillings(out, float(neu[:, 1].max()))
+    out = build.connect_fillings(out, occl)
+    out = re.sub(r'(viewBox=")[^"]*(")',
+                 lambda m: f"{m.group(1)}{vb[0]} {vb[1]} {vb[2]} {hoehe:.2f}{m.group(2)}",
+                 out, count=1)
+    return _stempel(out, zahn, cej_neu)
+
+
+def _stempel(txt: str, zahn: str, cej: float) -> str:
+    """Den toothgen-Kopf auf die NEUE Geometrie setzen.
+
+    Der Kopf des Spenders ueberlebt das Umzeichnen sonst unveraendert, und er
+    ist kein Kommentar: `verify.py` liest `cej=` daraus, und aus denselben
+    Zahlen kommen die Ankertabellen `CEJ_Y` und `IMPLANT_CEJ_Y` in
+    `src/perioGraphic.ts`. Ein Spenderwert dort waere ein Anker auf einem Zahn,
+    den es nicht mehr gibt - die Zervikallinie der Parodontalkarte laege am
+    falschen Ort, und zwar genau an dem Zahn, dessen Umriss am staerksten vom
+    Spender abweicht.
+
+    `cej` ist die von Dirk GEZEICHNETE Schmelz-Zement-Grenze, dieselbe, an der
+    das Feld aufgehaengt und das Zahnfleisch neu gezeichnet wurde; Apex und
+    Kaukante werden am fertigen `tooth-base` gemessen. `drawn=` haelt fest,
+    wessen Zeichnung das ist - `src=` nennt weiterhin die Schumacher-Quelle des
+    Spenders, aus der die uebrigen 200 Ebenen stammen.
+    """
+    P = redraw.polygon(redraw.tooth_base_d(txt))
+    apex, inc = float(P[:, 1].min()), float(P[:, 1].max())
+    werte = {
+        "apex": f"{apex:.2f}",
+        "cej": f"{cej:.2f}",
+        "occl": f"{inc:.2f}",
+        "root_frac": f"{(cej - apex) / (inc - apex):.4f}",
+        "length": f"{inc - apex:.2f}",
+    }
+
+    def setze(m: re.Match) -> str:
+        s = m.group(0)
+        for k, v in werte.items():
+            s = re.sub(rf"\b{k}=[-\d.]+", f"{k}={v}", s)
+        return s.replace("<!-- toothgen:", f"<!-- toothgen: drawn={zahn}", 1)
+
+    return re.sub(r"<!-- toothgen:.*?-->", setze, txt, count=1, flags=re.S)

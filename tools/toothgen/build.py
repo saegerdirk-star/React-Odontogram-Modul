@@ -36,6 +36,22 @@ ROOT = Path(__file__).resolve().parents[2]
 
 ASSETS = ROOT / "src" / "assets" / "teeth-svgs"
 
+# Wohin dieser Generator schreibt, seit die ausgelieferten Templates aus Dirks
+# Zeichnungen kommen (tools/toothgen/redraw_alle.py).
+#
+# `build.py` baut die Templates aus den Schumacher-Konturen; diese Dateien sind
+# jetzt nicht mehr das Ergebnis, sondern die VORLAGE: das Umzeichnen setzt Dirks
+# Umriss und seine Pulpa ein und uebernimmt die rund 200 klinischen Ebenen aus
+# dem naechsten Verwandten. Schriebe der Generator weiter nach src/assets, ueber-
+# schriebe ein `npm run toothgen:build` neun ausgelieferte Zaehne stillschweigend
+# mit der alten Geometrie - und ein zweiter Lauf des Umzeichnens verformte
+# anschliessend ein bereits umgezeichnetes Template ein zweites Mal. Getrennte
+# Ordner sind das, was beides unmoeglich macht.
+#
+# Der Ordner ist nicht versioniert; er ist reproduzierbar, und `spec.py` samt
+# den eingefrorenen Digests in `verify.py` ist der Beweis dafuer.
+SPENDER = ROOT / "tools" / "toothgen" / "spender"
+
 
 SOURCE = Path(__file__).resolve().parent / "source"
 
@@ -659,7 +675,7 @@ def build_one(s: ToothSpec, out_dir: Path, dry: bool, root_scale: float | None =
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default=str(ASSETS))
+    ap.add_argument("--out", default=str(SPENDER))
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--only", default=None)
     ap.add_argument(

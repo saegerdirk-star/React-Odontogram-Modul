@@ -66,3 +66,11 @@ KFO/
 .beads-credential-key
 .beads/proxieddb/
 .beads.gate.lock
+
+# === toothgen: Spender-Templates ===
+# Die Vorlage, aus der das Umzeichnen die klinischen Ebenen uebernimmt.
+# Reproduzierbar aus spec.py und tools/toothgen/source - `npm run
+# toothgen:spender` baut sie, und die eingefrorenen Digests in verify.py
+# beweisen, dass dabei jedes Mal dieselben Bytes herauskommen. Was
+# ausgeliefert wird, liegt in src/assets/teeth-svgs.
+tools/toothgen/spender/

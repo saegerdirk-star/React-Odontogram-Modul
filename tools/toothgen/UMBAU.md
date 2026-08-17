@@ -1,46 +1,77 @@
 # Anatomie-Umbau: Stand und naechste Schritte
 
-Branch `feat/anatomie-neuzeichnung`. Stand 17.08.2026, Abend.
+Branch `feat/anatomie-neuzeichnung`. Stand 17.08.2026.
 
-## SOFORT LESEN: hier geht es weiter
+## Der Modellumbau ist durch
 
-**40 Templates sind fertig erzeugt und liegen in `/tmp/Neu`** - 16 bleibende
-Seitenansichten, 10 Milchzaehne, 14 Kauflaechen. **Kein einziges ist im Repo.**
-Erzeugt werden sie mit zwei Aufrufen, beide wiederholbar:
+Alle 40 Templates liegen im Repo, das Modell kennt je eine Vorlage pro Position,
+und `spec.py` musste dafuer nicht angefasst werden. **Offen ist genau eines: die
+Boegen zusammengesetzt ansehen** - alle ernsten Fehler dieser Arbeit haben so
+angefangen, und kein einziger haette ein Tor rot gemacht.
+
+Die Kette hat jetzt ZWEI Stufen, und das ist der wichtigste Unterschied zu
+vorher:
 
 ```
-python3 tools/toothgen/redraw_alle.py /tmp/Neu     # 26 Seitenansichten
-python3 tools/toothgen/redraw_occl.py  /tmp/Neu    # 14 Kauflaechen
+npm run toothgen:spender   # build.py + occlusal.py -> tools/toothgen/spender/
+npm run toothgen:redraw    # Dirks Zeichnungen hinein -> src/assets/teeth-svgs/
+npm run toothgen:verify    # verify.py (Spender) + verify_redraw.py (Ausgeliefertes)
 ```
 
-Beide Skripte tragen ihren Plan als Tabelle (`PLAN`): je Ziel die Zeichnung und
-den SPENDER, von dem die rund 200 klinischen Ebenen kommen. Dauer zusammen etwa
-vier Minuten.
+`tools/toothgen/spender/` ist nicht versioniert und wird in etwa 30 Sekunden neu
+gebaut; es ist byte-genau reproduzierbar, und die eingefrorenen Digests in
+`verify.py` sind der Beweis. Der Ordner MUSS getrennt bleiben: zeigte das
+Umzeichnen wieder auf `src/assets`, verformte der zweite Lauf ein bereits
+umgezeichnetes Template ein zweites Mal - und zwar lautlos, weil der Umriss ja
+eingesetzt wird und der Zahn danach richtig aussieht.
 
-Der Modellumbau selbst ist NICHT begonnen. Er ist als EIN Block zu machen,
-sonst muessen die Digests zweimal eingefroren werden. Reihenfolge:
+`redraw_plan.py` haelt beide Tabellen (Ziel -> Zeichnung -> Spender) allein und
+ohne numpy, damit `verify_redraw.py` den Spender ablesen kann, ohne den
+Generator zu laden, den es prueft.
 
-1. **Die 40 Dateien nach `src/assets/teeth-svgs`.** Dabei ausmustern: `31.svg`,
-   `71.svg`, `74.svg`, `75.svg`, `34_occl.svg` - ihre Positionen haben jetzt
-   eigene Templates.
-2. **`src/odontogram.ts`**: `TOOTH_TEMPLATE` auf je eine Position (11-18 und
-   41-48, Gegenseite weiter durch `mirror`), `PRIMARY_TEMPLATE` auf 51-55 und
-   81-85, `OCCLUSAL_TEMPLATE` auf die 14. Der untere Milcheckzahn lief bisher
-   auf dem OBEREN (53) - das ist der auffaelligste Einzelfall.
-3. **`src/perioGraphic.ts`**: die `TemplateNo`-Union erweitern. Der Compiler
-   erzwingt danach beide Ankerkarten (`CEJ_Y`, `IMPLANT_CEJ_Y`) - je Template
-   ein Wert, gemessen an der koronalen Kante von `gum-base`.
-4. **`tools/toothgen/spec.py`**: Eintraege fuer die neuen Templates in `SPECS`
-   und `PRIMARY_SPECS`, `col_px` gegen `grid-template-columns` in
-   `src/index.css` pruefen (verify.py tut das).
-5. **Digests EINMAL neu einfrieren** in `verify.py`, dann `npm test`,
-   `npx tsc -b --noEmit`, `check_roundtrip.py`, `npm run build`.
-6. **Die Parity-Fingerabdruecke** aendern sich zwangslaeufig - sie haengen an
-   den alten Templates. Die Verschiebung VORLEGEN, nicht stillschweigend neu
-   einfrieren; sonst ist genau die Pruefung wertlos, die vor unbemerkten
-   Aenderungen schuetzt.
-7. **Die Boegen zusammengesetzt ansehen lassen.** Alle ernsten Fehler dieses
-   Tages haben so angefangen, und kein einziger haette ein Tor rot gemacht.
+### Was die Digests angeht: nichts einzufrieren
+
+Der alte Plan sagte "Digests EINMAL neu einfrieren". Das hat sich erledigt und
+zwar besser: `verify.py` misst weiter den SPENDER-Satz, und der ist unveraendert
+- `AUTHORED_GEOMETRY_SHA256` stimmt Zahn fuer Zahn wie vorher. Was ausgeliefert
+wird, ist Dirks Zeichnung, und die gegen Schumachers Zahlen zu messen hiesse dem
+Zahnarzt die Vorlage vorzuhalten. Ihr Vertrag steht in `verify_redraw.py` und
+prueft das, was beim Umzeichnen wirklich schiefgehen kann.
+
+### Drei Fehler, die der Umbau selbst gefunden hat
+
+Alle drei waren an den harten Vertraegen gruen, alle drei haetten im Bogen
+gestanden:
+
+* **Das Implantat wurde mit dem Zahn gedehnt.** Am Sechser auf die doppelte
+  Laenge, die Plattform elf Einheiten in die Krone hinauf - und `IMPLANT_CEJ_Y`
+  in `src/perioGraphic.ts` haengt genau an dieser Plattform. Ein Fabrikteil
+  folgt der Wurzel STARR, dieselbe Regel, die die Stifte schon hatten.
+* **Die Kauebene streute um zehn Einheiten.** Die Spender liegen alle auf 8,00
+  ueber dem Rahmenrand, Dirks Zeichnungen zwischen 3,6 und 13,7. Kein
+  Anatomieproblem, ein Rahmenproblem: der Rahmen bekommt jetzt genau so viel
+  Hoehe, dass die GEZEICHNETE Kaukante wieder auf 8,00 liegt, und das
+  Zahnfleisch wird gegen diese Kante gezeichnet statt gegen die nominelle.
+* **Die Kauflaechen-Kacheln trugen den Namen der Seitenansicht.** `tpl-16` an
+  beiden, gleiche Spezifitaet, und die Groessenregel der Seitenansicht gewann.
+  Das galt schon vorher fuer 14, 16 und 46 und haette jetzt jeden Seitenzahn
+  getroffen. Sie heissen jetzt `tpl-16-occl`.
+
+### Zwei Faktoren sind ersatzlos weg
+
+Beide waren dazu da, eine GELIEHENE Zeichnung als die Position lesbar zu machen,
+an der sie stand - und beide wuerden jetzt eine richtige Zeichnung verbiegen:
+der Breitenfaktor 0,8 fuer den seitlichen Schneidezahn in der Parodontalkarte
+und die Kachelskalierung 0,9 fuer den unteren Milcheckzahn.
+
+### Eine Luecke, bewusst offen
+
+Die vier Milchmolaren-Kauflaechen (`54_occl`, `55_occl`, `84_occl`, `85_occl`)
+sind erzeugt und ausgeliefert, aber noch nicht montiert: eine Kauflaechen-Kachel
+wird in `buildGrid` EINMAL gebaut und, anders als die Seitenansicht, nie wieder
+umgehaengt. Das war vorher genauso - ein Milchmolar zeigte immer die bleibende
+Kauflaeche -, es ist also nichts kaputtgegangen; es ist die eine Stelle, an der
+"je eine Vorlage pro Position" noch nicht gilt.
 
 ## Die Regel, aus der alles andere folgt
 

@@ -30,7 +30,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import roots
 import fillings  # noqa: E402
-from build import ASSETS, SOURCE, rewrite_svg, namespace_paint_servers  # noqa: E402
+from build import SPENDER, SOURCE, rewrite_svg, namespace_paint_servers  # noqa: E402
 
 
 @dataclass(frozen=True)
@@ -175,7 +175,11 @@ def build_one(spec: OcclSpec, out_dir: Path, dry: bool) -> None:
 
 def main(argv: list[str]) -> int:
     dry = "--dry-run" in argv
-    out_dir = ASSETS
+    out_dir = SPENDER
+    for i, a in enumerate(argv):
+        if a == "--out":
+            out_dir = Path(argv[i + 1])
+    out_dir.mkdir(parents=True, exist_ok=True)
     for spec in OCCL_SPECS:
         build_one(spec, out_dir, dry)
     return 0

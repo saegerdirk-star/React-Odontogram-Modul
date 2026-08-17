@@ -105,16 +105,16 @@ describe("getToothBaseGroupFromCache", () => {
     }
   });
 
-  it("a position-2 tooth (12) carries the 0.8 width transform", () => {
-    const group = getToothBaseGroupFromCache(cache, 12);
-    const sizeNode = group.querySelector('[data-perio-size^="position-2"]');
-    expect(sizeNode).toBeTruthy();
-    expect(sizeNode!.getAttribute("transform") || "").toMatch(/matrix\(0\.8 0 0 1 /);
-  });
-
-  it("a position-1 tooth (11, same template as 12) carries no WIDTH transform", () => {
-    const group = getToothBaseGroupFromCache(cache, 11);
-    expect(group.querySelector('[data-perio-size^="position-2"]')).toBeNull();
+  // The lateral incisor's 0.8 width factor is RETIRED (2026-08-17). It existed
+  // because a lateral was drawn as its central neighbour - in the lower arch
+  // one template served 31, 32, 41 and 42 alike. Every position has its own
+  // contour now, at the width it was drawn at, so the factor would narrow a
+  // correct drawing by a further fifth.
+  it("carries no width transform on any position, lateral incisor included", () => {
+    for (const toothNo of [11, 12, 41, 42]) {
+      const group = getToothBaseGroupFromCache(cache, toothNo);
+      expect(group.querySelector('[data-perio-size^="position-2"]'), String(toothNo)).toBeNull();
+    }
   });
 
   // Root restoration (perio chart only): the odontogram draws roots at 60 % of

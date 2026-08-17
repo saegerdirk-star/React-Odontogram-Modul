@@ -28,9 +28,11 @@
 import { TEMPLATES, TOOTH_TEMPLATE } from "./odontogram";
 
 export type TemplateNo =
-  | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 31 | 46
+  | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18
+  | 41 | 42 | 43 | 44 | 45 | 46 | 47 | 48
   // primary dentition — reached only while a tooth is charted as a milk tooth
-  | 51 | 52 | 53 | 54 | 55 | 71 | 74 | 75;
+  | 51 | 52 | 53 | 54 | 55
+  | 81 | 82 | 83 | 84 | 85;
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -67,24 +69,33 @@ export const EXCLUDED_TOOTH_BASE_IDS: readonly string[] = [
  * canine sits highest (longest root), the lower incisor lowest.
  */
 export const CEJ_Y: Record<TemplateNo, number> = {
-  11: 40.8,
-  12: 37.8,
-  13: 38.1,
-  14: 37.2,
-  15: 34.6,
-  16: 37.7,
-  17: 38.3,
-  31: 35.6,
-  46: 32.9,
+  11: 32.7,
+  12: 35.5,
+  13: 35.0,
+  14: 32.2,
+  15: 31.8,
+  16: 35.7,
+  17: 35.9,
+  18: 32.0,
+  41: 29.9,
+  42: 30.8,
+  43: 36.7,
+  44: 33.0,
+  45: 32.5,
+  46: 35.5,
+  47: 32.2,
+  48: 31.1,
   // primary dentition; only reached while a tooth is charted as a milk tooth
-  51: 32.3,
-  52: 29.9,
-  53: 33.4,
-  54: 26.9,
-  55: 31.4,
-  71: 27.6,
-  74: 27.0,
-  75: 31.6,
+  51: 28.2,
+  52: 24.3,
+  53: 29.2,
+  54: 24.5,
+  55: 24.2,
+  81: 24.1,
+  82: 25.0,
+  83: 28.8,
+  84: 24.5,
+  85: 29.0,
 };
 
 /**
@@ -106,23 +117,32 @@ export const CEJ_Y: Record<TemplateNo, number> = {
  * the templates are.
  */
 export const IMPLANT_CEJ_Y: Record<TemplateNo, number> = {
-  11: 35.0,
-  12: 32.5,
-  13: 35.2,
-  14: 33.2,
-  15: 31.0,
-  16: 32.9,
-  17: 33.4,
-  31: 30.7,
-  46: 28.9,
-  51: 27.9,
-  52: 26.0,
-  53: 30.9,
-  54: 24.3,
-  55: 27.6,
-  71: 24.1,
-  74: 23.9,
-  75: 27.8,
+  11: 34.7,
+  12: 34.2,
+  13: 36.4,
+  14: 33.1,
+  15: 31.8,
+  16: 34.7,
+  17: 35.8,
+  18: 32.6,
+  41: 27.6,
+  42: 28.4,
+  43: 33.2,
+  44: 30.6,
+  45: 29.0,
+  46: 31.2,
+  47: 31.2,
+  48: 30.1,
+  51: 27.4,
+  52: 21.9,
+  53: 30.2,
+  54: 21.1,
+  55: 23.5,
+  81: 21.2,
+  82: 21.2,
+  83: 29.6,
+  84: 21.3,
+  85: 29.8,
 };
 
 /** Predicate telling the arch builders whether a given tooth is an implant on
@@ -189,10 +209,15 @@ const ROOT_RESTORE_SCALE = 1 / 0.75;
  */
 const CANINE_ROOT_SCALE = 1.0;
 
-/** Lateral incisor (FDI position 2) width factor — narrower than the
- *  central incisor sharing the same tpl-11 template, per the task brief's
- *  exact value. */
-const LATERAL_INCISOR_WIDTH_SCALE = 0.8;
+/** Lateral incisor (FDI position 2) width factor.
+ *
+ *  RETIRED on 2026-08-17 (kept only so the reason stays with the number). It
+ *  existed because a lateral incisor was drawn as its central neighbour: in the
+ *  lower arch tpl-31 served 31, 32, 41 and 42 alike, and 0.8 was what made the
+ *  lateral read as a lateral. Since Dirk drew every position — 12 and 42 have
+ *  their own contour, at the width he drew them — the factor would narrow a
+ *  correct drawing by a further fifth. */
+const LATERAL_INCISOR_WIDTH_SCALE = 1.0;
 
 export type TemplateDocCache = Map<TemplateNo, Document>;
 
@@ -381,9 +406,9 @@ export function getToothBaseGroupFromCache(
   //    regardless of which position transform, if any, is applied).
   const pos = fdiPosition(toothNo);
   const sizeGroup = document.createElementNS(SVG_NS, "g") as unknown as SVGGElement;
-  if (pos === 2) {
-    // scale(0.8,1) anchored at the horizontal center (cx = w/2):
-    // x' = 0.8*(x-cx)+cx = 0.8x + cx*0.2 = 0.8x + w*0.1
+  if (pos === 2 && LATERAL_INCISOR_WIDTH_SCALE !== 1) {
+    // scale(k,1) anchored at the horizontal center (cx = w/2):
+    // x' = k*(x-cx)+cx = k*x + cx*(1-k)
     sizeGroup.setAttribute("data-perio-size", `position-2-width-${LATERAL_INCISOR_WIDTH_SCALE}`);
     sizeGroup.setAttribute("transform", `matrix(${LATERAL_INCISOR_WIDTH_SCALE} 0 0 1 ${fmt(w * (1 - LATERAL_INCISOR_WIDTH_SCALE) / 2)} 0)`);
   }
