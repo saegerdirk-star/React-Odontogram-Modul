@@ -84,15 +84,48 @@ def umzeichnen(zahn: str, spender: str, ziel: str | None = None) -> str:
     ziel = redraw_apply.umriss_id(txt, "tooth-base")
     alt = redraw.polygon(dict(redraw_apply.elemente_von(txt, "tooth-base"))[ziel])
 
-    ebene = redraw_apply._ebene(
-        (ZEICHNUNGEN / f"{zahn}_occl_zeichnen.svg").read_text(), "3 HIER ZEICHNEN")
+    # `_fissuren.svg` GEHT VOR, wenn es sie gibt.
+    #
+    # Dirk hat die Kauflaechen am 18.08.2026 neu gezeichnet - Umriss plus
+    # Fissurenlinien, ohne die Hoeckerflaechen - und zwar in eigene Dateien.
+    # Die alte `_zeichnen.svg` bleibt als Vorgeschichte liegen; sie hier weiter
+    # zu lesen hiesse, die neue Zeichnung zu erzeugen und die alte
+    # auszuliefern.
+    quelle = ZEICHNUNGEN / f"{zahn}_occl_fissuren.svg"
+    if not quelle.exists():
+        quelle = ZEICHNUNGEN / f"{zahn}_occl_zeichnen.svg"
+    ebene = redraw_apply._ebene(quelle.read_text(), "3 HIER ZEICHNEN")
     ds = re.findall(r'<path[^>]*\sd="([^"]+)"', ebene)
     if not ds:
         raise ValueError(f"{zahn}_occl_zeichnen.svg: nichts in der Zeichenebene")
     # Der Aussenumriss ist der laengste Pfad - die uebrigen sind Hoecker und
     # Fissuren, die INNERHALB von ihm liegen.
     umriss_d = max(ds, key=lambda d: len(redraw.polygon(d)))
-    dr = dreher(redraw.polygon(umriss_d), alt)
+    if (ziel or spender) in SPIEGELN_OCCL:
+        # Die ZEICHNUNG waagerecht spiegeln, nicht das fertige Template.
+        #
+        # Dirks Unterkiefer-Vorlagen zeichnen LINGUAL nach oben, die Spender
+        # bukkal - die Zeichnung muss also in den Rahmen des Spenders gekippt
+        # werden, bevor Umriss und Fissuren eingesetzt werden. Wird stattdessen
+        # das Ergebnis gespiegelt, kippen die Spender-Ebenen zur Zeichnung
+        # herunter: beide stimmen dann zueinander, aber der ganze Zahn liegt
+        # verkehrt im Rahmen, und die 180-Grad-Drehung des Bogens dreht ihn
+        # obendrein wieder herum. Genau so kam der Unterkiefer mit bukkal nach
+        # INNEN heraus.
+        P = redraw.polygon(umriss_d)
+        cy = float(P[:, 1].min() + P[:, 1].max()) / 2.0
+        sp = lambda x, y, cy=cy: (x, 2.0 * cy - y)
+        umriss_d = svgpath.warp_path_d(umriss_d, sp)
+        ebene = re.sub(r'(<path[^>]*\sd=")([^"]+)(")',
+                       lambda m: m.group(1) + svgpath.warp_path_d(m.group(2), sp) + m.group(3),
+                       ebene)
+    # `dreher` wird NICHT mehr gefragt. Es entschied ueber den Formabstand, ob
+    # eine Zeichnung um 180 Grad zu drehen sei - eine Schaetzung, wo die Lage
+    # inzwischen bekannt ist: der Oberkiefer liegt wie das Template, der
+    # Unterkiefer ist senkrecht zu spiegeln (SPIEGELN_OCCL). Waagerecht stimmt
+    # beides. Eine 180-Grad-Drehung wuerde mesial und distal mit vertauschen und
+    # ist damit nie richtig.
+    dr = None
     if dr:
         umriss_d = svgpath.warp_path_d(umriss_d, dr)
     neu = redraw.polygon(umriss_d)
@@ -176,7 +209,15 @@ def setze_fissuren(txt: str, ds: list[str]) -> str:
     """
     if not ds:
         return txt
-    zusammen = " ".join(ds)
+    # ABSOLUT machen, bevor sie zu einem Pfad werden.
+    #
+    # Inkscape schreibt jeden Pfad mit einem RELATIVEN `m` als erstem Befehl.
+    # Aneinandergehaengt ist der Startpunkt jedes weiteren Teilzugs damit
+    # relativ zum ENDE des vorigen - die zweite Fissur landet versetzt, die
+    # dritte doppelt versetzt, und was herauskommt, hat mit der Zeichnung nichts
+    # mehr zu tun. Dirk, 18.08.2026, beim Anblick des Ergebnisses: "was machst
+    # du mit meinen Fissuren?"
+    zusammen = " ".join(svgpath.warp_path_d(d, lambda x, y: (x, y)) for d in ds)
     for gid in ("fissure", "fissure-sealing-occlusal"):
         m = re.search(rf'(<g[^>]*\sid="{gid}"[^>]*>)(.*?)(</g>)', txt, re.S)
         if not m:
@@ -264,8 +305,6 @@ def ohne_umgebung(txt: str) -> str:
 def erzeuge(ziel: str, ordner: Path) -> str:
     zahn, spender = PLAN[ziel]
     txt = ohne_umgebung(umzeichnen(zahn, spender, ziel))
-    if ziel in SPIEGELN_OCCL:
-        txt = spiegle_waagerecht(txt)
     if ziel in OHNE_FISSUREN:
         txt = leere_fissuren(txt)
     txt = txt.replace(f'data-tooth-template="{spender}"', f'data-tooth-template="{ziel}"', 1)

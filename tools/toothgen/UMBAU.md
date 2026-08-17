@@ -153,6 +153,43 @@ Zu tun:
    Handzeichnung aus `source/`.
 4. Erst wenn das steht, lohnt es, die uebrigen Kauflaechen so neu zu zeichnen.
 
+## Kauflaechen: Quelle, Lage und ein teuer bezahlter Fehler (18.08.2026)
+
+**`<n>_occl_fissuren.svg` geht vor `<n>_occl_zeichnen.svg`.** Dirk hat die zehn
+Seitenzaehne neu gezeichnet - Umriss plus Fissurenlinien, ohne Hoeckerflaechen -
+und zwar in eigene Dateien. `redraw_occl` liest jetzt die neue, wo es sie gibt,
+und faellt nur fuer die vier Milchmolaren auf die alte zurueck. Vorher wurde die
+neue Zeichnung ausgewertet und die alte ausgeliefert.
+
+**Die Lage wird AUSGERECHNET, nicht geschaetzt.** `dreher` ist raus; es entschied
+ueber den Formabstand, ob eine Zeichnung zu drehen sei, und lag dreimal daneben.
+Abgelesen von den Schumacher-Scans in den Zeichnungen selbst:
+
+    Zeichnung Oberkiefer  14 15 16 17 18:  vestibulaer oben, mesial rechts
+    Zeichnung Unterkiefer 44 45 46 47 48:  LINGUAL oben,     mesial rechts
+    Spender-Templates (alle vier):          bukkal oben,      mesial rechts
+
+Der Oberkiefer passt also; der Unterkiefer wird waagerecht gespiegelt
+(`SPIEGELN_OCCL`). Gespiegelt wird die ZEICHNUNG vor dem Einsetzen, NICHT das
+fertige Template: kippt man das Ergebnis, folgen die Spender-Ebenen der
+Zeichnung nach unten - beide stimmen dann zueinander, aber der ganze Zahn liegt
+verkehrt im Rahmen, und die 180-Grad-Drehung des Bogens dreht ihn noch einmal.
+Geprueft wird an `filling-composite-buccal/-lingual/-mesial/-distal`, also an
+anatomisch benannten Ebenen: fuer alle 20 Positionen zeigt mesial zur
+Kiefermitte und bukkal nach aussen.
+
+**Der Fehler, der es wert ist, aufgeschrieben zu werden:** Inkscape schreibt
+jeden Pfad mit einem RELATIVEN `m`. Die Fissuren werden zu EINEM Pfad
+zusammengehaengt (die Elementzahl der Gruppe muss gleich bleiben) - und damit
+war der Startpunkt jedes Teilzugs ab dem zweiten relativ zum Ende des vorigen.
+Die Fissuren lagen versetzt uebereinander. Jeder Zug wird jetzt einzeln absolut
+gemacht, bevor er angehaengt wird.
+
+Zweimal hintereinander wurde an diesem Tag "eingesetzt" gemeldet, ohne zu
+pruefen, WO das Eingesetzte liegt. Die Pruefung dafuer ist ein Dreizeiler
+(Punkt-in-Polygon gegen den Umriss) und sagt heute fuer alle zehn: kein
+Fissurenpunkt ausserhalb. Wer hier etwas aendert, laesst sie laufen.
+
 ## Offen aus dem 17.08.2026, ausserhalb dieser Ableitung
 
 * **Vestibulaer/palatinal an den MOLAREN-Kauflaechen** ist ungeprueft. Bei den

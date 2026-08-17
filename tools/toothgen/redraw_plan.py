@@ -165,10 +165,24 @@ NEIGUNG: dict[str, float] = {
 # das stimmt aber. Vertauscht ist allein die zweite Achse, und dafuer gibt es
 # nur die Spiegelung.
 #
-# ALLE VIER Praemolaren. Zuerst standen hier nur die oberen, mit der Begruendung,
-# die unteren wuerden im Bogen ohnehin um 180 Grad gedreht gezeichnet und kaemen
-# dadurch von selbst richtig heraus. Das war eine Vermutung und sie war falsch:
-# die unteren haben einen ANDEREN Spender (34_occl), ihre Lage haengt also nicht
-# an der der oberen. Sobald die oberen richtig standen, waren die unteren
-# sichtbar verkehrt (Dirk, 17.08.2026: "Und jetzt sind die unteren falsch").
-SPIEGELN_OCCL: set[str] = {"14_occl", "15_occl", "44_occl", "45_occl"}
+# Kauflaechen-Zeichnungen, die vor dem Einsetzen an der waagerechten Achse
+# gespiegelt werden - und zwar AUSGERECHNET, nicht mehr geraten.
+#
+# Gemessen am 18.08.2026, nachdem die Beschriftung der Schumacher-Scans in den
+# Zeichnungen selbst nachgesehen war:
+#
+#   Zeichnung Oberkiefer  14 15 16 17 18:  vestibulaer oben, mesial rechts
+#   Zeichnung Unterkiefer 44 45 46 47 48:  LINGUAL oben,     mesial rechts
+#   Spender-Templates (alle vier):          bukkal oben,      mesial rechts
+#
+# Der Oberkiefer liegt also schon richtig; der Unterkiefer steht senkrecht
+# verkehrt, weil seine Vorlage lingual nach oben zeichnet. Waagerecht stimmt
+# beides, mesial liegt ueberall rechts.
+#
+# Davor standen hier die vier PRAEMOLAREN - erst die oberen, dann alle vier -,
+# und beides war falsch. Dirk: "Bei den oberen Praemolaren sind vestibulaer und
+# palatinal vertauscht", dann "und jetzt sind die unteren falsch", dann "Zaehne
+# links und rechts zwischen den Quadranten vertauscht". Drei Runden Raten,
+# waehrend die Angabe die ganze Zeit auf seinen Vorlagen stand.
+SPIEGELN_OCCL: set[str] = {"44_occl", "45_occl", "46_occl", "47_occl", "48_occl",
+                           "84_occl", "85_occl"}

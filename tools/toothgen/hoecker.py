@@ -59,6 +59,45 @@ TOL_ANSCHLUSS = 0.6
 # bleibt ein Zwickel stehen.
 MIN_ANTEIL = 0.02
 
+# Wie die Vorlagen liegen, abgelesen von den Schumacher-Scans in den
+# Zeichnungen selbst (18.08.2026) - nicht angenommen:
+#
+#   Oberkiefer  14 15 16 17 18:  vestibulaer OBEN,  lingual UNTEN
+#   Unterkiefer 44 45 46 47 48:  lingual OBEN,      vestibulaer UNTEN
+#
+# Mesial liegt in BEIDEN Kiefern rechts, distal links. Die senkrechte Achse
+# kippt also zwischen den Kiefern, die waagerechte nicht.
+OBEN_IST_VESTIBULAER = {14, 15, 16, 17, 18, 24, 25, 26, 27, 28, 54, 55, 64, 65}
+
+# Ab welchem Anteil der halben Ausdehnung eine Richtung genannt wird. Darunter
+# liegt das Gebiet mittig und die Richtung waere geraten.
+DEUTLICH = 0.22
+
+
+def benenne(mitte, schwer, spanne, oben_vest: bool) -> str:
+    """Ein Gebiet nach seiner LAGE benennen statt es zu nummerieren.
+
+    Zwei Achsen, jede nur genannt, wenn sie deutlich ausschlaegt. Ein Hoecker
+    liegt in einer Ecke und bekommt beide (mesiobukkal); eine Randleiste liegt
+    seitlich auf halber Hoehe und bekommt nur eine (mesiale Randleiste).
+    """
+    dx = (schwer[0] - mitte[0]) / (spanne[0] / 2.0)
+    dy = (schwer[1] - mitte[1]) / (spanne[1] / 2.0)
+    waag = "mesial" if dx > DEUTLICH else "distal" if dx < -DEUTLICH else ""
+    if abs(dy) <= DEUTLICH:
+        senk = ""
+    elif (dy < 0) == oben_vest:
+        senk = "bukkal"
+    else:
+        senk = "lingual"
+    if waag and senk:
+        return f"{waag}o{senk}"
+    if senk:
+        return senk
+    if waag:
+        return f"{waag}e Randleiste"
+    return "zentral"
+
 
 def lies_zeichnung(datei: Path) -> tuple[np.ndarray, list[np.ndarray]]:
     """Umriss und Fissurenlinien aus einer `_zeichnen`-Datei.
@@ -266,7 +305,22 @@ def gebiete(umriss: np.ndarray, gezeichnet: list[np.ndarray],
             gefunden.append((nr, n))
     flaeche = 1.0 / (AUFLOESUNG * AUFLOESUNG)
     gross = [(nr, n) for nr, n in gefunden if n >= MIN_ANTEIL * gesamt]
-    gross = _verschmelze(marke, m_gez, m_hilf, gross)
+    # `_verschmelze` laeuft NICHT. Sie stand hier einen Zug lang und war ein
+    # Fehlschluss: die kleinen Gebiete am Rand sind keine Konstruktionsreste,
+    # sondern die MESIALE und DISTALE RANDLEISTE. An allen vier Praemolaren
+    # kommt dasselbe Muster heraus - zwei grosse Felder gegenueber (bukkal und
+    # palatinal/lingual, 33 bis 55 Prozent) und zwei kleine seitlich (9 bis 14
+    # Prozent) -, und Dirk hat es als richtig bestaetigt.
+    #
+    # Genau diese kleinen Gebiete sind das, wofuer die Zerlegung gebaut wird:
+    # eine okklusale Fuellung ist die zentrale Grube, MO nimmt die mesiale
+    # Randleiste dazu, OD die distale, MOD beide. Sie wegzuverschmelzen hiesse,
+    # den Approximalkasten wegzuwerfen und danach zu schaetzen.
+    #
+    # Die Funktion bleibt stehen, weil ihre Begruendung die Warnung ist: eine
+    # Flaechenschwelle taugt hier nicht (der reduzierte distopalatinale Hoecker
+    # am 17er misst 7,4 Prozent), und eine Herkunftsregel taugt auch nicht,
+    # solange nicht feststeht, WAS ein kleines Gebiet ist.
     return marke, gross, gesamt * flaeche, flaeche, (x0, y0)
 
 
@@ -326,10 +380,17 @@ def _bericht(datei: Path) -> int:
     bild.parent.mkdir(parents=True, exist_ok=True)
     vorschau(datei, bild)
     print(f"Bild: {bild}")
-    print(f"\nKauflaeche {kau:.1f} Einheiten^2, {len(gross)} Hoecker:")
-    for k, (_nr, n) in enumerate(sorted(gross, key=lambda g: -g[1]), 1):
-        print(f"   Hoecker {k}: {n * zelle:6.2f} Einheiten^2 "
-              f"({n * zelle / kau:5.1%} der Kauflaeche)")
+    zahn = int(re.match(r"(\d+)", datei.stem).group(1))
+    oben_vest = zahn in OBEN_IST_VESTIBULAER
+    mitte = ((umriss[:, 0].min() + umriss[:, 0].max()) / 2.0,
+             (umriss[:, 1].min() + umriss[:, 1].max()) / 2.0)
+    spanne = (float(np.ptp(umriss[:, 0])), float(np.ptp(umriss[:, 1])))
+    print(f"\nKauflaeche {kau:.1f} Einheiten^2, {len(gross)} Gebiete:")
+    for k, (nr, n) in enumerate(sorted(gross, key=lambda g: -g[1]), 1):
+        ys, xs = np.nonzero(_marke == nr)
+        schwer = (_u[0] + xs.mean() / AUFLOESUNG, _u[1] + ys.mean() / AUFLOESUNG)
+        print(f"   {k}: {n * zelle:6.2f} Einheiten^2 ({n * zelle / kau:5.1%})  "
+              f"{benenne(mitte, schwer, spanne, oben_vest)}")
     return 0
 
 
