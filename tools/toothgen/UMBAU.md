@@ -79,6 +79,56 @@ Ungleichmaessigkeit zu erzwingen. Was zaehlt:
    * **Digests neu einfrieren** in `verify.py` - einmal fuer alles, nicht pro
      Teillieferung.
 
+## Kauflaechen: was eingesetzt wird und was abgeleitet gehoert
+
+Entschieden am 17.08.2026, nachdem `FISSURE_ALLOWED` nachgesehen war.
+
+**Die Fissurenlinien tragen keinen Befund.** `fissure` ist eine reine
+Zeichenebene. Was einen Befund traegt, ist `fissure-sealing-occlusal` an
+`state.fissureSealing` - und diese Flaeche muss AUF den Fissuren liegen.
+`FISSURE_ALLOWED` ist `{16,17,26,27,36,37,46,47}`: nur erste und zweite
+bleibende Molaren, keine Praemolaren, keine Achter, keine Milchzaehne. Die
+Kopplung betrifft also genau VIER Kauflaechen-Templates. Ueberall sonst koennen
+Dirks Fissuren eingesetzt werden, ohne dass etwas synchron zu halten waere.
+
+**Praemolaren: Fissuren bleiben LEER.** Dirk hat sie bewusst ohne gezeichnet,
+weil die alten Templates vom Oberkiefermolaren abgeleitet waren. Das Feld wuerde
+sonst weiterhin das Molarenmuster auf einen Praemolarenumriss ziehen - genau der
+Fehler, den er vermeiden wollte. Lieber eine glatte Kauflaeche als eine falsche.
+Nachzuzeichnen, wenn Zeit ist.
+
+**Zur Leitlinienlage**, weil sie beim Entscheiden aufkam: die S3-Leitlinie
+"Fissuren- und Grübchenversiegelung" (AWMF 083-002) wurde im **Maerz 2025**
+ueberarbeitet und empfiehlt die Versiegelung weiter, aber selektiv - tiefes
+Fissurenrelief und erhoehtes Kariesrisiko. Nicht obsolet, aber auch nicht mehr
+flaechendeckend.
+
+## Fuellungsflaechen, Inlays, Veneers - offene Frage
+
+Dirks Frage vom 17.08.2026: "Mir ist auch nicht klar, wie die Fuellungsflaechen
+abgeleitet werden, oder Inlays. Bei Veneers ist es ganz einfach. Das Veneer
+bedeckt die labiale Flaeche und die haben wir dargestellt/gezeichnet."
+
+Nachgesehen: die Fuellungsflaechen sind in `tools/toothgen/source/*.svg` von
+Hand gezeichnet, NICHT abgeleitet. Der Generator formt sie nur nach -
+`fillings.stretch_to_band` zieht die mesiale und die distale Flaeche bis an die
+okklusale, damit MO/OD/MOD als EINE Restauration erscheint, und skaliert dabei
+"um die Mittellinie der Krone, um so viel wie die Krone dort schmaler geworden
+ist". Der Generator weiss also bereits, wie eine Fuellungsflaeche der Krone zu
+folgen hat.
+
+Daraus folgt zweierlei, und beides ist noch NICHT getan:
+
+  * Nach dem Umzeichnen muss `build.connect_fillings` neu laufen, so wie
+    `build.replace_gum` schon neu laeuft. Sonst sitzt der Anschluss der
+    Approximalflaechen an die okklusale noch an der Krone des SPENDERS.
+  * Das Veneer ist der Fall, den Dirk gleich richtig benannt hat: es bedeckt die
+    labiale Flaeche, und die IST der gezeichnete Kronenumriss. Es gehoert also
+    abgeleitet und nicht gewarpt - dieselbe Konstruktion wie die Pulpakammer.
+    Gemessen liegt die Veneerform an den Seitenzaehnen zu 0 Prozent auf der
+    Kontur, vorher wie nachher; das ist Altbestand und faellt mit der Ableitung
+    von selbst weg.
+
 ## Beim Zusammenbau anzusehen: Neigungen
 
 Dirk, 17.08.2026: "12 kippt mit der Wurzel nach mesial bzw. die Schneidekante
