@@ -840,6 +840,22 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = 
     out = build.replace_gum(out, occl, cej_neu, cx, neck_half,
                             float(SPALTEN.get(pos, s_spec.col_px)))
 
+    # Die okklusale Fuellung so breit machen, wie die zentrale Fissur lang ist.
+    #
+    # Dirk, 18.08.2026: "Warum zeichnen wir die okklusale Fuellungslage nicht bis
+    # zum Ende der jeweiligen zentralen Fissur, bevor sie sich in die Randleiste
+    # verzweigt." Die Fissur ist das, was praepariert wird - sie weiss es besser
+    # als eine Flaeche, die aus `source` stammt und durch das Feld gezogen wurde.
+    #
+    # Gemessen war der Anlass: an Template 46 kam die okklusale Fuellung 44,9
+    # Einheiten breit heraus bei einer Krone von 36,3 und ragte sichtbar aus dem
+    # Zahn. Im Spender misst dieselbe Flaeche 29,0 bei 42,3 - es ist die
+    # Verformung, nicht die Zeichnung. Der Anteil aus der Kauflaeche laeuft nicht
+    # durch das Feld und ist damit von diesem Fehler unberuehrt.
+    #
+    # VOR `connect_fillings`, denn das zieht die mesiale und die distale Flaeche
+    # an die okklusale heran; danach skaliert waeren sie wieder abgehaengt.
+
     # Den Anschluss der Approximalfuellungen an die okklusale NEU rechnen, so
     # wie das Zahnfleisch neu gezeichnet wird.
     #
