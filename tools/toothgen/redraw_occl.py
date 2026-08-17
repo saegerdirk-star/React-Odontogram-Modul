@@ -132,9 +132,35 @@ def umzeichnen(zahn: str, spender: str) -> str:
     return redraw_apply.verforme_je_element(txt, feld_fuer)
 
 
+# Praemolaren tragen KEINE Fissuren. Dirk hat sie bewusst ohne gezeichnet, weil
+# die alten Templates vom Oberkiefermolaren abgeleitet waren; mitgezogen laege
+# also weiterhin ein Molarenmuster auf einem Praemolaren. Lieber eine glatte
+# Kauflaeche als eine falsche - nachzuzeichnen, wenn Zeit ist.
+OHNE_FISSUREN = {"14_occl", "15_occl", "44_occl", "45_occl"}
+
+
+def leere_fissuren(txt: str) -> str:
+    """Die Fissurenzeichnung entfernen, ohne einen Vertragswert anzufassen.
+
+    Die Pfade in `<g id="fissure">` tragen keine eigene id - sie sind anonym.
+    Ihr `d` durch eine entartete Strecke weit ausserhalb des viewBox zu
+    ersetzen loescht also nichts, was der Fingerabdruck kennt: die Gruppe
+    bleibt mit id und data-active stehen, nur ihr Inhalt zeichnet nicht mehr.
+    Sie sind mit stumpfen Enden gestrichelt, ein entarteter Pfad hinterlaesst
+    daher auch keinen Punkt.
+    """
+    m = re.search(r'(<g[^>]*\sid="fissure"[^>]*>)(.*?)(</g>)', txt, re.S)
+    if not m:
+        return txt
+    innen = re.sub(r'(\sd=")[^"]+(")', lambda x: x.group(1) + "M-99,-99Z" + x.group(2), m.group(2))
+    return txt[:m.start()] + m.group(1) + innen + m.group(3) + txt[m.end():]
+
+
 def erzeuge(ziel: str, ordner: Path) -> str:
     zahn, spender = PLAN[ziel]
     txt = umzeichnen(zahn, spender)
+    if ziel in OHNE_FISSUREN:
+        txt = leere_fissuren(txt)
     txt = txt.replace(f'data-tooth-template="{spender}"', f'data-tooth-template="{ziel}"', 1)
     txt = txt.replace(f"toothgen-{spender}-", f"toothgen-{ziel}-")
     (ordner / f"{ziel}.svg").write_text(txt)
