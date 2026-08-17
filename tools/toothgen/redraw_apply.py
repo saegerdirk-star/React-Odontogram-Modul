@@ -203,9 +203,19 @@ def veneer_aus(alt_zahn, neu_zahn, alt_veneer):
     Form, die bis an die Zahnkante laeuft. Unten kommt dazu eine kantige
     Zeilenkante heraus, wo die Vorlage eine gerundete Form hat.
 
+    Dirk hat am Eckzahn einen zweiten Grund gezeigt, unabhaengig vom Rand: "Das
+    abgeleitete Veneer an 13 folgt zur Zahnkrone nicht dem Umriss." Die
+    Zeilenabtastung schneidet oben und unten WAAGERECHT ab. Wo die Krone spitz
+    zulaeuft - Eckzahnhoecker, Schneidekante -, steht die Zahnspitze unter der
+    geraden Veneerkante hervor. Dieselbe Sehne, die an der Kauflaeche des
+    Sechsundvierzigers quer durch die Krone lief; eine Zeilenkonstruktion kann
+    ein spitzes Ende nicht abschliessen.
+
     Richtig waere ein VERSATZ: die Form der Vorlage um denselben Abstand nach
-    innen von Dirks Kontur, den sie von der alten hatte. Das ist eine andere
-    Konstruktion als die Kammer, und sie ist noch nicht gebaut.
+    innen von Dirks Kontur, den sie von der alten hatte. Damit bleiben BEIDE
+    Eigenschaften erhalten, die diese Konstruktion verliert - der eingerueckte
+    Rand ringsum und der gerundete Abschluss an der Spitze. Andere Konstruktion
+    als die Kammer, und sie ist noch nicht gebaut.
     """
     ya0, ya1 = float(alt_zahn[:, 1].min()), float(alt_zahn[:, 1].max())
     yn0, yn1 = float(neu_zahn[:, 1].min()), float(neu_zahn[:, 1].max())
