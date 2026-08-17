@@ -83,6 +83,58 @@ def umriss_id(txt: str, ident: str) -> str:
     return aussen[0]
 
 
+def _schmales_ende_oben(P) -> bool:
+    """Liegt das schmale Ende - die Wurzel - bei kleinem y?"""
+    y0, y1 = float(P[:, 1].min()), float(P[:, 1].max())
+    breit = []
+    for f in (0.05, 0.15, 0.85, 0.95):
+        k = redraw._kanten(P, y0 + f * (y1 - y0))
+        breit.append((k[-1] - k[0]) if len(k) >= 2 else 0.0)
+    return (breit[0] + breit[1]) < (breit[2] + breit[3])
+
+
+def rahmen_dreher(zeichnung, template):
+    """Bringt eine Unterkiefer-Zeichnung in den Rahmen ihres Templates.
+
+    Die Templates liegen alle mit der Wurzel nach OBEN; die Unterkiefer-
+    Templates bekommen ihre Drehung erst beim Zeichnen des Bogens
+    (`TOOTH_TEMPLATE`, rot 180). Dirk zeichnet den Unterkiefer dagegen
+    anatomisch, Krone oben. Also muss die Zeichnung gedreht werden.
+
+    DREHUNG, nicht Spiegelung - das ist der Unterschied zwischen richtig und
+    mesial/distal vertauscht, und er ist an dieser Stelle schon einmal falsch
+    gewesen. Entschieden hat es Dirks Ankerkonvention (17.08.2026): "Du hattest
+    S1 auf distal. Wir sind also von distal nach mesial in der Nummerierung."
+
+      * Gegenprobe an der Darstellungsmatrix des Moduls: Zahn 16 steht in der
+        linken Bogenhaelfte, mesial zeigt also zur Mitte, nach RECHTS - und
+        `TOOTH_TEMPLATE` nimmt Template 16 dafuer ungespiegelt. Im Template
+        liegt mesial demnach rechts, distal links. Genau so stehen die S-Anker
+        im `_alt`-File: S1 (distal) links. Die Konvention stimmt.
+      * Dasselbe unten: Template 46 wird fuer Zahn 36 um 180 Grad gedreht
+        verwendet, und bei 36 zeigt mesial nach links. Also liegt auch in
+        Template 46 mesial rechts - und die S-Anker bestaetigen es.
+      * In Dirks Zeichnungen von 46, 47 und 48 ist die S-Reihenfolge dagegen
+        umgekehrt: mesial liegt LINKS. Die Zeichnung ist gegenueber dem
+        Template also gespiegelt, und zusammen mit dem Kippen von Krone und
+        Wurzel ergibt das die 180-Grad-Drehung.
+      * Unabhaengig davon der Formabstand am unsymmetrischsten Zahn: 46 gedreht
+        0,0404 gegen 0,0560 gekippt.
+
+    Dass die H-Anker am Zahnhals ihre Reihenfolge dabei NICHT drehen, spricht
+    nicht dagegen - sie tragen die Konvention nicht, sie sind schlicht die
+    beiden Halspunkte.
+
+    Gibt None zurueck, wenn Zeichnung und Template schon gleich herum liegen -
+    der ganze Oberkiefer.
+    """
+    if _schmales_ende_oben(zeichnung) == _schmales_ende_oben(template):
+        return None
+    cx = float(zeichnung[:, 0].min() + zeichnung[:, 0].max()) / 2.0
+    cy = float(zeichnung[:, 1].min() + zeichnung[:, 1].max()) / 2.0
+    return lambda x, y: (2.0 * cx - x, 2.0 * cy - y)
+
+
 def kammer_aus(region, schritt: float = 0.2) -> str | None:
     """Die Pulpakammer als Pfad - der breite Teil, bevor die Kanaele abgehen.
 
@@ -319,7 +371,11 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool) -> str:
     alt = redraw.polygon(redraw.tooth_base_d(txt))
 
     zeich = (ZEICHNUNGEN / f"{zahn}_zeichnen.svg").read_text()
-    neu = redraw.polygon(_pfad(_ebene(zeich, "3 HIER ZEICHNEN")))
+    umriss_d = _pfad(_ebene(zeich, "3 HIER ZEICHNEN"))
+    dreh = rahmen_dreher(redraw.polygon(umriss_d), alt)   # Unterkiefer: siehe dort
+    if dreh:
+        umriss_d = svgpath.warp_path_d(umriss_d, dreh)
+    neu = redraw.polygon(umriss_d)
 
     # Zuordnung ueber die HOEHE, nicht ueber die Bogenlaenge. Der erste Versuch
     # lief ueber den Umfang und scherte das Innere: die Pulpa kam 35 Prozent
@@ -330,6 +386,8 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool) -> str:
     cej_alt = ya0 + s_spec.root_frac * (ya1 - ya0) if oben \
         else ya1 - s_spec.root_frac * (ya1 - ya0)
     cej_neu = szg(zahn)
+    if dreh:
+        cej_neu = dreh(0.0, cej_neu)[1]
 
     # Der Bauplan kommt aus den Konturen selbst - siehe redraw.laufmarken.
     lm_alt, lm_neu = redraw.laufmarken(alt, neu)
@@ -337,6 +395,8 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool) -> str:
     if mit_ankern:
         aa = anker(ZEICHNUNGEN / f"{zahn}_anker_alt.svg")
         an = anker(ZEICHNUNGEN / f"{zahn}_anker_neu.svg")
+        if dreh:
+            an = {k: dreh(*v) for k, v in an.items()}
         for k in sorted(aa):
             if k.startswith("K") and k in an:
                 marken_alt.append(aa[k][1])
@@ -354,6 +414,8 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool) -> str:
     if pz.exists():
         gez = re.findall(r'<path[^>]*\sd="([^"]+)"',
                          _ebene(pz.read_text(), "3 PULPA HIER ZEICHNEN"))
+        if dreh:
+            gez = [svgpath.warp_path_d(g, dreh) for g in gez]
         alt_d = pfade_von(txt, "tooth-healthy-pulp")
         if not alt_d:
             raise ValueError(f"{template}.svg: tooth-healthy-pulp nicht gefunden")
