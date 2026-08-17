@@ -103,11 +103,50 @@ Verlaengerung ist eine HILFSLINIE fuer die Zerlegung und wird NICHT in `fissure`
 mitgeliefert. Sonst stuende auf der Kauflaeche eine erfundene Fissur, wo
 anatomisch die Randleiste durchlaeuft.
 
+**Schritt 1 steht: `tools/toothgen/hoecker.py`** (18.08.2026). Aufruf
+`python3 tools/toothgen/hoecker.py 17_occl_fissuren`; das schreibt die Zahlen
+und ein Bild nach `~/Desktop/Odontogram-Ergebnisse`, in dem die gezeichneten
+Fissuren schwarz und die erfundenen Hilfslinien ROT GESTRICHELT stehen - man
+sieht auf einen Blick, welche Grenze von wem kommt.
+
+Gerastert mit 40 Zellen je Einheit, nicht als planares Arrangement: ein
+Arrangement muesste jeden Kurvenschnitt loesen und braeche an den T-Stoessen,
+die in einer Handzeichnung 0,1 bis 0,2 Einheiten Spiel haben. Das Raster fragt
+nur, was zusammenhaengt, und ist feiner als die Zeichnung.
+
+Stand ueber die zehn Seitenzaehne (Dirk hat die sechs Molaren dafuer neu
+gezeichnet, `<n>_occl_fissuren.svg` in ~/dev/Odontogram-Anatomie):
+
+  14 -> 2 Gebiete   15 -> 3   16 -> 6   17 -> 4   18 -> 6
+  44 -> 2           45 -> 2   46 -> 6   47 -> 6   48 -> 6
+
+Die Praemolaren stimmen (zwei Hoecker, bukkal groesser als palatinal), 17 auch.
+Bei den uebrigen liegt die Zahl ein bis zwei ueber der Anatomie, und der
+Ueberschuss sind immer die kleinsten Gebiete - Randzwickel, die eine Hilfslinie
+von der Randleiste abschneidet.
+
+**DIE OFFENE FRAGE, und sie ist keine Rechenfrage:** woran ist ein Randzwickel
+von einem echten Hoecker zu unterscheiden? Eine FLAECHENSCHWELLE scheidet aus -
+Dirk hat am 17er das Gebiet mit 7,4 Prozent als reduzierten distopalatinalen
+Hoecker bestaetigt, und die Zwickel liegen bei 3,9 bis 9,5. Eine
+HERKUNFTSREGEL ist eingebaut (`_verschmelze`: ein Gebiet faellt weg, wenn es an
+JEDER Grenze nur durch Hilfslinien vom Nachbarn getrennt ist), aber sie greift
+nur bei zwei von zehn, weil ein Zwickel an einer Seite meist doch eine
+gezeichnete Fissur hat - naemlich die, deren Verlaengerung ihn abschneidet.
+Dirk soll an ein paar Beispielen sagen, WORAN er es erkennt; daraus die Regel,
+nicht aus einer weiteren Vermutung.
+
+Ausserdem gemessen und beim Neuzeichnen zu vermeiden: an 14 und 44 laeuft die
+Fissur HIN UND ZURUECK (Zuglaenge 68 bzw. 74 Einheiten bei 19 bzw. 23 zwischen
+den Enden). Der Zerlegung schadet es nicht, aber die Richtung der Hilfslinie
+kommt aus den letzten Punkten des Zuges und zeigt dann dorthin zurueck, wo die
+Linie herkam - und im Template wird ein doppelt gelaufener Zug zweimal
+gestrichelt.
+
 Zu tun:
 
-1. Zerlegung: Umriss + Fissuren + Verlaengerungen -> Gebiete. Die
-   Verlaengerungen nur in der Zerlegung fuehren, nie im Ergebnis.
-2. Hoecker als Flaechen aus den Gebieten.
+1. ~~Zerlegung~~ - steht.
+2. Hoecker als VEKTORflaechen aus den Gebieten (heute Raster).
 3. Fuellungsflaechen daraus ableiten - okklusal der Bereich um die
    Fissurenkreuzung, MO/OD nehmen den jeweiligen Randbereich dazu. Heute macht
    `fillings.stretch_to_band` nur den Anschluss; die Flaechen selbst sind
