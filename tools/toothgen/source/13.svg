@@ -253,27 +253,27 @@
     </g>
   <g id="surfaces" data-active="1">
     <g id="subcaries" data-active="1">
-      <path id="subcaries-buccal" d="M16.7,50.5c.6.8,1.4,1.2,2.1,1.2,1.2,0,2.1-1,2.7-2.6s.4-1.1.4-1.8c-.5-3.4-5.6-2.2-6.2-.8-.4,1.1.6,3,1.1,3.8h0v.2h-.1Z" data-active="1" style="display: none; fill: #0a1018; stroke: #000; stroke-miterlimit: 10;" />
-      <path id="subcaries-mesial" d="M27.5,33.3c-4-.9-5.7,12.2-4.3,14.4,1.1,3.8,5.7,4.3,7.2.3,1.3-3.1,0-12.9-2.7-14.7,0,0-.2,0-.2,0Z" data-active="1" style="display: none; fill: #0a1018; stroke: #000; stroke-miterlimit: 10;" />
-      <path id="subcaries-distal" d="M11.7,51.4c2.3-.5,3.1-6,3.4-8.7.6-4,.2-8.6-3.2-8-4.3,1.1-4.4,15.9-.3,16.8h.1,0Z" data-active="1" style="display: none; fill: #0a1018; stroke: #000; stroke-miterlimit: 10;" />
-      <path id="subcaries-occlusal" d="M13,60.4c1.1,3.6,4.9,5.8,7.1,5.6,2.1,0,6-2.9,6.9-5.8,1.3-5.6-5.5-7.6-8.8-7.1-2.4.3-5.4,2.8-5.5,6.2v.8l.3.5h0s0-.2,0-.2Z" data-active="1" style="display: none; fill: #0a1018; stroke: #000; stroke-miterlimit: 10;" />
+      <path id="subcaries-buccal" d="M16.7,50.5c.6.8,1.4,1.2,2.1,1.2,1.2,0,2.1-1,2.7-2.6s.4-1.1.4-1.8c-.5-3.4-5.6-2.2-6.2-.8-.4,1.1.6,3,1.1,3.8h0v.2h-.1Z" data-active="1" style="display: none; fill: #721813; stroke: #5c1310; stroke-miterlimit: 10;" />
+      <path id="subcaries-mesial" d="M27.5,33.3c-4-.9-5.7,12.2-4.3,14.4,1.1,3.8,5.7,4.3,7.2.3,1.3-3.1,0-12.9-2.7-14.7,0,0-.2,0-.2,0Z" data-active="1" style="display: none; fill: #721813; stroke: #5c1310; stroke-miterlimit: 10;" />
+      <path id="subcaries-distal" d="M11.7,51.4c2.3-.5,3.1-6,3.4-8.7.6-4,.2-8.6-3.2-8-4.3,1.1-4.4,15.9-.3,16.8h.1,0Z" data-active="1" style="display: none; fill: #721813; stroke: #5c1310; stroke-miterlimit: 10;" />
+      <path id="subcaries-occlusal" d="M13,60.4c1.1,3.6,4.9,5.8,7.1,5.6,2.1,0,6-2.9,6.9-5.8,1.3-5.6-5.5-7.6-8.8-7.1-2.4.3-5.4,2.8-5.5,6.2v.8l.3.5h0s0-.2,0-.2Z" data-active="1" style="display: none; fill: #721813; stroke: #5c1310; stroke-miterlimit: 10;" />
       </g>
     <g id="caries" data-active="1">
-      <path id="caries-root" d="M12.2,28.2c-1.1,2.9,10.3,1.2,12.2.7,2.9-.5,1.1-2.1,1-4.1-.1-3-4.3,2.2-5.9,2.2-3.3,0-3.7-2.6-6.2-3.1s-.6,3-1,4.4h-.1Z" data-active="1" style="display: none; fill: #0a1018; stroke: #000; stroke-miterlimit: 10;" />
-      <path id="caries-subcrown" d="M10,35.7c-1,2.9,12.1-5.5,11.8-7.5-1-4-8.9-3.1-9.7-.3l-2.1,7.8h0Z" data-active="1" style="display: none; fill: #0a1018; stroke: #000; stroke-miterlimit: 10;" />
-      <path id="caries-buccal" d="M16.7,50.5c.6.8,1.4,1.2,2.1,1.2,1.2,0,2.1-1,2.7-2.6s.4-1.1.4-1.8c-.5-3.4-5.6-2.2-6.2-.8-.4,1.1.6,3,1.1,3.8h0v.2h-.1Z" data-active="1" style="display: none; fill: #0a1018; stroke: #000; stroke-miterlimit: 10;" />
+      <path id="caries-root" d="M12.2,28.2c-1.1,2.9,10.3,1.2,12.2.7,2.9-.5,1.1-2.1,1-4.1-.1-3-4.3,2.2-5.9,2.2-3.3,0-3.7-2.6-6.2-3.1s-.6,3-1,4.4h-.1Z" data-active="1" style="display: none; fill: #b3261e; stroke: #8c1d18; stroke-miterlimit: 10;" />
+      <path id="caries-subcrown" d="M10,35.7c-1,2.9,12.1-5.5,11.8-7.5-1-4-8.9-3.1-9.7-.3l-2.1,7.8h0Z" data-active="1" style="display: none; fill: #b3261e; stroke: #8c1d18; stroke-miterlimit: 10;" />
+      <path id="caries-buccal" d="M16.7,50.5c.6.8,1.4,1.2,2.1,1.2,1.2,0,2.1-1,2.7-2.6s.4-1.1.4-1.8c-.5-3.4-5.6-2.2-6.2-.8-.4,1.1.6,3,1.1,3.8h0v.2h-.1Z" data-active="1" style="display: none; fill: #b3261e; stroke: #8c1d18; stroke-miterlimit: 10;" />
       <g id="caries-mesial" data-active="1" style="display: none;">
-        <path id="mesial-shape" d="M27.8,35c-3.5-.8-5,10.7-3.8,12.6,1,3.3,5,3.8,6.3.3,1.1-2.7,0-11.3-2.4-12.9h-.1Z" data-active="1" style="fill: #0a1018; stroke: #000; stroke-miterlimit: 10;" />
+        <path id="mesial-shape" d="M27.8,35c-3.5-.8-5,10.7-3.8,12.6,1,3.3,5,3.8,6.3.3,1.1-2.7,0-11.3-2.4-12.9h-.1Z" data-active="1" style="fill: #b3261e; stroke: #8c1d18; stroke-miterlimit: 10;" />
         <path id="mesial-patch2" d="M27.9,42.4c3.2,0-1-4.3-1.8-1.6-.3.9.8,1.7,1.5,1.6h.3Z" data-active="1" style="fill: #fff;" />
         <path id="mesial-patch1" d="M26.1,47.9c1.4,1.3,4.6-.7,2.1-1.6-1.6-.5-2.5.6-2.1,1.5h0Z" data-active="1" style="fill: #fff;" />
         </g>
       <g id="caries-distal" data-active="1" style="display: none;">
-        <path id="distal-shape" d="M11.7,51.4c2.3-.4,3.1-5.3,3.4-7.7.6-3.5.2-7.6-3.2-7.1-4.3,1-4.4,14-.3,14.8,0,0,.1,0,0,0h0Z" data-active="1" style="fill: #0a1018; stroke: #000; stroke-miterlimit: 10;" />
+        <path id="distal-shape" d="M11.7,51.4c2.3-.4,3.1-5.3,3.4-7.7.6-3.5.2-7.6-3.2-7.1-4.3,1-4.4,14-.3,14.8,0,0,.1,0,0,0h0Z" data-active="1" style="fill: #b3261e; stroke: #8c1d18; stroke-miterlimit: 10;" />
         <path id="distal-patch2" d="M13,42.5c.9-.6.5-2.7-.6-2.5s-.7,3,.4,2.6h.2Z" data-active="1" style="fill: #fff;" />
         <path id="distal-patch1" d="M10.8,48c.2.3.7.5,1,.6.3,0,.8.2.7,0-.3-.5-1.1-1.6-1.5-1.9-.8-.3-.4,1-.3,1.3,0,0,.1,0,.1,0Z" data-active="1" style="fill: #fff;" />
         </g>
       <g id="caries-occlusal" data-active="1" style="display: none;">
-        <path id="occlusal-shape" d="M13.8,60.7c1,3.1,4.3,5.1,6.2,4.9,1.8,0,5.2-2.5,6-5.1,1.1-4.9-4.8-6.6-7.7-6.2-2.1.3-4.7,2.4-4.8,5.4v.7l.3.4h0Z" data-active="1" style="fill: #0a1018; stroke: #000; stroke-miterlimit: 10;" />
+        <path id="occlusal-shape" d="M13.8,60.7c1,3.1,4.3,5.1,6.2,4.9,1.8,0,5.2-2.5,6-5.1,1.1-4.9-4.8-6.6-7.7-6.2-2.1.3-4.7,2.4-4.8,5.4v.7l.3.4h0Z" data-active="1" style="fill: #b3261e; stroke: #8c1d18; stroke-miterlimit: 10;" />
         <path id="occlusal-patch2" d="M20.1,60.6c-.7,3,3.3,1.5,3.6,0,.5-.8.2-2-.5-2.3-1.2-.5-2.4,1-3.2,2.1h0v.2h.1Z" data-active="1" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: .2px;" />
         <path id="occlusal-patch1" d="M15.5,60.7c-.1,1.5,1,2.6,1.6,1.2.4-.9.4-3.1-.4-3.1s-1.1.7-1.1,1.8v.2h-.1Z" data-active="1" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: .2px;" />
         </g>

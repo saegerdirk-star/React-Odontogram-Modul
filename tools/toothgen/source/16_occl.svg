@@ -173,20 +173,20 @@
     </g>
   <g id="surfaces" data-active="1">
     <g id="caries" data-active="1">
-      <path id="caries-lingual" d="M17.8,38c1.1.5,3,.7,4.6.7,2.5,0,4.6-.5,5.7-1.4s.8-.6.8-1c-.9-1.9-12-1.3-13.5-.6-.8.6,1.4,1.7,2.4,2.2h0Z" data-active="1" style="display: none; fill: #0a1018; stroke: #000; stroke-miterlimit: 10;" />
-      <path id="caries-buccal" d="M18.6,5.8c1.1.5,3,.7,4.6.7,2.5,0,4.6-.5,5.7-1.5s.8-.6.8-1c-1-1.9-12-1.2-13.5-.5-.8.6,1.4,1.7,2.4,2.2h0Z" data-active="1" style="display: none; fill: #0a1018; stroke: #000; stroke-miterlimit: 10;" />
+      <path id="caries-lingual" d="M17.8,38c1.1.5,3,.7,4.6.7,2.5,0,4.6-.5,5.7-1.4s.8-.6.8-1c-.9-1.9-12-1.3-13.5-.6-.8.6,1.4,1.7,2.4,2.2h0Z" data-active="1" style="display: none; fill: #b3261e; stroke: #8c1d18; stroke-miterlimit: 10;" />
+      <path id="caries-buccal" d="M18.6,5.8c1.1.5,3,.7,4.6.7,2.5,0,4.6-.5,5.7-1.5s.8-.6.8-1c-1-1.9-12-1.2-13.5-.5-.8.6,1.4,1.7,2.4,2.2h0Z" data-active="1" style="display: none; fill: #b3261e; stroke: #8c1d18; stroke-miterlimit: 10;" />
       <g id="caries-mesial" data-active="1" style="display: none;">
-        <path id="mesial-shape" d="M38.1,28.6c3.4.2,3.4-14.6,2-16.2-.5-1.1-1.9-.3-2.8-.6-1.5-.5-1.9,3.4-2.8,5-.4,1.6-4.6,1.3-3.6,4.1s3.3,1,3.8,1.9,1.2,4.1,2.2,5.2l1.1.7h0Z" data-active="1" style="fill: #0a1018; stroke: #000; stroke-miterlimit: 10;" />
+        <path id="mesial-shape" d="M38.1,28.6c3.4.2,3.4-14.6,2-16.2-.5-1.1-1.9-.3-2.8-.6-1.5-.5-1.9,3.4-2.8,5-.4,1.6-4.6,1.3-3.6,4.1s3.3,1,3.8,1.9,1.2,4.1,2.2,5.2l1.1.7h0Z" data-active="1" style="fill: #b3261e; stroke: #8c1d18; stroke-miterlimit: 10;" />
         <path id="mesial-patch2" d="M37.4,21.5c-4,0,1.2,4.3,2.2,1.6.4-.9-1-1.7-1.9-1.6h-.4.1Z" data-active="1" style="fill: #fff;" />
         <path id="mesial-patch1" d="M39.6,14.6c-1.7-1.3-5.7.7-2.6,1.6,2,.5,3.1-.6,2.6-1.5h0Z" data-active="1" style="fill: #fff;" />
         </g>
       <g id="caries-distal" data-active="1" style="display: none;">
-        <path id="distal-shape" d="M11.4,25.9c2.4-.3-.4-3.3.1-5.4.7-3.1,2.7-7.5-.8-7.2-.8.1-2.3-.3-2.8.5-2.3,3-3,10.6-.3,12.1s.6.6.7,1h0c0,.6.6,1,1.2.8s.6-.2.8-.4l1.2-1.4h0Z" data-active="1" style="fill: #0a1018; stroke: #000; stroke-miterlimit: 10;" />
+        <path id="distal-shape" d="M11.4,25.9c2.4-.3-.4-3.3.1-5.4.7-3.1,2.7-7.5-.8-7.2-.8.1-2.3-.3-2.8.5-2.3,3-3,10.6-.3,12.1s.6.6.7,1h0c0,.6.6,1,1.2.8s.6-.2.8-.4l1.2-1.4h0Z" data-active="1" style="fill: #b3261e; stroke: #8c1d18; stroke-miterlimit: 10;" />
         <path id="distal-patch2" d="M10.7,18.3c1.2-.7.8-3.2-.7-3.1s-1.2,3.6.3,3.1h.4Z" data-active="1" style="fill: #fff;" />
         <path id="distal-patch1" d="M8.6,24.8c0,.3.6.5,1,.6.2,0,.7.2.7,0-.2-.5-1-1.5-1.4-1.8-.7-.3-.5.9-.4,1.2,0,0,.1,0,0,0h0Z" data-active="1" style="fill: #fff;" />
         </g>
       <g id="caries-occlusal" data-active="1" style="display: none;">
-        <path id="occlusal-shape" d="M13.8,27.2c.6.9,3.7,6.3,4.6,6.4.9,0-1.6-4.6-1.5-5.7s.2-3.1.7-3.7c1-1.2,3.2-3.2,3.9-3.3,1.7-.4,6.6,3.4,8.5,3.8,3.1.6-2.3-4.4,2.1-4.2,4.4.2-.3-3.5-.8-5-.9-2-4.9,1.8-7,.6s-1.2-6.5-2.9-6.5-.8,6.4-2.6,7.7-4.6,3.4-6.1,2.4-1.2-1.6-2.3-2.7-1.3,0-1,.7l1.5,3.8,1.2,3,1.6,2.6h.1Z" data-active="1" style="fill: #0a1018; stroke: #000; stroke-miterlimit: 10;" />
+        <path id="occlusal-shape" d="M13.8,27.2c.6.9,3.7,6.3,4.6,6.4.9,0-1.6-4.6-1.5-5.7s.2-3.1.7-3.7c1-1.2,3.2-3.2,3.9-3.3,1.7-.4,6.6,3.4,8.5,3.8,3.1.6-2.3-4.4,2.1-4.2,4.4.2-.3-3.5-.8-5-.9-2-4.9,1.8-7,.6s-1.2-6.5-2.9-6.5-.8,6.4-2.6,7.7-4.6,3.4-6.1,2.4-1.2-1.6-2.3-2.7-1.3,0-1,.7l1.5,3.8,1.2,3,1.6,2.6h.1Z" data-active="1" style="fill: #b3261e; stroke: #8c1d18; stroke-miterlimit: 10;" />
         <path id="occlusal-patch2" d="M25.3,19c-.9,3,4.1,1.5,4.5,0,.6-.8.2-2-.6-2.3-1.5-.5-3,1-4,2.1h0v.2s.1,0,.1,0Z" data-active="1" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: .2px;" />
         <path id="occlusal-patch1" d="M14,22.7c-.1,1.5,1.2,2.6,2,1.2.5-.9.5-3.1-.5-3.1s-1.4.7-1.4,1.8v.2h-.1Z" data-active="1" style="fill: #fff; stroke: #000; stroke-miterlimit: 10; stroke-width: .2px;" />
         </g>

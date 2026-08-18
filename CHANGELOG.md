@@ -27,6 +27,23 @@
 - Die Abbildung Zeichnung -> Template ist gemessen, nicht angenommen: der
   gezeichnete Umriss wurde je Zahn gegen `tooth-base` gehalten, unveraendert und
   y-gespiegelt. Oberkiefer passt unveraendert, Unterkiefer gespiegelt.
+- **Halskaries und Karies unter der Krone sind Baender am Zahnhals**, aus Umriss
+  und Zahnhalslinie abgeleitet (`tools/toothgen/halsbaender.py`) statt aus dem
+  Spender gewarpt. Sie brauchen nichts Gezeichnetes. Vorher sass die Halskaries
+  im Mittel 5,1 und am oberen ersten Praemolaren 19,5 Einheiten neben der
+  Schmelz-Zement-Grenze - am oberen Sechser war sie ein diagonaler Schmier quer
+  darueber und dabei in zwei Stuecke zerrissen -, und ihre Hoehe schwankte
+  zwischen 3 und 32 Einheiten. Jetzt liegt sie 0,3 bis 0,6 Einheiten zervikal
+  der Linie, nimmt genau die Halsbreite ein und misst 1,7 bis 2,9 Einheiten. Die
+  beiden Baender stossen an der Schmelz-Zement-Grenze aneinander, weil dort das
+  eine ins andere uebergeht.
+- **Karies wird rot gezeichnet statt fast schwarz.** Alle Kariesebenen trugen
+  `#0a1018`; primaere Karies fuehrt jetzt `#b3261e` - den Ton, den `index.css`
+  fuer tiefe Karies schon fuehrt -, Sekundaerkaries denselben Ton dunkler
+  (`#721813`, gleicher Farbwinkel und gleiche Saettigung, Helligkeit von 0,41
+  auf 0,26). Geaendert in `tools/toothgen/source/` UND in den ausgelieferten
+  Templates, damit ein spaeterer Neuaufbau die Farbe nicht zurueckdreht.
+
 - Die SVG-Fingerabdruecke sind unveraendert - der Abdruck liest `id`, `opacity`
   und `class`, geaendert wurden nur `d` und `points`.
 
