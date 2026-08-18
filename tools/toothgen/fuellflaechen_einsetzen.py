@@ -206,12 +206,31 @@ def _gespiegelt(zahn: str, um: np.ndarray) -> bool:
     return abstand(gesp) < abstand(um)
 
 
+def _entdoppeln(P: np.ndarray) -> np.ndarray:
+    """Aufeinanderfolgende gleiche Punkte werfen - Reste der Randverfolgung."""
+    behalten = [0]
+    for i in range(1, len(P)):
+        if abs(P[i, 0] - P[behalten[-1], 0]) > 5e-3 or abs(P[i, 1] - P[behalten[-1], 1]) > 5e-3:
+            behalten.append(i)
+    return P[behalten]
+
+
 def _d(P: np.ndarray) -> str:
-    return "M" + " ".join(f"{x:.3f},{y:.3f}" for x, y in P) + "Z"
+    """Zwei Nachkommastellen, weil die Kette mit `prec=2` serialisiert.
+
+    Mit drei Stellen geschrieben, meldete `check_roundtrip.py` an 54_occl eine
+    Abweichung von 0,106 gegen eine Schranke von 0,10 - die Datei wurde beim
+    Nachserialisieren auf zwei Stellen gerundet und wich damit von sich selbst
+    ab. Mit zwei Stellen ist der Umlauf exakt (0,0000 gemessen). Dazu fielen
+    doppelte Punkte auf, die die Randverfolgung stehen laesst; eine Strecke der
+    Laenge null hilft niemandem.
+    """
+    Q = _entdoppeln(P)
+    return "M" + " ".join(f"{x:.2f},{y:.2f}" for x, y in Q) + "Z"
 
 
 def _points(P: np.ndarray) -> str:
-    return " ".join(f"{x:.2f},{y:.2f}" for x, y in P)
+    return " ".join(f"{x:.2f},{y:.2f}" for x, y in _entdoppeln(P))
 
 
 def _affin(d: str, alt: np.ndarray, neu: np.ndarray) -> str:

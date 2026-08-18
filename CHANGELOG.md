@@ -1,5 +1,35 @@
 # Changelog
 
+## 2.16.0 - 2026-08-18
+
+- **Fuellflaechen in der Kauflaechenansicht**, fuenf statt drei: mesial, distal,
+  bukkal und lingual liegen als Baender am Rand, okklusal laeuft der FISSUR nach
+  - dort verlaeuft die Praeparationsgrenze. Andere Konstruktion als in der
+  Seitenansicht, weil die Ansicht eine andere Frage stellt: von der Seite sieht
+  man den Zahn durch, von oben liegen die Flaechen nebeneinander.
+  `tools/toothgen/kauflaechen.py`, alle 14 Kauflaechenvorlagen, je Flaeche
+  sieben Ebenen.
+- Das Fissurenband bleibt INNERHALB der Randbaender und wird nur nach mesial und
+  distal verlaengert. Ohne die Grenze liefe schon eine reine okklusale Fuellung
+  bis an die Approximalraender, und die Kauflaechenansicht erzaehlte etwas
+  anderes als die Seitenansicht, wo die Randleiste dem Approximalkasten gehoert;
+  ohne die Beschraenkung der Verlaengerung reichte jede okklusale Fuellung ueber
+  die Hoecker bis an alle Raender. mo, od und mod haengen trotzdem zusammen -
+  das besorgt die Ueberlappung. Auf allen 14 geprueft.
+- Alles wird aus dem TEMPLATE gelesen, nicht aus der Zeichnung: der Umriss steht
+  dort als `background-cusp`, die Fissuren hat `redraw_occl` schon eingesetzt.
+  Damit entfaellt die Abbildung Zeichnung -> Template. Die vier Richtungen sind
+  an den anatomisch benannten `filling-composite-*`-Ebenen gemessen.
+- Eingeschlossene Zwickel zwischen einem Randband und dem Fissurenband werden
+  dem Band zugeschlagen - sie entstehen, wo ein Fissurenast schraeg in das Band
+  laeuft und dort beschnitten wird, und sind eine ausgefranste Innenkante, kein
+  Befund.
+- Alle abgeleiteten Flaechen werden mit ZWEI Nachkommastellen geschrieben, weil
+  die Kette mit `prec=2` serialisiert. Mit drei Stellen wich `54_occl` beim
+  Nachserialisieren um 0,1060 von sich selbst ab und `check_roundtrip.py` fiel
+  durch; mit zwei ist der Umlauf exakt. Doppelte Punkte aus der Randverfolgung
+  werden dabei verworfen.
+
 ## 2.15.0 - 2026-08-18
 
 - **Fuellungs- und Kariesflaechen kommen aus der Zeichnung statt aus dem
