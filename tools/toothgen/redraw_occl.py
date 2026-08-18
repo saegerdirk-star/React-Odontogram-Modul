@@ -91,7 +91,16 @@ def umzeichnen(zahn: str, spender: str, ziel: str | None = None) -> str:
     # Die alte `_zeichnen.svg` bleibt als Vorgeschichte liegen; sie hier weiter
     # zu lesen hiesse, die neue Zeichnung zu erzeugen und die alte
     # auszuliefern.
-    quelle = ZEICHNUNGEN / f"{zahn}_occl_fissuren.svg"
+    # `_norm.svg` GEHT ALLEN VOR. Sie ist die von `draufsicht.py` auf die
+    # Kronenbreite der Seitenansicht gezogene Fassung - noetig, weil Dirk seine
+    # Frontzahn-Draufsichten direkt auf dem Seitenscan zeichnet und sie damit in
+    # Scanaufloesung vorliegen (die 41 mass 261 Einheiten gegen 15,24 der
+    # Seitenansicht). Ohne die Normalisierung stimmt die Breitenprojektion
+    # nicht, mit der die bukkale Flaeche der Seitenansicht aus der Kauflaeche
+    # kommt.
+    quelle = ZEICHNUNGEN / f"{zahn}_occl_norm.svg"
+    if not quelle.exists():
+        quelle = ZEICHNUNGEN / f"{zahn}_occl_fissuren.svg"
     if not quelle.exists():
         quelle = ZEICHNUNGEN / f"{zahn}_occl_zeichnen.svg"
     ebene = redraw_apply._ebene(quelle.read_text(), "3 HIER ZEICHNEN")

@@ -1,5 +1,49 @@
 # Changelog
 
+## 2.17.0 - 2026-08-18
+
+- **Die Frontzaehne haben eine Draufsicht.** Bis dahin bekam jede der zwoelf
+  Frontzahn-Positionen eine leere Platzhalterkachel, und eine PALATINALE
+  Fuellung liess sich nirgends befunden: die Seitenansicht zeigt die labiale
+  Flaeche face-on, lingual gibt es dort ueberhaupt keine Ebene. Charly loest das
+  mit einem geteilten Schemafeld, dessen Bedeutung aus der Position im Kaestchen
+  kommt; das passt nicht zu einer anatomischen Zeichnung. Die Tafeln der
+  Odontographie tragen die Draufsicht als Bild 32 d, Dirk hat sie fuer 11, 12,
+  13, 41, 42 und 43 nachgezeichnet, die Gegenseite entsteht durch Spiegeln.
+  Dieselben fuenf Flaechen wie am Seitenzahn - mesial, distal, vestibulaer,
+  lingual und inzisal -, abgeleitet mit derselben Maschinerie.
+- Die INZISALKANTE spielt in der Draufsicht die Rolle, die am Seitenzahn die
+  Fissur hat: die inzisale Flaeche folgt ihr. Sie kommt aus Dirks Zeichnung und
+  wird eingesetzt, nicht gewarpt.
+- **`tools/toothgen/draufsicht.py`** liest eine Handzeichnung ueber ihren INHALT
+  statt ueber Ebenennamen - laengster geschlossener Pfad ist der Umriss, offene
+  Pfade sind Linien, `Incisal` wie `Incisalkante`, gross wie klein. Und es
+  NORMALISIERT: der Umriss wird auf die Kronenbreite der Seitenansicht gezogen.
+  Noetig, weil Dirk direkt auf dem Seitenscan zeichnet (die 41 mass 261
+  Einheiten gegen 15,24) und weil sonst die Breitenprojektion nicht stimmt, mit
+  der die bukkale Flaeche der Seitenansicht aus der Kauflaeche kommt. Damit ist
+  der Ausschnitt beim Zeichnen gleichgueltig.
+- Die Orientierungsmarken `v` und `m` der Zeichnung werden gegen die Konvention
+  GEPRUEFT (Oberkiefer vestibulaer oben, Unterkiefer unten, mesial bei beiden
+  rechts) und jede Abweichung gemeldet - dieselbe Probe, die beim Unterkiefer
+  gefehlt hat, als die 36 lingual zeichnete, wo bukkal befundet war.
+- **Drei Listen ueber dieselbe Frage sind zu zwei geworden und dann zu einer.**
+  Welche Position eine Draufsicht hat, stand in `OCCLUSAL_TEMPLATE`, in einem
+  handgepflegten Platzhaltersatz und in einer Vorladeliste. Die erste
+  Frontzahn-Draufsicht war eingetragen, gemountet, ausgeliefert - und blieb
+  unsichtbar, weil sie in den beiden anderen fehlte. Der Platzhaltersatz ist
+  entfernt, die Vorladeliste wird abgeleitet.
+- Ein fehlendes Template setzt jetzt eine leere Kachel statt gar keine. Ein
+  `return` liess die Zelle ersatzlos entfallen und verschob das ganze Raster:
+  unter Label 22 stand die 24.
+- Die Draufsicht folgt in der Breite ihrer SPALTE statt einer festen Hoehe. Die
+  feste Hoehe ging, solange nur Seitenzaehne eine Draufsicht hatten (Spalten von
+  41 bis 58 px); ein unterer Einser misst 12,9 gegen 38,2 Einheiten beim unteren
+  Sechser, und seine Draufsicht stand 50 px breit in einer 19 px breiten Spalte.
+  Sie nutzt die Spalte bis auf einen Pixel Fuge aus, was den kleinen Zaehnen
+  39 % Zuwachs bringt und den grossen 13 % - die Spreizung wird kleiner, ohne
+  dass die Zuordnung Spalte = Zahn aufgegeben wird.
+
 ## 2.16.0 - 2026-08-18
 
 - **Fuellflaechen in der Kauflaechenansicht**, fuenf statt drei: mesial, distal,

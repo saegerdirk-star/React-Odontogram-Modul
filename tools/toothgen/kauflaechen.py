@@ -258,11 +258,18 @@ def gebiete(ziel: str) -> dict[str, np.ndarray]:
     # gezeichneter Sulcus weit genug nach aussen laeuft. Dirk hat sich am
     # 18.08.2026 dafuer entschieden, lieber ueberall anzuschliessen.
     hilfs = hoecker.verlaengere(fissuren, umriss)
+    rand = aus["mesial"] | aus["distal"] | aus["buccal"] | aus["lingual"]
+    if not fissuren:
+        # FRONTZAHN. Seine Draufsicht hat keine Fissur, der die Flaeche folgen
+        # koennte - also ist die inzisale Flaeche schlicht das Feld zwischen den
+        # vier Randbaendern. Kein Sonderfall, sondern derselbe Aufbau ohne die
+        # Linie in der Mitte.
+        aus["occlusal"] = fe._weite(innen & ~rand, fe.UEBERLAPP * 3) & innen
+        return aus, (x0, y0)
     voll = np.ones_like(innen)
     hoecker._zeichne_linien(voll, fissuren + hilfs, x0, y0)
     linie = ~voll
     band = fe._weite(linie, max(2, int(FISSUR * A))) & innen
-    rand = aus["mesial"] | aus["distal"] | aus["buccal"] | aus["lingual"]
     aus["occlusal"] = fe._weite(band & innen & ~rand, fe.UEBERLAPP * 3) & innen & (band | ~rand)
     aus["occlusal"] = _nur_groesste(aus["occlusal"])
 

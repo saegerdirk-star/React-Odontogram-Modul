@@ -193,11 +193,19 @@ describe("installed tooth SVG assets", () => {
   // silently skip a tooth that fell out of it, which is exactly the regression
   // this suite has to catch: every posterior tooth that renders an occlusal
   // tile must still get one after the side-view mapping was split out.
-  it("renders an occlusal tile for exactly the posterior teeth", () => {
+  // Seit 18.08.2026 auch die mittleren Schneidezaehne: eine palatinale Fuellung
+  // hat in der Seitenansicht keinen Platz, also bekommt der Frontzahn eine
+  // Draufsicht wie der Seitenzahn. Die uebrigen zehn Frontzahn-Positionen
+  // folgen, sobald Dirk sie gezeichnet hat.
+  it("renders an occlusal tile for the posterior teeth and the drawn incisors", () => {
     expect([...OCCLUSAL_TEMPLATE.keys()].sort((a, b) => a - b)).toEqual([
+      11, 12, 13,
       14, 15, 16, 17, 18,
+      21, 22, 23,
       24, 25, 26, 27, 28,
+      31, 32, 33,
       34, 35, 36, 37, 38,
+      41, 42, 43,
       44, 45, 46, 47, 48,
     ]);
     // Ten occlusal drawings for the twenty posterior teeth - one per position
@@ -211,7 +219,7 @@ describe("installed tooth SVG assets", () => {
   });
 
   it("keeps mesial occlusal geometry toward the arch midline in every quadrant", () => {
-    expect(OCCLUSAL_TEMPLATE.size).toBe(20);
+    expect(OCCLUSAL_TEMPLATE.size).toBe(32);
     for (const [toothNo, placement] of OCCLUSAL_TEMPLATE) {
       const svg = readSvg(`${placement.tpl}_occl`);
       const root = new DOMParser().parseFromString(svg, "image/svg+xml").documentElement;

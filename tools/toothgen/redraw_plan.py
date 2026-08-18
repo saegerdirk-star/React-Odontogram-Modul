@@ -78,6 +78,21 @@ PLAN_OCCL: dict[str, tuple[str, str]] = {
     # keines mit zwei Hoeckern. Dieselbe Korrektur hatte er in der
     # Seitenansicht schon einmal angesagt.
     "54_occl": ("54", "16_occl"), "55_occl": ("55", "16_occl"),
+    # FRONTZAHN-DRAUFSICHT, ab 18.08.2026. Dirk, nachdem charlys Weg (ein
+    # geteiltes Schemafeld) verworfen wurde: "Wir bauen eine Draufsicht." Die
+    # Tafeln der Odontographie tragen sie als Bild 32 d, samt Beschriftung
+    # vestibulaer/lingual/mesial/distal - die Orientierung steht dort und wird
+    # nicht geschlossen. Dirk beschriftet seine Zeichnung zusaetzlich mit `v`
+    # und `m`.
+    #
+    # SPENDER ist der obere erste Praemolar: von allen Kauflaechenvorlagen hat
+    # er den einfachsten Umriss und die wenigsten Hoecker. Was an ihm
+    # Molarenanatomie ist, wird geleert - von seinen 144 Elementen haengen nur
+    # 16 daran, die uebrigen 128 gehen unveraendert mit.
+    "11_occl": ("11", "14_occl"), "12_occl": ("12", "14_occl"),
+    "13_occl": ("13", "14_occl"),
+    "41_occl": ("41", "34_occl"), "42_occl": ("42", "34_occl"),
+    "43_occl": ("43", "34_occl"),
     "84_occl": ("84", "46_occl"), "85_occl": ("85", "46_occl"),
 }
 

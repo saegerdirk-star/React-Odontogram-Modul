@@ -524,7 +524,28 @@ select:focus{
    gepresst. Drei Anlaeufe vorher gingen schief, weil ich an der Groesse
    geschraubt habe statt am Rahmen: 79 px breite Rahmen in 27 px breiten Spalten
    malten mit ihren undurchsichtigen Baendern ueber beide Nachbarn. */
-.tooth-tile.occl-view .tooth-svg svg{width:auto;height:50.2px;flex:0 0 auto;overflow:hidden}
+/* SEIT DEN FRONTZAEHNEN: die Kauflaeche folgt ihrer SPALTE, nicht mehr einer
+   festen Hoehe. Dirks Wunsch vom 17.08. - "die Kauflaechen duerfen ruhig alle
+   gleich gross sein" - liess sich halten, solange nur Seitenzaehne eine hatten;
+   ihre Spalten liegen zwischen 41 und 58 px. Ein unterer Einser misst 12,9
+   gegen 38,2 Einheiten beim unteren Sechser, und bei fester Hoehe stand seine
+   Draufsicht 50 px breit in einer 19 px breiten Spalte. Dirk, 18.08.2026: "Im
+   Moment stehen sie alle zu eng, unten mehr als oben."
+   Die 6 px sind der Zuschlag, den JEDE Spalte auf ihre Kronenbreite bekommt
+   (siehe grid-template-columns) - sie abzuziehen macht die Draufsicht genau so
+   breit wie die Krone. Damit stimmen Draufsicht und Seitenansicht desselben
+   Zahns ueberein, was seit der Normalisierung in `draufsicht.py` auch fuer die
+   Zeichnung gilt: beide messen mesiodistal dasselbe. */
+.tooth-tile.occl-view .tooth-svg svg{width:calc(100% - 1px);height:auto;max-height:100%;flex:0 0 auto;overflow:hidden}
+/* 1 px statt der vollen 6 px Spaltenzuschlag. Dirk, 18.08.2026: "Kann man die
+   Praemolaren und Schneidezaehne ein bisschen groesser machen?" - Bei echten
+   Verhaeltnissen (Draufsicht = Kronenbreite) steht ein unterer Einser mit 12,9
+   px neben einem Sechser mit 38,2. Die Spalte ist die Decke: mehr als sie kann
+   die Draufsicht nicht werden, ohne den Nachbarn zu ueberdecken. Sie voll
+   auszunutzen gibt jedem Zahn dieselben 5 px dazu, was den kleinen 39 % bringt
+   und den grossen 13 % - die Spreizung wird also kleiner, ohne dass die
+   Zuordnung Spalte = Zahn aufgegeben wird. Ein Pixel bleibt als Fuge stehen,
+   damit zwei Nachbarn sich beruehren und nicht ineinanderlaufen. */
 /* `overflow:hidden` NUR auf der Kauflaeche, gegen die Regel eine Zeile weiter
    oben - und das ist der Punkt, an dem sich die beiden Ansichten unterscheiden.
    In der Seitenansicht MUSS das Zahnfleisch ueber den Rahmen hinausreichen,

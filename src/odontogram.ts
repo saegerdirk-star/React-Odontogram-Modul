@@ -235,6 +235,18 @@ export const OCCLUSAL_TEMPLATE = new Map([
   // unten, mesial bei beiden rechts -, und der rechte Quadrant braucht gar
   // keine Transformation. Gedreht statt gespiegelt kam der Unterkiefer mit den
   // bukkalen Hoeckern nach lingual heraus.
+  // FRONTZAHN-DRAUFSICHT, ab 18.08.2026. Bis dahin bekam jede Frontzahn-
+  // Position eine leere Platzhalterkachel, weil es fuer sie keine Draufsicht
+  // gab - und damit auch keinen Platz, eine palatinale Fuellung zu befunden.
+  // Die Tafeln der Odontographie tragen die Ansicht, Dirk zeichnet sie nach.
+  // Dieselbe Orientierung wie bei den Kauflaechen, von ihm in der Zeichnung
+  // mit `v` und `m` beschriftet.
+  [11,{tpl:11,rot:0,mirror:false}],[21,{tpl:11,rot:0,mirror:true}],
+  [12,{tpl:12,rot:0,mirror:false}],[22,{tpl:12,rot:0,mirror:true}],
+  [13,{tpl:13,rot:0,mirror:false}],[23,{tpl:13,rot:0,mirror:true}],
+  [41,{tpl:41,rot:0,mirror:false}],[31,{tpl:41,rot:0,mirror:true}],
+  [42,{tpl:42,rot:0,mirror:false}],[32,{tpl:42,rot:0,mirror:true}],
+  [43,{tpl:43,rot:0,mirror:false}],[33,{tpl:43,rot:0,mirror:true}],
   [14,{tpl:14,rot:0,mirror:false}],[15,{tpl:15,rot:0,mirror:false}],
   [16,{tpl:16,rot:0,mirror:false}],[17,{tpl:17,rot:0,mirror:false}],[18,{tpl:18,rot:0,mirror:false}],
   [24,{tpl:14,rot:0,mirror:true}],[25,{tpl:15,rot:0,mirror:true}],
@@ -10812,7 +10824,13 @@ async function buildGrid(token: number){
   // doubled the work at startup and pushed a two-instance mount test past its
   // five-second budget.
   const tplNos = [11,12,13,14,15,16,17,18,41,42,43,44,45,46,47,48] as const;
-  const occlNos = [14,15,16,17,18,44,45,46,47,48] as const;
+  // ABGELEITET, nicht gepflegt. Diese Liste war die dritte Stelle, an der stand,
+  // welche Positionen eine Kauflaechenansicht haben - nach `OCCLUSAL_TEMPLATE`
+  // und dem inzwischen entfernten Platzhaltersatz. Als die erste
+  // Frontzahn-Draufsicht dazukam, war sie eingetragen, gemountet, ausgeliefert
+  // und trotzdem unsichtbar, weil sie hier fehlte. Wer ein Template eintraegt,
+  // soll nirgends sonst daran denken muessen.
+  const occlNos = [...new Set([...OCCLUSAL_TEMPLATE.values()].map((m: Any) => m.tpl))];
   await Promise.all([
     ...tplNos.map(async (tplNo) => {
       tplCache.set(tplNo, await loadSvg(TEMPLATES[tplNo]));
@@ -10841,7 +10859,17 @@ async function buildGrid(token: number){
   function addTile({toothNo, tplNo, rot, mirror, view, clickable}: Any){
     if(!initialized || token !== initToken) return;
     const tpl = view === "occl" ? occlCache.get(tplNo) : tplCache.get(tplNo);
-    if(!tpl) return;
+    if(!tpl){
+      // Eine LEERE Kachel, nicht gar keine. Ein `return` liess die Zelle
+      // ersatzlos entfallen, und weil der Bogen ein Raster mit fester
+      // Spaltenzahl ist, rutschte alles dahinter nach links: als 11_occl beim
+      // ersten Versuch nicht im Cache lag, stand unter Label 22 die 24. Dirk,
+      // 18.08.2026: "Ich sehe 22 okklusal aber mit einem Bild, das wie ein
+      // Praemolar aussieht." Ein fehlendes Template darf eine Luecke geben,
+      // aber nie den ganzen Bogen verschieben.
+      if(view === "occl") addPlaceholderTile();
+      return;
+    }
     const svg = tpl.cloneNode(true);
     namespacePaintServers(svg, `tooth-${toothNo}-${view}-`);
     if(rot === 180) rotate180(svg);
@@ -10910,10 +10938,16 @@ async function buildGrid(token: number){
     arch.appendChild(tile);
   }
 
-  function addRowOccl(rowTeeth: Any, placeholders: Any){
+  // OHNE zweite Liste. Bis 18.08.2026 stand daneben ein handgepflegter Satz
+  // `upperOcclPlaceholders`/`lowerOcclPlaceholders` mit den Frontzahn-
+  // Positionen - und der hat die erste Frontzahn-Draufsicht verschluckt: das
+  // Template war eingetragen, die Tests gruen, und im Bogen blieb die Kachel
+  // leer, weil der Satz vorher greift. Zwei Listen ueber dieselbe Frage sind
+  // eine zu viel. `OCCLUSAL_TEMPLATE` entscheidet allein.
+  function addRowOccl(rowTeeth: Any){
     for(const toothNo of rowTeeth){
       const map = OCCLUSAL_TEMPLATE.get(toothNo);
-      if(placeholders.has(toothNo) || !map){
+      if(!map){
         addPlaceholderTile();
         continue;
       }
@@ -10934,16 +10968,14 @@ async function buildGrid(token: number){
 
   const upperSide = [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28];
   const lowerSide = [48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38];
-  const upperOcclPlaceholders = new Set([13,12,11,21,22,23]);
-  const lowerOcclPlaceholders = new Set([43,42,41,31,32,33]);
 
   if(!initialized || token !== initToken) return;
   arch = upperArch;
   addLabelRow(upperSide, toothLabelUpper);
   addRowSide(upperSide);
-  addRowOccl(upperSide, upperOcclPlaceholders);
+  addRowOccl(upperSide);
   arch = lowerArch;
-  addRowOccl(lowerSide, lowerOcclPlaceholders);
+  addRowOccl(lowerSide);
   addRowSide(lowerSide);
   addLabelRow(lowerSide, toothLabelLower);
 
