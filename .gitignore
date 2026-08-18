@@ -43,3 +43,12 @@ graphics/
 snomed/
 
 
+# === toothgen ===
+# Byte-code written by tools/toothgen on every generator or verification run.
+__pycache__/
+*.py[cod]
+
+# The DONOR templates. Reproducible from spec.py and tools/toothgen/source at
+# any time (`npm run toothgen:spender`), and the frozen digests in verify.py are
+# what pins them — so the generated intermediates do not belong in the history.
+tools/toothgen/spender/

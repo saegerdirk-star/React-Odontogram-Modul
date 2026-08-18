@@ -2017,7 +2017,7 @@ export default function PerioChart({
   // The tooth-row graphic — draws the perio arch by reusing the odontogram's
   // own `tooth-base` artwork (see `perioGraphic.ts`). Fully READ-ONLY (no
   // pointer handlers) and independent of the grid-building effect above — it
-  // fetches + parses the 4 tooth templates once (`loadTemplateCache()`,
+  // fetches + parses the 16 tooth templates once (`loadTemplateCache()`,
   // memoized at module scope in `perioGraphic.ts`, so re-opening/re-mounting
   // this component never re-fetches) and, once loaded, builds one composite
   // arch SVG per arch band into its own container. A load failure (e.g. no

@@ -1,6 +1,6 @@
 {
   "name": "react-advanced-odontogram",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "license": "MIT",
   "type": "module",
   "description": "Interactive, SVG-based dental odontogram (dental chart) editor for React + TypeScript — multi-surface caries/filling charting, endodontic/prosthetic/periodontal states, FDI/Universal/Palmer numbering, HL7 FHIR R4 export/import, and ICDAS scoring.",
@@ -56,7 +56,10 @@
     "test:coverage": "vitest run --coverage",
     "parity:capture": "PARITY_CAPTURE=1 vitest run src/__tests__/parity/capture.test.ts",
     "docs": "typedoc",
-    "prepublishOnly": "npm run build:lib"
+    "prepublishOnly": "npm run build:lib",
+    "toothgen:spender": "uv run tools/toothgen/build.py --set all && uv run tools/toothgen/occlusal.py",
+    "toothgen:redraw": "npm run toothgen:spender && python3 tools/toothgen/redraw_alle.py src/assets/teeth-svgs && python3 tools/toothgen/redraw_occl.py src/assets/teeth-svgs",
+    "toothgen:verify": "npm run toothgen:spender && uv run tools/toothgen/verify.py --all && uv run tools/toothgen/verify_redraw.py && uv run tools/toothgen/check_roundtrip.py"
   },
   "peerDependencies": {
     "react": "^18 || ^19",

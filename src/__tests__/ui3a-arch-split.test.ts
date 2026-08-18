@@ -28,7 +28,10 @@ const testFileUrl = import.meta.url;
 const svgText = (tplNo: TemplateNo) =>
   readFileSync(fileURLToPath(new URL(`../assets/teeth-svgs/${tplNo}.svg`, testFileUrl)), "utf8");
 
-const TEMPLATE_NOS: readonly TemplateNo[] = [11, 13, 14, 16];
+const TEMPLATE_NOS: readonly TemplateNo[] = [
+  11, 12, 13, 14, 15, 16, 17, 18,
+  41, 42, 43, 44, 45, 46, 47, 48,
+];
 
 function buildCache(): TemplateDocCache {
   const cache: TemplateDocCache = new Map();

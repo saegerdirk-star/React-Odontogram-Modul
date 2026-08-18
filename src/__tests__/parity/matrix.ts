@@ -29,6 +29,7 @@ const TEMPLATES: { toothNo: number; template: string; view: "front"|"occlusal" }
   { toothNo: 16, template: "16_occl", view: "occlusal" },
 ];
 
+
 // `rootResorption` and `pulpInflam` (retired booleans, SP4 Task 2 / Task 3)
 // are intentionally kept here — like LEGACY_CROWN_MATERIAL_VALUES above,
 // this hardcodes the legacy raw field names so the matrix keeps exercising

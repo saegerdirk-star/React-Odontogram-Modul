@@ -265,17 +265,66 @@ select:focus{
   direction: ltr;
 }
 
+   are not the same width - the molar is drawn 65.5 px wide and the lateral
+   incisor 31.6 px - so the empty space piled up toward the midline and adjacent
+   teeth stood 21 to 45 px apart, loosest exactly where contacts matter.
+   Each column is now the widest tooth it has to hold plus 6 px, which puts a
+   uniform ~10-16 px between neighbours instead. A column is never narrower than
+   44 px so the lateral-incisor tile stays a usable touch target, and the
+   minmax() lower bound keeps the old behaviour of shrinking under a narrow
+   container rather than overflowing it.
+   The two arches USED to share one column list, so that a tooth and its
+   antagonist stood in one column. They no longer can, and they no longer need
+   to: EVERY column below is its own tooth plus 6 px, in both arches, emitted
+   from the same mesiodistal crown widths the drawings are scaled to
+   (`ToothSpec.col_px`, checked by verify.py). One rule, no hand-set values.
+   Every contact is therefore 10 px, and the Class I canine relationship falls
+   out of it rather than being arranged: half a column plus half a gap adds the
+   same slack on both sides of every contact, so the slack cancels and what is
+   left between 13 and 43 is the anatomical difference - the lower six front
+   teeth are 10 mm narrower than the upper six, which is 31 px per side at this
+   scale. The tip of 43/33 lands in the embrasure between the upper lateral and
+   the upper canine because the teeth are the widths they are.
+   The 44 px touch-target floor is gone for the lower incisors, which stand in
+   40 px. At a full row tall that is still well over the 24 px WCAG 2.5.8 asks
+   for, and a lower incisor that is not 40 px wide is not a lower incisor. */
 .tooth-grid{
-  display:grid;
-  grid-template-columns: repeat(16, minmax(36px, 1fr));
+  display:flex;
+  flex-direction:column;
   gap:4px;
   padding:10px;
   position:relative;
 }
+.tooth-arch{
+  display:grid;
+  justify-content:center;
+  gap:4px;
+}
+.upper-arch{
+  grid-template-columns:
+    minmax(28px, 54px) minmax(28px, 58px) minmax(28px, 62px)
+    minmax(28px, 35px) minmax(28px, 39px) minmax(28px, 39px)
+    minmax(28px, 36px) minmax(28px, 39px) minmax(28px, 39px)
+    minmax(28px, 36px) minmax(28px, 39px) minmax(28px, 39px)
+    minmax(28px, 35px) minmax(28px, 62px) minmax(28px, 58px)
+    minmax(28px, 54px);
+}
+.lower-arch{
+  grid-template-columns:
+    minmax(28px, 58px) minmax(28px, 61px) minmax(28px, 66px)
+    minmax(28px, 41px) minmax(28px, 34px) minmax(28px, 37px)
+    minmax(28px, 32px) minmax(28px, 28px) minmax(28px, 28px)
+    minmax(28px, 32px) minmax(28px, 37px) minmax(28px, 34px)
+    minmax(28px, 41px) minmax(28px, 66px) minmax(28px, 61px)
+    minmax(28px, 58px);
+}
 /* Round 2 (Stage 3): on-screen tooth spacing — inter-tooth gap in the live grid
-   (distinct from the PDF/export spacing). "normal" keeps the default 4px gap. */
-.tooth-grid[data-screen-spacing="wide"]{ gap:12px }
-.tooth-grid[data-screen-spacing="close"]{ gap:0 }
+   (distinct from the PDF/export spacing). "normal" keeps the default 4px gap.
+   The gap now sits on the ARCH: `.tooth-grid` became the flex column holding the
+   two arches, so a gap set there would space the two arches apart instead of the
+   teeth within them. */
+.tooth-grid[data-screen-spacing="wide"] .tooth-arch{ gap:12px }
+.tooth-grid[data-screen-spacing="close"] .tooth-arch{ gap:0 }
 /* On-screen tooth-number size. "normal" (the default) is larger than the base
    11px; "small" restores the old size, "xlarge" is larger still. */
 .tooth-grid[data-tooth-num="normal"] .tooth-label-cell{ font-size:14px }
@@ -310,7 +359,10 @@ select:focus{
   padding:2px;
   cursor:pointer;
   transition: transform .05s ease, border-color .12s ease, background .12s ease;
-  min-height:100px;
+  /* Tracks the .tooth-svg height (the tallest template) plus border and
+     padding. Keeping the old value while the teeth change height would preserve
+     the old row height and defeat the per-template sizing below. */
+  min-height:157px;
 }
 .tooth-tile.occl-view{
   min-height:78px;
@@ -422,17 +474,78 @@ select:focus{
 }
 .tooth-svg{
   width:100%;
-  height:120px;
+  /* The tallest template, so every arch row is one height. */
+  height:147px;
   display:flex;
-  align-items:center;
+  /* Bottom-aligned: the upper arch hangs its crowns downward, and aligning the
+     bottom edge is what keeps the occlusal plane of sixteen graphics of
+     different length on one line. The lower arch overrides this to flex-start
+     (see below) because its drawings are rotated. */
+  align-items:flex-end;
   justify-content:center;
 }
-.tooth-svg svg{width:72px;height:122px; pointer-events:none}
-.tooth-tile.occl-view .tooth-svg{height:80px}
-.tooth-tile.occl-view .tooth-svg svg{width:64px;height:64px}
-.tooth-tile.tpl-14 .tooth-svg svg{width:68px;height:116px}
-.tooth-tile.tpl-11 .tooth-svg svg,
-.tooth-tile.tpl-13 .tooth-svg svg{width:60px;height:102px}
+/* NEVER SHRINK TO THE TILE. The SVG canvas is wider than the tooth it holds —
+   gum and bone are drawn wider than the crown, and on an incisor the tooth is
+   only about 59% of its own canvas — so once the columns follow the TOOTH width
+   the canvas is wider than its column. Letting it shrink as a flex item scales
+   the whole drawing down, which makes teeth smaller instead of closer: an
+   incisor then renders at a fraction of a molar's size. It overflows instead,
+   and neighbouring gum overlaps, which is what gum does.
+   `overflow:visible` on the SVG ITSELF, because the browser's own stylesheet
+   clips an <svg> at its viewBox and the wrapper's overflow does not reach
+   inside it. The molar tiles stand further apart than their graphic is wide, so
+   the gum band cannot close that gap from inside the viewBox — it is drawn past
+   its own edge and relies on the neighbour overlapping it. */
+.tooth-svg svg{width:72px;height:122px; pointer-events:none; flex:0 0 auto; overflow:visible}
+/* Drawings paint as ONE layer above ALL tile backgrounds. Tiles are siblings
+   with a translucent white background, so once a canvas overflows its column
+   the NEXT tile's background paints over the overflow and punches a white notch
+   through the gum band. `position:relative; z-index:1` here does not create a
+   per-tile stacking context (the tiles set `position:relative` without a
+   z-index), so every drawing lifts into the arch's own stacking context and
+   lands above every tile's chrome, while the tile keeps its border, hover and
+   selection ring. */
+.tooth-svg{overflow:visible; position:relative; z-index:1}
+.tooth-tile{overflow:visible}
+/* Lower teeth are rendered after a 180-degree rotation, so their occlusal edge
+   has the fixed margin at the viewBox top. Top alignment keeps that plane
+   continuous across the arch; bottom alignment would line up root tips instead
+   and offset the lower incisor from the canine by their height difference. */
+.tooth-tile.lower-row.side-view .tooth-svg{align-items:flex-start}
+.tooth-tile.occl-view .tooth-svg{height:80px; align-items:center}
+/* An occlusal view follows its COLUMN, not a fixed measure.
+   It used to be a flat 64px, which worked while every column was 50-75px wide.
+   Now that the columns come from the drawn crown widths (20-58px, so neighbours
+   touch at the contact points), a fixed size makes the occlusal graphics
+   overlap and their opaque bands paint over the neighbouring tooth — a side
+   view may overhang, because it is empty outside the crown; an occlusal view is
+   not. The column is the ceiling.
+   The 1px is deducted from the 6px every column adds to its crown width (see
+   grid-template-columns): using the column almost fully keeps the small teeth
+   usable without letting any drawing reach into its neighbour. */
+.tooth-tile.occl-view .tooth-svg svg{width:calc(100% - 1px);height:auto;max-height:100%;flex:0 0 auto;overflow:hidden}
+/* Emitted by tools/toothgen/build.py — do NOT round these to whole pixels.
+   Every template is drawn at the SAME scale (1.62px per unit), and that is what
+   puts the occlusal plane, the bone level and the gingival crest of sixteen
+   different graphics on one line. Rounding the two sides independently gives
+   each template a slightly different scale, `preserveAspectRatio` centres the
+   shortfall, and every shared line across the arch steps at every tile. */
+.tooth-tile.tpl-11 .tooth-svg svg{width:64.31px;height:131.38px}
+.tooth-tile.tpl-12 .tooth-svg svg{width:64.31px;height:132.95px}
+.tooth-tile.tpl-13 .tooth-svg svg{width:65.29px;height:141.57px}
+.tooth-tile.tpl-14 .tooth-svg svg{width:64.48px;height:145.62px}
+.tooth-tile.tpl-15 .tooth-svg svg{width:64.48px;height:134.06px}
+.tooth-tile.tpl-16 .tooth-svg svg{width:69.50px;height:147.79px}
+.tooth-tile.tpl-17 .tooth-svg svg{width:69.50px;height:143.76px}
+.tooth-tile.tpl-18 .tooth-svg svg{width:69.50px;height:141.59px}
+.tooth-tile.tpl-41 .tooth-svg svg{width:64.31px;height:124.74px}
+.tooth-tile.tpl-42 .tooth-svg svg{width:64.31px;height:130.26px}
+.tooth-tile.tpl-43 .tooth-svg svg{width:65.29px;height:139.64px}
+.tooth-tile.tpl-44 .tooth-svg svg{width:64.48px;height:134.93px}
+.tooth-tile.tpl-45 .tooth-svg svg{width:64.48px;height:131.17px}
+.tooth-tile.tpl-46 .tooth-svg svg{width:69.50px;height:147.40px}
+.tooth-tile.tpl-47 .tooth-svg svg{width:69.50px;height:137.36px}
+.tooth-tile.tpl-48 .tooth-svg svg{width:69.50px;height:135.14px}
 .tooth-tile.wisdom-hidden{opacity:.45; pointer-events:none}
 .tooth-tile.wisdom-hidden .tooth-svg svg{opacity:0}
 .tooth-tile.occl-hidden{display:none !important}

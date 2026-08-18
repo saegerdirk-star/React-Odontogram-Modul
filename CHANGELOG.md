@@ -9,6 +9,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sixteen measured tooth templates and the `tools/toothgen` toolchain.** Every
+  permanent position — 11-18 and 41-48 — now has its own drawing instead of the
+  whole mouth being derived from four, and each posterior *and* anterior position
+  has an occlusal view (the anterior top view is new: the lingual aspect cannot be
+  charted in a side view at all). Nothing is shared across the jaws any more.
+  Generated in two stages: `build.py` derives a donor template carrying the ~200
+  clinical layers from the four canonical source drawings in this repository, and
+  `redraw_alle.py` / `redraw_occl.py` insert a hand-drawn contour and pulp into it.
+  `verify.py`, `verify_redraw.py` and `check_roundtrip.py` re-measure the result
+  against `tools/toothgen/spec.py` and against frozen geometry digests, and
+  cross-check every `ToothSpec.col_px` against `grid-template-columns` in
+  `src/index.css` so artwork and grid cannot drift apart.
+
+### Changed
+
+- **Split-arch chart with per-tooth column widths.** `#toothGrid` (`.tooth-grid`)
+  is now a flex column holding two independent `.tooth-arch` grids
+  (`.upper-arch` / `.lower-arch`), each with its own columns. Every column is the
+  tooth it holds plus 6px, so the same slack sits on both sides of every contact
+  and cancels; what is left between 13 and 43 is the anatomical difference — the
+  lower six front teeth are about 10mm narrower than the upper six. The lower
+  canine tip therefore lands in the embrasure between the upper lateral and the
+  upper canine because the teeth are the widths they are, not because anything
+  was arranged.
+- **Occlusal views are loaded on demand** (`import.meta.glob`) rather than
+  inlined, so a chart pays only for the artwork it mounts; the permanent side
+  views stay inlined because every chart mounts those.
+- Per-template periodontal anchors (`CEJ_Y` / `IMPLANT_CEJ_Y` in
+  `src/perioGraphic.ts`) extended from four templates to sixteen.
+
+### Migration notes
+
+- **Odontogram grid DOM hierarchy.** `.tooth-tile` elements are now grandchildren
+  of `.tooth-grid`, nested inside `.tooth-arch`. Host CSS or code selecting
+  `.tooth-grid > .tooth-tile`, or overriding `.tooth-grid`'s
+  `grid-template-columns`, must target `.tooth-arch` instead. The engine's own
+  `data-screen-spacing` rules were moved accordingly.
+
 - **Composable UI: declarative control cards (issue #20, Tier 3).** The control
   cards are being converted from imperative id-bound wiring to self-contained
   declarative React components (following `PerioSidebar`), one per release step,

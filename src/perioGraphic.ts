@@ -2,7 +2,7 @@
 // Created by Zoltan Dul (https://github.com/ZoliQua) 2025-2026
 //
 // Periodontal tooth-row graphic — draws the perio arch by REUSING the existing
-// `tooth-base` artwork (the same 4 templates the odontogram grid loads),
+// `tooth-base` artwork (the same 16 templates the odontogram grid loads),
 // instead of drawing new art. Read-only: this module only fetches template SVG
 // text and parses it into its OWN, brand-new DOM (via `DOMParser`, the same
 // technique `odontogram.ts`'s `loadSvg` uses) — it never touches the live
@@ -23,7 +23,9 @@
 // No per-tooth pointer handlers here — this is read-only chart artwork.
 import { TEMPLATES, TOOTH_TEMPLATE } from "./odontogram";
 
-export type TemplateNo = 11 | 13 | 14 | 16;
+export type TemplateNo =
+  | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18
+  | 41 | 42 | 43 | 44 | 45 | 46 | 47 | 48;
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -62,10 +64,22 @@ export const EXCLUDED_TOOTH_BASE_IDS: readonly string[] = [
  * confirmed in a browser.
  */
 export const CEJ_Y: Record<TemplateNo, number> = {
-  11: 32.2,
-  13: 32.4,
-  14: 32.1,
-  16: 31.0,
+  11: 32.7,
+  12: 35.5,
+  13: 35.0,
+  14: 32.2,
+  15: 31.8,
+  16: 35.7,
+  17: 35.9,
+  18: 32.0,
+  41: 29.9,
+  42: 30.8,
+  43: 36.7,
+  44: 33.0,
+  45: 32.5,
+  46: 35.5,
+  47: 32.2,
+  48: 31.1,
 };
 
 /**
@@ -92,10 +106,22 @@ export const CEJ_Y: Record<TemplateNo, number> = {
  * placement should still be confirmed in a browser.
  */
 export const IMPLANT_CEJ_Y: Record<TemplateNo, number> = {
-  11: 33.0,
-  13: 35.4,
-  14: 34.6,
-  16: 34.3,
+  11: 34.7,
+  12: 34.2,
+  13: 36.4,
+  14: 33.1,
+  15: 31.8,
+  16: 34.7,
+  17: 35.8,
+  18: 32.6,
+  41: 27.6,
+  42: 28.4,
+  43: 33.2,
+  44: 30.6,
+  45: 29.0,
+  46: 31.2,
+  47: 31.2,
+  48: 30.1,
 };
 
 /** Per-template baseline anchor for a MILKTOOTH (deciduous) rendering — the
@@ -150,7 +176,7 @@ export type TemplateDocCache = Map<TemplateNo, Document>;
 let cachedPromise: Promise<TemplateDocCache> | null = null;
 
 /**
- * Parse each of the 4 tooth templates ONCE into a cached `Document` (never
+ * Parse each of the 16 tooth templates ONCE into a cached `Document` (never
  * re-parsed per tooth — the returned promise is memoized at module scope so
  * concurrent/repeated calls all await the same settled load). `TEMPLATES` now
  * holds inlined SVG *text* (from `odontogram.ts`'s `?raw` imports), so this
