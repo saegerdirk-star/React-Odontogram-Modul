@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.17.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.17.2-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -18,7 +18,7 @@
 ## 🇷🇺 Русский
 
 ### 📋 Обзор
-Данный проект представляет собой интерактивный браузерный редактор одонтограммы, обеспечивающий быстрое заполнение зубной карты с удобным интерфейсом. Компонент отображает многослойные SVG-шаблоны зубов для представления реставраций, кариеса, эндодонтического статуса, подвижности и других клинических данных, а также поддерживает множественный выбор, фильтры выделения и предустановленные статусные шаблоны.
+Данный проект представляет собой интерактивный браузерный редактор одонтограммы, обеспечивающий быстрое заполнение зубной карты с удобным интерфейсом. Компонент отображает многослойные SVG-шаблоны зубов для представления реставраций, кариеса, эндодонтического статуса, подвижности и других клинических данных, а также поддерживает множественный выбор, фильтры выделения и предустановленные статусные шаблоны. У каждой позиции зуба свой рисунок — шестнадцать боковых видов постоянных зубов, двадцать окклюзионных видов и молочный прикус, — а вид сверху на передние зубы вообще делает возможной фиксацию нёбной находки на резце, которую боковой вид показать не может.
 
 ---
 ![Одонтограмма — предпросмотр (русский)](screenshot_ru_odontogram.png)

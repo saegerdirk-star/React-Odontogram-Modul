@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.17.2 - 2026-08-18
+
+- Dokumentation nachgezogen, nachdem sie an drei Stellen etwas Falsches
+  behauptete. `CLAUDE.md` nannte **14 Kauflaechen**, ausgeliefert werden **20** -
+  die sechs Frontzahn-Draufsichten (11/12/13/41/42/43) fehlten in der
+  Aufzaehlung, ebenso wie in der Warnung zu `occlusal.py` ("the four `_occl`
+  assets"). Die Sprachliste nannte elf Sprachen, es sind zwoelf: `fr` steht
+  laengst in `translations.ts` und `lang/README-fr.md` liegt da. Und
+  `README.md` ist das englische Dach mit Verweisen auf alle zwoelf, nicht
+  "English + Spanish".
+- `tools/toothgen` ist als **drei** Stufen beschrieben statt als zwei. Die
+  dritte setzt die Flaechen ein, auf denen ein Befund erhoben wird - sie werden
+  AUS dem gezeichneten Umriss abgeleitet und lassen sich deshalb nicht aus einem
+  Spender warpen. Die zehn bisher ungenannten Werkzeuge sind jetzt benannt:
+  `fuellflaechen.py`, `fuellflaechen_einsetzen.py`, `kauflaechen.py`,
+  `halsbaender.py`, `draufsicht.py` sowie `roots.py`, `svgpath.py`, `graft.py`,
+  `hoecker.py`, `redraw_apply.py`.
+- Die Frontzahn-Draufsicht steht jetzt in allen **zwoelf** READMEs, in der
+  Uebersicht der jeweiligen Sprache, und als eigener Punkt in den Highlights
+  von `README.md`. Sie ist keine API-Aenderung, aber eine neue Faehigkeit: eine
+  palatinale Fuellung am Schneidezahn war vorher nirgends befundbar.
+
 ## 2.17.1 - 2026-08-18
 
 - Fixed the pulp-visibility switch hiding a pulp that carries a LATIN diagnosis.

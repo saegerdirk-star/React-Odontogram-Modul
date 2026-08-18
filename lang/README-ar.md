@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.17.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.17.2-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -20,7 +20,7 @@
 *(النسخة العربية من هذا الملف التعريفي (README) — مترجمة عن النسخة الإنجليزية الأصلية، بحسب الإصدار v1.49.0)*
 
 ### 📋 نظرة عامة
-هذا المشروع محرر تخطيط أسنان (أودونتوغرام) تفاعلي يعمل داخل المتصفح، ويدعم تسجيل حالة الأسنان بسرعة من خلال واجهة مستخدم نظيفة وواضحة. يعرض المشروع قوالب أسنان بصيغة SVG متعددة الطبقات لتمثيل الترميمات، والنخر (التسوس)، وحالة العلاج اللبي (علاج قناة الجذر)، ودرجة حركة السن، وتفاصيل سريرية أخرى، مع توفير إمكانية التحديد المتعدد، ومرشحات التحديد، وأنماط حالة جاهزة مسبقًا.
+هذا المشروع محرر تخطيط أسنان (أودونتوغرام) تفاعلي يعمل داخل المتصفح، ويدعم تسجيل حالة الأسنان بسرعة من خلال واجهة مستخدم نظيفة وواضحة. يعرض المشروع قوالب أسنان بصيغة SVG متعددة الطبقات لتمثيل الترميمات، والنخر (التسوس)، وحالة العلاج اللبي (علاج قناة الجذر)، ودرجة حركة السن، وتفاصيل سريرية أخرى، مع توفير إمكانية التحديد المتعدد، ومرشحات التحديد، وأنماط حالة جاهزة مسبقًا. لكل موضع سني رسمه الخاص — ستة عشر منظرًا جانبيًا للأسنان الدائمة، وعشرون منظرًا إطباقيًا، والأسنان اللبنية — ومنظر الأسنان الأمامية من الأعلى هو ما يجعل تسجيل آفة حنكية على قاطع ممكنًا أصلًا، وهو ما لا يستطيع المنظر الجانبي إظهاره.
 
 ---
 ![مخطط الأسنان – معاينة (العربية)](screenshot_ar_odontogram.png)

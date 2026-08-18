@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.17.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.17.2-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -18,7 +18,7 @@
 ## 🇫🇷 Français
 
 ### 📋 Aperçu général
-Ce projet est un éditeur d'odontogramme dentaire interactif basé sur un navigateur Web, conçu pour une saisie rapide du schéma dentaire avec une interface claire. Il génère des modèles de dents SVG superposés pour représenter les restaurations, les caries, le statut endodontique, la mobilité et d'autres détails cliniques, tout en offrant la sélection multiple, des filtres de sélection et des préréglages d'état prédéfinis.
+Ce projet est un éditeur d'odontogramme dentaire interactif basé sur un navigateur Web, conçu pour une saisie rapide du schéma dentaire avec une interface claire. Il génère des modèles de dents SVG superposés pour représenter les restaurations, les caries, le statut endodontique, la mobilité et d'autres détails cliniques, tout en offrant la sélection multiple, des filtres de sélection et des préréglages d'état prédéfinis. Chaque position dentaire possède son propre dessin — seize vues latérales permanentes, vingt vues occlusales et la denture temporaire — et la vue occlusale des dents antérieures est ce qui rend possible le relevé d'une lésion palatine sur une incisive, que la vue latérale ne peut pas montrer.
 
 ---
 ![Aperçu du module odontogramme en français](screenshot_en_odontogram.png)
