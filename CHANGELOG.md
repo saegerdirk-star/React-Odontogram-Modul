@@ -1,5 +1,35 @@
 # Changelog
 
+## 2.15.0 - 2026-08-18
+
+- **Fuellungs- und Kariesflaechen kommen aus der Zeichnung statt aus dem
+  Spender.** In allen 26 Seitenansichten sind die mesiale, distale und
+  okklusale bzw. inzisale Flaeche neu gesetzt - je Flaeche sieben Ebenen (vier
+  Fuellungsmaterialien, Sekundaerkaries, Defekt, Karies), 546 insgesamt. Die
+  Karies ist eine Gruppe aus drei Pfaden und wird in das neue Gebiet GEZOGEN
+  statt ersetzt: die Textur zeichnet niemand, und der Ebenenbestand muss gleich
+  bleiben. Damit ist die schiefe distale Fuellung am unteren Sechser erledigt -
+  sie stammte aus dem verzerrten Verschiebungsfeld und reichte bis 7 Einheiten
+  aus dem Zahn heraus.
+- Die Grenzen der Flaechen entstehen aus Umriss und Zahnhalslinie:
+  `tools/toothgen/fuellflaechen.py` legt je Zahn drei Zuege in eine eigene
+  Ebene `4 FUELLFLAECHEN (abgeleitet)` der Zeichnung, `fuellflaechen_einsetzen.py`
+  macht daraus Flaechen und schreibt sie ins Template. Was von Hand gezeichnet
+  ist, schlaegt die Ableitung und wird nicht daneben geschrieben.
+- **Die Randleiste gehoert dem Approximalkasten, die Schneidekante ihrem
+  eigenen Streifen.** Aus dieser einen Grenzentscheidung fallen alle sechs
+  Befunde je Zahn richtig heraus: am Seitenzahn laesst o beide Randleisten
+  stehen und mo nur die distale; am Frontzahn bleibt die Kante bei einer reinen
+  m- oder d-Fuellung unmarkiert, und d+i markiert alles ausser mesial. Liefe die
+  Kaulinie von Randleiste zu Randleiste, saehe mo aus wie mod.
+- Benachbarte Flaechen ueberlappen um 0,1 Einheiten, damit mo, od und mod als
+  EINE Restauration lesen und keine Haarlinie stehen bleibt.
+- Die Abbildung Zeichnung -> Template ist gemessen, nicht angenommen: der
+  gezeichnete Umriss wurde je Zahn gegen `tooth-base` gehalten, unveraendert und
+  y-gespiegelt. Oberkiefer passt unveraendert, Unterkiefer gespiegelt.
+- Die SVG-Fingerabdruecke sind unveraendert - der Abdruck liest `id`, `opacity`
+  und `class`, geaendert wurden nur `d` und `points`.
+
 ## 2.14.0 - 2026-08-17
 
 - **One tooth template per position.** The nine permanent side-view drawings and
