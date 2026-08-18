@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.17.1 - 2026-08-18
+
+- Fixed the pulp-visibility switch hiding a pulp that carries a LATIN diagnosis.
+  `#btnPulpVisible` blendet die gesunde Pulpa aus und laesst eine befundete
+  stehen - aber `pulpDiseased` las nur `pulpDx`, nicht `pulpLatin`. Wer mit dem
+  Detailgrad `latin` arbeitet und `Gangraena pulpae` befundet, sah mit
+  ausgeschaltetem Schalter keine Pulpa. Die FAERBUNG kannte die lateinische
+  Achse laengst (sie hat einen eigenen Ton dafuer), die SICHTBARKEIT nicht.
+  Bead odontogram-dl1; eine Diagnose ist ein Befund, und in welcher Vokabel sie
+  gestellt wurde, aendert daran nichts.
+
 ## 2.17.0 - 2026-08-18
 
 - **Die Frontzaehne haben eine Draufsicht.** Bis dahin bekam jede der zwoelf

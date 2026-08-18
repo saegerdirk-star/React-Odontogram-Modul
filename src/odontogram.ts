@@ -3048,7 +3048,16 @@ function applyStateToSvgSingle(toothNo: Any, svg: Any, state: Any = toothState.g
   // plain boolean gate here is byte-identical to the retired render. The
   // bespoke milktooth/permanent split + showHealthyPulp gating below is
   // otherwise unchanged.
-  const pulpDiseased = state.pulpDx !== "normal";
+  // AUCH die lateinische Achse. `pulpLatin` traegt dieselbe Aussage wie
+  // `pulpDx`, nur in der Vokabel, die der Detailgrad `latin` anbietet - und sie
+  // fehlte hier. Mit ausgeschaltetem Pulpa-Schalter verschwand deshalb eine
+  // Pulpa, an der `Gangraena pulpae` befundet war: die FAERBUNG kannte
+  // `pulpLatin` (sie hat einen eigenen Ton dafuer), die SICHTBARKEIT nicht.
+  // Dirk, 18.08.2026, Bead odontogram-dl1: "Erst wenn eine Behandlung befundet
+  // ist, muss sie immer dargestellt sein." Eine Diagnose ist ein Befund, und in
+  // welcher Sprache sie gestellt wurde, darf daran nichts aendern.
+  const pulpDiseased = state.pulpDx !== "normal"
+    || (!!state.pulpLatin && state.pulpLatin !== "none" && state.pulpLatin !== "pulpa-sana");
 
   // SP7: reversible pulpitis (and its Latin equivalent, hyperaemia pulpae) is a
   // mild, reversible state — render a reduced glyph (the base inflamed-pulp
