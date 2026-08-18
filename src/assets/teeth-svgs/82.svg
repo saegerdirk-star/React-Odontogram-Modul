@@ -263,7 +263,7 @@
       <g id="caries-mesial" data-active="1" style="display: none;">
         <path id="mesial-shape" d="M25.9,42.95c-1.08-.16-1.93,2.22-2.36,4.79-.31,2.6-.23,5.41.09,6.14.55,2.6,2.41,2.6,2.89-.41.24-1.19.24-3.57.14-5.76.04-2.19-.12-4.22-.71-4.76h-.06Z" data-active="1" style="fill: #b3261e; stroke: #8c1d18; stroke-miterlimit: 10;" />
         <path id="mesial-patch2" d="M25.19,48.33c1.45-.03.22-3.54-.59-1.41-.25.73.14,1.41.45,1.41h.14Z" data-active="1" style="fill: #fff;" />
-        <path id="mesial-patch1" d="M24.45,53.87c.52,1.14,2.02-.41.98-1.22-.67-.49-1.08.41-.98,1.14h0Z" data-active="1" style="fill: #fff;" />
+        <path id="mesial-patch1" d="M24.45,53.86c.52,1.14,2.02-.41.98-1.22-.67-.49-1.08.41-.98,1.14h0Z" data-active="1" style="fill: #fff;" />
         </g>
       <g id="caries-distal" data-active="1" style="display: none;">
         <path id="distal-shape" d="M13.99,55.02c1.01-.06,1.28-3.93,1.33-5.83.18-2.72-.12-6.24-1.78-6.24-.96.11-1.21,2.86-1.06,5.72.08,1.43.23,2.89.44,4.04.21,1.16.53,2.04,1.01,2.28h.05Z" data-active="1" style="fill: #b3261e; stroke: #8c1d18; stroke-miterlimit: 10;" />

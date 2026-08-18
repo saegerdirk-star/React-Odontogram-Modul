@@ -41,9 +41,12 @@ import redraw                          # noqa: E402
 import redraw_plan as rp               # noqa: E402
 
 # Breite der Randbaender, Anteil der halben Zahnausdehnung in ihrer Richtung.
-BAND = 0.30
+BAND = 0.22
 # Halbe Breite des Fissurenbandes, in Zeicheneinheiten.
 FISSUR = 1.5
+# Groesster Zwickel, der einem Randband zugeschlagen wird, Anteil der Kauflaeche.
+MAX_ZWICKEL = 0.03
+
 # Wie weit ein Sektor um seine Richtung reicht (Grad).
 SEKTOR = 52.0
 
@@ -76,15 +79,46 @@ def lies(ziel: str):
             if len(P) > 4 and P[:, 0].min() > -50:      # die -99 sind geleerte Ebenen
                 fissuren.append(P)
 
-    c = umriss.mean(axis=0)
-    richtung = {}
-    for f in FLAECHEN:
-        mm = re.search(r'<(?:path|polygon)\b(?:(?!/>).)*?id="filling-composite-' + f
-                       + r'"(?:(?!/>).)*?/>', txt, re.S)
-        P = redraw.polygon(re.search(r'\sd="([^"]+)"', mm.group(0)).group(1))
-        v = P.mean(axis=0) - c
-        richtung[f] = v / (np.hypot(*v) + 1e-12)
+    # Die Mitte ist die Mitte des UMSCHLIESSENDEN RECHTECKS, nicht der
+    # Punktschwerpunkt: der Umriss ist ungleich dicht abgetastet und zieht den
+    # Schwerpunkt um bis zu 1,3 Einheiten zur Seite - und damit alle vier
+    # Sektoren mit.
+    c = np.array([(umriss[:, 0].min() + umriss[:, 0].max()) / 2.0,
+                  (umriss[:, 1].min() + umriss[:, 1].max()) / 2.0])
+    richtung = _richtungen(ziel)
     return umriss, fissuren, richtung, c
+
+
+def _richtungen(ziel: str) -> dict[str, np.ndarray]:
+    """Die vier Himmelsrichtungen - aus der Konvention, nicht aus der Geometrie.
+
+    Bis 18.08.2026 wurden sie an den anatomisch benannten
+    `filling-composite-*`-Ebenen des Templates GEMESSEN. Das war doppelt falsch,
+    und beides hat Dirk gefunden:
+
+    Erstens liegen diese Ebenen seit dem Umbau vom 17.08. an der falschen Stelle.
+    Damals wurden die Kauflaechen-ZEICHNUNGEN neu ausgerichtet (die Praemolaren
+    bukkal/palatinal gespiegelt), die geerbten Fuellungsebenen aber nicht
+    mitbewegt. Sie melden bukkal in allen vierzehn OBEN - fuer den Unterkiefer
+    ist das die falsche Seite, und die 36 zeichnete lingual, wo bukkal befundet
+    war.
+
+    Zweitens sind es gewarpte Spenderformen, deren Schwerpunkte gar nicht in den
+    Himmelsrichtungen liegen: am 16er zeigte "bukkal" auf (0,52 | -0,85) und
+    "mesial" auf (0,51 | -0,86) - praktisch dieselbe Richtung. Deshalb sass das
+    bukkale Band am 26er zu weit mesial.
+
+    Es gilt, was `src/odontogram.ts` seit dem Umbau festhaelt und was aus Dirks
+    Zeichnungen stammt: Oberkiefer bukkal oben, Unterkiefer bukkal unten, mesial
+    bei beiden rechts. Bestaetigt an 36 und 26 im laufenden Bogen.
+    """
+    oben = ziel[0] in "125"                      # Oberkiefer, bleibend wie Milch
+    return {
+        "mesial":  np.array([1.0, 0.0]),
+        "distal":  np.array([-1.0, 0.0]),
+        "buccal":  np.array([0.0, -1.0 if oben else 1.0]),
+        "lingual": np.array([0.0, 1.0 if oben else -1.0]),
+    }
 
 
 def _raster(umriss):
@@ -126,6 +160,27 @@ def _loecher(maske: np.ndarray, innen: np.ndarray) -> np.ndarray:
                 gesehen[ny, nx] = True
                 q.append((ny, nx))
     return frei & ~gesehen
+
+
+def _stuecke(maske: np.ndarray):
+    """Die zusammenhaengenden Teile einer Maske, einzeln."""
+    from collections import deque
+    gesehen = np.zeros(maske.shape, dtype=bool)
+    for y, x in zip(*np.nonzero(maske)):
+        if gesehen[y, x]:
+            continue
+        teil = np.zeros(maske.shape, dtype=bool)
+        q = deque([(y, x)])
+        gesehen[y, x] = teil[y, x] = True
+        while q:
+            cy, cx = q.popleft()
+            for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                ny, nx = cy + dy, cx + dx
+                if 0 <= ny < maske.shape[0] and 0 <= nx < maske.shape[1] \
+                        and maske[ny, nx] and not gesehen[ny, nx]:
+                    gesehen[ny, nx] = teil[ny, nx] = True
+                    q.append((ny, nx))
+        yield teil
 
 
 def _nur_groesste(maske: np.ndarray) -> np.ndarray:
@@ -194,13 +249,15 @@ def gebiete(ziel: str) -> dict[str, np.ndarray]:
     # Randleiste ausdruecklich dem Approximalkasten gehoert. Die Ueberlappung am
     # Schluss stellt den Anschluss wieder her: mo und mod haengen zusammen, o
     # allein bleibt in der Mitte.
-    md = [richtung["mesial"], richtung["distal"]]
-    hilfs = []
-    for H in hoecker.verlaengere(fissuren, umriss):
-        v = H[1] - H[0]
-        v = v / (np.hypot(*v) + 1e-12)
-        if max(float(v @ md[0]), float(v @ md[1])) > kos:
-            hilfs.append(H)
+    # Verlaengert wird in ALLE Richtungen. Bis 18.08.2026 nur nach mesial und
+    # distal, aus Sorge, eine okklusale Fuellung koennte sonst nach allen Seiten
+    # ausufern. Gemessen war die Sorge kleiner als gedacht - das Band wird
+    # ohnehin an den Randbaendern beschnitten und reicht nie bis an den Umriss -,
+    # und der Preis war hoch: an fuenf Zaehnen (14 bukkal, 44/47/84/85 lingual)
+    # zerfiel eine bo- oder lo-Fuellung in zwei Inseln, weil dort kein
+    # gezeichneter Sulcus weit genug nach aussen laeuft. Dirk hat sich am
+    # 18.08.2026 dafuer entschieden, lieber ueberall anzuschliessen.
+    hilfs = hoecker.verlaengere(fissuren, umriss)
     voll = np.ones_like(innen)
     hoecker._zeichne_linien(voll, fissuren + hilfs, x0, y0)
     linie = ~voll
@@ -216,10 +273,23 @@ def gebiete(ziel: str) -> dict[str, np.ndarray]:
     # laeuft und dort beschnitten wird - kein Befund, sondern eine ausgefranste
     # Innenkante. Dem Band zugeschlagen und nicht der Kauflaeche, damit eine
     # einzelne d-Fuellung eine glatte Kante bekommt statt eines Zipfels.
+    # NUR KLEINE Zwickel. Ohne Schranke verschluckt die Fuellung ganze Hoecker:
+    # sobald das Fissurenband und ein Randband einen Hoecker einschliessen, ist
+    # der formal ein Loch. Gemessen kam die linguale Flaeche so auf 29 bis 38
+    # Prozent gegen 12 bis 20 bukkal - ein Drittel des Zahns, das niemand
+    # befundet hat. Alles ueber der Schranke bleibt stehen und wird gemeldet.
+    zelle = 1.0 / (A * A)
+    kau = innen.sum() * zelle
     for f in FLAECHEN:
         loch = _loecher(aus[f] | aus["occlusal"], innen)
-        if loch.any():
-            aus[f] = aus[f] | loch
+        if not loch.any():
+            continue
+        for teil in _stuecke(loch):
+            if teil.sum() * zelle <= MAX_ZWICKEL * kau:
+                aus[f] = aus[f] | teil
+            else:
+                print(f"  {ziel}: {f} laesst ein Gebiet von "
+                      f"{100 * teil.sum() * zelle / kau:.1f}% stehen", file=sys.stderr)
     return aus, (x0, y0)
 
 
@@ -244,11 +314,9 @@ def einsetzen(ziel: str) -> dict[str, int]:
     txt = datei.read_text()
     gezaehlt: dict[str, int] = {}
     for flaeche, maske in g.items():
-        P = fe._vereinfache(
-            np.column_stack([ursprung[0] + fe._rand(maske)[:, 1] / hoecker.AUFLOESUNG,
-                             ursprung[1] + fe._rand(maske)[:, 0] / hoecker.AUFLOESUNG]),
-            fe.GLAETTE)
-        neu_d = fe._d(P)
+        teile = fe.polygone(ziel, maske, ursprung)
+        P = teile[0] if teile else np.zeros((0, 2))
+        neu_d = fe._d_teile(teile)
         n = 0
         for vorsatz in fe.EINZELN:
             ident = vorsatz + flaeche
@@ -290,3 +358,117 @@ def einsetzen(ziel: str) -> dict[str, int]:
         gezaehlt[flaeche] = n
     datei.write_text(txt)
     return gezaehlt
+
+
+# Die bukkale Flaeche der SEITENANSICHT, aus der Kauflaeche projiziert.
+#
+# Dirk, 18.08.2026: "Kann man nicht die gleiche Breite der okklusalen Ansicht
+# und die seitliche buccale Ansicht projizieren?" - Ja, und es ist die einzige
+# Groesse, die beide Ansichten teilen: mesiodistal ist in der Kauflaechenansicht
+# die x-Achse und in der Seitenansicht ebenso. Was die Kauflaeche NICHT hergibt,
+# ist die Hoehe - von oben gesehen hat die bukkale Flaeche keine. Die bleibt
+# eine Setzung und steht deshalb hier als Zahl.
+#
+# Bis dahin war die bukkale Flaeche der Seitenansicht das letzte Stueck, das
+# noch aus dem Verschiebungsfeld kam: am 16er ein Fleck von 13 x 3,5 Einheiten
+# in einer Krone von 36 x 28. Dirk: "Die Seitenansicht der buccalen Fuellung ist
+# viel zu klein."
+BUKKAL_OBEN = 0.36      # Anteil der Kronenhoehe unter der Kaukante
+BUKKAL_UNTEN = 0.74     # ... bis hierhin
+
+
+def bukkal_breite(zahn: str) -> tuple[float, float]:
+    """Mesiodistale Ausdehnung der bukkalen Flaeche, als Anteil der Zahnbreite."""
+    txt = (fe.TEMPLATES / f"{zahn}_occl.svg").read_text()
+
+    def form(ident):
+        m = re.search(r'<(?:path|polygon)\b(?:(?!/>).)*?id="' + ident
+                      + r'"(?:(?!/>).)*?/>', txt, re.S)
+        return redraw.polygon(re.search(r'\sd="([^"]+)"', m.group(0)).group(1))
+
+    um = form("background-cusp")
+    B = form("filling-composite-buccal")
+    x0, x1 = um[:, 0].min(), um[:, 0].max()
+    return ((B[:, 0].min() - x0) / (x1 - x0), (B[:, 0].max() - x0) / (x1 - x0))
+
+
+def bukkal_seitenansicht(zahn: str) -> np.ndarray:
+    """Die bukkale Flaeche in der Seitenansicht - Breite projiziert, Hoehe gesetzt."""
+    import fuellflaechen as ff
+    a, b = bukkal_breite(zahn)
+    um, szg, occl, d, krone = ff.masse(zahn)
+    ch = abs(occl - szg)
+    x0, x1 = krone[:, 0].min(), krone[:, 0].max()
+    xa, xb = x0 + a * (x1 - x0), x0 + b * (x1 - x0)
+    # Von der Kaukante WEG nach zervikal, also gegen `d` - `d` zeigt von der
+    # Zahnhalslinie zur Kaukante. Mit dem falschen Vorzeichen liegt das Band
+    # ausserhalb des Zahns und der Zug bleibt leer.
+    y_oben = occl - d * BUKKAL_OBEN * ch
+    y_unten = occl - d * BUKKAL_UNTEN * ch
+    lo, hi = min(y_oben, y_unten), max(y_oben, y_unten)
+    schritt = max(0.2, ch / 24.0)
+    band = max(0.4, ch / 60.0)
+    oben, unten = [], []
+    for y in np.arange(lo, hi + schritt * 0.5, schritt):
+        nah = um[np.abs(um[:, 1] - y) < band]
+        if len(nah) == 0:
+            continue
+        # an den Umriss anschmiegen, damit die Flaeche nicht herausragt
+        li = max(float(nah[:, 0].min()), min(xa, xb))
+        re_ = min(float(nah[:, 0].max()), max(xa, xb))
+        if re_ <= li:
+            continue
+        oben.append((re_, float(y)))
+        unten.append((li, float(y)))
+    return np.array(oben + unten[::-1], dtype=float)
+
+
+def bukkal_einsetzen(zahn: str) -> int:
+    """Die projizierte bukkale Flaeche in die SEITENANSICHT schreiben.
+
+    Nur die vierzehn Seitenzaehne - die zwoelf Frontzaehne haben keine
+    Kauflaechenansicht, aus der sich eine Breite projizieren liesse, und ihre
+    labiale Flaeche ist ohnehin eine andere Frage.
+    """
+    P = fe.nach_template(zahn, bukkal_seitenansicht(zahn))
+    datei = fe.TEMPLATES / f"{zahn}.svg"
+    txt = datei.read_text()
+    n = 0
+    for vorsatz in fe.EINZELN:
+        ident = vorsatz + "buccal"
+        m = re.search(r'<(?:path|polygon)\b(?:(?!/>).)*?id="' + ident
+                      + r'"(?:(?!/>).)*?/>', txt, re.S)
+        if not m:
+            continue
+        alt = m.group(0)
+        if ' d="' in alt:
+            ersetzt = re.sub(r'\sd="[^"]*"', ' d="' + fe._d(P) + '"', alt, count=1)
+        elif ' points="' in alt:
+            ersetzt = re.sub(r'\spoints="[^"]*"', ' points="' + fe._points(P) + '"',
+                             alt, count=1)
+        else:
+            continue
+        txt = txt.replace(alt, ersetzt, 1)
+        n += 1
+    grp = re.search(r'(<g[^>]*id="caries-buccal"[^>]*>)(.*?)(</g>)', txt, re.S)
+    if grp:
+        innen = grp.group(2)
+        ds = re.findall(r'\sd="([^"]+)"', innen)
+        if ds:
+            alle = np.vstack([redraw.polygon(x) for x in ds])
+            neu = innen
+            for x in ds:
+                neu = neu.replace(f'd="{x}"', f'd="{fe._affin(x, alle, P)}"', 1)
+            txt = txt.replace(grp.group(0), grp.group(1) + neu + grp.group(3), 1)
+            n += 1
+    else:
+        m = re.search(r'<(?:path|polygon)\b(?:(?!/>).)*?id="caries-buccal"(?:(?!/>).)*?/>',
+                      txt, re.S)
+        if m and ' d="' in m.group(0):
+            alt = m.group(0)
+            d = re.search(r'\sd="([^"]+)"', alt).group(1)
+            txt = txt.replace(alt, alt.replace(f'd="{d}"',
+                                               f'd="{fe._affin(d, redraw.polygon(d), P)}"'), 1)
+            n += 1
+    datei.write_text(txt)
+    return n

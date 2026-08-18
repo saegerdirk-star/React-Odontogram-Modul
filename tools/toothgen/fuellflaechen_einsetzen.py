@@ -176,13 +176,67 @@ def _vereinfache(P: np.ndarray, tol: float) -> np.ndarray:
     return P[behalten]
 
 
-def polygon(zahn: str, maske: np.ndarray, ursprung: tuple[float, float]) -> np.ndarray:
-    """Eine Rastermaske als Polygon in ZEICHENkoordinaten."""
+# Anteil des groessten Teils, ab dem ein weiterer Teil mitgeschrieben wird.
+MIN_TEIL = 0.05
+
+
+def teile_maske(maske: np.ndarray) -> list[np.ndarray]:
+    """Die zusammenhaengenden Teile einer Maske, nach Groesse absteigend."""
+    from collections import deque
+    gesehen = np.zeros(maske.shape, dtype=bool)
+    aus = []
+    for y, x in zip(*np.nonzero(maske)):
+        if gesehen[y, x]:
+            continue
+        teil = np.zeros(maske.shape, dtype=bool)
+        q = deque([(y, x)])
+        gesehen[y, x] = teil[y, x] = True
+        while q:
+            cy, cx = q.popleft()
+            for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                ny, nx = cy + dy, cx + dx
+                if 0 <= ny < maske.shape[0] and 0 <= nx < maske.shape[1] \
+                        and maske[ny, nx] and not gesehen[ny, nx]:
+                    gesehen[ny, nx] = teil[ny, nx] = True
+                    q.append((ny, nx))
+        aus.append(teil)
+    aus.sort(key=lambda t: -int(t.sum()))
+    return aus
+
+
+def polygone(zahn: str, maske: np.ndarray,
+             ursprung: tuple[float, float]) -> list[np.ndarray]:
+    """Eine Rastermaske als POLYGONE in Zeichenkoordinaten - eines je Teil.
+
+    Nicht eines. `_rand` laeuft EINE geschlossene Kontur ab, naemlich die der
+    Komponente, in der die oberste linke gesetzte Zelle liegt. Besteht eine
+    Flaeche aus mehreren Teilen, verschwand bisher alles ausser diesem einen -
+    und wenn der zufaellig ein Splitter war, blieb von der Flaeche ein Rest.
+    Genau das ist an der 85 passiert: die bukkale Flaeche misst gerechnet 118,8
+    Einheiten und stand im Template mit 12 Prozent der Zahnbreite, weil der
+    Zug an einem Splitter von 4,3 Einheiten begann.
+    """
     x0, y0 = ursprung
-    rand = _rand(_weite(maske, UEBERLAPP))
-    P = np.column_stack([x0 + rand[:, 1] / hoecker.AUFLOESUNG,
-                         y0 + rand[:, 0] / hoecker.AUFLOESUNG])
-    return _vereinfache(P, GLAETTE)
+    geweitet = _weite(maske, UEBERLAPP)
+    teile = teile_maske(geweitet)
+    if not teile:
+        return []
+    gross = int(teile[0].sum())
+    aus = []
+    for t in teile:
+        if int(t.sum()) < MIN_TEIL * gross:
+            continue
+        rand = _rand(t)
+        P = np.column_stack([x0 + rand[:, 1] / hoecker.AUFLOESUNG,
+                             y0 + rand[:, 0] / hoecker.AUFLOESUNG])
+        aus.append(_vereinfache(P, GLAETTE))
+    return aus
+
+
+def polygon(zahn: str, maske: np.ndarray, ursprung: tuple[float, float]) -> np.ndarray:
+    """Nur der groesste Teil - fuer `<polygon points>`, das keine Teilzuege kann."""
+    p = polygone(zahn, maske, ursprung)
+    return p[0] if p else np.zeros((0, 2))
 
 
 def nach_template(zahn: str, P: np.ndarray) -> np.ndarray:
@@ -213,6 +267,11 @@ def _entdoppeln(P: np.ndarray) -> np.ndarray:
         if abs(P[i, 0] - P[behalten[-1], 0]) > 5e-3 or abs(P[i, 1] - P[behalten[-1], 1]) > 5e-3:
             behalten.append(i)
     return P[behalten]
+
+
+def _d_teile(teile: list[np.ndarray]) -> str:
+    """Mehrere Teilzuege in EINEM Pfad - ein `d` darf beliebig viele tragen."""
+    return " ".join(_d(P) for P in teile if len(P) > 2)
 
 
 def _d(P: np.ndarray) -> str:
@@ -252,8 +311,9 @@ def einsetzen(zahn: str) -> dict[str, int]:
     txt = datei.read_text()
     gezaehlt: dict[str, int] = {}
     for flaeche, maske in masken.items():
-        P = nach_template(zahn, polygon(zahn, maske, ursprung))
-        neu_d = _d(P)
+        teile = [nach_template(zahn, Q) for Q in polygone(zahn, maske, ursprung)]
+        P = teile[0] if teile else np.zeros((0, 2))
+        neu_d = _d_teile(teile)
         n = 0
         for vorsatz in EINZELN:
             ident = vorsatz + flaeche

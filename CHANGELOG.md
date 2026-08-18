@@ -24,6 +24,50 @@
   dem Band zugeschlagen - sie entstehen, wo ein Fissurenast schraeg in das Band
   laeuft und dort beschnitten wird, und sind eine ausgefranste Innenkante, kein
   Befund.
+- **Korrigiert: bukkal und lingual waren im Unterkiefer vertauscht**, und die
+  vier Himmelsrichtungen waren ueberhaupt verdreht. Sie wurden an den
+  anatomisch benannten `filling-composite-*`-Ebenen des Templates gemessen -
+  einer Quelle, die zweifach nicht taugt. Erstens sind diese Ebenen seit dem
+  Umbau vom 17.08. nicht mitbewegt worden, als die Kauflaechen-ZEICHNUNGEN neu
+  ausgerichtet wurden; sie melden bukkal in allen vierzehn OBEN, was fuer den
+  Unterkiefer die falsche Seite ist. Zweitens sind es gewarpte Spenderformen,
+  deren Schwerpunkte nicht in den Himmelsrichtungen liegen: am oberen Sechser
+  zeigte "bukkal" auf (0,52 | -0,85) und "mesial" auf (0,51 | -0,86), praktisch
+  dieselbe Richtung - deshalb sass das bukkale Band zu weit mesial. Es gilt
+  jetzt die Konvention, die `src/odontogram.ts` seit dem Umbau festhaelt und die
+  aus Dirks Zeichnungen stammt: Oberkiefer bukkal oben, Unterkiefer bukkal
+  unten, mesial bei beiden rechts. Die Sektormitte ist die Mitte des
+  umschliessenden Rechtecks statt des Punktschwerpunkts, der bis zu 1,3
+  Einheiten daneben lag.
+- **Korrigiert: eine Flaeche aus mehreren Teilen schrumpfte auf einen davon.**
+  Die Randverfolgung laeuft EINE geschlossene Kontur ab, naemlich die der
+  Komponente mit der obersten linken Zelle. An `85_occl` lag die in einem
+  Splitter von 4,3 Einheiten neben einem Hauptteil von 118,8 - im Template stand
+  danach eine bukkale Flaeche von 12 statt 80 Prozent der Zahnbreite. Jetzt wird
+  jeder Teil als eigener Teilzug in dasselbe `d` geschrieben, und Teile unter 5
+  Prozent des groessten fallen weg. Die Defektebenen sind `<polygon points>` und
+  koennen keine Teilzuege; dort wird weiterhin nur der groesste Teil
+  geschrieben.
+- **Die bukkale Flaeche der SEITENANSICHT wird aus der Kauflaeche projiziert**
+  (Dirks Vorschlag): mesiodistal ist in beiden Ansichten die x-Achse, also ist
+  die Breite die eine Groesse, die sie teilen. Sie war bis dahin das letzte
+  Stueck, das noch aus dem Verschiebungsfeld kam - am oberen Sechser ein Fleck
+  von 13 x 3,5 Einheiten in einer Krone von 36 x 28. Die Hoehe kann die
+  Kauflaeche nicht hergeben und bleibt eine Setzung (mittleres Kronendrittel,
+  `BUKKAL_OBEN`/`BUKKAL_UNTEN`). Nur die vierzehn Seitenzaehne; die Frontzaehne
+  haben keine Kauflaechenansicht.
+- Die Fissuren werden in ALLE Richtungen bis zum Umriss verlaengert, nicht nur
+  nach mesial und distal. Die Sorge, eine okklusale Fuellung koenne dadurch
+  ausufern, war gemessen unbegruendet - das Band wird ohnehin an den Randbaendern
+  beschnitten, und die okklusale Flaeche wurde im Mittel KLEINER. Es bleiben
+  drei Zaehne ohne Anschluss (14 bukkal 0,37 Einheiten, 45 lingual 1,12, 44
+  bukkal 3,14); der untere erste Praemolar hat anatomisch keine bukkale Fissur,
+  und eine Schwelle im Generator soll darueber nicht entscheiden.
+- Eingeschlossene Gebiete werden einem Randband nur bis zu 3 Prozent der
+  Kauflaeche zugeschlagen. Ohne Schranke verschluckte die Regel ganze Hoecker -
+  gemessen kam die linguale Flaeche auf 29 bis 38 Prozent gegen 12 bis 20
+  bukkal. Was darueber liegt, bleibt stehen und wird beim Lauf gemeldet.
+
 - Alle abgeleiteten Flaechen werden mit ZWEI Nachkommastellen geschrieben, weil
   die Kette mit `prec=2` serialisiert. Mit drei Stellen wich `54_occl` beim
   Nachserialisieren um 0,1060 von sich selbst ab und `check_roundtrip.py` fiel
