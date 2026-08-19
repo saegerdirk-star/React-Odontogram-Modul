@@ -1465,6 +1465,7 @@ export function setChartMode(mode: ChartMode): void {
     planInitialized = true;
     // DS-1: a freshly-cloned plan exactly matches status -> no plan-edits yet.
     planEditedTeeth.clear();
+    resetShorthandInput();
   }
   chartMode = mode;
   toothState = charts[mode];
@@ -4219,6 +4220,7 @@ export function __resetChartStateForTest(): void {
   charts.plan.clear();
   planInitialized = false;
   planEditedTeeth.clear();
+  resetShorthandInput();
   pendingDualStateConfirm = null;
   chartMode = "status";
   toothState = charts.status;
@@ -6728,8 +6730,11 @@ function syncShorthandReadout(){
 /** Says what a keystroke did NOT do. The two cases are kept apart on purpose:
  *  a typo and a key whose axis we have not built yet are different situations,
  *  and only one of them is the user's mistake. */
-function reportShorthand(r: { unknown: string[]; pending: { token: string; bead: string }[] }): void {
+function reportShorthand(r: { unknown: string[]; pending: { token: string; bead: string }[]; needsMaterial?: string[] }): void {
   const parts: string[] = [];
+  if(r.needsMaterial && r.needsMaterial.length > 0){
+    parts.push(t("shorthand.needsMaterial").replace("{keys}", r.needsMaterial.join(" ")));
+  }
   if(r.pending.length > 0){
     parts.push(t("shorthand.pending").replace("{keys}", r.pending.map(p => p.token).join(" ")));
   }
@@ -6737,7 +6742,12 @@ function reportShorthand(r: { unknown: string[]; pending: { token: string; bead:
     parts.push(t("shorthand.unknown").replace("{keys}", r.unknown.join(" ")));
   }
   if(parts.length === 0) return;
-  shorthandNotice = parts.join(" · ");
+  reportShorthandMessage(parts.join(" · "));
+}
+
+/** Shows a message in the read-out for a moment, in place of the buffer. */
+function reportShorthandMessage(text: string): void {
+  shorthandNotice = text;
   if(shorthandNoticeTimer) clearTimeout(shorthandNoticeTimer);
   shorthandNoticeTimer = setTimeout(() => {
     shorthandNotice = "";
@@ -6779,6 +6789,105 @@ function writeShorthandEdit(s: Any, edit: ShorthandEdit, toothNo: number): void 
   }
 }
 
+// ---- Widerruf ---------------------------------------------------------------
+//
+// The bead asks for one, and without it the shorthand fails at exactly the
+// point it was built for: a mistyped key would be corrected through the click
+// paths the shorthand exists to avoid.
+//
+// A step snapshots what the edit COULD have touched, not what it did: both
+// charts and the plan-edited marks of the affected teeth. Undo then restores
+// them wholesale. It is deliberately NOT routed through `gateToothEdit` — an
+// undo is not a new edit but the withdrawal of one, and running it through the
+// gate would ask the dual-state question a second time about a decision the
+// user has just taken back.
+
+interface ShorthandUndoStep {
+  teeth: number[];
+  status: Map<number, Any>;
+  /** `null` while the plan chart is uninitialized — there was nothing to save. */
+  plan: Map<number, Any> | null;
+  planEdited: Set<number>;
+  material: MaterialKey | null;
+}
+
+/** Twenty steps. Deep enough for a slip a few teeth back, shallow enough that
+ *  a session cannot grow a copy of the whole mouth many times over. */
+const SHORTHAND_UNDO_DEPTH = 20;
+const shorthandUndoStack: ShorthandUndoStep[] = [];
+
+function snapshotTeeth(chart: Map<number, Any>, teeth: number[]): Map<number, Any> {
+  const out = new Map<number, Any>();
+  for(const toothNo of teeth){
+    const st = chart.get(toothNo);
+    if(st) out.set(toothNo, serializeState(st));
+  }
+  return out;
+}
+
+function pushShorthandUndo(teeth: number[]): void {
+  if(teeth.length === 0) return;
+  shorthandUndoStack.push({
+    teeth: [...teeth],
+    status: snapshotTeeth(charts.status, teeth),
+    plan: planInitialized ? snapshotTeeth(charts.plan, teeth) : null,
+    planEdited: new Set(teeth.filter(t => planEditedTeeth.has(t))),
+    material: shorthandMaterial,
+  });
+  if(shorthandUndoStack.length > SHORTHAND_UNDO_DEPTH) shorthandUndoStack.shift();
+}
+
+/** Drops the history AND the input state. Called wherever `planEditedTeeth` is
+ *  cleared — a reset, an import or a plan (re)initialisation changes the case
+ *  under the typist, and both halves would be wrong afterwards: a step kept
+ *  across that restores teeth out of a DIFFERENT case, and a material mode kept
+ *  across it silently makes the next crown gold because of a case that is gone.
+ *  One rule for all five sites rather than an exception to remember. */
+function resetShorthandInput(): void {
+  shorthandUndoStack.length = 0;
+  shorthandMaterial = null;
+  shorthandBuffer = "";
+  syncShorthandReadout();
+}
+
+/** How many shorthand steps can still be taken back. */
+export function getShorthandUndoDepth(): number { return shorthandUndoStack.length; }
+
+/**
+ * Takes back the last shorthand entry, over every tooth it touched.
+ *
+ * Returns `false` when there is nothing to take back, so a caller can say so
+ * instead of a keystroke going nowhere.
+ */
+export function undoShorthand(): boolean {
+  const step = shorthandUndoStack.pop();
+  if(!step) return false;
+  for(const toothNo of step.teeth){
+    const st = step.status.get(toothNo);
+    if(st) charts.status.set(toothNo, hydrateState(st, false));
+    else charts.status.delete(toothNo);
+    if(step.plan){
+      const pl = step.plan.get(toothNo);
+      if(pl) charts.plan.set(toothNo, hydrateState(pl, false));
+      else charts.plan.delete(toothNo);
+    }
+    // The marks too: an edit that made a tooth plan-edited must not leave it
+    // marked once it has been taken back.
+    if(step.planEdited.has(toothNo)) planEditedTeeth.add(toothNo);
+    else planEditedTeeth.delete(toothNo);
+    applyStateToSvg(toothNo);
+    updateToothTileNumber(toothNo);
+  }
+  // The material mode is part of the step: `G k` taken back must not leave gold
+  // standing, or the next crown would silently be gold as well.
+  shorthandMaterial = step.material;
+  if(activeTooth) syncControlsFromState(toothState.get(activeTooth));
+  updateSelectionFilterButtons();
+  syncShorthandReadout();
+  notifyStateChange();
+  return true;
+}
+
 /**
  * Applies shorthand to the current selection. The material mode is carried in
  * and out, so it survives across teeth exactly as it does on charly's keypad.
@@ -6787,8 +6896,13 @@ function writeShorthandEdit(s: Any, edit: ShorthandEdit, toothNo: number): void 
  * a typo and a key whose axis we have not built yet are different situations
  * (see `SHORTHAND_PENDING`).
  */
-export function applyShorthand(input: string): { unknown: string[]; pending: { token: string; bead: string }[] } {
+export function applyShorthand(input: string): { unknown: string[]; pending: { token: string; bead: string }[]; needsMaterial: string[] } {
   const r = parseShorthand(input, { material: shorthandMaterial });
+  // Snapshot BEFORE the mode changes, so taking the step back restores the
+  // material that was standing when it was typed.
+  if(r.edits.length > 0 || r.material !== shorthandMaterial){
+    pushShorthandUndo(Array.from(selectedTeeth) as number[]);
+  }
   shorthandMaterial = r.material;
   if(r.edits.length > 0){
     // `o.B.` resets the whole tooth, so it cannot ride the per-field writer.
@@ -6811,7 +6925,7 @@ export function applyShorthand(input: string): { unknown: string[]; pending: { t
     }
   }
   syncShorthandReadout();
-  return { unknown: r.unknown, pending: r.pending };
+  return { unknown: r.unknown, pending: r.pending, needsMaterial: r.needsMaterial };
 }
 
 /** Selects a single tooth and puts the focus on it — what the Tab walk does. */
@@ -6841,8 +6955,27 @@ function isShorthandKey(evt: KeyboardEvent): boolean {
   return evt.key.length === 1 && evt.key !== " ";
 }
 
+/** Cmd/Strg+Z on a tile — the withdrawal every program uses the same key for.
+ *  Returns whether it was handled, so the caller can fall through otherwise. */
+function handleShorthandUndoKey(evt: KeyboardEvent): boolean {
+  if(!(evt.metaKey || evt.ctrlKey) || evt.altKey) return false;
+  if(evt.key !== "z" && evt.key !== "Z") return false;
+  evt.preventDefault();
+  // An uncommitted buffer is taken back first: it is the more recent thing,
+  // and taking back a written finding while unwritten keys still stand would
+  // read as the wrong step having been undone.
+  if(shorthandBuffer){
+    shorthandBuffer = "";
+    syncShorthandReadout();
+    return true;
+  }
+  if(!undoShorthand()) reportShorthandMessage(t("shorthand.nothingToUndo"));
+  return true;
+}
+
 function onToothKeydown(toothNo: number, evt: KeyboardEvent){
   if(readOnly) return;
+  if(handleShorthandUndoKey(evt)) return;
   switch(evt.key){
     case "Enter":
     case " ":
@@ -7925,6 +8058,7 @@ export function setPlanChart(payload: Any): void {
   planInitialized = true;
   // DS-1: replacing the plan chart wholesale resets any runtime plan-edits.
   planEditedTeeth.clear();
+  resetShorthandInput();
   // DS-1 (review Fix 2): drop any pending dual-state confirm — its deferred
   // `applyFn` was captured against the pre-replace plan and must not run against
   // the freshly-hydrated plan chart via a later acceptDualStateConfirm().
@@ -10876,6 +11010,7 @@ function hydrateImportedCharts(data: Any): void {
   // no runtime plan-edits (they are never serialized), so drop any stale marks
   // regardless of whether the import brought a `plan` section.
   planEditedTeeth.clear();
+  resetShorthandInput();
   // DS-1 (review Fix 2): also drop any pending dual-state confirm. Its deferred
   // `applyFn` was captured against the PRE-import state; a later
   // acceptDualStateConfirm() must never run it against freshly-hydrated charts.
@@ -12227,6 +12362,7 @@ export function destroyOdontogram(){
   charts.plan.clear();
   planInitialized = false;
   planEditedTeeth.clear();
+  resetShorthandInput();
   pendingDualStateConfirm = null;
   chartMode = "status";
   toothState = charts.status;

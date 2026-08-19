@@ -76,10 +76,50 @@ Achsen und 129 Werten ist die Zahl der Klickwege der eigentliche Engpass.
   (Wurzelfraktur), -ca0 (Hemisektion), -0n8 (Durchbruch in Stufen), -gry
   (Papillenverlust) und -5rv (eine Bruecke ohne Pfeiler ist kein Befund).
 
+### Widerruf der Kurzschrift
+
+- **Cmd/Strg+Z nimmt die letzte Eingabe zurueck**, ueber alle Zaehne, die sie
+  traf, zwanzig Schritte tief (`undoShorthand()`, `getShorthandUndoDepth()`).
+  Der Bead verlangt einen Widerruf ausdruecklich: ohne ihn scheitert die
+  Kurzschrift genau da, wofuer sie gebaut ist - ein Vertipper waere ueber die
+  Klickwege zu berichtigen, die sie vermeiden soll.
+- Ein Schritt sichert, was die Eingabe treffen KONNTE, nicht was sie traf:
+  beide Charts und die Plan-Markierungen der betroffenen Zaehne. **Nicht durch
+  `gateToothEdit`** - ein Widerruf ist keine neue Bearbeitung, sondern die
+  Ruecknahme einer, und das Gate wuerde die Dual-State-Frage ein zweites Mal
+  zu einer Entscheidung stellen, die gerade zurueckgenommen wurde.
+- **Der Materialmodus gehoert zum Schritt.** `G k` zurueckgenommen darf Gold
+  nicht stehen lassen, sonst waere die naechste Krone stillschweigend ebenfalls
+  golden.
+- Ein noch ungeschriebener Puffer wird zuerst geraeumt: er ist das Juengere.
+- `resetShorthandInput()` raeumt Verlauf UND Eingabezustand ueberall dort, wo
+  `planEditedTeeth` geraeumt wird. Ein Zuruecksetzen oder ein Import wechselt
+  den Fall unter dem Tippenden; ein aufgehobener Schritt holte sonst Zaehne aus
+  einem ANDEREN Fall zurueck.
+
+### Eine Restauration ohne Material ist kein Befund
+
+- `k` ohne gesetzten Materialmodus schrieb zwar `restorationType`, aber eine
+  Krone ohne Material ist keine gueltige Restauration - der Zustand
+  normalisierte sie wieder weg, und die Taste sah aus, als tue sie nichts. Der
+  Zerleger meldet solche Tasten jetzt als `needsMaterial`, und die Anzeige sagt
+  es. Gefunden hat das ein Test, der wirklich tippt.
+
 ### i18n
 
-- Drei neue Schluessel in allen zwoelf Sprachen: `chart.hint.drag`,
-  `shorthand.unknown`, `shorthand.pending`.
+- Fuenf neue Schluessel in allen zwoelf Sprachen: `chart.hint.drag`,
+  `shorthand.unknown`, `shorthand.pending`, `shorthand.nothingToUndo`,
+  `shorthand.needsMaterial`.
+
+### Dokumentation
+
+- **`tools/toothgen/README.md` neu geschrieben.** Sie stand auf "neun Vorlagen
+  aus vier Quellzeichnungen" und beschrieb damit ein Werkzeug, das es seit dem
+  17.08.2026 nicht mehr gibt. Jetzt: 26 Seitenansichten und 26 Kauflaechen, die
+  drei Generatorstufen mit ihren zwei Vertraegen, warum die dritte eine eigene
+  ist, die Module darunter, der anatomische Vertrag und die drei Fallstricke
+  (`toothgen:build` baut die Kauflaechen nicht mit; `uv` und `python3` sind
+  nicht austauschbar; die Tafelabzuege gehoeren nicht ins Repository).
 
 ### Unveraendert
 

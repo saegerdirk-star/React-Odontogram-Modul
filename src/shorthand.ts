@@ -74,6 +74,11 @@ export interface ShorthandResult {
   unknown: string[];
   /** Tokens we understand but have nowhere to store yet, with their bead. */
   pending: { token: string; bead: string }[];
+  /** Restoration keys typed with NO material mode standing. The engine treats
+   *  a crown without a material as no restoration at all and normalises it
+   *  away, so such a key looks as if it did nothing. Reported rather than
+   *  swallowed — the same reasoning as `pending`. */
+  needsMaterial: string[];
 }
 
 export interface ShorthandContext {
@@ -293,6 +298,7 @@ export function parseShorthand(input: string, ctx: ShorthandContext = {}): Short
   const edits: ShorthandEdit[] = [];
   const unknown: string[] = [];
   const pending: { token: string; bead: string }[] = [];
+  const needsMaterial: string[] = [];
   let material: MaterialKey | null = ctx.material ?? null;
 
   let run: SurfaceKey[] = [];
@@ -304,9 +310,10 @@ export function parseShorthand(input: string, ctx: ShorthandContext = {}): Short
   // own material (telescope), and a mode left over from an earlier tooth must
   // not overwrite it. A material with no restoration reading (amalgam, GIZ)
   // writes nothing rather than inventing one.
-  const applyMaterial = () => {
+  const applyMaterial = (token: string) => {
     const rest = material ? MATERIALS[material].restoration : null;
     if(rest) edits.push({ kind: "axis", field: "restorationMaterial", value: rest });
+    else needsMaterial.push(token);
   };
 
   const flush = () => {
@@ -358,12 +365,12 @@ export function parseShorthand(input: string, ctx: ShorthandContext = {}): Short
       case "axis":
         flush();
         edits.push({ kind: "axis", field: entry.field, value: entry.value });
-        if(entry.takesMaterial) applyMaterial();
+        if(entry.takesMaterial) applyMaterial(tok);
         break;
       case "axes":
         flush();
         for(const e of entry.edits) edits.push({ kind: "axis", field: e.field, value: e.value });
-        if(entry.takesMaterial) applyMaterial();
+        if(entry.takesMaterial) applyMaterial(tok);
         break;
       case "denture":
         flush();
@@ -376,7 +383,7 @@ export function parseShorthand(input: string, ctx: ShorthandContext = {}): Short
     }
   }
   flush();
-  return { edits, material, unknown, pending };
+  return { edits, material, unknown, pending, needsMaterial };
 }
 
 /** Keys that ARE a finding on their own, as opposed to those that open a run

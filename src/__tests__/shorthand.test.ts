@@ -449,3 +449,23 @@ describe("Die Spanne: was zwischen zwei Zaehnen liegt (odontogram-apn)", () => {
     expect(teethBetween(18, 16, ohneWeisheit)).toEqual([17, 16]);
   });
 });
+
+describe("Eine Restauration ohne Material meldet sich", () => {
+  it("nennt die Taste, die ein Material gebraucht haette", () => {
+    const r = parseShorthand("k");
+    expect(r.needsMaterial).toEqual(["k"]);
+  });
+
+  it("mit gesetztem Material meldet sie nichts", () => {
+    expect(parseShorthand("G k").needsMaterial).toEqual([]);
+  });
+
+  it("ein Material ohne Restaurations-Lesart zaehlt als fehlend", () => {
+    // Amalgam ist kein Kronenmaterial - die Krone bliebe unvollstaendig.
+    expect(parseShorthand("A k").needsMaterial).toEqual(["k"]);
+  });
+
+  it("t braucht keines, es nennt sein eigenes", () => {
+    expect(parseShorthand("t").needsMaterial).toEqual([]);
+  });
+});

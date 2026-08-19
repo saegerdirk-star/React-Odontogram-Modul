@@ -12,7 +12,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { render, cleanup, waitFor, act } from "@testing-library/react";
 import OdontogramShell from "../App";
-import { getStatusChart, __resetChartStateForTest } from "../odontogram";
+import { getStatusChart, getShorthandUndoDepth, __resetChartStateForTest } from "../odontogram";
 
 beforeEach(() => {
   if (!window.matchMedia) {
@@ -58,11 +58,12 @@ async function tippe(text: string, opts: { shift?: boolean } = {}){
   }
 }
 
-async function taste(key: string, opts: { shift?: boolean } = {}){
+async function taste(key: string, opts: { shift?: boolean; meta?: boolean } = {}){
   const ziel = (document.activeElement as HTMLElement) ?? document.body;
   await act(async () => {
     ziel.dispatchEvent(new KeyboardEvent("keydown", {
-      key, bubbles: true, cancelable: true, shiftKey: !!opts.shift,
+      key, bubbles: true, cancelable: true,
+      shiftKey: !!opts.shift, metaKey: !!opts.meta,
     }));
   });
 }
