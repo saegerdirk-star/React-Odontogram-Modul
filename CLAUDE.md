@@ -179,6 +179,14 @@ Die `events`-Tabelle fehlte in dieser Datenbank vom 2026-08-16 bis 2026-08-18
 so ab: die Tabelle ist in einer frisch angelegten Datenbank derselben Version
 enthalten, `show create table events` dort liefert die Definition wörtlich.
 
+**`events` steht auf `bd`s eigener Ausnahmeliste** (`select * from dolt_ignore`
+— neben `leases`, `repo_mtimes`, `local_metadata`). Sie wird also absichtlich
+weder committet noch übertragen: die Prüfspur ist ÖRTLICH. Deshalb erscheint
+sie in keinem Commit, deshalb meldet `dolt status` nichts Offenes, obwohl
+`select count(*) from events` Zeilen liefert — und deshalb repariert ein Push
+von hier auch keine fremde Kopie. Wem die Tabelle fehlt, der muss sie bei sich
+anlegen.
+
 ## Conventions
 - Tooth IDs use FDI notation (11-48) as internal keys
 - All user-facing strings go through `src/i18n/translations.ts`
