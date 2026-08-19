@@ -144,6 +144,41 @@ Each tooth has:
 - `npm run test:coverage` — coverage report
 - `npx tsc -b --noEmit` — type check only
 
+## Beads (Aufgabenverfolgung) abgleichen
+
+Der Tracker liegt in einer eingebetteten Dolt-Datenbank unter
+`.beads/embeddeddolt/beads_odontogram` und wird mit Malte über
+`https://dolt.cognovis.de/beads_odontogram` geteilt. **`bd` schreibt nur lokal
+— der Abgleich ist ein eigener Schritt**, und ohne ihn sieht Malte nichts.
+
+```
+cd .beads/embeddeddolt/beads_odontogram
+dolt pull --user dirk origin main     # ERST, sonst wird der Push abgelehnt
+dolt push --user dirk origin main
+```
+
+Drei Dinge, die dabei jedes Mal auflaufen, wenn man sie nicht weiß:
+
+- **`bd dolt push` funktioniert nicht.** Es meldet sich als `root` an und
+  scheitert. Der Benutzername kommt AUSSCHLIESSLICH aus dem Schalter `--user`;
+  geprüft am 2026-08-19: weder eine Angabe in der URL
+  (`https://dirk@dolt.cognovis.de/…`) noch `DOLT_REMOTE_USER` / `DOLT_USER` /
+  `DOLT_REMOTE_USERNAME` werden gelesen. Das Passwort kommt aus
+  `DOLT_REMOTE_PASSWORD` (in `~/.zshenv` aus dem Schlüsselbund).
+- **Immer erst `pull`.** Malte schreibt auf denselben Server. Ohne pull lehnt
+  der Push mit `non-fast-forward` ab; der Merge selbst läuft dann örtlich und
+  konfliktfrei durch.
+- **Nicht `~/.beads/shared-server/dolt/…` benutzen.** Das ist eine alte Kopie,
+  auf die die ursprüngliche `bdsync`-Funktion noch zeigte — Schreibvorgänge
+  dorthin landen nirgends.
+
+Die `events`-Tabelle fehlte in dieser Datenbank vom 2026-08-16 bis 2026-08-18
+(ein Schema-Unfall unter `bd` 1.2.1 hatte sie fallen lassen), wodurch JEDER
+`bd`-Schreibvorgang mit `table not found: events` abbrach. Sie wurde aus
+`HEAD~3` samt 248 Zeilen Prüfspur zurückgeholt. Bricht ein `bd`-Befehl wieder
+so ab: die Tabelle ist in einer frisch angelegten Datenbank derselben Version
+enthalten, `show create table events` dort liefert die Definition wörtlich.
+
 ## Conventions
 - Tooth IDs use FDI notation (11-48) as internal keys
 - All user-facing strings go through `src/i18n/translations.ts`
