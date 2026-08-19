@@ -13,6 +13,7 @@ import { describe, it, expect } from "vitest";
 import {
   parseShorthand, tokenizeShorthand, SHORTHAND_DE, SHORTHAND_PENDING,
   nextChartTooth, CHARTING_ORDER, ARCH_ROWS, shouldCommit, dentureValueFor,
+  teethBetween,
 } from "../shorthand";
 
 describe("Zerlegung: laengste Uebereinstimmung, Gross- und Kleinschreibung", () => {
@@ -417,5 +418,34 @@ describe("Wann ein Tastendruck sofort wirkt", () => {
 
   it("ein leerer Puffer wirkt nie", () => {
     expect(shouldCommit("")).toBe(false);
+  });
+});
+
+describe("Die Spanne: was zwischen zwei Zaehnen liegt (odontogram-apn)", () => {
+  it("nimmt den Bogen, nicht die Geometrie", () => {
+    expect(teethBetween(16, 13)).toEqual([16, 15, 14, 13]);
+  });
+
+  it("ist richtungsunabhaengig - ziehen geht in beide Richtungen", () => {
+    expect(teethBetween(13, 16)).toEqual(teethBetween(16, 13));
+  });
+
+  it("geht ueber die Mitte, denn das ist eine echte Spanne", () => {
+    expect(teethBetween(13, 23)).toEqual([13, 12, 11, 21, 22, 23]);
+  });
+
+  it("geht NICHT ueber den Kiefer - der Gegenkiefer war nie gemeint", () => {
+    // Der haeufigste Fehlgriff einer Rechteckauswahl: ein paar Pixel zu weit
+    // nach unten, und der ganze Unterkiefer haengt mit drin.
+    expect(teethBetween(16, 46)).toEqual([16]);
+  });
+
+  it("ein Zahn mit sich selbst ist genau dieser Zahn", () => {
+    expect(teethBetween(21, 21)).toEqual([21]);
+  });
+
+  it("laesst aus, was nicht auf dem Bogen steht", () => {
+    const ohneWeisheit = (n: number) => n !== 18;
+    expect(teethBetween(18, 16, ohneWeisheit)).toEqual([17, 16]);
   });
 });

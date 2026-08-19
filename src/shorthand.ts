@@ -436,6 +436,11 @@ export function shouldCommit(buffer: string): boolean {
 // arrow keys (`NAV_ROWS`), and it imports them from here — one table, so the
 // arrow keys and the Tab walk can never disagree about where a tooth is.
 
+// The arch ORDER lives here too, not only the shorthand: the Tab walk
+// (odontogram-t8y) and the drag/Shift span (odontogram-apn) and the arrow keys
+// in `odontogram.ts` all read these two rows. One table, so none of the four
+// can disagree about where a tooth stands or what lies between two of them.
+
 /** The arch as it is charted and displayed: upper left to right, then lower. */
 export const ARCH_ROWS: readonly (readonly number[])[] = [
   [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28],
@@ -454,6 +459,33 @@ export const CHARTING_ORDER: readonly number[] = [
   ...ARCH_ROWS[0],
   ...[...ARCH_ROWS[1]].reverse(),
 ];
+
+/**
+ * Every tooth from `a` to `b` inclusive, along the arch — a SPAN, the way a
+ * clinician thinks of one.
+ *
+ * Bead odontogram-apn. Deliberately arch order rather than geometry: a
+ * rectangle drawn over the tile centres picks up teeth in the OPPOSING jaw as
+ * soon as the pointer strays a few pixels, which is never what was meant. It
+ * crosses the midline (13 to 23 is a real span) but never the jaw: if `b` sits
+ * in the other arch, the span stops at the end of `a`'s.
+ *
+ * `isChartable` drops what is not on the chart — hidden wisdom teeth — so a
+ * span drawn across them does not select what cannot be seen.
+ */
+export function teethBetween(
+  a: number,
+  b: number,
+  isChartable: (toothNo: number) => boolean = () => true,
+): number[] {
+  const row = ARCH_ROWS.find(r => r.includes(a));
+  if(!row) return [];
+  const i = row.indexOf(a);
+  const j = row.indexOf(b);
+  if(j < 0) return [a].filter(isChartable);         // other arch: stay put
+  const [from, to] = i <= j ? [i, j] : [j, i];
+  return row.slice(from, to + 1).filter(isChartable);
+}
 
 /**
  * Partial or full denture, decided by how much of the arch is marked.

@@ -3,7 +3,7 @@
 
 import { STATUS_EXTRAS } from "./status_extras";
 import {
-  ARCH_ROWS, nextChartTooth, parseShorthand, shouldCommit, dentureValueFor,
+  ARCH_ROWS, nextChartTooth, parseShorthand, shouldCommit, dentureValueFor, teethBetween,
   type MaterialKey, type ShorthandEdit,
 } from "./shorthand";
 import { t, onI18nChange, getI18nLanguage } from "./i18n/useI18n";
@@ -6455,8 +6455,116 @@ function addTouchToTile(tile: HTMLElement, toothNo: number){
   });
 }
 
+// ---- Bead odontogram-apn: selecting a span ---------------------------------
+//
+// Dirk, 19.08.2026: "linke Maustaste und ueber die betreffenden Zaehne mit
+// gedrueckter linker Maustaste ziehen. Loslassen, alle beruehrten sind
+// markiert, dann z.B. mod und alle haben eine Fuellung mit dem vorher
+// gewaehlten Material." — the gesture that makes the shorthand worth having.
+//
+// The span is taken in ARCH ORDER, from the tooth the drag began on to the one
+// under the pointer, not as a rectangle over the tiles: with two arches a
+// rectangle picks up the opposing jaw as soon as the pointer strays, which is
+// never what was meant. See `teethBetween`.
+//
+// This is PURE OPERATION, not a new mutation path: everything still goes
+// through `selectedTeeth` + `updateSelectionUI()`, so the batch actions and the
+// DS-1 lane are untouched.
+
+const DRAG_THRESHOLD_PX = 4;
+
+let dragAnchor: number | null = null;
+let dragBase: Set<number> = new Set();
+let dragOrigin: { x: number; y: number } | null = null;
+let dragging = false;
+/** A drag ends in a `click` on the tile it stopped over; without this the
+ *  click would collapse the span back to one tooth. */
+let suppressNextToothClick = false;
+
+function toothFromPoint(x: number, y: number): number | null {
+  const el = document.elementFromPoint(x, y) as HTMLElement | null;
+  const tile = el?.closest?.(".tooth-tile") as HTMLElement | null;
+  if(!tile) return null;
+  if(tile.classList.contains("wisdom-hidden") || tile.classList.contains("placeholder")) return null;
+  const n = Number(tile.dataset.tooth);
+  return Number.isFinite(n) ? n : null;
+}
+
+function endDrag(){
+  dragAnchor = null;
+  dragOrigin = null;
+  dragging = false;
+  dragBase = new Set();
+  document.removeEventListener("pointermove", onGridPointerMove);
+  document.removeEventListener("pointerup", onGridPointerUp);
+  document.removeEventListener("keydown", onDragKeydown, true);
+  document.body.classList.remove("odon-dragging");
+}
+
+function onDragKeydown(evt: KeyboardEvent){
+  if(evt.key !== "Escape" || dragAnchor === null) return;
+  // Abort: put back what was selected before the drag began.
+  evt.preventDefault();
+  evt.stopPropagation();
+  selectedTeeth = new Set(dragBase);
+  activeTooth = selectedTeeth.size > 0 ? (selectedTeeth.values().next().value as number) : null;
+  updateSelectionUI();
+  suppressNextToothClick = dragging;
+  endDrag();
+}
+
+function onGridPointerDown(evt: PointerEvent){
+  if(readOnly || evt.button !== 0) return;
+  const toothNo = toothFromPoint(evt.clientX, evt.clientY);
+  if(toothNo === null) return;
+  dragAnchor = toothNo;
+  dragOrigin = { x: evt.clientX, y: evt.clientY };
+  dragging = false;
+  // Shift adds to what is already selected, exactly as a shift-click does.
+  dragBase = evt.shiftKey ? new Set(selectedTeeth as Set<number>) : new Set();
+  selectionAnchor = toothNo;
+  document.addEventListener("pointermove", onGridPointerMove);
+  document.addEventListener("pointerup", onGridPointerUp);
+  document.addEventListener("keydown", onDragKeydown, true);
+}
+
+function onGridPointerMove(evt: PointerEvent){
+  if(dragAnchor === null || !dragOrigin) return;
+  if(!dragging){
+    const dx = evt.clientX - dragOrigin.x;
+    const dy = evt.clientY - dragOrigin.y;
+    // Below the threshold it is still a click, not a drag — otherwise every
+    // click would arrive as a one-tooth span and swallow the shift-click path.
+    if(Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return;
+    dragging = true;
+    document.body.classList.add("odon-dragging");
+  }
+  const over = toothFromPoint(evt.clientX, evt.clientY);
+  const span = teethBetween(dragAnchor, over ?? dragAnchor, isTileNavigable);
+  selectedTeeth = new Set([...dragBase, ...span]);
+  activeTooth = span.length > 0 ? span[span.length - 1] : dragAnchor;
+  updateSelectionUI();
+}
+
+function onGridPointerUp(){
+  suppressNextToothClick = dragging;
+  endDrag();
+}
+
 function onToothClick(toothNo: Any, evt: Any){
   if(readOnly) return;
+  if(suppressNextToothClick){ suppressNextToothClick = false; return; }
+  // Shift-click takes the span from the anchor, the same convention as
+  // Shift+arrow and as every list the user already knows (odontogram-apn).
+  if(evt.shiftKey && selectionAnchor !== null && !(evt.metaKey || evt.ctrlKey)){
+    const span = teethBetween(selectionAnchor, toothNo, isTileNavigable);
+    if(span.length > 0){
+      selectedTeeth = new Set(span);
+      activeTooth = toothNo;
+      updateSelectionUI();
+      return;
+    }
+  }
   const multi = evt.metaKey || evt.ctrlKey;
   if(multi){
     if(selectedTeeth.has(toothNo)){
@@ -6472,6 +6580,7 @@ function onToothClick(toothNo: Any, evt: Any){
   if(activeTooth && !selectedTeeth.has(activeTooth)){
     activeTooth = selectedTeeth.values().next().value ?? null;
   }
+  selectionAnchor = toothNo;
   updateSelectionUI();
 }
 
@@ -6486,9 +6595,9 @@ function isTileNavigable(toothNo: number): boolean{
   return tiles.some(t => !t.classList.contains("wisdom-hidden") && !t.classList.contains("placeholder"));
 }
 
-function navigateToTooth(currentTooth: number, direction: string){
+function findNavTarget(currentTooth: number, direction: string): number | null {
   const rowIdx = NAV_ROWS.findIndex(r => r.includes(currentTooth));
-  if(rowIdx < 0) return;
+  if(rowIdx < 0) return null;
   const row = NAV_ROWS[rowIdx];
   const colIdx = row.indexOf(currentTooth);
 
@@ -6529,11 +6638,39 @@ function navigateToTooth(currentTooth: number, direction: string){
     }
   }
 
-  if(targetTooth !== null){
-    const tiles = toothTile.get(targetTooth);
-    const sideTile = tiles?.find((t: HTMLElement) => t.classList.contains("side-view"));
-    if(sideTile) sideTile.focus();
-  }
+  return targetTooth;
+}
+
+function navigateToTooth(currentTooth: number, direction: string){
+  const targetTooth = findNavTarget(currentTooth, direction);
+  if(targetTooth !== null) focusTooth(targetTooth);
+}
+
+function focusTooth(toothNo: number){
+  const tiles = toothTile.get(toothNo);
+  const sideTile = tiles?.find((t: HTMLElement) => t.classList.contains("side-view"));
+  if(sideTile) sideTile.focus();
+}
+
+/**
+ * Shift + arrow extends the selection instead of moving through it — the
+ * Windows convention Dirk names (19.08.2026: "In Windows nutze ich die Shift
+ * Taste und gehe mit der Pfeiltaste weiter").
+ *
+ * It extends from an ANCHOR, not from the tooth last reached: holding Shift
+ * and going right then left has to shrink the span again, which only works if
+ * the far end stays put. The anchor is set by every plain selection — a click,
+ * a Tab step, an unshifted arrow.
+ */
+let selectionAnchor: number | null = null;
+
+function extendSelectionTo(target: number){
+  const anchor = selectionAnchor ?? target;
+  const span = teethBetween(anchor, target, isTileNavigable);
+  selectedTeeth = new Set(span);
+  activeTooth = target;
+  updateSelectionUI();
+  focusTooth(target);
 }
 
 // ---- Bead odontogram-t8y: charting by shorthand -----------------------------
@@ -6647,6 +6784,7 @@ export function applyShorthand(input: string): { unknown: string[]; pending: { t
 function selectToothForWalk(toothNo: number): void {
   selectedTeeth = new Set([toothNo]);
   activeTooth = toothNo;
+  selectionAnchor = toothNo;
   updateSelectionUI();
   const tiles = toothTile.get(toothNo);
   const sideTile = tiles?.find((t: HTMLElement) => t.classList.contains("side-view"));
@@ -6687,10 +6825,20 @@ function onToothKeydown(toothNo: number, evt: KeyboardEvent){
     case "ArrowRight":
     case "ArrowLeft":
     case "ArrowUp":
-    case "ArrowDown":
+    case "ArrowDown": {
       evt.preventDefault();
-      navigateToTooth(toothNo, evt.key);
+      const target = findNavTarget(toothNo, evt.key);
+      if(target === null) break;
+      if(evt.shiftKey){
+        extendSelectionTo(target);
+      }else{
+        // A plain arrow moves the focus only, as it always has — and sets the
+        // anchor, so a Shift that follows extends from where one stands.
+        selectionAnchor = target;
+        focusTooth(target);
+      }
       break;
+    }
     case "Tab":
       // Deliberate departure from the usual ARIA rule that Tab LEAVES a
       // composite widget: this is charly's charting walk, and it is the whole
@@ -11271,6 +11419,11 @@ async function buildGrid(token: number){
   setOcclusalVisible(occlusalVisible);
   setHealthyPulpVisible(showHealthyPulp);
 
+  // Bead odontogram-apn: drag to select. pointer* rather than mouse*, so the
+  // same code carries mouse and stylus, and the existing touch handling below
+  // stays untouched instead of there being two paths for one gesture.
+  grid.addEventListener("pointerdown", onGridPointerDown);
+
   // Wire touch interactions
   if(isTouchDevice()){
     grid.addEventListener("touchstart", onGridTouchStart, { passive: false });
@@ -12064,6 +12217,7 @@ export function destroyOdontogram(){
 export function clearSelection(){
   selectedTeeth = new Set();
   activeTooth = null;
+  selectionAnchor = null;
   updateSelectionUI();
 }
 /**

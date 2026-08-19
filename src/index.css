@@ -2667,3 +2667,9 @@ select:focus{
   min-width: 3ch;
 }
 .shorthand-buffer.empty{ display: none; }
+
+/* Bead odontogram-apn: no text selection while dragging a span. Scoped to the
+   grid rather than the page, so a drag that leaves the chart does not turn the
+   rest of the interface unselectable. */
+#toothGrid{ -webkit-user-select: none; user-select: none; }
+body.odon-dragging{ cursor: cell; }
