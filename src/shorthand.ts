@@ -370,6 +370,69 @@ export function parseShorthand(input: string, ctx: ShorthandContext = {}): Short
 }
 
 // -----------------------------------------------------------------------------
+// The walk: which tooth the shorthand lands on
+// -----------------------------------------------------------------------------
+//
+// Dirk, 19.08.2026: "ich springe mit der Tabulator-Taste von einem Zahn zum
+// naechsten, Anfang immer bei 18, Shift + Tabulator springt einen Zahn
+// zurueck. Das will ich hier auch."
+//
+// That is what makes `k-b` a single gesture rather than two mouse selections:
+// `k`, Tab, `b` — crown on one tooth, pontic on its neighbour. The shorthand
+// and the walk are one workflow, which is why the order lives beside the table
+// instead of in the key handler.
+//
+// The two rows are the SAME ones `odontogram.ts` already navigates with the
+// arrow keys (`NAV_ROWS`), and it imports them from here — one table, so the
+// arrow keys and the Tab walk can never disagree about where a tooth is.
+
+/** The arch as it is charted and displayed: upper left to right, then lower. */
+export const ARCH_ROWS: readonly (readonly number[])[] = [
+  [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28],
+  [48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38],
+] as const;
+
+/** One continuous charting order over both arches, beginning at 18.
+ *
+ *  It is NOT the display order flattened. Dirk, 19.08.2026: "18 zu 28 und
+ *  Tabulator nach 28 springt zu 38." The walk goes AROUND THE MOUTH — upper
+ *  right to upper left, then straight down and back along the lower arch to
+ *  the lower right — while the lower row is DISPLAYED from 48 to 38. So the
+ *  lower row is walked in reverse of how it is drawn, and the two orders are
+ *  deliberately different rather than one being a mistake for the other. */
+export const CHARTING_ORDER: readonly number[] = [
+  ...ARCH_ROWS[0],
+  ...[...ARCH_ROWS[1]].reverse(),
+];
+
+/**
+ * The next tooth in charting order, or the previous one going back.
+ *
+ * `isAvailable` skips what is not there to be charted — hidden wisdom teeth,
+ * for instance. It is a callback rather than a list because availability is a
+ * property of the mounted grid, and this module never touches the DOM.
+ *
+ * The walk WRAPS: past 38 comes 18 again. A round of the mouth is a round, and
+ * stopping dead at the last tooth would mean reaching for the mouse to start
+ * over. Returns `null` only when nothing at all is available.
+ */
+export function nextChartTooth(
+  current: number | null,
+  direction: 1 | -1 = 1,
+  isAvailable: (toothNo: number) => boolean = () => true,
+): number | null {
+  const n = CHARTING_ORDER.length;
+  const at = current === null ? -1 : CHARTING_ORDER.indexOf(current);
+  // From nowhere, forward begins at 18 and backward at the last tooth.
+  const start = at < 0 ? (direction === 1 ? 0 : n - 1) : at;
+  for(let step = 1; step <= n; step++){
+    const idx = (((at < 0 ? start - direction : start) + direction * step) % n + n) % n;
+    if(isAvailable(CHARTING_ORDER[idx])) return CHARTING_ORDER[idx];
+  }
+  return null;
+}
+
+// -----------------------------------------------------------------------------
 // OPEN QUESTIONS — decided by Dirk, not by this file
 // -----------------------------------------------------------------------------
 //

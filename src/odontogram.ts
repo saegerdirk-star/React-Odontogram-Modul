@@ -2,6 +2,7 @@
 // Created by Zoltan Dul (https://github.com/ZoliQua) 2025-2026
 
 import { STATUS_EXTRAS } from "./status_extras";
+import { ARCH_ROWS } from "./shorthand";
 import { t, onI18nChange, getI18nLanguage } from "./i18n/useI18n";
 import { toLabel, type NumberingSystem } from "./utils/numbering";
 import { type OdontogramPlugin, getQuadrant, LAYER_Z } from "./plugin";
@@ -6472,10 +6473,9 @@ function onToothClick(toothNo: Any, evt: Any){
 }
 
 // ---- Keyboard accessibility ----
-const NAV_ROWS = [
-  [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28],
-  [48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38],
-];
+// One table, not two: the arrow keys and the Tab walk (odontogram-t8y) read the
+// same arch order, so they can never disagree about where a tooth is.
+const NAV_ROWS = ARCH_ROWS;
 
 function isTileNavigable(toothNo: number): boolean{
   const tiles = toothTile.get(toothNo);

@@ -12,6 +12,7 @@
 import { describe, it, expect } from "vitest";
 import {
   parseShorthand, tokenizeShorthand, SHORTHAND_DE, SHORTHAND_PENDING,
+  nextChartTooth, CHARTING_ORDER, ARCH_ROWS,
 } from "../shorthand";
 
 describe("Zerlegung: laengste Uebereinstimmung, Gross- und Kleinschreibung", () => {
@@ -280,5 +281,68 @@ describe("Die Tabelle selbst", () => {
       "extractionPlan", "missingClosed", "prosthesis",
     ]);
     for(const f of felder) expect(bekannt.has(f), `unbekanntes Feld: ${f}`).toBe(true);
+  });
+});
+
+describe("Der Gang durch das Gebiss: Tabulator vor, Shift-Tabulator zurueck", () => {
+  it("faengt bei 18 an", () => {
+    expect(CHARTING_ORDER[0]).toBe(18);
+    expect(nextChartTooth(null)).toBe(18);
+  });
+
+  it("laeuft den Bogen entlang, wie er dasteht", () => {
+    expect(nextChartTooth(18)).toBe(17);
+    expect(nextChartTooth(11)).toBe(21);   // ueber die Mitte
+    expect(nextChartTooth(28)).toBe(38);   // um den Mund herum, nicht zeilenweise
+    expect(nextChartTooth(31)).toBe(41);
+  });
+
+  it("Shift-Tabulator geht denselben Weg zurueck", () => {
+    expect(nextChartTooth(17, -1)).toBe(18);
+    expect(nextChartTooth(21, -1)).toBe(11);
+    expect(nextChartTooth(38, -1)).toBe(28);
+  });
+
+  it("laeuft um: hinter 38 kommt wieder 18", () => {
+    // Ein Rundgang durch den Mund ist ein Rundgang. Am letzten Zahn
+    // stehenzubleiben hiesse, zur Maus zu greifen, um von vorn anzufangen.
+    expect(nextChartTooth(48)).toBe(18);
+    expect(nextChartTooth(18, -1)).toBe(48);
+  });
+
+  it("ueberspringt, was nicht da ist - etwa ausgeblendete Weisheitszaehne", () => {
+    const ohneWeisheit = (n: number) => ![18, 28, 38, 48].includes(n);
+    expect(nextChartTooth(null, 1, ohneWeisheit)).toBe(17);
+    expect(nextChartTooth(27, 1, ohneWeisheit)).toBe(37);
+    expect(nextChartTooth(47, 1, ohneWeisheit)).toBe(17);
+  });
+
+  it("gibt null zurueck, wenn gar nichts da ist", () => {
+    expect(nextChartTooth(18, 1, () => false)).toBe(null);
+  });
+
+  it("k dann Tabulator dann b: Krone und Brueckenglied am Nachbarn", () => {
+    // Dirks Ausnahme k-b, als Gebaerde: zwei Tastenfolgen, ein Sprung.
+    const zahn = 16;
+    expect(parseShorthand("G k").edits).toContainEqual(
+      { kind: "axis", field: "restorationType", value: "crown" });
+    const nachbar = nextChartTooth(zahn);
+    expect(nachbar).toBe(15);
+    expect(parseShorthand("b").edits).toContainEqual(
+      { kind: "axis", field: "restorationType", value: "bridge" });
+  });
+
+  it("geht um den Mund, nicht der Anzeige nach", () => {
+    // Die untere Zeile wird von 48 nach 38 GEZEICHNET, aber von 38 nach 48
+    // BEGANGEN. Die beiden Reihenfolgen sind absichtlich verschieden.
+    expect(ARCH_ROWS[1][0]).toBe(48);
+    expect(CHARTING_ORDER[16]).toBe(38);
+    expect(CHARTING_ORDER[CHARTING_ORDER.length - 1]).toBe(48);
+  });
+
+  it("traegt genau die 32 Zaehne, und jeden einmal", () => {
+    expect(CHARTING_ORDER.length).toBe(32);
+    expect(new Set(CHARTING_ORDER).size).toBe(32);
+    expect(ARCH_ROWS.length).toBe(2);
   });
 });
