@@ -230,11 +230,41 @@ Alphabete der Stellen 19 und 22 laufen über fünfzig verschiedene Zeichen bis
 weit über 127 hinaus, was auf einen Flächen-Bitsatz deutet. Drei Stellen (28,
 36, 38, 40) sind in 106 824 gelesenen Zeilen **nie** belegt.
 
-**Folgerung für den zweiten Eingangsweg des Beads** (Übernahme aus einem PVS):
-über diese Spalte geht das nicht. Sie ist undokumentiert, versionsabhängig und
-bitweise gepackt; sie zu entziffern wäre ein eigenes Vorhaben mit ungewissem
-Ausgang. Der vorgesehene Weg ist die Query-Service- bzw. eHKP-Schnittstelle,
-die in `~/dev/pvs-adapter-charly` bereits angebunden ist.
+### Was das für den Adapter heißt
+
+Dirk hat am 19.08.2026 entschieden, dass `pvs-adapter-charly` den Zahnbefund
+tragen soll — **gebaut wird das von Dirk und Malte**, nicht hier. Was wir beim
+Nachsehen gelernt haben, steht deshalb hier als Übergabe.
+
+Der Adapter erzeugt heute zehn Ressourcenarten (Patient, Practitioner,
+Organization, Encounter, Coverage, Appointment, Condition, ChargeItem,
+ChargeItemDefinition, Task) und liest `patienten`, `bema`, `bemadaten`.
+**Keine davon ist je Zahn**; `befund01pa` kommt nicht vor.
+
+Drei denkbare Wege, und nur einer trägt:
+
+    eHKP-REST      kann HKP und EBZ — Planung, nicht Befund       faellt aus
+    Query-Service  liefert dieselbe Spalte per HTTP               gleiches Problem
+    PostgreSQL     befund01pa.zahn11..48, der Stellencode         der einzige Weg
+
+**Entziffern geht empirisch, nicht durch Raten.** An einem Testpatienten einen
+einzigen Befund an einem einzigen Zahn setzen, die Zeichenkette vorher und
+nachher vergleichen: welche Stelle sich ändert und auf welches Zeichen, ist die
+Antwort ohne Vermutung. Bei rund sechzig Tasten und 43 Stellen ist das eine
+Sitzung Fleißarbeit. Die Stellen **19 und 22** sind dabei die ergiebigsten —
+ihre Alphabete laufen über fünfzig Zeichen weit über 127 hinaus, was auf
+Flächen-Bitsätze deutet; setzt man `m`, `o`, `d`, `v`, `l`, `z` einzeln, fallen
+die sechs Bits einzeln heraus. Die Stellen 28, 36, 38 und 40 waren in 106 824
+gelesenen Zeilen nie belegt.
+
+**Lesen ist harmlos, Schreiben nicht.** In die Datenbank eines fremden
+Programms zurückzuschreiben geht an solutio vorbei; ändert charly beim nächsten
+Programmstand die Kodierung, landet Unsinn in Patientenakten. Vor Schritt 3
+gehört die Frage an solutio, ob es dafür eine Schnittstelle gibt.
+
+Für das Odontogramm ändert das nichts an der Bauweise: die Bibliothek spricht
+FHIR, der Adapter spricht charly. Eine Abhängigkeit zu einem Praxissystem
+gehört nicht hier hinein.
 
 ### `grafeingabe` ist das falsche Tastenfeld
 
