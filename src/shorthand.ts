@@ -1,0 +1,401 @@
+// Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
+// Cognovis fork - https://github.com/cognovis/React-Odontogram-Modul
+// Dirk Saeger, Malte Sussdorff 2026
+//
+// Bead odontogram-t8y: charting by shorthand instead of click paths.
+//
+// Dirk, 18.08.2026: "Die Bedienung der Befundeingabe ist denkbar schlecht. Ich
+// bin es gewohnt, Zaehne zu markieren und den Befund mit Kuerzeln einzugeben,
+// z.B. k fuer Krone, b fuer Brueckenglied, e fuer ersetzt, und bei Fuellungen
+// ist der Zahn markiert und ich gebe mit mod die Flaechen ein."
+//
+// This is the workflow at the chair, not a convenience: findings are taken in
+// seconds, often dictated. With 46 axes and 129 values the number of click
+// paths is the actual bottleneck.
+//
+// WHY THIS MODULE IS DOM-FREE, like `retention.ts` and `perioClassification.ts`
+// -----------------------------------------------------------------------------
+// The bead asks for THREE entry routes onto the SAME finding set: keystrokes,
+// a FHIR query against a practice system, and speech. If the table lived in a
+// key handler, the other two would have nothing to call and a second table
+// would grow beside it — which is exactly how the three drift apart. So the
+// mapping and the parser live here, pure and tested, and every route resolves
+// through them. Applying the result to a tooth is somebody else's job, and it
+// must go through `gateToothEdit` like every other interactive edit (DS-1).
+//
+// WHERE THE TABLE COMES FROM
+// -----------------------------------------------------------------------------
+// Read off charly's own 01-Befund keypad, transcribed in
+// `docs/charly/01-befund-tastenfeld.md` with both screenshots beside it, and
+// the meanings resolved by Dirk on 2026-08-19 rather than guessed. It is not
+// invented shorthand: it is the one already in his fingers.
+//
+// TWO THINGS THE KEYPAD TAUGHT US, both of which shape the parser
+// -----------------------------------------------------------------------------
+// 1. THE MATERIAL COMES FIRST. Dirk: "Bei charly waehlt man das Material und
+//    gibt dann die Kuerzel ein." The material row is not a suffix to a finding
+//    key — it is a MODE that is set beforehand and stays set, like a chosen
+//    colour one then paints with. Our own state already has the counterpart:
+//    `fillingMaterial` is documented as "active material chosen in the
+//    dropdown (applied on surface tap)".
+// 2. LONGEST MATCH, AND CASE MATTERS. One-, two- and three-character tokens sit
+//    side by side (`k`, `TK`, `Twf`), and case carries meaning: `d` is distal
+//    while `D` is the eruption stage, `t` is a telescope while `TK` is an
+//    onlay. Reading character by character, or case-insensitively, would
+//    silently chart the wrong finding.
+//
+// WHAT IS DELIBERATELY NOT HERE
+// -----------------------------------------------------------------------------
+// Seven of charly's keys have no target in our 46 axes yet. They are listed in
+// `SHORTHAND_PENDING` with the bead that will give them one, and the parser
+// reports them as `pending` rather than as unknown — a key we understand but
+// cannot yet store is a different situation from a typo, and the caller should
+// be able to say so.
+
+/** A surface as our state spells it. charly's `v` (vestibulaer) is our
+ *  `buccal`; charly's `z` (zervikal) has no counterpart — see SHORTHAND_PENDING. */
+export type SurfaceKey = "mesial" | "occlusal" | "distal" | "buccal" | "lingual";
+
+/** What a parsed input asks to be written. Scalar axis writes name the state
+ *  FIELD, not the registry axis id, because that is what an applier sets. */
+export type ShorthandEdit =
+  | { kind: "axis"; field: string; value: string | boolean }
+  | { kind: "surfaces"; target: "filling"; surfaces: SurfaceKey[]; material: string }
+  | { kind: "surfaces"; target: "caries"; surfaces: SurfaceKey[]; severity: number | null }
+  | { kind: "reset" };
+
+export interface ShorthandResult {
+  /** In input order. Empty when nothing resolved. */
+  edits: ShorthandEdit[];
+  /** The material mode AFTER this input — it survives, so a caller keeps it. */
+  material: MaterialKey | null;
+  /** Tokens with no meaning in this language. */
+  unknown: string[];
+  /** Tokens we understand but have nowhere to store yet, with their bead. */
+  pending: { token: string; bead: string }[];
+}
+
+export interface ShorthandContext {
+  /** The material mode carried in from before, as charly carries it. */
+  material?: MaterialKey | null;
+}
+
+// -----------------------------------------------------------------------------
+// The table
+// -----------------------------------------------------------------------------
+
+type Entry =
+  | { kind: "axis"; field: string; value: string | boolean; takesMaterial?: true }
+  | { kind: "axes"; edits: { field: string; value: string | boolean }[]; takesMaterial?: true }
+  | { kind: "surface"; surface: SurfaceKey }
+  | { kind: "material"; material: MaterialKey }
+  | { kind: "caries" }
+  | { kind: "severity"; severity: number }
+  | { kind: "reset" };
+
+/** German shorthand, read off charly's keypad.
+ *
+ *  The table is per language ON PURPOSE and from the start: `k` for Krone is
+ *  German, and this library ships twelve UI languages. Adding the parameter
+ *  later would mean touching every call site; adding it now costs a lookup. */
+export const SHORTHAND_DE: Record<string, Entry> = {
+  // --- whole tooth: presence and substrate
+  "o.B.": { kind: "reset" },
+  "f":    { kind: "axis", field: "toothSelection", value: "none" },
+  "i":    { kind: "axis", field: "toothSelection", value: "implant" },
+  "x":    { kind: "axis", field: "extractionPlan", value: true },
+  "WR":   { kind: "axis", field: "toothSubstrate", value: "radix" },
+  ")L(":  { kind: "axis", field: "missingClosed", value: true },
+  // "ersetzt" and "Brueckenglied" are both a gap that carries something. A
+  // pontic is a gap tooth with a bridge on it (`restorationOptions()` offers a
+  // missing tooth exactly that); plain "ersetzt" says only that the tooth is
+  // gone. See the OPEN QUESTIONS note at the foot of this file.
+  "b":    { kind: "axes", takesMaterial: true, edits: [
+             { field: "toothSelection", value: "none" },
+             { field: "restorationType", value: "bridge" } ] },
+  // Two neighbouring keys that are NOT the same thing (Dirk, 19.08.2026):
+  //
+  //   b   Brueckenglied            — a gap spanned by a bridge
+  //   e   Zahn ersetzt durch einen — a gap filled by a DENTURE tooth,
+  //       Prothesenzahn              "in der Regel aus Kunststoff"
+  //
+  // They land on different axes here, and that is the whole point: a bridge is
+  // `restorationType`, a denture tooth is `prosthesis`, and the two are
+  // MUTUALLY EXCLUSIVE by the registry's own rule — selecting a removable
+  // entry "writes s.prosthesis and clears restorationType/material (a tooth
+  // has EITHER a fixed restoration OR a prosthesis, never both)".
+  //
+  // `removable-partial` rather than `removable-full`, because one key on one
+  // tooth cannot know which: a full denture is a property of the whole arch,
+  // not of the tooth being keyed.
+  "e":    { kind: "axes", edits: [
+             { field: "toothSelection", value: "none" },
+             { field: "prosthesis", value: "removable-partial" } ] },
+
+  // --- restoration
+  "k":    { kind: "axis", field: "restorationType", value: "crown", takesMaterial: true },
+  // Dirk plaediert fuer ONL statt charlys TK: `t` (Teleskop) and `TK`
+  // (Teilkrone) live in DIFFERENT axes here — restorationMaterial against
+  // restorationType — and two keys that look like siblings but write to
+  // different fields are where keyboard and FHIR later drift apart. charly's
+  // spelling is accepted as well, so his fingers are not retrained.
+  "ONL":  { kind: "axis", field: "restorationType", value: "onlay", takesMaterial: true },
+  "TK":   { kind: "axis", field: "restorationType", value: "onlay", takesMaterial: true },
+  "t":    { kind: "axes", edits: [
+             { field: "restorationType", value: "crown" },
+             { field: "restorationMaterial", value: "telescope" } ] },
+
+  // --- endodontics
+  "wf":   { kind: "axis", field: "endo", value: "endo-filling" },
+  "WFi":  { kind: "axis", field: "endo", value: "endo-filling-incomplete" },
+  "Twf":  { kind: "axis", field: "endo", value: "endo-medical-filling" },
+  "Sti":  { kind: "axis", field: "endo", value: "endo-metal-pin" },
+  "Res":  { kind: "axis", field: "endoResection", value: true },
+
+  // --- apical. `Be` is "beherdet" — one key against our five AAE values, so it
+  // resolves to the unspecific one and the picker keeps the refinement.
+  "Be":   { kind: "axis", field: "apicalDx", value: "asymptomatic-apical-periodontitis" },
+  "Zys":  { kind: "axes", edits: [
+             { field: "apicalDx", value: "asymptomatic-apical-periodontitis" },
+             { field: "periapicalType", value: "cyst" } ] },
+
+  // --- surfaces. `v` is vestibulaer, which our state spells `buccal`.
+  "m":    { kind: "surface", surface: "mesial" },
+  "o":    { kind: "surface", surface: "occlusal" },
+  "d":    { kind: "surface", surface: "distal" },
+  "v":    { kind: "surface", surface: "buccal" },
+  "l":    { kind: "surface", surface: "lingual" },
+
+  // --- caries. `c` opens a caries run; `C` is charly's switcher onto the five
+  // stages and means the same thing here.
+  "c":    { kind: "caries" },
+  "C":    { kind: "caries" },
+  "K1":   { kind: "severity", severity: 2 },
+  "K2":   { kind: "severity", severity: 3 },
+  "K3":   { kind: "severity", severity: 4 },
+  "K4":   { kind: "severity", severity: 5 },
+  "K5":   { kind: "severity", severity: 6 },
+
+  // --- material mode. `E` and `Ker` both switch to ceramic (Dirk,
+  // 19.08.2026: "E schaltet das Material auf Keramik um") — one is the
+  // Ersatz-row spelling, the other the material row's.
+  // The KEYS are single capitals (Dirk, 19.08.2026: "K schaltet das Material
+  // auf Kunststoff, A auf Amalgam, G auf Gold", and "E schaltet das Material
+  // auf Keramik um"); the keypad only LABELS them Am / Kst / Ker. Both spell-
+  // ings resolve, so neither the fingers nor the screenshot has to be right.
+  //
+  // `K` against `K1`…`K5` is safe because longest match runs first, and `K`
+  // against `k` (Krone) because the tokenizer is case-sensitive.
+  "A":    { kind: "material", material: "Am" },
+  "K":    { kind: "material", material: "Kst" },
+  "G":    { kind: "material", material: "G" },
+  "E":    { kind: "material", material: "Ker" },
+  "Am":   { kind: "material", material: "Am" },
+  "Kst":  { kind: "material", material: "Kst" },
+  "GIZ":  { kind: "material", material: "GIZ" },
+  "Ker":  { kind: "material", material: "Ker" },
+};
+
+/** Keys we understand and cannot store yet, each with the bead that will give
+ *  it a target. Reported separately from `unknown`: a key with no field is a
+ *  different situation from a typo, and the caller should be able to say which. */
+export const SHORTHAND_PENDING: Record<string, string> = {
+  "+":   "odontogram-fu1",   // vital
+  "-":   "odontogram-fu1",   // keine Reaktion
+  "−": "odontogram-fu1",// keine Reaktion, typografisches Minus
+  "?":   "odontogram-fu1",   // Vitalitaet fraglich
+  "p":   "odontogram-fu1",   // perkussionsempfindlich
+  "Fra": "odontogram-t6y",   // Wurzelfraktur
+  "Hem": "odontogram-ca0",   // Hemisektion
+  "D":   "odontogram-0n8",   // Durchbruchstadium
+  "z":   "",                 // zervikale Flaeche — unser Flaechensatz hat sie nicht
+  "R":   "",                 // Wurzelkappe — Dirk fragt selbst, ob es die noch gibt
+};
+
+/** A material key from charly's row, and its TWO readings.
+ *
+ *  This is the subtlety the keypad hides: one key means a different value
+ *  depending on what it is applied to. Gold on surfaces is not a filling —
+ *  our `fillingMaterial` has no gold — and charly agrees without saying so:
+ *  its own planning table spells the entry "Fuellung n-flaechig Gold /
+ *  Teilkrone". Conversely amalgam is no restoration material here.
+ *
+ *  Keeping both readings on ONE key is what lets `Kst mo` be a composite
+ *  filling and `Kst e` a replacement in Gradia, from the same keystroke. */
+export type MaterialKey = "Am" | "Kst" | "GIZ" | "G" | "Ker";
+
+export interface MaterialReading {
+  /** `fillingMaterial` value, or null when this material is never a direct filling. */
+  filling: string | null;
+  /** `restorationMaterial` value, or null when it is never a restoration. */
+  restoration: string | null;
+}
+
+export const MATERIALS: Record<MaterialKey, MaterialReading> = {
+  Am:  { filling: "amalgam",   restoration: null },
+  Kst: { filling: "composite", restoration: "gradia" },
+  GIZ: { filling: "gic",       restoration: null },
+  G:   { filling: null,        restoration: "gold" },
+  Ker: { filling: null,        restoration: "emax" },
+};
+
+// -----------------------------------------------------------------------------
+// Tokenizer
+// -----------------------------------------------------------------------------
+
+/** Every key we can recognise, longest first, so `Twf` never reads as `T`+`wf`
+ *  and `o.B.` never as `o`. Built once. */
+const TOKENS_DE: string[] = [
+  ...Object.keys(SHORTHAND_DE),
+  ...Object.keys(SHORTHAND_PENDING),
+].sort((a, b) => b.length - a.length);
+
+/** Splits an input into known keys, longest match first, CASE-SENSITIVELY.
+ *  Whitespace separates but is not required. An unrecognised character is
+ *  returned as a one-character token so the caller can report it. */
+export function tokenizeShorthand(input: string): string[] {
+  const out: string[] = [];
+  let i = 0;
+  while(i < input.length){
+    if(/\s/.test(input[i])){ i++; continue; }
+    let hit = "";
+    for(const t of TOKENS_DE){
+      if(input.startsWith(t, i)){ hit = t; break; }
+    }
+    if(hit){ out.push(hit); i += hit.length; }
+    else { out.push(input[i]); i += 1; }
+  }
+  return out;
+}
+
+// -----------------------------------------------------------------------------
+// Parser
+// -----------------------------------------------------------------------------
+
+/**
+ * Resolves an input into edits, carrying the material mode in and out.
+ *
+ * A run of surface keys is collected and flushed when something else arrives
+ * or the input ends. Whether the run becomes a filling or a caries lesion is
+ * decided by whether a caries key opened it — which is Dirk's own description:
+ * "bei Fuellungen ist der Zahn markiert und ich gebe mit mod die Flaechen ein",
+ * so a bare surface run IS a filling. A severity key (`K1`…`K5`) implies caries
+ * even without `c`, because on the keypad it is only reachable through the
+ * caries switcher.
+ */
+export function parseShorthand(input: string, ctx: ShorthandContext = {}): ShorthandResult {
+  const edits: ShorthandEdit[] = [];
+  const unknown: string[] = [];
+  const pending: { token: string; bead: string }[] = [];
+  let material: MaterialKey | null = ctx.material ?? null;
+
+  let run: SurfaceKey[] = [];
+  let runIsCaries = false;
+  let runSeverity: number | null = null;
+
+  // A restoration key takes the material mode with it — that is the whole
+  // point of the mode standing before the finding. `t` does NOT: it names its
+  // own material (telescope), and a mode left over from an earlier tooth must
+  // not overwrite it. A material with no restoration reading (amalgam, GIZ)
+  // writes nothing rather than inventing one.
+  const applyMaterial = () => {
+    const rest = material ? MATERIALS[material].restoration : null;
+    if(rest) edits.push({ kind: "axis", field: "restorationMaterial", value: rest });
+  };
+
+  const flush = () => {
+    if(run.length === 0 && !runIsCaries){ runSeverity = null; return; }
+    if(runIsCaries){
+      if(run.length > 0) edits.push({ kind: "surfaces", target: "caries", surfaces: run, severity: runSeverity });
+    } else if(material && MATERIALS[material].filling){
+      edits.push({ kind: "surfaces", target: "filling", surfaces: run, material: MATERIALS[material].filling! });
+    } else if(material && MATERIALS[material].restoration){
+      // A material that is never a direct filling, applied to surfaces: an
+      // inlay carrying it, not a filling.
+      edits.push({ kind: "axis", field: "restorationType", value: "inlay" });
+      edits.push({ kind: "axis", field: "restorationMaterial", value: MATERIALS[material].restoration! });
+    } else {
+      // Surfaces with no material chosen. charly cannot reach this state — the
+      // block always has something selected — so it is a caller error, and we
+      // say so instead of guessing a material.
+      for(const s of run) unknown.push(s);
+    }
+    run = [];
+    runIsCaries = false;
+    runSeverity = null;
+  };
+
+  for(const tok of tokenizeShorthand(input)){
+    const entry = SHORTHAND_DE[tok];
+    if(!entry){
+      flush();
+      if(tok in SHORTHAND_PENDING) pending.push({ token: tok, bead: SHORTHAND_PENDING[tok] });
+      else unknown.push(tok);
+      continue;
+    }
+    switch(entry.kind){
+      case "surface":
+        run.push(entry.surface);
+        break;
+      case "caries":
+        // Opens a run; surfaces already collected belong to it.
+        runIsCaries = true;
+        break;
+      case "severity":
+        runIsCaries = true;
+        runSeverity = entry.severity;
+        break;
+      case "material":
+        flush();
+        material = entry.material;
+        break;
+      case "axis":
+        flush();
+        edits.push({ kind: "axis", field: entry.field, value: entry.value });
+        if(entry.takesMaterial) applyMaterial();
+        break;
+      case "axes":
+        flush();
+        for(const e of entry.edits) edits.push({ kind: "axis", field: e.field, value: e.value });
+        if(entry.takesMaterial) applyMaterial();
+        break;
+      case "reset":
+        flush();
+        edits.push({ kind: "reset" });
+        break;
+    }
+  }
+  flush();
+  return { edits, material, unknown, pending };
+}
+
+// -----------------------------------------------------------------------------
+// OPEN QUESTIONS — decided by Dirk, not by this file
+// -----------------------------------------------------------------------------
+//
+// * A `b` ALONE is not a finding. Dirk, 19.08.2026: "zu b gehoert irgendwo ein
+//   k, oder links und rechts irgendwo jeweils ein k; k-b ist die Ausnahme,
+//   bedeutet Krone mit schwebendem Brueckenglied." A bridge needs abutments,
+//   and the one-sided case is the cantilever — charly names it too, its own
+//   material list carries "SB Schwebebruecke".
+//
+//   That rule spans SEVERAL teeth and therefore cannot live in this parser,
+//   which sees one input at a time. It belongs beside `detectBridgeSpans`
+//   (`bridgeOverlay.ts`), which today accepts any run of two adjacent bridge
+//   teeth and will happily draw a span carrying no crown at all. Bead
+//   odontogram-5rv.
+//
+// * The denture tooth's MATERIAL is not written. Dirk says it is "in der Regel
+//   aus Kunststoff", and that is true, but `prosthesis` carries no material
+//   here and `restorationMaterial` may not be set beside it — the registry
+//   forbids the combination. So the material mode is left standing and simply
+//   does not apply to `e`. If the denture material has to be recorded, it needs
+//   an axis first.
+// * `Sti` resolves to `endo-metal-pin`. charly does not distinguish the post
+//   material on this key; we carry glass and metal separately.
+// * `K1`…`K5` map onto ICDAS 2…6. charly has five stages and no definition for
+//   them in its own database; ours are seven with one. The mapping is linear
+//   from the top, which leaves ICDAS 1 — a change visible only after drying —
+//   unreachable by shorthand. Deliberate: it is not a chairside call made in
+//   seconds.
+// * `Ker` resolves to `emax`. Our `restorationMaterial` has no generic ceramic.
