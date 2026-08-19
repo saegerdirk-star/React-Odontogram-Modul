@@ -1,11 +1,45 @@
 # Anatomie-Umbau: Stand und naechste Schritte
 
-Branch `feat/anatomie-neuzeichnung`. Stand 17.08.2026.
+**Dies ist ein ARBEITSTAGEBUCH, keine Referenz.** Die Referenz ist
+`README.md` daneben; sie beschreibt, wie das Werkzeug heute aussieht. Hier
+steht, WIE es dahin kam und was dabei teuer war - die alten Abschnitte bleiben
+im Wortlaut stehen, weil ihre Begruendungen weiterhin gelten. Wo eine Aussage
+ueberholt ist, steht das dabei; sie wird nicht stillschweigend berichtigt, denn
+der Irrweg ist oft der Grund fuer die heutige Loesung.
+
+Der Branch `feat/anatomie-neuzeichnung` ist laengst in `main`.
+
+## Stand 19.08.2026 - was seit dem 17.08. erledigt ist
+
+* **52 Vorlagen, nicht 40:** 26 Seitenansichten und 26 Kauflaechen, je eine
+  Zeichnung pro Position in beiden Gebissen. Dazugekommen sind die sechs
+  Milchfrontzahn-Draufsichten (51-53, 81-83); damit ist an einem
+  Milchschneidezahn eine PALATINALE Flaeche befundbar, was die Seitenansicht
+  nicht hergibt.
+* **DREI Stufen, nicht zwei.** Die dritte setzt die Flaechen ein, auf denen ein
+  Befund gechartet wird (`flaechen_einsetzen.py`). Sie fehlte bis zum
+  19.08.2026 in JEDEM npm-Skript: `npm run toothgen:redraw` hoerte nach der
+  zweiten auf und warf die abgeleiteten Fuellungs- und Kariesflaechen still auf
+  die Formen des Spenders zurueck. Beides gueltiges SVG, also beschwerte sich
+  kein Vertrag.
+* **Die Kauflaechen-Kachel folgt jetzt dem Zahnzustand** (`syncOcclusalTemplate`
+  in `src/odontogram.ts`). Damit ist die unten als "bewusst offen" gefuehrte
+  Luecke geschlossen - ein Milchmolar zeigt seine eigene Kauflaeche.
+* **Die Hoecker- und Fuellungsflaechen-Ableitung steht** (`hoecker.py`,
+  `kauflaechen.py`, `fuellflaechen.py`, `fuellflaechen_einsetzen.py`,
+  `halsbaender.py`, `draufsicht.py`). Der Abschnitt "HIER GEHT ES WEITER" unten
+  ist damit ABGEARBEITET.
+* **`SPIEGELN_OCCL` ist leer, und das ist der Endstand.** Drei Runden lang stand
+  dort etwas drin; die Begruendung steht jetzt im Kode selbst. Zwei Passagen
+  weiter unten sagen noch Gegenteiliges - siehe die Vermerke dort.
+* **Der Nachbar verdeckt den Zahn nicht mehr:** die Zahnfleischbaender liegen in
+  EINER Auflage hinter dem Raster (`src/gumOverlay.ts`) statt in jeder Kachel.
 
 ## Der Modellumbau ist durch
 
 Alle 40 Templates liegen im Repo, das Modell kennt je eine Vorlage pro Position,
-und `spec.py` musste dafuer nicht angefasst werden. **Offen ist genau eines: die
+und `spec.py` musste dafuer nicht angefasst werden. *(19.08.2026: es sind
+inzwischen 52 - die sechs Milchfrontzahn-Draufsichten kamen dazu.)* **Offen ist genau eines: die
 Boegen zusammengesetzt ansehen** - alle ernsten Fehler dieser Arbeit haben so
 angefangen, und kein einziger haette ein Tor rot gemacht.
 
@@ -17,6 +51,11 @@ npm run toothgen:spender   # build.py + occlusal.py -> tools/toothgen/spender/
 npm run toothgen:redraw    # Dirks Zeichnungen hinein -> src/assets/teeth-svgs/
 npm run toothgen:verify    # verify.py (Spender) + verify_redraw.py (Ausgeliefertes)
 ```
+
+*(19.08.2026: es sind DREI Stufen. `toothgen:redraw` ruft seither als letztes
+`toothgen:flaechen` auf - `flaechen_einsetzen.py`, das die Befundflaechen
+einsetzt. Bis dahin fehlte diese Stufe in jedem npm-Skript, und der
+dokumentierte Befehl machte die abgeleiteten Flaechen wieder kaputt.)*
 
 `tools/toothgen/spender/` ist nicht versioniert und wird in etwa 30 Sekunden neu
 gebaut; es ist byte-genau reproduzierbar, und die eingefrorenen Digests in
@@ -64,7 +103,11 @@ an der sie stand - und beide wuerden jetzt eine richtige Zeichnung verbiegen:
 der Breitenfaktor 0,8 fuer den seitlichen Schneidezahn in der Parodontalkarte
 und die Kachelskalierung 0,9 fuer den unteren Milcheckzahn.
 
-### Eine Luecke, bewusst offen
+### Eine Luecke, bewusst offen — GESCHLOSSEN am 19.08.2026
+
+*`syncOcclusalTemplate` in `src/odontogram.ts` haengt die Kauflaechen-Kachel
+jetzt bei jedem Zustandswechsel um, so wie `syncToothTemplate` es fuer die
+Seitenansicht tut. Der Absatz bleibt stehen, weil er die Ursache benennt.*
 
 Die vier Milchmolaren-Kauflaechen (`54_occl`, `55_occl`, `84_occl`, `85_occl`)
 sind erzeugt und ausgeliefert, aber noch nicht montiert: eine Kauflaechen-Kachel
@@ -73,7 +116,14 @@ umgehaengt. Das war vorher genauso - ein Milchmolar zeigte immer die bleibende
 Kauflaeche -, es ist also nichts kaputtgegangen; es ist die eine Stelle, an der
 "je eine Vorlage pro Position" noch nicht gilt.
 
-## HIER GEHT ES WEITER: Hoecker und Fuellungsflaechen aus den Fissuren
+## ABGEARBEITET (19.08.2026): Hoecker und Fuellungsflaechen aus den Fissuren
+
+*Steht als dritte Generatorstufe: `hoecker.py` zerlegt den gezeichneten
+Kautisch durch Flutfuellung in Felder, `kauflaechen.py` schneidet den Tisch
+entlang der gezeichneten Fissuren und projiziert die bukkale Breite zurueck auf
+die Seitenansicht, `fuellflaechen.py` leitet die approximalen und okklusalen
+Grenzen aus Dirks gezeichneten Kaesten ab. Der Plan darunter ist der, der
+umgesetzt wurde.*
 
 Entschieden am 18.08.2026. Dirk zeichnet die Kauflaeche jetzt als **Umriss plus
 Fissurenlinien** - `~/dev/Odontogram-Anatomie/17_occl_fissuren.svg` ist die erste
@@ -170,7 +220,12 @@ Abgelesen von den Schumacher-Scans in den Zeichnungen selbst:
     Spender-Templates (alle vier):          bukkal oben,      mesial rechts
 
 Der Oberkiefer passt also; der Unterkiefer wird waagerecht gespiegelt
-(`SPIEGELN_OCCL`). Gespiegelt wird die ZEICHNUNG vor dem Einsetzen, NICHT das
+(`SPIEGELN_OCCL`). *(Ueberholt: `SPIEGELN_OCCL` ist heute LEER. Die Zeichnungen
+liegen bereits anatomisch richtig; was fehlte, war nicht eine Spiegelung beim
+Erzeugen, sondern die 180-Grad-Drehung im Bogen wegzunehmen - sie stammte aus
+der Zeit, als die unteren Kauflaechen vom OBERKIEFER-Template geliehen waren.
+Die Begruendung steht ausfuehrlich in `redraw_plan.py` ueber der leeren
+Menge.)* Gespiegelt wird die ZEICHNUNG vor dem Einsetzen, NICHT das
 fertige Template: kippt man das Ergebnis, folgen die Spender-Ebenen der
 Zeichnung nach unten - beide stimmen dann zueinander, aber der ganze Zahn liegt
 verkehrt im Rahmen, und die 180-Grad-Drehung des Bogens dreht ihn noch einmal.
@@ -197,12 +252,17 @@ Fissurenpunkt ausserhalb. Wer hier etwas aendert, laesst sie laufen.
   Eintrag je Template). WICHTIG, weil es dreimal danebenging: gespiegelt werden
   muss das FERTIGE Template, nicht die Zeichnung - von Dirk kommen nur Umriss
   und Fissurenlinien, das Hoeckerrelief kommt vom Spender und wird radial
-  daraufgezogen. Die Orientierung steht uebrigens auf jeder Vorlage
+  daraufgezogen. **FALSCH, und der Satz steht hier als Warnung.** Es war der
+  dritte von drei Fehlgriffen an derselben Stelle. Gespiegelt wird die
+  ZEICHNUNG vor dem Einsetzen (so steht es im Kode, `redraw_occl.py` Zeile 114
+  mit Begruendung) - und gebraucht wird es heute gar nicht mehr, weil
+  `SPIEGELN_OCCL` leer ist. Die Orientierung steht uebrigens auf jeder Vorlage
   angeschrieben (vestibulaer oben, lingual unten, mesial rechts, distal links);
   damit ist sie auszurechnen statt zu probieren.
 * **Die Kauflaeche von 14** misst mesiodistal 58 px, dieselbe Strecke in der
   Seitenansicht 35 px. Zwei Zeichnungen desselben Zahns, die sich widersprechen.
-* **Die vier Milchmolaren-Kauflaechen** sind erzeugt, aber nicht montiert.
+* ~~Die vier Milchmolaren-Kauflaechen sind erzeugt, aber nicht montiert.~~
+  Erledigt am 19.08.2026 (`syncOcclusalTemplate`).
 
 ## Die Regel, aus der alles andere folgt
 
@@ -275,6 +335,15 @@ folgen hat.
 
 Daraus folgt zweierlei, und beides ist noch NICHT getan:
 
+*(19.08.2026: der erste Punkt wurde ANDERS geloest als hier vermutet - nicht
+durch ein erneutes `connect_fillings`, sondern durch eine eigene dritte Stufe,
+die die Flaechen AUS der gezeichneten Kontur ableitet und einsetzt
+(`fuellflaechen.py` -> `fuellflaechen_einsetzen.py`). Das Nachformen einer
+Spenderform waere die falsche Richtung gewesen: was gezeichnet ist, wird
+eingesetzt. Der zweite Punkt, das Veneer, ist weiterhin offen und die
+Ableitung wurde einmal versucht und wieder verworfen, weil sie es schlechter
+machte.)*
+
   * Nach dem Umzeichnen muss `build.connect_fillings` neu laufen, so wie
     `build.replace_gum` schon neu laeuft. Sonst sitzt der Anschluss der
     Approximalflaechen an die okklusale noch an der Krone des SPENDERS.
@@ -306,6 +375,10 @@ Das laesst sich ableiten - innere Grenzsegmente sammeln und zusammensetzen -,
 ist aber eine eigene Konstruktion und kein Einsetzen. Solange sie nicht steht,
 bleiben Fissuren und Versiegelung gewarpt, und beide bleiben zueinander
 stimmig, weil sie dieselbe Geometrie sind.
+
+*(19.08.2026: sie steht. `hoecker.py` zerlegt den gezeichneten Kautisch per
+Flutfuellung in Felder, `kauflaechen.py` schneidet ihn entlang der gezeichneten
+Fissuren. Die Zerlegung in FLAECHEN gegen LINIEN ist damit aufgeloest.)*
 
 ## Beim Zusammenbau anzusehen: Neigungen
 

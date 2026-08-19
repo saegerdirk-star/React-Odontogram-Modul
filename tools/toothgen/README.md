@@ -120,7 +120,8 @@ zweite.
 npm run toothgen:verify
 ```
 
-läuft alle drei Prüfungen:
+baut zuerst die Spender neu (`toothgen:spender`, rund 30 Sekunden) und läuft
+dann alle drei Prüfungen:
 
     verify.py           misst die SPENDER gegen spec.py und gegen
                         eingefrorene Geometrie-Prüfsummen. Vom Redraw
@@ -149,6 +150,14 @@ läuft alle drei Prüfungen:
   bis zum 18.08.2026 als eingebettete Rasterebene ("1 Schumacher (gesperrt)")
   in 40 der 46 Zeichnungen und wurden entfernt; das Erzeugnis blieb dabei
   byte-gleich. Was hier liegt, ist MIT-lizenziert.
+
+## Wo die Begründungen stehen
+
+`UMBAU.md` daneben ist das ARBEITSTAGEBUCH des Umbaus: warum eine Entscheidung
+so und nicht anders fiel, und welche Irrwege sie gekostet hat. Diese Datei hier
+sagt, wie das Werkzeug heute aussieht; jene sagt, warum. Wer etwas ändern will,
+das hier begründungslos dasteht, sieht dort nach — mehrere der Regeln sind
+dreimal falsch gemacht worden, bevor sie stimmten.
 
 ## Farben der Restaurationen
 
