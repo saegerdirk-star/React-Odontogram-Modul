@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.18.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.19.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -266,6 +266,43 @@ Ou carregue-o com um import dinâmico somente client-side: `dynamic(() => import
 - **Cartão de Restaurações:** menu suspenso de material de restauração, seletor de restauração por face (com material por face), indicador de defeito de restauração por face (marginal/fratura/desgaste), notas de dica de subcárie e de defeito de restauração
 - **Cartão de Raiz e periodonto:** seletor unificado de "Estado pulpar/endodôntico", seletor de diagnóstico apical, seletor de subtipo de lesão periapical (apenas periodontite apical sintomática/assintomática), seletor de tipo de reabsorção radicular, seletor de grau de mobilidade, seletor de estado peri-implantar (apenas implantes)
 - **Indicadores especiais:** plano/ferida de extração, espaço fechado, selamento de fissura, perda de ponto de contato, cálculo, pino parapulpar, resecção endodôntica, pilar de ponte
+
+### ⌨️ Registro por abreviaturas
+
+Os achados são registrados em segundos, muitas vezes ditados. Com 46 eixos e 129 valores, o
+número de cliques é o verdadeiro gargalo, então o odontograma pode ser preenchido do jeito que já
+se digita (`odontogram-t8y`):
+
+```
+marcar 13–23      arrastar sobre os dentes, Shift + seta ou Shift + clique
+E                 modo material: cerâmica — permanece ativo
+k                 seis coroas, uma única tecla
+```
+
+**O material vem antes do achado e permanece**, como modo e não como acréscimo. Uma tecla de
+material tem duas leituras, porque restauração direta e indireta usam conjuntos de valores
+distintos: `K mo` é uma restauração de resina em duas faces, `K k` uma coroa de Gradia. Onde uma
+leitura não existe, nenhuma é inventada.
+
+**Tab passa ao próximo dente**, Shift+Tab volta, começando em 18 e dando a volta na boca (18–28,
+depois 38–48), com retorno cíclico. Move a seleção, não apenas o foco, de modo que o dente em que
+se está fica destacado. As setas permanecem inalteradas.
+
+```
+G k    Tab    b          coroa de ouro e depois um pôntico no vizinho
+A  mod Tab               uma restauração de amálgama em três faces
+c mod K3                 cárie em três faces, com gravidade
+```
+
+O mapeamento vive em `src/shorthand.ts`, sem DOM e independente do motor, porque o mesmo conjunto
+de achados precisa ser alcançável por três vias: teclado, consulta FHIR a um sistema de gestão e
+voz.
+
+A abreviatura é transcrita do teclado de achados do *charly* (solutio), não inventada
+(`docs/charly/01-befund-tastenfeld.md`).
+
+Um trecho segue o **arco**, não a geometria (`odontogram-apn`): pela linha média (13 a 23) sim,
+entre arcos nunca.
 
 ### 🦷 Tipos e estados do dente
 

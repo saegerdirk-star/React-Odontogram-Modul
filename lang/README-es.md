@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.18.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.19.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -271,6 +271,43 @@ O cárgalo con un import dinámico solo de cliente: `dynamic(() => import("./Odo
 - **Tarjeta de obturaciones:** menú desplegable de material de obturación, selector de obturación por superficie (con material por superficie), indicador de defecto de obturación por superficie (marginal/fractura/desgaste), notas de subcaries y de defecto de obturación
 - **Tarjeta de raíz y periodonto:** selector combinado "Estado pulpar / endo", selector de diagnóstico apical, selector de subtipo de lesión periapical (solo periodontitis apical sintomática/asintomática), selector de tipo de reabsorción radicular, selector de grado de movilidad, selector de estado periimplantario (solo implantes)
 - **Indicadores especiales:** plan/herida de extracción, espacio cerrado, sellado de fisuras, pérdida de punto de contacto, cálculo, pin parapulpar, resección endodóntica, pilar de puente
+
+### ⌨️ Registro por abreviaturas
+
+Los hallazgos se registran en segundos, a menudo dictados. Con 46 ejes y 129 valores, el número
+de clics es el verdadero cuello de botella, así que el odontograma puede rellenarse tal como uno
+teclea (`odontogram-t8y`):
+
+```
+marcar 13–23      arrastrar sobre los dientes, Mayús + flecha o Mayús + clic
+E                 modo material: cerámica — permanece activo
+k                 seis coronas, una sola tecla
+```
+
+**El material va antes del hallazgo y permanece**, como modo y no como añadido. Una tecla de
+material tiene dos lecturas, porque obturación y restauración usan conjuntos de valores distintos:
+`K mo` es una obturación de composite en dos superficies, `K k` una corona de Gradia. Donde no
+existe una lectura, no se inventa ninguna.
+
+**El tabulador pasa al siguiente diente**, Mayús+tabulador vuelve, empezando en 18 y recorriendo
+la boca (18–28, luego 38–48), con retorno cíclico. Mueve la selección, no solo el foco, de modo
+que el diente en el que uno está queda resaltado. Las flechas no cambian.
+
+```
+G k    Tab    b          corona de oro y luego un póntico en el vecino
+A  mod Tab               una obturación de amalgama sobre tres superficies
+c mod K3                 caries en tres superficies, con gravedad
+```
+
+La correspondencia vive en `src/shorthand.ts`, sin DOM e independiente del motor, porque el mismo
+conjunto de hallazgos debe ser alcanzable por tres vías: teclado, consulta FHIR contra un sistema
+de gestión y voz.
+
+La abreviatura está transcrita del teclado de hallazgos de *charly* (solutio), no inventada
+(`docs/charly/01-befund-tastenfeld.md`).
+
+Un tramo sigue el **arco**, no la geometría (`odontogram-apn`): cruzar la línea media (de 13 a 23)
+sí, cambiar de maxilar nunca.
 
 ### 🦷 Tipos de dientes y estados
 

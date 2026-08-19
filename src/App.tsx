@@ -835,6 +835,7 @@ export default function App({
             <div>
               <div className="chart-title">{t("chart.title")}</div>
               <div className="chart-hint">{t("chart.hint")}</div>
+              <div className="chart-hint">{t("chart.hint.drag")}</div>
             </div>
             <div id="chartModeToggle" className="chart-mode-toggle" role="tablist">
               <button id="chartModeStatus" type="button" className="chart-mode-btn is-active" role="tab" aria-selected="true">{t("chartMode.status")}</button>

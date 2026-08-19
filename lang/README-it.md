@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.18.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.19.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -271,6 +271,43 @@ Oppure caricalo con un import dinamico solo client-side: `dynamic(() => import("
 - **Scheda Otturazioni:** menu a tendina materiale otturazione, selettore otturazione per superficie (con materiale per superficie), indicatore di difetto di otturazione per superficie (marginal/fracture/wear), note di suggerimento per carie secondaria e difetto di otturazione
 - **Scheda Radice e parodonto:** selettore combinato "Stato polpa / endodonzia", selettore diagnosi apicale, selettore sottotipo di lesione periapicale (solo parodontite apicale sintomatica/asintomatica), selettore tipo di riassorbimento radicolare, selettore grado di mobilità, selettore stato peri-implantare (solo impianti)
 - **Indicatori speciali:** piano/ferita di estrazione, spazio chiuso, sigillatura dei solchi, perdita del punto di contatto, tartaro, perno parapulpale, resezione endodontica, pilastro di ponte
+
+### ⌨️ Rilevazione tramite abbreviazioni
+
+I rilievi si prendono in pochi secondi, spesso dettati. Con 46 assi e 129 valori il numero di
+percorsi a clic è il vero collo di bottiglia, quindi la cartella si compila come si digita già
+(`odontogram-t8y`):
+
+```
+selezionare 13–23  trascinare sui denti, Maiusc + freccia o Maiusc + clic
+E                  modo materiale: ceramica — resta impostato
+k                  sei corone, un solo tasto
+```
+
+**Il materiale precede il rilievo e resta impostato**, come modalità e non come aggiunta. Un tasto
+materiale ha due letture, perché otturazione e restauro attingono a insiemi di valori diversi:
+`K mo` è un'otturazione in composito su due superfici, `K k` una corona in Gradia. Dove una lettura
+non esiste, non se ne inventa alcuna.
+
+**Il tabulatore passa al dente successivo**, Maiusc+tabulatore torna indietro, partendo da 18 e
+girando intorno alla bocca (18–28, poi 38–48), con ritorno ciclico. Sposta la selezione, non solo
+il fuoco, così il dente su cui ci si trova è evidenziato. Le frecce restano invariate.
+
+```
+G k    Tab    b          corona in oro, poi un elemento intermedio sul vicino
+A  mod Tab               un'otturazione in amalgama su tre superfici
+c mod K3                 carie su tre superfici, con gravità
+```
+
+La corrispondenza vive in `src/shorthand.ts`, senza DOM e indipendente dal motore, perché lo stesso
+insieme di rilievi deve essere raggiungibile in tre modi: tastiera, interrogazione FHIR verso un
+gestionale e voce.
+
+L'abbreviazione è trascritta dal tastierino dei rilievi di *charly* (solutio), non inventata
+(`docs/charly/01-befund-tastenfeld.md`).
+
+Un tratto segue l'**arcata**, non la geometria (`odontogram-apn`): attraverso la linea mediana (da
+13 a 23) sì, tra le arcate mai.
 
 ### 🦷 Tipi di dente e stati
 

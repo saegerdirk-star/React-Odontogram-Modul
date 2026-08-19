@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.18.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.19.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -271,6 +271,43 @@ Vagy töltsd be egy kizárólag kliensoldali dinamikus importtal: `dynamic(() =>
 - **Tömések kártya:** tömőanyag legördülő menü, felületenkénti tömés választó (felületenkénti anyaggal), felületenkénti tömésdefektus jelző (marginális/törés/kopás), subcaries és tömésdefektus figyelmeztető megjegyzések
 - **Gyökér és fogágy kártya:** összevont "Pulpa / Endo státusz" választó, apikális diagnózis választó, periapikális lézió altípus választó (csak tünetekkel járó/tünetmentes apikális periodontitis esetén), gyökérreszorpció típus választó, mobilitási fok választó, peri-implantáris státusz választó (csak implantátumokon)
 - **Speciális jelzők:** fogeltávolítási terv/seb, zárt foghiány, barázdazárás, kontaktpont veszteség, fogkő, parapulpális csap, endo rezekció, hídpillér
+
+### ⌨️ Leletfelvétel rövidítésekkel
+
+A leletek másodpercek alatt születnek, gyakran diktálás után. 46 tengely és 129 érték mellett a
+kattintási utak száma a szűk keresztmetszet, ezért a lelet úgy is bevihető, ahogy az ember amúgy
+is gépel (`odontogram-t8y`):
+
+```
+13–23 kijelölése  húzás a fogak felett, Shift + nyíl vagy Shift + kattintás
+E                 anyagmód: kerámia — beállítva marad
+k                 hat korona, egyetlen billentyű
+```
+
+**Az anyag a lelet elé kerül és beállítva marad**, módként, nem utólagos kiegészítésként. Egy
+anyagbillentyűnek két olvasata van, mert a tömés és a pótlás más értékkészletből merít: a `K mo`
+kompozit tömés két felszínen, a `K k` Gradia korona. Ahol egy olvasat nem létezik, azt nem
+találjuk ki.
+
+**A Tabulátor a következő fogra lép**, a Shift+Tabulátor vissza, 18-tól indulva és a szájat
+körbejárva (18–28, majd 38–48), körbefordulással. A kijelölést mozgatja, nem csupán a fókuszt, így
+mindig látszik, melyik fognál tartunk. A nyílbillentyűk változatlanok.
+
+```
+G k    Tab    b          aranykorona, majd hídtag a szomszédon
+A  mod Tab               egy amalgámtömés három felszínen
+c mod K3                 caries három felszínen, súlyossággal
+```
+
+A leképezés a `src/shorthand.ts` fájlban él, DOM nélkül és a motortól függetlenül, mert ugyanaz a
+leletkészlet háromféleképpen elérhető kell legyen: billentyűzetről, egy praxisrendszer elleni FHIR
+lekérdezésből és beszédből.
+
+A rövidítés a *charly* (solutio) leletbillentyűzetéről van átírva, nem kitalált
+(`docs/charly/01-befund-tastenfeld.md`).
+
+A tartomány a **fogívet** követi, nem a geometriát (`odontogram-apn`): a középvonalon át (13-tól
+23-ig) igen, a másik állcsontba soha.
 
 ### 🦷 Fogtípusok és állapotok
 

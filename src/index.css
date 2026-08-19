@@ -2673,3 +2673,13 @@ select:focus{
    rest of the interface unselectable. */
 #toothGrid{ -webkit-user-select: none; user-select: none; }
 body.odon-dragging{ cursor: cell; }
+
+/* A key that did nothing has to say so — the read-out turns into the message
+   for a moment rather than a separate box appearing and shifting the header. */
+.shorthand-buffer.notice{
+  border-color: var(--odon-warn-border, #e0a800);
+  background: var(--odon-warn-bg, #fff6dd);
+  color: var(--odon-warn-text, #6b4e00);
+  letter-spacing: 0;
+  font-family: inherit;
+}

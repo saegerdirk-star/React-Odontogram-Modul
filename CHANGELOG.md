@@ -1,5 +1,94 @@
 # Changelog
 
+## 2.19.0 - 2026-08-19
+
+### Befundeingabe ueber Kuerzel (Bead odontogram-t8y)
+
+Dirk: *"Die Bedienung der Befundeingabe ist denkbar schlecht. Ich bin es
+gewohnt, Zaehne zu markieren und den Befund mit Kuerzeln einzugeben."* Bei 46
+Achsen und 129 Werten ist die Zahl der Klickwege der eigentliche Engpass.
+
+- **`src/shorthand.ts`** haelt die Abbildung Kuerzel -> Achse und den Parser,
+  ohne DOM und ohne Zugriff auf `odontogram.ts`, wie `retention.ts` und
+  `perioClassification.ts`. Der Grund ist der Bead selbst: verlangt sind DREI
+  Eingangswege auf denselben Befundsatz - Tastatur, FHIR aus einem
+  Praxissystem, Sprache. Laege die Tabelle im Tastaturbehandler, haetten die
+  anderen beiden nichts zum Aufrufen, und es entstuende eine zweite Tabelle
+  daneben.
+- **Die Tabelle ist abgelesen, nicht erfunden.** Sie stammt von charlys
+  01-Befund-Tastenfeld; die Abschrift samt beider Bildschirmabzuege liegt in
+  `docs/charly/01-befund-tastenfeld.md`, die Bedeutungen sind von Dirk
+  aufgeloest.
+- **Das Material steht VOR dem Befund und bleibt stehen** - ein Modus, keine
+  Ergaenzung. `G k` ist eine Goldkrone, `A mod` eine Amalgamfuellung ueber drei
+  Flaechen. Eine Materialtaste hat dabei ZWEI Lesarten, weil `fillingMaterial`
+  und `restorationMaterial` verschiedene Werteraeume haben: `K mo` ist eine
+  Composite-Fuellung, `K k` eine Krone aus Gradia. Wo eine Lesart fehlt, wird
+  keine erfunden.
+- **Ein Tastendruck, der ein Befund ist, wirkt sofort.** Sechs Frontzaehne
+  markieren und `k` druecken ist die ganze Gebaerde. Es wartet nur, was noch
+  nicht vollstaendig sein kann: ein Laufoeffner (`c`, Flaechen) oder eine
+  Taste, mit der eine laengere anfaengt.
+- **Teil- oder Totalprothese steht nicht im Tastendruck**, sondern in der Zahl
+  der markierten Zaehne (`dentureValueFor`).
+- **Tabulator geht zum naechsten Zahn**, Umschalt+Tabulator zurueck, beginnend
+  bei 18 und um den Mund herum (18-28, dann 38-48), mit Umlauf. Er bewegt die
+  AUSWAHL, nicht nur den Fokus, damit der Zahn hervorgehoben ist, auf dem man
+  gerade steht. Die Pfeiltasten bleiben unveraendert - sie sind die Landkarte,
+  der Tabulator ist der Rundgang.
+- **Sieben Tasten sind verstanden und noch nicht ablegbar** (`+ - ? p Fra Hem
+  D`). Sie werden getrennt von Tippfehlern gemeldet, denn ein Tippfehler und
+  eine noch fehlende Achse sind verschiedene Lagen. Die zugehoerigen Beads:
+  odontogram-fu1, -t6y, -ca0, -0n8.
+- Alles laeuft ueber `applyToSelected`, also durch das DS-1-Gate und auf die
+  ganze Markierung. Kein neuer Mutationsweg.
+
+### Zaehne durch Ziehen markieren (Bead odontogram-apn)
+
+- **Ziehen mit gedrueckter Maustaste** ueber die Zaehne waehlt eine Spanne;
+  Umschalt fuegt sie zur bestehenden Auswahl hinzu. `pointerdown/-move/-up`
+  statt `mouse*`, damit Maus und Stift denselben Weg gehen und die vorhandene
+  Beruehrungslogik unangetastet bleibt.
+- **Die Spanne folgt dem BOGEN, nicht der Geometrie** (`teethBetween`). Ein
+  Rechteck ueber die Kachelmitten greift bei zwei Boegen in den Gegenkiefer,
+  sobald der Zeiger ein paar Pixel abweicht. Ueber die Mitte hinweg (13 nach
+  23) ja, ueber den Kiefer nie.
+- **Umschalt + Pfeiltaste erweitert die Auswahl**, Umschalt + Klick ebenso. Der
+  Anker bleibt dabei stehen, sonst koennte Umschalt+Pfeil zurueck die Spanne
+  nicht wieder verkleinern.
+- Schwelle von 4 px, unter der ein Ziehen ein Klick bleibt; der Klick nach dem
+  Loslassen wird einmalig unterdrueckt. Escape waehrend des Ziehens stellt die
+  vorherige Auswahl wieder her.
+- Reine Bedienung: alles laeuft weiter ueber `selectedTeeth` und
+  `updateSelectionUI()`. Der Klickweg und die Pfeiltasten ohne Umschalt
+  verhalten sich unveraendert.
+
+### charly-Abgleich
+
+- **`docs/charly/01-befund-tastenfeld.md`** haelt das Tastenfeld fest, samt
+  dem, was der Blick in die `solutiodb` ergab: `befund01pa.zahn11..zahn48`
+  speichert NICHT die Kurzschrift, sondern einen Stellencode mit bitweise
+  gepackten Merkmalen in drei Laengen nebeneinander. Die erweiterte
+  Materialauswahl (`fuellmaterial`, 32 Zeilen mit acht freien Plaetzen) ist
+  eine Produktliste, keine Materialklasse.
+- **Fuenf Befunde erhebt charly, fuer die unsere 46 Achsen kein Ziel haben.**
+  Daraus die Beads odontogram-fu1 (Sensibilitaet und Perkussion), -t6y
+  (Wurzelfraktur), -ca0 (Hemisektion), -0n8 (Durchbruch in Stufen), -gry
+  (Papillenverlust) und -5rv (eine Bruecke ohne Pfeiler ist kein Befund).
+
+### i18n
+
+- Drei neue Schluessel in allen zwoelf Sprachen: `chart.hint.drag`,
+  `shorthand.unknown`, `shorthand.pending`.
+
+### Unveraendert
+
+- **Kein neues Zustandsfeld.** Die Kurzschrift schreibt auf vorhandene Achsen,
+  die Markierung ist reine Bedienung. Die Nutzlastversion bleibt **2.25**,
+  SVG-Fingerabdruck-Paritaet, FHIR-Gold und Rundlauf-Gold sind byte-identisch.
+- Der Materialmodus (`shorthandMaterial`) ist Sitzungszustand wie
+  `perioViewMode` - nie Teil der Nutzlast.
+
 ## 2.18.0 - 2026-08-19
 
 ### Milchzahn-Draufsichten

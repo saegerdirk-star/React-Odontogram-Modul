@@ -6704,12 +6704,46 @@ function shorthandReadoutEl(): HTMLElement | null {
   return document.getElementById("shorthandBuffer");
 }
 
+/** A message that overrides the read-out for a moment — a key that did nothing
+ *  has to SAY so. At the chair one keeps typing otherwise and notices only at
+ *  the finished chart. */
+let shorthandNotice = "";
+let shorthandNoticeTimer: ReturnType<typeof setTimeout> | null = null;
+
 function syncShorthandReadout(){
   const el = shorthandReadoutEl();
   if(!el) return;
+  if(shorthandNotice){
+    el.textContent = shorthandNotice;
+    el.classList.remove("empty");
+    el.classList.add("notice");
+    return;
+  }
+  el.classList.remove("notice");
   const mat = shorthandMaterial ? shorthandMaterial : "";
   el.textContent = (mat ? mat + " " : "") + shorthandBuffer;
   el.classList.toggle("empty", !mat && !shorthandBuffer);
+}
+
+/** Says what a keystroke did NOT do. The two cases are kept apart on purpose:
+ *  a typo and a key whose axis we have not built yet are different situations,
+ *  and only one of them is the user's mistake. */
+function reportShorthand(r: { unknown: string[]; pending: { token: string; bead: string }[] }): void {
+  const parts: string[] = [];
+  if(r.pending.length > 0){
+    parts.push(t("shorthand.pending").replace("{keys}", r.pending.map(p => p.token).join(" ")));
+  }
+  if(r.unknown.length > 0){
+    parts.push(t("shorthand.unknown").replace("{keys}", r.unknown.join(" ")));
+  }
+  if(parts.length === 0) return;
+  shorthandNotice = parts.join(" · ");
+  if(shorthandNoticeTimer) clearTimeout(shorthandNoticeTimer);
+  shorthandNoticeTimer = setTimeout(() => {
+    shorthandNotice = "";
+    syncShorthandReadout();
+  }, 2500);
+  syncShorthandReadout();
 }
 
 /** Writes one parsed edit onto a tooth's state. Kept beside the gate rather
@@ -6793,7 +6827,7 @@ function selectToothForWalk(toothNo: number): void {
 
 /** Commits the buffer, then steps one tooth in charting order. */
 function shorthandStep(from: number, direction: 1 | -1): void {
-  if(shorthandBuffer) applyShorthand(shorthandBuffer);
+  if(shorthandBuffer) reportShorthand(applyShorthand(shorthandBuffer));
   shorthandBuffer = "";
   const next = nextChartTooth(from, direction, isTileNavigable);
   if(next !== null) selectToothForWalk(next);
@@ -6815,7 +6849,7 @@ function onToothKeydown(toothNo: number, evt: KeyboardEvent){
       evt.preventDefault();
       if(shorthandBuffer){
         // Apply without advancing — the other half of Tab.
-        applyShorthand(shorthandBuffer);
+        reportShorthand(applyShorthand(shorthandBuffer));
         shorthandBuffer = "";
         syncShorthandReadout();
       }else{
@@ -6873,7 +6907,7 @@ function onToothKeydown(toothNo: number, evt: KeyboardEvent){
         // what cannot be complete yet: a run opener, or a key some longer key
         // begins with.
         if(shouldCommit(shorthandBuffer)){
-          applyShorthand(shorthandBuffer);
+          reportShorthand(applyShorthand(shorthandBuffer));
           shorthandBuffer = "";
         }
         syncShorthandReadout();

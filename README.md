@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
-[![Version](https://img.shields.io/badge/version-2.18.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
+[![Version](https://img.shields.io/badge/version-2.19.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](https://raw.githubusercontent.com/ZoliQua/React-Odontogram-Modul/main/src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
 
@@ -181,6 +181,51 @@ that already holds a measurement is locked (the value is its own evidence of exa
 inapplicable position is disabled rather than silently ignored. Recorded statuses also appear in
 the tooth tooltip and the whole-mouth periodontal summary.
 
+## ⌨️ Charting by shorthand
+
+Findings are taken in seconds, often dictated. With 46 axes and 129 values the number of click
+paths is the bottleneck, so the chart can be filled the way a practitioner already types
+(`odontogram-t8y`):
+
+```
+mark 13–23        drag across the teeth, or Shift + arrow, or Shift + click
+E                 material mode: ceramic — it stays set
+k                 six crowns, one keystroke
+```
+
+**The material comes first and stays**, as a mode rather than an afterthought. One material key
+has two readings, because a filling and a restoration draw on different value sets: `K mo` is a
+composite filling on two surfaces, `K k` a crown in Gradia. Where a reading does not exist, none
+is invented.
+
+**Tab steps to the next tooth**, Shift+Tab back, starting at 18 and running around the mouth
+(18–28, then 38–48) with a wrap. It moves the *selection*, not merely the focus, so the tooth you
+are standing on is highlighted. The arrow keys are unchanged: they are the map, Tab is the round.
+
+```
+G k    Tab    b          gold crown, then a pontic on the neighbour
+A  mod Tab               one amalgam filling over three surfaces
+c mod K3                 caries on three surfaces, at a severity
+```
+
+A key that is a finding on its own applies at once — marking six anteriors and pressing `k` is the
+whole gesture. What waits is only what cannot be complete yet: a run that has been opened
+(surfaces, `c`) or a key some longer key begins with.
+
+The mapping lives in `src/shorthand.ts`, DOM-free and independent of the engine, because the same
+finding set has to be reachable three ways: keystrokes, a FHIR query against a practice system, and
+speech. A table inside a key handler would grow a second table beside it.
+
+The shorthand itself is not invented: it is transcribed from the finding keypad of *charly*
+(solutio), with the meanings resolved by a practising dentist rather than guessed — see
+`docs/charly/01-befund-tastenfeld.md`. Seven of its keys are understood and have no axis here
+yet; they are reported as such rather than silently ignored, since a typo and a missing axis are
+different situations.
+
+Selecting a span follows the **arch**, not the geometry (`odontogram-apn`): a rectangle over the
+tile centres picks up the opposing jaw as soon as the pointer strays. Across the midline (13 to 23)
+yes, across the jaw never.
+
 ## ✨ Highlights
 
 - 🎨 **One drawing per tooth position** — sixteen permanent side views (11–18, 41–48), twenty occlusal
@@ -196,6 +241,7 @@ the tooth tooltip and the whole-mouth periodontal summary.
 - ⚠️ Both are **session state** for now: the generated Dental Core package publishes related profile families, but this adapter does not project these module-specific records until their mappings are deliberately supported
 - 🔗 **HL7 FHIR R4** export/import; JSON export/import with migrations
 - 🖼️ PNG / JPG / SVG chart export and a **PDF report** (jsPDF, lazy-loaded)
+- ⌨️ **Charting by shorthand** (see above) — mark teeth by dragging, Shift+arrow or Shift+click, then type the finding; Tab walks the arch
 - 🔢 FDI / Universal / Palmer numbering · 🌐 12 UI languages (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR/AR/ZH/FR, Arabic RTL) · 🎨 theming via `--odon-*` CSS variables · 🧩 plugin system · ⌨️ keyboard accessibility
 
 ## 📖 Documentation

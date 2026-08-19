@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.18.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.19.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -273,6 +273,45 @@ Oder laden Sie sie mit einem rein clientseitigen dynamischen Import: `dynamic(()
 - **Füllungen-Karte:** Dropdown für das Füllungsmaterial, Flächenauswähler für Füllungen (mit Material pro Fläche), Flächenindikator für Füllungsdefekte (marginal/Fraktur/Abrieb), Hinweise zu Sekundärkaries und Füllungsdefekten
 - **Wurzel-und-Parodontium-Karte:** zusammengeführter „Pulpa-/Endo-Status"-Auswähler, Auswähler für apikale Diagnose, Auswähler für periapikalen Läsionssubtyp (nur symptomatische/asymptomatische apikale Parodontitis), Auswähler für den Wurzelresorptionstyp, Auswähler für den Mobilitätsgrad, Auswähler für den periimplantären Status (nur Implantate)
 - **Spezielle Indikatoren:** Extraktionsplan/-wunde, Lücke geschlossen, Fissurenversiegelung, Kontaktpunktverlust, Zahnstein, parapulpaler Stift, Endo-Resektion, Brückenpfeiler
+
+### ⌨️ Befundeingabe über Kürzel
+
+Befunde werden im Sekundentakt aufgenommen, oft diktiert. Bei 46 Achsen und 129 Werten ist die
+Zahl der Klickwege der eigentliche Engpass, deshalb lässt sich der Befund so eingeben, wie man
+ohnehin tippt (`odontogram-t8y`):
+
+```
+13–23 markieren   über die Zähne ziehen, Umschalt+Pfeil oder Umschalt+Klick
+E                 Materialmodus: Keramik — er bleibt stehen
+k                 sechs Kronen, ein Anschlag
+```
+
+**Das Material steht vor dem Befund und bleibt stehen**, als Modus, nicht als Nachsatz. Eine
+Materialtaste hat dabei zwei Lesarten, weil Füllung und Restauration verschiedene Werteräume
+haben: `K mo` ist eine Composite-Füllung auf zwei Flächen, `K k` eine Krone aus Gradia. Wo eine
+Lesart fehlt, wird keine erfunden.
+
+**Tabulator geht zum nächsten Zahn**, Umschalt+Tabulator zurück, beginnend bei 18 und um den Mund
+herum (18–28, dann 38–48), mit Umlauf. Er bewegt die Auswahl, nicht nur den Fokus, damit der Zahn
+hervorgehoben ist, auf dem man gerade steht. Die Pfeiltasten bleiben, wie sie sind.
+
+```
+G k    Tab    b          Goldkrone, dann ein Brückenglied am Nachbarn
+A  mod Tab               eine Amalgamfüllung über drei Flächen
+c mod K3                 Karies auf drei Flächen, mit Schweregrad
+```
+
+Ein Tastendruck, der für sich ein Befund ist, wirkt sofort. Es wartet nur, was noch nicht
+vollständig sein kann. Die Abbildung liegt in `src/shorthand.ts`, ohne DOM und unabhängig von der
+Maschine, weil derselbe Befundsatz auf drei Wegen erreichbar sein muss: Tastatur, FHIR aus einem
+Praxissystem und Sprache.
+
+Die Kurzschrift ist nicht erfunden, sondern vom Befundtastenfeld von *charly* (solutio)
+abgeschrieben (`docs/charly/01-befund-tastenfeld.md`). Sieben ihrer Tasten sind verstanden und
+haben hier noch keine Achse; sie werden als solche gemeldet statt stillschweigend übergangen.
+
+Eine Spanne folgt dem **Bogen**, nicht der Geometrie (`odontogram-apn`): über die Mitte hinweg
+(13 nach 23) ja, über den Kiefer nie.
 
 ### 🦷 Zahntypen und Zustände
 

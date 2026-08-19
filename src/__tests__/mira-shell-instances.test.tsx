@@ -46,6 +46,13 @@ beforeEach(() => {
   }
 });
 
+// odontogram-xtj: diese Tests montieren je ZWEI Schalen und brauchen allein
+// schon 3 bis 8 Sekunden. Unter der Last der vollen Suite reicht die Vorgabe
+// von 5 s nicht mehr, und der Fehlschlag sagt dann nichts ueber die Sache aus,
+// sondern nur ueber die Auslastung der Maschine. Deshalb eine ausdrueckliche
+// Frist je Test, wie sie die neueren Montagetests hier ohnehin schon setzen.
+const FRIST = 30000;
+
 describe("odontogram-3l1 AC2: two mounted odontograms", () => {
   beforeEach(() => {
     __resetChartStateForTest();
@@ -71,7 +78,7 @@ describe("odontogram-3l1 AC2: two mounted odontograms", () => {
     }
     await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
     cleanup();
-  });
+  }, FRIST);
 
   it("initializes each instance from its own document", async () => {
     const sessionA = createOdontogramSession(docWithMissing(11));
@@ -88,7 +95,7 @@ describe("odontogram-3l1 AC2: two mounted odontograms", () => {
     expect(sessionB.getDocument().teeth["11"]?.toothSelection ?? "tooth-base").not.toBe("none");
     expect(sessionB.getDocument().teeth["46"].toothSelection).toBe("none");
     expect(sessionA.getDocument().teeth["46"]?.toothSelection ?? "tooth-base").not.toBe("none");
-  });
+  }, FRIST);
 
   it("reports document changes per instance", () => {
     const sessionA = createOdontogramSession();
@@ -118,7 +125,7 @@ describe("odontogram-3l1 AC2: two mounted odontograms", () => {
       expect(seen.teeth["11"]?.toothSelection ?? "tooth-base").not.toBe("none");
     }
     expect(sessionB.getDocument().teeth["11"]?.toothSelection ?? "tooth-base").not.toBe("none");
-  });
+  }, FRIST);
 
   it("accepts a plain document prop and creates an owned session for that instance", () => {
     const onA = vi.fn();
@@ -151,7 +158,7 @@ describe("odontogram-3l1 AC2: two mounted odontograms", () => {
       const seen = call[0] as OdontogramDocument;
       expect(seen.teeth["12"]?.toothSelection ?? "tooth-base").not.toBe("none");
     }
-  });
+  }, FRIST);
 
   it("leaves the module-singleton entry points untouched when no session/document prop is given", () => {
     const { container } = render(<OdontogramShell />);
@@ -159,7 +166,7 @@ describe("odontogram-3l1 AC2: two mounted odontograms", () => {
     // editor: a single instance always owns the engine.
     expect(container.querySelector("#toothGrid")).not.toBeNull();
     expect(container.querySelector("[data-odontogram-inactive]")).toBeNull();
-  });
+  }, FRIST);
 
   it("renders the engine-bound DOM ids exactly once across two mounted instances", () => {
     const sessionA = createOdontogramSession(docWithMissing(11));
@@ -178,7 +185,7 @@ describe("odontogram-3l1 AC2: two mounted odontograms", () => {
       expect(container.querySelectorAll(`#${id}`).length, `duplicate #${id}`).toBeLessThanOrEqual(1);
     }
     expect(container.querySelectorAll("[data-odontogram-inactive]").length).toBe(1);
-  });
+  }, FRIST);
 
   it("hands the engine to the surviving instance when the owner unmounts", async () => {
     const sessionA = createOdontogramSession(docWithMissing(11));
@@ -200,5 +207,5 @@ describe("odontogram-3l1 AC2: two mounted odontograms", () => {
     });
     expect(container.querySelector("#toothGrid")).not.toBeNull();
     expect(sessionB.getDocument().teeth["46"].toothSelection).toBe("none");
-  });
+  }, FRIST);
 });

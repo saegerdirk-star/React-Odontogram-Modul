@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.18.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.19.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -271,6 +271,40 @@ Alebo ho načítajte pomocou dynamického importu iba na strane klienta: `dynami
 - **Karta Výplne:** rozbaľovací zoznam materiálu výplne, výber výplní na každú plochu (s materiálom pre každú plochu), indikátor poruchy výplne pre každú plochu (marginal/fracture/wear), upozorňujúce poznámky o sekundárnom kaze a poruche výplne
 - **Karta Koreň a parodont:** zlúčený výber „Stav drene / endo", výber apikálnej diagnózy, výber podtypu periapikálnej lézie (iba symptomatická/asymptomatická apikálna parodontitída), výber typu resorpcie koreňa, výber stupňa mobility, výber stavu peri-implantátu (iba implantáty)
 - **Špeciálne indikátory:** plán extrakcie/rana, uzavretá medzera, zapečatenie fisúr, strata kontaktného bodu, zubný kameň, parapulpálny kolík, endo resekcia, pilier mostíka
+
+### ⌨️ Zápis nálezu skratkami
+
+Nálezy sa zapisujú v sekundách, často diktované. Pri 46 osiach a 129 hodnotách je počet klikov
+skutočným úzkym miestom, preto sa dá nález zadať tak, ako človek aj tak píše (`odontogram-t8y`):
+
+```
+označiť 13–23     ťahaním po zuboch, Shift + šípka alebo Shift + klik
+E                 režim materiálu: keramika — zostáva nastavený
+k                 šesť koruniek, jeden stlač
+```
+
+**Materiál stojí pred nálezom a zostáva nastavený**, ako režim, nie ako dodatok. Jedna klávesa
+materiálu má dve čítania, pretože výplň a náhrada čerpajú z rôznych množín hodnôt: `K mo` je
+kompozitná výplň na dvoch plôškach, `K k` korunka z Gradie. Kde čítanie neexistuje, nevymýšľa sa.
+
+**Tabulátor prejde na ďalší zub**, Shift+tabulátor späť, od 18 a okolo úst (18–28, potom 38–48),
+s obehom. Posúva výber, nielen zameranie, takže zub, na ktorom stojíte, je zvýraznený. Šípky
+zostávajú nezmenené.
+
+```
+G k    Tab    b          zlatá korunka, potom medzičlen na susedovi
+A  mod Tab               jedna amalgámová výplň cez tri plôšky
+c mod K3                 kaz na troch plôškach, so závažnosťou
+```
+
+Mapovanie žije v `src/shorthand.ts`, bez DOM a nezávisle od jadra, pretože tá istá množina nálezov
+musí byť dosiahnuteľná tromi cestami: klávesnicou, FHIR dopytom voči ambulantnému systému a rečou.
+
+Skratka je prepísaná z klávesnice nálezov programu *charly* (solutio), nie vymyslená
+(`docs/charly/01-befund-tastenfeld.md`).
+
+Úsek sleduje **oblúk**, nie geometriu (`odontogram-apn`): cez strednú čiaru (13 po 23) áno, cez
+čeľusť nikdy.
 
 ### 🦷 Typy a stavy zubov
 

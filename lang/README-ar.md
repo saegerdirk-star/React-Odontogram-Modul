@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.18.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.19.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -273,6 +273,40 @@ export default function OdontogramClient() {
 - **بطاقة الحشوات:** قائمة منسدلة لمادة الحشو، محدِّد حشو لكل سطح (مع مادة لكل سطح)، مؤشر عيب حشو لكل سطح (هامشي/كسر/بري)، ملاحظات تنبيهية للنخر الثانوي وعيب الحشو
 - **بطاقة الجذر ودواعم السن:** المحدِّد المدمج لحالة اللب/العلاج اللبي، محدِّد التشخيص القمي، محدِّد النوع الفرعي للآفة حول الذروة (التهاب دواعم السن القمي العرَضي/اللاعرَضي فقط)، محدِّد نوع امتصاص الجذر، محدِّد درجة الحركة، محدِّد حالة ما حول الزرعة (للزرعات فقط)
 - **مؤشرات خاصة:** خطة/جرح الخلع، فراغ مغلق بعد الفقد، إغلاق الشقوق، فقدان نقطة التماس، الجير، الوتد المجاوز للُّب، استئصال الذروة، دعامة الجسر
+
+### ⌨️ تسجيل الموجودات بالاختصارات
+
+تُسجَّل الموجودات في ثوانٍ، وغالبًا بالإملاء. مع ٤٦ محورًا و١٢٩ قيمة يكون عدد مسارات النقر هو
+عنق الزجاجة الحقيقي، لذا يمكن ملء المخطط بالطريقة التي يكتب بها الطبيب أصلًا (`odontogram-t8y`):
+
+```
+تحديد ١٣–٢٣      السحب فوق الأسنان، أو Shift + سهم، أو Shift + نقر
+E                وضع المادة: خزف — يبقى مضبوطًا
+k                ستة تيجان بضغطة واحدة
+```
+
+**المادة تسبق الموجود وتبقى مضبوطة**، بوصفها وضعًا لا إضافة. ولمفتاح المادة الواحد قراءتان، لأن
+الحشوة والترميم يستمدان من مجموعتي قيم مختلفتين: `K mo` حشوة مركّبة على سطحين، و`K k` تاج من
+Gradia. وحيث لا توجد قراءة، لا تُخترع واحدة.
+
+**مفتاح Tab ينتقل إلى السن التالي**، وShift+Tab يعود، بدءًا من ١٨ ودورانًا حول الفم (١٨–٢٨ ثم
+٣٨–٤٨) مع الالتفاف. وهو يحرّك التحديد لا التركيز وحده، فيظل السن الذي تقف عنده مميّزًا. ومفاتيح
+الأسهم تبقى كما هي.
+
+```
+G k    Tab    b          تاج ذهبي، ثم جسر معلّق على السن المجاور
+A  mod Tab               حشوة ملغم واحدة على ثلاثة أسطح
+c mod K3                 نخر على ثلاثة أسطح مع درجة شدة
+```
+
+يعيش التخطيط في `src/shorthand.ts`، بلا DOM ومستقلًا عن المحرك، لأن المجموعة نفسها من الموجودات
+يجب أن تكون بالغة بثلاث طرق: لوحة المفاتيح، واستعلام FHIR من نظام العيادة، والصوت.
+
+الاختصار منقول عن لوحة الموجودات في *charly* (solutio) وليس مخترعًا
+(`docs/charly/01-befund-tastenfeld.md`).
+
+يتبع المقطع **القوس** لا الهندسة (`odontogram-apn`): عبر الخط المتوسط (من ١٣ إلى ٢٣) نعم، وعبر
+الفك أبدًا.
 
 ### 🦷 أنواع الأسنان والحالات
 

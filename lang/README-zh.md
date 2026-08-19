@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.18.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.19.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -273,6 +273,37 @@ export default function OdontogramClient() {
 - **充填卡片：** 充填材料下拉菜单、按牙面的充填选择器（含每牙面材料）、按牙面的充填缺陷指示器（边缘/折裂/磨损）、继发龋与充填缺陷提示说明
 - **牙根与牙周组织卡片：** 合并的“牙髓 / 根管状态”选择器、根尖诊断选择器、根尖病损亚型选择器（仅限有症状/无症状根尖周炎）、牙根吸收类型选择器、松动度分级选择器、种植体周状态选择器（仅限种植体）
 - **特殊指示项：** 拔牙计划/拔牙创、缺失后间隙已关闭、窝沟封闭、接触点丧失、牙石、髓旁钉、根尖切除、桥基牙
+
+### ⌨️ 用缩写录入检查所见
+
+检查所见常在数秒之间完成，往往由口述记录。在 46 个轴和 129 个取值面前，真正的瓶颈是点击次数，
+因此牙位图可以按医生本来的打字方式填写（`odontogram-t8y`）：
+
+```
+选中 13–23        在牙齿上拖动、Shift + 方向键，或 Shift + 点击
+E                 材料模式：陶瓷——保持有效
+k                 六个牙冠，一次按键
+```
+
+**材料先于所见，并且保持有效**，它是一种模式而不是补充。同一个材料键有两种读法，因为充填与修复
+取自不同的取值集合：`K mo` 是两个面上的复合树脂充填，`K k` 是 Gradia 牙冠。没有对应读法时，不会
+凭空捏造。
+
+**Tab 键移到下一颗牙**，Shift+Tab 返回，从 18 开始绕口腔一周（18–28，然后 38–48），并循环。它移动
+的是选择而非仅仅焦点，因此当前所在的牙齿始终高亮。方向键保持不变。
+
+```
+G k    Tab    b          金属全冠，随后在邻牙上是桥体
+A  mod Tab               一处跨三个面的银汞充填
+c mod K3                 三个面的龋，并带严重度
+```
+
+映射位于 `src/shorthand.ts`，不依赖 DOM，也不依赖引擎，因为同一套检查所见必须能通过三条途径抵达：
+键盘、对诊所系统的 FHIR 查询，以及语音。
+
+这套缩写抄自 *charly*（solutio）的检查键盘，并非杜撰（`docs/charly/01-befund-tastenfeld.md`）。
+
+选段沿**牙弓**而非几何位置延伸（`odontogram-apn`）：跨中线（13 到 23）可以，跨颌绝不。
 
 ### 🦷 牙齿类型与状态
 

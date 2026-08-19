@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.18.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.19.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -272,6 +272,45 @@ Or load it with a client-only dynamic import: `dynamic(() => import("./Odontogra
 - **Fillings card:** filling-material dropdown, per-surface filling picker (with per-surface material), per-surface filling-defect indicator (marginal/fracture/wear), subcaries and filling-defect hint notes
 - **Root and periodontium card:** merged "Pulp / Endo status" selector, apical diagnosis selector, periapical lesion subtype selector (symptomatic/asymptomatic apical periodontitis only), root resorption type selector, mobility grade selector, peri-implant status selector (implants only)
 - **Special indicators:** extraction plan/wound, missing-closed, fissure sealing, contact-point loss, calculus, parapulpal pin, endo resection, bridge pillar
+
+### ⌨️ Charting by shorthand
+
+Findings are taken in seconds, often dictated. With 46 axes and 129 values the number of click
+paths is the bottleneck, so the chart can be filled the way a practitioner already types
+(`odontogram-t8y`):
+
+```
+mark 13–23        drag across the teeth, Shift + arrow, or Shift + click
+E                 material mode: ceramic — it stays set
+k                 six crowns, one keystroke
+```
+
+**The material comes first and stays**, as a mode rather than an afterthought. One material key
+has two readings, because a filling and a restoration draw on different value sets: `K mo` is a
+composite filling on two surfaces, `K k` a crown in Gradia. Where a reading does not exist, none
+is invented.
+
+**Tab steps to the next tooth**, Shift+Tab back, starting at 18 and running around the mouth
+(18–28, then 38–48) with a wrap. It moves the selection, not merely the focus, so the tooth you
+are standing on is highlighted. The arrow keys are unchanged.
+
+```
+G k    Tab    b          gold crown, then a pontic on the neighbour
+A  mod Tab               one amalgam filling over three surfaces
+c mod K3                 caries on three surfaces, at a severity
+```
+
+A key that is a finding on its own applies at once; what waits is only what cannot be complete
+yet. The mapping lives in `src/shorthand.ts`, DOM-free and independent of the engine, because the
+same finding set has to be reachable three ways: keystrokes, a FHIR query against a practice
+system, and speech.
+
+The shorthand is transcribed from the finding keypad of *charly* (solutio), not invented
+(`docs/charly/01-befund-tastenfeld.md`). Seven of its keys are understood and have no axis here
+yet; they are reported as such rather than silently ignored.
+
+A span follows the **arch**, not the geometry (`odontogram-apn`): across the midline (13 to 23)
+yes, across the jaw never.
 
 ### 🦷 Tooth Types and States
 

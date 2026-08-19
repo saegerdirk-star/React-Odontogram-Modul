@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.18.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.19.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -218,6 +218,44 @@ sites, saignement, suppuration, mobilité de l'implant et largeur de muqueuse k�
 restent inactifs les axes qui exigent la jonction émail-cément (marge gingivale et le CAL qui en
 découle) et les indices de plaque de la dent naturelle — mPI et mBI en sont les équivalents
 péri-implantaires.
+### ⌨️ Saisie du bilan par abréviations
+
+Les constats se prennent en quelques secondes, souvent sous dictée. Avec 46 axes et 129 valeurs,
+le nombre de clics est le véritable goulot d'étranglement ; le schéma se remplit donc comme on
+tape déjà (`odontogram-t8y`) :
+
+```
+sélectionner 13–23  glisser sur les dents, Maj + flèche ou Maj + clic
+E                   mode matériau : céramique — il reste actif
+k                   six couronnes, une seule frappe
+```
+
+**Le matériau précède le constat et reste actif**, comme un mode et non comme un ajout. Une touche
+de matériau a deux lectures, car une obturation et une restauration puisent dans des ensembles de
+valeurs différents : `K mo` est une obturation composite sur deux faces, `K k` une couronne en
+Gradia. Là où une lecture n'existe pas, on n'en invente aucune.
+
+**La tabulation passe à la dent suivante**, Maj+tabulation revient, en partant de 18 et en faisant
+le tour de la bouche (18–28, puis 38–48), avec bouclage. Elle déplace la sélection, pas seulement
+le focus, de sorte que la dent où l'on se trouve est mise en évidence. Les flèches sont
+inchangées.
+
+```
+G k    Tab    b          couronne en or, puis un intermédiaire sur la voisine
+A  mod Tab               une obturation à l'amalgame sur trois faces
+c mod K3                 carie sur trois faces, avec sévérité
+```
+
+La correspondance vit dans `src/shorthand.ts`, sans DOM et indépendamment du moteur, car le même
+ensemble de constats doit être atteignable par trois voies : le clavier, une requête FHIR vers un
+logiciel de cabinet, et la voix.
+
+L'abréviation est transcrite du pavé de saisie de *charly* (solutio), elle n'est pas inventée
+(`docs/charly/01-befund-tastenfeld.md`).
+
+Une portée suit l'**arcade**, pas la géométrie (`odontogram-apn`) : par-dessus la ligne médiane
+(de 13 à 23) oui, d'une arcade à l'autre jamais.
+
 ### ✨ Fonctionnalités clés
 - 🖱️ Sélection rapide et multi-sélection (CMD/CTRL + clic)
 - 🦷 Types de dents : permanente, temporaire (lactéale), implant, sous-gingivale, absente

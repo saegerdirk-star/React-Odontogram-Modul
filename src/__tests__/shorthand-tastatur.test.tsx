@@ -79,6 +79,10 @@ async function raster(){
   }, { timeout: 8000 });
 }
 
+function anzeige(): HTMLElement | null {
+  return document.getElementById("shorthandBuffer");
+}
+
 describe("Kurzschrift auf der Tastatur", () => {
   it("k wirkt sofort auf einer Mehrfachauswahl - Dirks sechs Frontzaehne", async () => {
     await raster();
@@ -153,6 +157,32 @@ describe("Kurzschrift auf der Tastatur", () => {
       expect(zahn(t).toothSelection, `${t}`).toBe("none");
     }
   }, 40000);
+
+  it("sagt es, wenn eine Taste nichts bewirkt hat", async () => {
+    await raster();
+    await act(async () => { kachel(16).dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    kachel(16).focus();
+    // p ist perkussionsempfindlich - verstanden, aber noch ohne Achse.
+    await tippe("p");
+    await taste("Enter");
+    expect(anzeige()?.classList.contains("notice")).toBe(true);
+    expect(anzeige()?.textContent ?? "").toContain("p");
+    expect(anzeige()?.classList.contains("empty")).toBe(false);
+  }, 30000);
+
+  it("meldet einen Tippfehler getrennt vom noch Fehlenden", async () => {
+    await raster();
+    await act(async () => { kachel(16).dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    kachel(16).focus();
+    await tippe("q");
+    await taste("Enter");
+    const text = anzeige()?.textContent ?? "";
+    expect(text).toContain("q");
+    // Es ist die Unbekannt-Meldung, nicht die Noch-nicht-erfassbar-Meldung.
+    // (Die Testumgebung laeuft auf Englisch.)
+    expect(text).toContain("Unknown");
+    expect(text).not.toContain("Not chartable");
+  }, 30000);
 
   it("Escape raeumt den Puffer, bevor es die Auswahl raeumt", async () => {
     await raster();

@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.18.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.19.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -271,6 +271,43 @@ Ewentualnie załaduj go za pomocą dynamicznego importu tylko po stronie klienta
 - **Karta Wypełnienia:** lista rozwijana materiału wypełnienia, selektor wypełnień na powierzchnię (z materiałem na powierzchnię), wskaźnik wady wypełnienia na powierzchnię (brzeżna/złamanie/starcie), notatki pomocnicze dot. próchnicy wtórnej i wady wypełnienia
 - **Karta Korzeń i przyzębie:** połączony selektor „Stan miazgi / endodontyczny”, selektor diagnozy okołowierzchołkowej, selektor podtypu zmiany okołowierzchołkowej (tylko objawowe/bezobjawowe zapalenie ozębnej wierzchołkowej), selektor typu resorpcji korzenia, selektor stopnia ruchomości, selektor stanu okołowszczepowego (tylko implanty)
 - **Wskaźniki specjalne:** plan ekstrakcji/rana, luka zamknięta, lakowanie bruzd, utrata punktu stycznego, kamień nazębny, wkład parapulpalny, resekcja endodontyczna, filar mostu
+
+### ⌨️ Wprowadzanie badania skrótami
+
+Badanie zapisuje się w sekundach, często z dyktowania. Przy 46 osiach i 129 wartościach to liczba
+kliknięć jest wąskim gardłem, dlatego diagram można wypełnić tak, jak i tak się pisze
+(`odontogram-t8y`):
+
+```
+zaznacz 13–23     przeciągnięcie po zębach, Shift + strzałka lub Shift + klik
+E                 tryb materiału: ceramika — pozostaje ustawiony
+k                 sześć koron, jedno naciśnięcie
+```
+
+**Materiał stoi przed badaniem i pozostaje ustawiony**, jako tryb, nie jako dodatek. Jeden klawisz
+materiału ma dwa odczyty, bo wypełnienie i uzupełnienie czerpią z różnych zbiorów wartości: `K mo`
+to wypełnienie kompozytowe na dwóch powierzchniach, `K k` korona z Gradii. Gdzie odczytu nie ma,
+nie jest wymyślany.
+
+**Tabulator przechodzi do następnego zęba**, Shift+tabulator wstecz, od 18 i dookoła jamy ustnej
+(18–28, potem 38–48), z zawinięciem. Przesuwa zaznaczenie, nie tylko fokus, więc ząb, na którym
+się stoi, jest wyróżniony. Strzałki pozostają bez zmian.
+
+```
+G k    Tab    b          korona złota, potem przęsło na sąsiednim zębie
+A  mod Tab               jedno wypełnienie amalgamatowe na trzech powierzchniach
+c mod K3                 próchnica na trzech powierzchniach, ze stopniem
+```
+
+Odwzorowanie mieszka w `src/shorthand.ts`, bez DOM i niezależnie od silnika, ponieważ ten sam zbiór
+rozpoznań musi być osiągalny trzema drogami: z klawiatury, z zapytania FHIR do systemu
+gabinetowego i głosem.
+
+Skrót jest przepisany z klawiatury badania programu *charly* (solutio), nie wymyślony
+(`docs/charly/01-befund-tastenfeld.md`).
+
+Odcinek podąża za **łukiem**, nie za geometrią (`odontogram-apn`): przez linię pośrodkową (13 do
+23) tak, przez szczękę nigdy.
 
 ### 🦷 Typy zębów i stany
 
