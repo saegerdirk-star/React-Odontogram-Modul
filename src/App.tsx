@@ -851,6 +851,13 @@ export default function App({
               <span className="proposed-legend-swatch" aria-hidden="true"></span>
               {t("chart.proposedLegend")}
             </div>
+            {/* Bead odontogram-t8y: what the keyboard has collected so far — the
+                material mode that is standing, and the keys not yet committed.
+                Multi-character keys (mod, Twf, K3) mean a keystroke cannot be
+                applied on its own, so the buffer has to be visible or one is
+                typing blind. Filled by syncShorthandReadout() in
+                odontogram.ts; empty and invisible until a key is pressed. */}
+            <div id="shorthandBuffer" className="shorthand-buffer empty" aria-live="polite" aria-atomic="true"></div>
             <div className="chart-actions">
               <button id="btnOcclView" className="btn btn-toggle btn-icon" aria-pressed="true" title={t("chart.actions.occlusal")} aria-label={t("chart.actions.occlusal")} data-icon-src={iconOcclSvg} data-xline="1"></button>
               <button id="btnWisdomVisible" className="btn btn-toggle btn-icon" aria-pressed="true" title={t("chart.actions.wisdom")} aria-label={t("chart.actions.wisdom")} data-icon-src={icon8Svg} data-xline="1"></button>

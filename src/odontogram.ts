@@ -2,7 +2,10 @@
 // Created by Zoltan Dul (https://github.com/ZoliQua) 2025-2026
 
 import { STATUS_EXTRAS } from "./status_extras";
-import { ARCH_ROWS } from "./shorthand";
+import {
+  ARCH_ROWS, nextChartTooth, parseShorthand, shouldCommit, dentureValueFor,
+  type MaterialKey, type ShorthandEdit,
+} from "./shorthand";
 import { t, onI18nChange, getI18nLanguage } from "./i18n/useI18n";
 import { toLabel, type NumberingSystem } from "./utils/numbering";
 import { type OdontogramPlugin, getQuadrant, LAYER_Z } from "./plugin";
@@ -6533,13 +6536,153 @@ function navigateToTooth(currentTooth: number, direction: string){
   }
 }
 
+// ---- Bead odontogram-t8y: charting by shorthand -----------------------------
+//
+// Dirk's workflow at the chair, in his own words (19.08.2026): walk the arch
+// with Tab starting at 18, Shift+Tab to step back, and type the finding as
+// shorthand on the tooth you are standing on. `k`, Tab, `b` is a crown with a
+// cantilever pontic on its neighbour — one gesture, not two mouse selections.
+//
+// THE TAB WALK MOVES THE SELECTION, not merely the focus. Dirk: "Wo er dann
+// steht ist egal, aber der gewaehlte Zahn ist immer hervorgehoben, so dass ich
+// sehe, wo ich gerade bin." So the walked tooth IS the selected tooth, and the
+// existing `.active` styling shows where you are — no second notion of a
+// "current tooth" beside the one that already exists.
+//
+// The arrow keys are untouched. They are the map (two rows, spatial, no wrap);
+// Tab is the round (one chain, around the mouth, wraps). Different intents.
+
+/** The material mode, as charly carries it: chosen once, then it stands. Session
+ *  state — never serialized, like `perioViewMode` and friends. */
+let shorthandMaterial: MaterialKey | null = null;
+/** Keystrokes not yet committed. Multi-character keys (`mod`, `Twf`, `K3`) mean
+ *  a keystroke cannot be applied on its own; the buffer is committed by Tab
+ *  (apply and advance) or Enter (apply and stay). */
+let shorthandBuffer = "";
+
+export function getShorthandMaterial(): MaterialKey | null { return shorthandMaterial; }
+export function getShorthandBuffer(): string { return shorthandBuffer; }
+
+function shorthandReadoutEl(): HTMLElement | null {
+  return document.getElementById("shorthandBuffer");
+}
+
+function syncShorthandReadout(){
+  const el = shorthandReadoutEl();
+  if(!el) return;
+  const mat = shorthandMaterial ? shorthandMaterial : "";
+  el.textContent = (mat ? mat + " " : "") + shorthandBuffer;
+  el.classList.toggle("empty", !mat && !shorthandBuffer);
+}
+
+/** Writes one parsed edit onto a tooth's state. Kept beside the gate rather
+ *  than inside `shorthand.ts`, which never touches state. */
+function writeShorthandEdit(s: Any, edit: ShorthandEdit, toothNo: number): void {
+  if(edit.kind === "denture"){
+    // A gap carrying a denture tooth. The registry forbids a fixed restoration
+    // beside a prosthesis, so both are cleared rather than left standing.
+    s.toothSelection = "none";
+    s.restorationType = "none";
+    s.restorationMaterial = "none";
+    s.prosthesis = dentureValueFor(toothNo, selectedTeeth as Set<number>, isTileNavigable);
+    return;
+  }
+  if(edit.kind === "axis"){
+    s[edit.field] = edit.value;
+    return;
+  }
+  if(edit.kind === "surfaces" && edit.target === "filling"){
+    s.fillingMaterial = edit.material;
+    for(const surf of edit.surfaces){
+      s.fillingSurfaces.add(surf);
+      s.fillingSurfaceMaterials.set(surf, edit.material);
+    }
+    return;
+  }
+  if(edit.kind === "surfaces" && edit.target === "caries"){
+    for(const surf of edit.surfaces){
+      s.caries.add(`caries-${surf}`);
+      if(edit.severity !== null) s.cariesSeverity.set(surf, edit.severity);
+    }
+    return;
+  }
+}
+
+/**
+ * Applies shorthand to the current selection. The material mode is carried in
+ * and out, so it survives across teeth exactly as it does on charly's keypad.
+ *
+ * Returns what could not be applied, so a caller can say WHY nothing happened:
+ * a typo and a key whose axis we have not built yet are different situations
+ * (see `SHORTHAND_PENDING`).
+ */
+export function applyShorthand(input: string): { unknown: string[]; pending: { token: string; bead: string }[] } {
+  const r = parseShorthand(input, { material: shorthandMaterial });
+  shorthandMaterial = r.material;
+  if(r.edits.length > 0){
+    // `o.B.` resets the whole tooth, so it cannot ride the per-field writer.
+    const reset = r.edits.some(e => e.kind === "reset");
+    applyToSelected((st: Any, toothNo: number) => {
+      if(reset){
+        toothState.set(toothNo, defaultState());
+        return;
+      }
+      for(const e of r.edits) writeShorthandEdit(st, e, toothNo);
+    });
+    if(reset){
+      // defaultState() replaced the object applyToSelected handed us; repaint
+      // from the new one.
+      for(const toothNo of Array.from(selectedTeeth) as number[]){
+        applyStateToSvg(toothNo);
+        updateToothTileNumber(toothNo);
+      }
+      if(activeTooth) syncControlsFromState(toothState.get(activeTooth));
+    }
+  }
+  syncShorthandReadout();
+  return { unknown: r.unknown, pending: r.pending };
+}
+
+/** Selects a single tooth and puts the focus on it — what the Tab walk does. */
+function selectToothForWalk(toothNo: number): void {
+  selectedTeeth = new Set([toothNo]);
+  activeTooth = toothNo;
+  updateSelectionUI();
+  const tiles = toothTile.get(toothNo);
+  const sideTile = tiles?.find((t: HTMLElement) => t.classList.contains("side-view"));
+  if(sideTile) sideTile.focus();
+}
+
+/** Commits the buffer, then steps one tooth in charting order. */
+function shorthandStep(from: number, direction: 1 | -1): void {
+  if(shorthandBuffer) applyShorthand(shorthandBuffer);
+  shorthandBuffer = "";
+  const next = nextChartTooth(from, direction, isTileNavigable);
+  if(next !== null) selectToothForWalk(next);
+  syncShorthandReadout();
+}
+
+/** True for a key that belongs in the shorthand buffer rather than to the
+ *  browser: a single printable character, unmodified. */
+function isShorthandKey(evt: KeyboardEvent): boolean {
+  if(evt.ctrlKey || evt.metaKey || evt.altKey) return false;
+  return evt.key.length === 1 && evt.key !== " ";
+}
+
 function onToothKeydown(toothNo: number, evt: KeyboardEvent){
   if(readOnly) return;
   switch(evt.key){
     case "Enter":
     case " ":
       evt.preventDefault();
-      onToothClick(toothNo, evt);
+      if(shorthandBuffer){
+        // Apply without advancing — the other half of Tab.
+        applyShorthand(shorthandBuffer);
+        shorthandBuffer = "";
+        syncShorthandReadout();
+      }else{
+        onToothClick(toothNo, evt);
+      }
       break;
     case "ArrowRight":
     case "ArrowLeft":
@@ -6548,9 +6691,45 @@ function onToothKeydown(toothNo: number, evt: KeyboardEvent){
       evt.preventDefault();
       navigateToTooth(toothNo, evt.key);
       break;
+    case "Tab":
+      // Deliberate departure from the usual ARIA rule that Tab LEAVES a
+      // composite widget: this is charly's charting walk, and it is the whole
+      // point of the shorthand. Escape is the way out.
+      evt.preventDefault();
+      shorthandStep(toothNo, evt.shiftKey ? -1 : 1);
+      break;
+    case "Backspace":
+      if(shorthandBuffer){
+        evt.preventDefault();
+        shorthandBuffer = shorthandBuffer.slice(0, -1);
+        syncShorthandReadout();
+      }
+      break;
     case "Escape":
       evt.preventDefault();
-      clearSelection();
+      if(shorthandBuffer || shorthandMaterial){
+        shorthandBuffer = "";
+        shorthandMaterial = null;
+        syncShorthandReadout();
+      }else{
+        clearSelection();
+      }
+      break;
+    default:
+      if(isShorthandKey(evt)){
+        evt.preventDefault();
+        shorthandBuffer += evt.key;
+        // A key that is a finding on its own applies at once — six anteriors
+        // marked and one `k` is the whole gesture, and a confirming Enter after
+        // it would be a keystroke with no reason to exist. What still waits is
+        // what cannot be complete yet: a run opener, or a key some longer key
+        // begins with.
+        if(shouldCommit(shorthandBuffer)){
+          applyShorthand(shorthandBuffer);
+          shorthandBuffer = "";
+        }
+        syncShorthandReadout();
+      }
       break;
   }
 }

@@ -62,6 +62,7 @@ export type ShorthandEdit =
   | { kind: "axis"; field: string; value: string | boolean }
   | { kind: "surfaces"; target: "filling"; surfaces: SurfaceKey[]; material: string }
   | { kind: "surfaces"; target: "caries"; surfaces: SurfaceKey[]; severity: number | null }
+  | { kind: "denture" }
   | { kind: "reset" };
 
 export interface ShorthandResult {
@@ -90,6 +91,7 @@ type Entry =
   | { kind: "surface"; surface: SurfaceKey }
   | { kind: "material"; material: MaterialKey }
   | { kind: "caries" }
+  | { kind: "denture" }
   | { kind: "severity"; severity: number }
   | { kind: "reset" };
 
@@ -128,9 +130,11 @@ export const SHORTHAND_DE: Record<string, Entry> = {
   // `removable-partial` rather than `removable-full`, because one key on one
   // tooth cannot know which: a full denture is a property of the whole arch,
   // not of the tooth being keyed.
-  "e":    { kind: "axes", edits: [
-             { field: "toothSelection", value: "none" },
-             { field: "prosthesis", value: "removable-partial" } ] },
+  // Whether it is a PARTIAL or a FULL denture is not in the keystroke — it is
+  // in how many teeth are marked. Dirk, 19.08.2026: "Totalprothese OK & UK,
+  // alle markieren, e, fertig." So `e` emits an edit that names the finding and
+  // leaves the extent to `dentureValueFor()`, which can see the selection.
+  "e":    { kind: "denture" },
 
   // --- restoration
   "k":    { kind: "axis", field: "restorationType", value: "crown", takesMaterial: true },
@@ -181,19 +185,21 @@ export const SHORTHAND_DE: Record<string, Entry> = {
   // Ersatz-row spelling, the other the material row's.
   // The KEYS are single capitals (Dirk, 19.08.2026: "K schaltet das Material
   // auf Kunststoff, A auf Amalgam, G auf Gold", and "E schaltet das Material
-  // auf Keramik um"); the keypad only LABELS them Am / Kst / Ker. Both spell-
-  // ings resolve, so neither the fingers nor the screenshot has to be right.
+  // auf Keramik um"). The keypad LABELS them Am / Kst / Ker, and those
+  // spellings are deliberately NOT typable — accepting them looks generous and
+  // is in fact a trap: `A` followed by `m` (mesial) is then indistinguishable
+  // from `Am`, and the mesial surface is silently swallowed. Found by the
+  // keyboard test, not by reasoning. One key, one meaning.
   //
   // `K` against `K1`…`K5` is safe because longest match runs first, and `K`
   // against `k` (Krone) because the tokenizer is case-sensitive.
+  //
+  // GIZ has no key on the keypad at all; it lives in the extended material
+  // list, which is a PRODUCT list and not what shorthand maps onto.
   "A":    { kind: "material", material: "Am" },
   "K":    { kind: "material", material: "Kst" },
   "G":    { kind: "material", material: "G" },
   "E":    { kind: "material", material: "Ker" },
-  "Am":   { kind: "material", material: "Am" },
-  "Kst":  { kind: "material", material: "Kst" },
-  "GIZ":  { kind: "material", material: "GIZ" },
-  "Ker":  { kind: "material", material: "Ker" },
 };
 
 /** Keys we understand and cannot store yet, each with the bead that will give
@@ -359,6 +365,10 @@ export function parseShorthand(input: string, ctx: ShorthandContext = {}): Short
         for(const e of entry.edits) edits.push({ kind: "axis", field: e.field, value: e.value });
         if(entry.takesMaterial) applyMaterial();
         break;
+      case "denture":
+        flush();
+        edits.push({ kind: "denture" });
+        break;
       case "reset":
         flush();
         edits.push({ kind: "reset" });
@@ -367,6 +377,46 @@ export function parseShorthand(input: string, ctx: ShorthandContext = {}): Short
   }
   flush();
   return { edits, material, unknown, pending };
+}
+
+/** Keys that ARE a finding on their own, as opposed to those that open a run
+ *  and wait for what follows (surfaces, the caries marker, a severity). */
+const STANDALONE = new Set(["axis", "axes", "material", "reset", "denture"]);
+
+/** Whether some longer key begins with this one — `A` can still become `Am`,
+ *  `K` can still become `K3` or `Kst`. */
+function canExtend(token: string): boolean {
+  return TOKENS_DE.some(t => t !== token && t.startsWith(token));
+}
+
+/**
+ * Whether what has been typed so far can be applied WITHOUT waiting for Tab
+ * or Enter.
+ *
+ * Dirk, 19.08.2026: "Wenn z.B. 6 OK Frontzaehne eine Keramikkrone haben,
+ * markiere ich alle 6 und druecke k." One keystroke, done — so a key that is a
+ * complete finding must not sit in a buffer waiting for a second keystroke
+ * that has no reason to exist.
+ *
+ * It commits only when BOTH hold:
+ *
+ *   - the last key is a finding on its own (`k`, `e`, `x`, a material switch),
+ *     not a run opener — `c` waits, because caries without surfaces is nothing
+ *     and committing it early would make the surfaces that follow read as a
+ *     FILLING instead;
+ *   - no longer key begins with it — `A` waits because it may still become
+ *     `Am`, and `K` waits because it may still become `K3`, `Kst` or `Ker`.
+ *
+ * The waiting cases resolve on the next keystroke: `Ak` tokenizes as `A` + `k`,
+ * whose last key is standalone and unextendable, so the pair commits together.
+ */
+export function shouldCommit(buffer: string): boolean {
+  const tokens = tokenizeShorthand(buffer);
+  if(tokens.length === 0) return false;
+  const last = tokens[tokens.length - 1];
+  const entry = SHORTHAND_DE[last];
+  if(!entry || !STANDALONE.has(entry.kind)) return false;
+  return !canExtend(last);
 }
 
 // -----------------------------------------------------------------------------
@@ -404,6 +454,28 @@ export const CHARTING_ORDER: readonly number[] = [
   ...ARCH_ROWS[0],
   ...[...ARCH_ROWS[1]].reverse(),
 ];
+
+/**
+ * Partial or full denture, decided by how much of the arch is marked.
+ *
+ * A full denture is not a different keystroke, it is a different extent: if
+ * every chartable tooth of this tooth's arch is in the selection, the arch is
+ * being replaced entirely. `isChartable` lets the caller exclude what is not
+ * on the chart at all — hidden wisdom teeth, above all, since a mouth charted
+ * without third molars must still be able to reach a full denture.
+ */
+export function dentureValueFor(
+  toothNo: number,
+  selection: Iterable<number>,
+  isChartable: (toothNo: number) => boolean = () => true,
+): "removable-full" | "removable-partial" {
+  const arch = ARCH_ROWS.find(row => row.includes(toothNo));
+  if(!arch) return "removable-partial";
+  const marked = new Set(selection);
+  const relevant = arch.filter(isChartable);
+  if(relevant.length === 0) return "removable-partial";
+  return relevant.every(t => marked.has(t)) ? "removable-full" : "removable-partial";
+}
 
 /**
  * The next tooth in charting order, or the previous one going back.

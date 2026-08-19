@@ -2649,3 +2649,21 @@ select:focus{
 
 .ceph-visually-hidden{position:absolute; inline-size:1px; block-size:1px; overflow:hidden;
   clip-path:inset(50%); white-space:nowrap}
+
+/* Bead odontogram-t8y: the shorthand read-out in the chart header. It shows the
+   standing material mode and the uncommitted keystrokes. Hidden while empty
+   rather than reserving space, so a chart nobody types on looks exactly as it
+   did before. */
+.shorthand-buffer{
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .8rem;
+  letter-spacing: .06em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--odon-border, #d0d5dd);
+  background: var(--odon-surface-2, #f6f7f9);
+  color: var(--odon-text, #1a1d21);
+  white-space: pre;
+  min-width: 3ch;
+}
+.shorthand-buffer.empty{ display: none; }

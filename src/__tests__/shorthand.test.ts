@@ -12,7 +12,7 @@
 import { describe, it, expect } from "vitest";
 import {
   parseShorthand, tokenizeShorthand, SHORTHAND_DE, SHORTHAND_PENDING,
-  nextChartTooth, CHARTING_ORDER, ARCH_ROWS,
+  nextChartTooth, CHARTING_ORDER, ARCH_ROWS, shouldCommit, dentureValueFor,
 } from "../shorthand";
 
 describe("Zerlegung: laengste Uebereinstimmung, Gross- und Kleinschreibung", () => {
@@ -26,7 +26,7 @@ describe("Zerlegung: laengste Uebereinstimmung, Gross- und Kleinschreibung", () 
   });
 
   it("unterscheidet d (distal) von D (Durchbruch)", () => {
-    const klein = parseShorthand("Am d");
+    const klein = parseShorthand("A d");
     expect(klein.edits).toEqual([
       { kind: "surfaces", target: "filling", surfaces: ["distal"], material: "amalgam" },
     ]);
@@ -41,8 +41,17 @@ describe("Zerlegung: laengste Uebereinstimmung, Gross- und Kleinschreibung", () 
   });
 
   it("kommt ohne Trennzeichen aus und vertraegt welche", () => {
-    expect(tokenizeShorthand("Am mod")).toEqual(["Am", "m", "o", "d"]);
-    expect(tokenizeShorthand("Ammod")).toEqual(["Am", "m", "o", "d"]);
+    expect(tokenizeShorthand("A mod")).toEqual(["A", "m", "o", "d"]);
+    expect(tokenizeShorthand("Amod")).toEqual(["A", "m", "o", "d"]);
+  });
+
+  it("die Beschriftungen des Tastenfelds sind KEINE Tasten", () => {
+    // Am waere sonst nicht von A + m (mesial) zu unterscheiden, und die
+    // mesiale Flaeche verschwaende. Ein Tastaturtest hat das gefunden.
+    expect(tokenizeShorthand("Am")).toEqual(["A", "m"]);
+    expect(parseShorthand("Amod").edits).toEqual([
+      { kind: "surfaces", target: "filling", surfaces: ["mesial", "occlusal", "distal"], material: "amalgam" },
+    ]);
   });
 });
 
@@ -57,7 +66,7 @@ describe("Das Material steht VOR dem Befund und bleibt stehen", () => {
   });
 
   it("gibt den Modus zurueck, damit der Aufrufer ihn weitertraegt", () => {
-    const erst = parseShorthand("Am");
+    const erst = parseShorthand("A");
     expect(erst.edits).toEqual([]);
     const dann = parseShorthand("mod", { material: erst.material });
     expect(dann.edits).toEqual([
@@ -66,7 +75,7 @@ describe("Das Material steht VOR dem Befund und bleibt stehen", () => {
   });
 
   it("eine blosse Flaechenkette IST eine Fuellung", () => {
-    const r = parseShorthand("Kst mo");
+    const r = parseShorthand("K mo");
     expect(r.edits).toEqual([
       { kind: "surfaces", target: "filling", surfaces: ["mesial", "occlusal"], material: "composite" },
     ]);
@@ -113,7 +122,7 @@ describe("Karies", () => {
   });
 
   it("c schlaegt das gesetzte Material - Karies ist keine Fuellung", () => {
-    const r = parseShorthand("Am c o");
+    const r = parseShorthand("A c o");
     expect(r.edits).toEqual([
       { kind: "surfaces", target: "caries", surfaces: ["occlusal"], severity: null },
     ]);
@@ -129,10 +138,11 @@ describe("Die Materialtasten sind Einzelbuchstaben", () => {
     expect(parseShorthand("E").material).toBe("Ker");
   });
 
-  it("die Beschriftung des Tastenfelds tut es auch", () => {
-    expect(parseShorthand("Am").material).toBe(parseShorthand("A").material);
-    expect(parseShorthand("Kst").material).toBe(parseShorthand("K").material);
-    expect(parseShorthand("Ker").material).toBe(parseShorthand("E").material);
+  it("A und G wirken sofort, weil keine laengere Taste mit ihnen anfaengt", () => {
+    expect(shouldCommit("A")).toBe(true);
+    expect(shouldCommit("G")).toBe(true);
+    expect(shouldCommit("E")).toBe(true);
+    expect(shouldCommit("K")).toBe(false);   // K1..K5 fangen mit K an
   });
 
   it("K3 bleibt die Kariesstufe, nicht Kunststoff plus 3", () => {
@@ -166,20 +176,14 @@ describe("Brueckenglied und Prothesenzahn sind zwei verschiedene Achsen", () => 
       { kind: "axis", field: "toothSelection", value: "none" },
       { kind: "axis", field: "restorationType", value: "bridge" },
     ]);
-    expect(parseShorthand("e").edits).toEqual([
-      { kind: "axis", field: "toothSelection", value: "none" },
-      { kind: "axis", field: "prosthesis", value: "removable-partial" },
-    ]);
+    expect(parseShorthand("e").edits).toEqual([{ kind: "denture" }]);
   });
 
-  it("e schreibt NIE eine feste Restauration daneben", () => {
-    // Die Registry verbietet die Kombination: entweder feste Restauration
-    // oder Prothese, nie beides.
+  it("e nennt den Befund, nicht seinen Umfang", () => {
+    // Ob Teil- oder Totalprothese steht nicht im Tastendruck, sondern in der
+    // Zahl der markierten Zaehne. Der Parser sieht die Auswahl nicht.
     for(const eingabe of ["e", "K e", "G e", "E e", "A e"]){
-      const felder = parseShorthand(eingabe).edits
-        .filter(e => e.kind === "axis").map(e => (e as { field: string }).field);
-      expect(felder, eingabe).not.toContain("restorationType");
-      expect(felder, eingabe).not.toContain("restorationMaterial");
+      expect(parseShorthand(eingabe).edits, eingabe).toEqual([{ kind: "denture" }]);
     }
   });
 
@@ -255,7 +259,7 @@ describe("Was wir verstehen, aber nicht ablegen koennen", () => {
   });
 
   it("z hat keine Flaeche bei uns und wird nicht heimlich zu buccal", () => {
-    const r = parseShorthand("Am z");
+    const r = parseShorthand("A z");
     expect(r.edits).toEqual([]);
     expect(r.pending.map(p => p.token)).toEqual(["z"]);
   });
@@ -344,5 +348,74 @@ describe("Der Gang durch das Gebiss: Tabulator vor, Shift-Tabulator zurueck", ()
     expect(CHARTING_ORDER.length).toBe(32);
     expect(new Set(CHARTING_ORDER).size).toBe(32);
     expect(ARCH_ROWS.length).toBe(2);
+  });
+});
+
+describe("Teil- oder Totalprothese entscheidet die Auswahl", () => {
+  const OK = ARCH_ROWS[0];
+  const UK = ARCH_ROWS[1];
+
+  it("ein ganzer Kiefer markiert ist eine Totalprothese", () => {
+    expect(dentureValueFor(11, OK)).toBe("removable-full");
+    expect(dentureValueFor(46, UK)).toBe("removable-full");
+  });
+
+  it("Dirks Fall: beide Kiefer markiert, e - beides total", () => {
+    const alle = [...OK, ...UK];
+    expect(dentureValueFor(18, alle)).toBe("removable-full");
+    expect(dentureValueFor(38, alle)).toBe("removable-full");
+  });
+
+  it("ein Zahn weniger ist eine Teilprothese", () => {
+    expect(dentureValueFor(11, OK.filter(t => t !== 13))).toBe("removable-partial");
+  });
+
+  it("der Gegenkiefer zaehlt nicht mit", () => {
+    // Nur der Oberkiefer ist markiert - der Unterkiefer bleibt unberuehrt.
+    expect(dentureValueFor(11, OK)).toBe("removable-full");
+    expect(dentureValueFor(46, OK)).toBe("removable-partial");
+  });
+
+  it("ausgeblendete Weisheitszaehne verhindern die Totalprothese nicht", () => {
+    const ohneWeisheit = (n: number) => ![18, 28, 38, 48].includes(n);
+    const sichtbarOK = OK.filter(ohneWeisheit);
+    expect(dentureValueFor(11, sichtbarOK, ohneWeisheit)).toBe("removable-full");
+    expect(dentureValueFor(11, sichtbarOK)).toBe("removable-partial");
+  });
+});
+
+describe("Wann ein Tastendruck sofort wirkt", () => {
+  it("k wirkt sofort - sechs Frontzaehne markiert, ein Druck, fertig", () => {
+    expect(shouldCommit("k")).toBe(true);
+    expect(shouldCommit("e")).toBe(true);
+    expect(shouldCommit("x")).toBe(true);
+    expect(shouldCommit("b")).toBe(true);
+  });
+
+  it("nur K wartet - K1 bis K5 fangen mit ihm an", () => {
+    expect(shouldCommit("K")).toBe(false);
+    expect(shouldCommit("Kk")).toBe(true);
+  });
+
+  it("c wartet - Karies ohne Flaechen ist nichts", () => {
+    // Wuerde c sofort wirken, laesen die folgenden Flaechen als FUELLUNG.
+    expect(shouldCommit("c")).toBe(false);
+    expect(shouldCommit("c m")).toBe(false);
+    expect(shouldCommit("c mod K3")).toBe(false);
+  });
+
+  it("Flaechen warten, damit mod eine Fuellung wird und nicht drei", () => {
+    expect(shouldCommit("A m")).toBe(false);
+    expect(shouldCommit("A mod")).toBe(false);
+  });
+
+  it("die mehrstelligen Endo-Kuerzel wirken erst, wenn sie vollstaendig sind", () => {
+    expect(shouldCommit("T")).toBe(false);
+    expect(shouldCommit("Tw")).toBe(false);
+    expect(shouldCommit("Twf")).toBe(true);
+  });
+
+  it("ein leerer Puffer wirkt nie", () => {
+    expect(shouldCommit("")).toBe(false);
   });
 });
