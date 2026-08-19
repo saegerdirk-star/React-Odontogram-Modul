@@ -162,6 +162,16 @@ select:focus{
   border:1px solid var(--line);
   border-radius:18px;
   overflow:hidden;
+  /* Nie unter den eigenen Inhalt schrumpfen.
+     `.chart-column` ist ein Rasterfeld und wird auf die Zeilenhoehe gedehnt,
+     die das rechte Bedienfeld vorgibt; darin ist diese Karte ein Flex-Element.
+     Ein Flex-Element schrumpft normalerweise nicht unter seinen Inhalt - aber
+     `overflow:hidden` schaltet genau diese automatische Mindestgroesse ab. Die
+     Karte wurde dadurch kuerzer als der Bogen und schnitt ihn oben und unten
+     ab: Dirk, 19.08.2026, "die Wurzeln werden abgeschnitten". Es traf auch die
+     bleibenden Zaehne, nur faellt es an den langen Milchzahnwurzeln zuerst auf.
+     Das `overflow:hidden` bleibt - es haelt die abgerundeten Ecken sauber. */
+  flex-shrink:0;
 }
 .chart-header{
   padding:12px 14px;
@@ -322,6 +332,24 @@ select:focus{
 /* Engine-owned multi-tooth bridge-span overlay. Absolutely positioned so it does
    not consume a grid cell; sits above the tiles but never intercepts pointer
    events (per-tooth clicks stay on the tiles below). */
+/* Bead odontogram-9nb: Zahnfleisch und Knochen als EINE Lage hinter dem ganzen
+   Raster. Jede Zeichnung ist breiter als ihre Spalte - absichtlich, sonst ergibt
+   die Gingiva keine durchgehende Linie -, und weil die Kacheln in Bogenreihen-
+   folge gemalt werden, deckte das undurchsichtige Band des Nachbarn die mesiale
+   Flanke des vorherigen Zahns zu. Ohne z-index und als erstes Kind liegt diese
+   Auflage hinter allen Zeichnungen, die auf z-index 1 stehen. */
+.tooth-grid > svg.gum-overlay{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+/* Die Baender bleiben im Template - der Generator, die Zustandslogik und die
+   Parity-Fingerprints fassen sie unveraendert an -, sie werden hier nur nicht
+   mehr GEMALT. Gezeigt wird der Klon in der Auflage darueber. */
+.tooth-tile .tooth-svg svg [id="bone-base"],
+.tooth-tile .tooth-svg svg [id="gum-base"]{
+  display:none;
+}
 .tooth-grid > svg.bridge-overlay{
   position:absolute;
   inset:0;

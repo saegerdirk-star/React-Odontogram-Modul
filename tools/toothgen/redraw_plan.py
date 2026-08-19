@@ -93,6 +93,14 @@ PLAN_OCCL: dict[str, tuple[str, str]] = {
     "13_occl": ("13", "14_occl"),
     "41_occl": ("41", "34_occl"), "42_occl": ("42", "34_occl"),
     "43_occl": ("43", "34_occl"),
+    # Milchfrontzaehne, 19.08.2026. Dieselben Spender wie die bleibenden
+    # Frontzaehne: der Spender liefert die rund 200 klinischen Ebenen, die Form
+    # kommt aus der Zeichnung. Tafeln: Bild 85/86 (51/52), 89 (53), 87/88
+    # (81/82), 90 (83) - jede mit `d von okklusal`.
+    "51_occl": ("51", "14_occl"), "52_occl": ("52", "14_occl"),
+    "53_occl": ("53", "14_occl"),
+    "81_occl": ("81", "34_occl"), "82_occl": ("82", "34_occl"),
+    "83_occl": ("83", "34_occl"),
     "84_occl": ("84", "46_occl"), "85_occl": ("85", "46_occl"),
 }
 

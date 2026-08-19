@@ -1,6 +1,6 @@
 {
   "name": "react-advanced-odontogram",
-  "version": "2.17.2",
+  "version": "2.18.0",
   "license": "MIT",
   "type": "module",
   "description": "Interactive, SVG-based dental odontogram (dental chart) editor for React + TypeScript — multi-surface caries/filling charting, endodontic/prosthetic/periodontal states, FDI/Universal/Palmer numbering, HL7 FHIR R4 export/import, and ICDAS scoring.",
@@ -66,14 +66,15 @@
     "parity:capture": "PARITY_CAPTURE=1 NODE_OPTIONS=--max-old-space-size=8192 vitest run src/__tests__/parity/capture.test.ts",
     "fhir:generate": "node tools/generate-dental-core-types.mjs",
     "toothgen:spender": "uv run tools/toothgen/build.py --set all && uv run tools/toothgen/occlusal.py",
-    "toothgen:redraw": "npm run toothgen:spender && python3 tools/toothgen/redraw_alle.py src/assets/teeth-svgs && python3 tools/toothgen/redraw_occl.py src/assets/teeth-svgs",
+    "toothgen:redraw": "npm run toothgen:spender && python3 tools/toothgen/redraw_alle.py src/assets/teeth-svgs && python3 tools/toothgen/redraw_occl.py src/assets/teeth-svgs && npm run toothgen:flaechen",
     "toothgen:build": "uv run tools/toothgen/build.py",
     "toothgen:build:primary": "uv run tools/toothgen/build.py --set primary",
     "toothgen:verify": "npm run toothgen:spender && uv run tools/toothgen/verify.py --all && uv run tools/toothgen/verify_redraw.py && uv run tools/toothgen/check_roundtrip.py",
     "toothgen:verify:primary": "uv run tools/toothgen/verify.py --primary",
     "docs": "typedoc",
     "prepublishOnly": "npm run build:lib",
-    "prototype:model": "vite --open '/prototypes/model-analysis/'"
+    "prototype:model": "vite --open '/prototypes/model-analysis/'",
+    "toothgen:flaechen": "python3 tools/toothgen/flaechen_einsetzen.py"
   },
   "peerDependencies": {
     "react": "^18 || ^19",

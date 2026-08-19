@@ -1,5 +1,52 @@
 # Changelog
 
+## 2.18.0 - 2026-08-19
+
+### Milchzahn-Draufsichten
+
+- **Die sechs Milchfrontzaehne haben eine Draufsicht** (51/52/53, 81/82/83).
+  Damit ist an einem Milchschneidezahn eine PALATINALE Flaeche befundbar - die
+  Seitenansicht zeigt labial face-on und hat lingual ueberhaupt keine Ebene.
+  Die Tafeln der Odontographie tragen alle sechs (Bild 85-90, je `d von
+  okklusal`); eine Ableitung von 52/82 aus 51/81 war deshalb nicht noetig.
+  Damit ist der Bestand vollstaendig: 26 Seitenansichten und 26 Kauflaechen,
+  je eine Zeichnung fuer jede Position in beiden Gebissen.
+
+### Die Kachel folgt dem Milchzahn
+
+- **`syncOcclusalTemplate` tauscht die Kauflaechenkachel bei einem
+  Zustandswechsel**, so wie `syncToothTemplate` es fuer die Seitenansicht tut.
+  Bis dahin wurde eine Kauflaeche in `buildGrid` EINMAL gebaut und nie neu
+  getemplatet: ein Milchmolar zeigte die Kauflaeche seines Nachfolgers, und die
+  Milchfrontzaehne haetten es ebenso getan. "Ein Template je Position" gilt
+  jetzt in beiden Ansichten.
+- **`isPrimaryTemplate` liest den Stempel ohne die Endung `_occl`.** Eine
+  Kauflaeche stempelt `51_occl`, die Tabelle haelt `51` - also galt eine
+  Milchzahn-Draufsicht nicht als Milchzahn-Template, fiel in den alten
+  milktooth-Zweig und zeigte die Form des SPENDERS: eine Praemolaren-Kauflaeche
+  auf einem Milchschneidezahn, und bei den Milchmolaren gar nichts, weil
+  `16_occl` keine milktooth-Ebene hat.
+
+### Der Nachbar verdeckt den Zahn nicht mehr
+
+- **Zahnfleisch und Knochen liegen in EINER Auflage hinter dem Raster**
+  (`src/gumOverlay.ts`). Jede Zeichnung ist breiter als ihre Spalte - mit
+  Absicht, sonst ergibt die Gingiva keine durchgehende Linie -, und weil die
+  Kacheln in Bogenreihenfolge gemalt werden, deckte das undurchsichtige Band
+  des Nachbarn die mesiale Flanke des vorherigen Zahns zu. Gemessen: +3,8 px je
+  Seite an Position 16, +17,2 px dort, wo ein Milchmolar in der Spalte eines
+  Praemolaren steht. Die Baender bleiben im Template und werden dort nur nicht
+  mehr gemalt; die Auflage kostet rund 190 Knoten.
+
+### Werkzeugkette
+
+- **`npm run toothgen:redraw` laeuft bis zur dritten Stufe durch.** Sie stand in
+  keinem Skript: der dokumentierte Befehl baute die Spender, setzte Umriss und
+  Pulpa ein und hoerte auf - die abgeleiteten Fuell- und Kariesflaechen fielen
+  dabei lautlos auf die Spenderformen zurueck, und weil beide gueltiges SVG
+  sind, meldete kein Vertrag etwas. Neu: `tools/toothgen/flaechen_einsetzen.py`
+  und `npm run toothgen:flaechen`.
+
 ## 2.17.2 - 2026-08-18
 
 - Dokumentation nachgezogen, nachdem sie an drei Stellen etwas Falsches

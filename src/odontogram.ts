@@ -48,6 +48,7 @@ import {
   UPPER_ARCH, LOWER_ARCH,
   type BridgeToothState,
 } from "./bridgeOverlay";
+import { renderGumOverlay } from "./gumOverlay";
 import { derivePerioClassification, type PerioClassification, type PerioDerivationInput, type ToothDerivationInput } from "./perioClassification";
 import { buildPerioSvg } from "./perioExport";
 import { assemblePdf, type PdfExportOptions, type PdfAssembleData, type PdfDocLike } from "./perioPdf";
@@ -257,13 +258,13 @@ export const OCCLUSAL_TEMPLATE = new Map([
   [36,{tpl:46,rot:0,mirror:true}],[37,{tpl:47,rot:0,mirror:true}],[38,{tpl:48,rot:0,mirror:true}],
 ]);
 
-// The four PRIMARY occlusal drawings (54_occl, 55_occl, 84_occl, 85_occl) are
-// generated and shipped but NOT mounted yet: an occlusal tile is built once in
-// `buildGrid` and, unlike a side-view tile, never re-templated, so charting a
-// milk tooth cannot swap it the way `syncToothTemplate` swaps the side view.
-// That is the same behaviour as before this rebuild - a milk molar has always
-// shown the permanent occlusal artwork - so nothing regressed; it is the one
-// position where "one template per position" does not hold yet. See UMBAU.md.
+// The TEN primary occlusal drawings (51/52/53/54/55 and 81/82/83/84/85 `_occl`)
+// are mounted like any other, since 2026-08-19: `syncOcclusalTemplate` swaps the
+// occlusal tile on a state change exactly as `syncToothTemplate` swaps the side
+// view. Until then an occlusal tile was built once in `buildGrid` and never
+// re-templated, so a milk tooth kept the PERMANENT top view - a milk molar showed
+// its successor's artwork, and the six milk front teeth did too as soon as their
+// drawings existed. "One template per position" now holds in both views.
 
 const ALL_TEETH = [
   18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28,
@@ -1660,6 +1661,9 @@ function bridgeStateFor(toothNo: number): BridgeToothState | undefined {
 /** (Re)draw the engine-owned multi-tooth bridge overlay over `#toothGrid`. */
 function updateBridgeOverlay(){
   const grid = $("#toothGrid") as HTMLElement | null;
+  // Die Baender ZUERST: sie liegen hinter allem, die beiden anderen Auflagen
+  // darueber. Alle drei lesen dieselbe Kachelgeometrie.
+  renderGumOverlay(grid);
   renderBridgeOverlay({ grid, getState: bridgeStateFor, materialColor: defaultMaterialColor });
   updateRetentionBarOverlay(grid);
 }
@@ -3851,16 +3855,36 @@ const tplCache = new Map<number, Any>();
  *  for each one once. */
 const primaryLoadsInFlight = new Set<number>();
 
+/** Parsed OCCLUSAL templates, module-scoped for the same reason as `tplCache`:
+ *  an occlusal tile used to be built once in `buildGrid` and never re-templated,
+ *  so charting a milk tooth left the permanent top view standing. Keyed by
+ *  template number (14, 16, 51, 84 ...), holding the artwork of `<n>_occl.svg`. */
+const occlCache = new Map<number, Any>();
+
+/** Deciduous OCCLUSAL drawings already being fetched - the same guard as
+ *  `primaryLoadsInFlight`, kept separate because the two sets hold different
+ *  artwork for the same template number. */
+const primaryOcclLoadsInFlight = new Set<number>();
+
 const PRIMARY_TEMPLATE_KEYS = new Set(
   Array.from(PRIMARY_TEMPLATE.values(), (n) => String(n)),
 );
 
 /** Whether the mounted drawing is a deciduous template rather than a permanent
  *  one. Read off the generator's own `data-tooth-template` stamp, so it is the
- *  drawing that answers and not a second table that could drift from it. */
+ *  drawing that answers and not a second table that could drift from it.
+ *
+ *  The `_occl` suffix is stripped before the lookup: an occlusal drawing stamps
+ *  `51_occl` while the table holds `51`, and without this a deciduous TOP VIEW
+ *  was not recognised as deciduous. It then took the old milktooth-layer branch
+ *  and rendered the DONOR's artwork - a premolar fissure pattern on a milk
+ *  incisor - or, where the donor carries no milktooth layers at all (16_occl,
+ *  46_occl), nothing whatsoever. Dirk, 19.08.2026: "die Schneidezaehne zeigen
+ *  nicht die richtigen Kauflaechen sondern Molarenkauflaechen". */
 function isPrimaryTemplate(svg: Any): boolean {
   const key = svg?.getAttribute?.("data-tooth-template");
-  return !!key && PRIMARY_TEMPLATE_KEYS.has(key);
+  if(!key) return false;
+  return PRIMARY_TEMPLATE_KEYS.has(key.endsWith("_occl") ? key.slice(0, -5) : key);
 }
 
 /** The state to DRAW a given svg with.
@@ -3944,6 +3968,71 @@ function syncToothTemplate(toothNo: Any){
       if(/^tpl-\d+$/.test(cls)) tile.classList.remove(cls);
     }
     tile.classList.add(`tpl-${want}`);
+    roots[i] = svg;
+  }
+
+  syncOcclusalTemplate(toothNo, tiles, roots);
+}
+
+/** The same swap for the OCCLUSAL tile.
+ *
+ *  Until 2026-08-19 an occlusal tile was built once in `buildGrid` and never
+ *  re-templated, so charting a milk tooth left the PERMANENT top view standing -
+ *  a milk molar showed the artwork of its successor, and once the deciduous top
+ *  views existed the six milk front teeth did too. Dirk: "Die Kachel muss den
+ *  Milchzahn laden, wenn auf einen Milchzahn umgestellt wird."
+ *
+ *  Kept separate from the side-view loop above rather than folded into it,
+ *  because almost nothing is shared: a different cache, a different loader, a
+ *  different class name (`tpl-N-occl`), and a position whose orientation comes
+ *  from `OCCLUSAL_TEMPLATE` - which is NOT the side view's, and in the lower
+ *  arch deliberately carries no rotation at all. */
+function syncOcclusalTemplate(toothNo: Any, tiles: Any[], roots: Any[]){
+  const base = OCCLUSAL_TEMPLATE.get(toothNo);
+  if(!base) return;
+  const state = toothState.get(toothNo);
+  const primary = PRIMARY_TEMPLATE.get(toothNo);
+  const istMilch = state?.toothSelection === "milktooth" && primary != null;
+
+  if(istMilch && !occlCache.has(primary as number)){
+    // Same one-frame rule as the side view: fetch, and leave what is mounted
+    // standing until it arrives. A blank tile would be worse than a stale one.
+    if(!primaryOcclLoadsInFlight.has(primary as number)){
+      const loader = occlusalTemplateLoader(primary as number);
+      if(loader){
+        primaryOcclLoadsInFlight.add(primary as number);
+        loader().then((markup) => {
+          occlCache.set(primary as number, parseSvgTemplate(markup));
+          primaryOcclLoadsInFlight.delete(primary as number);
+          for(const tn of PRIMARY_TEMPLATE.keys()){
+            if(PRIMARY_TEMPLATE.get(tn) === primary) applyStateToSvg(tn);
+          }
+        }).catch(() => primaryOcclLoadsInFlight.delete(primary as number));
+      }
+    }
+  }
+
+  const want = istMilch && occlCache.has(primary as number) ? (primary as number) : base.tpl;
+
+  for(let i = 0; i < tiles.length; i++){
+    const tile = tiles[i];
+    if(!tile?.classList?.contains("occl-view")) continue;
+    if(tile.classList.contains(`tpl-${want}-occl`)) continue;
+    const tpl = occlCache.get(want);
+    if(!tpl) continue;
+
+    const svg = tpl.cloneNode(true);
+    namespacePaintServers(svg, `tooth-${toothNo}-occl-`);
+    if(base.rot === 180) rotate180(svg);
+    if(base.mirror) mirrorVertical(svg);
+
+    const host = $(".tooth-svg", tile);
+    if(!host) continue;
+    host.replaceChildren(svg);
+    for(const cls of Array.from(tile.classList) as string[]){
+      if(/^tpl-\d+-occl$/.test(cls)) tile.classList.remove(cls);
+    }
+    tile.classList.add(`tpl-${want}-occl`);
     roots[i] = svg;
   }
 }
@@ -10825,8 +10914,11 @@ async function buildGrid(token: number){
   if(!grid) return;
   grid.innerHTML = "";
 
-  // preload SVG templates in parallel
-  const occlCache = new Map();
+  // preload SVG templates in parallel. Both caches are module-scoped so a tile
+  // can be re-mounted from a different drawing later (see `syncToothTemplate`).
+  // Neither is cleared on a rebuild: the entries below are overwritten anyway,
+  // and dropping a deciduous drawing that was already fetched would make it be
+  // fetched again - and flash the permanent artwork while it is in flight.
   // Permanent templates only. The eight deciduous ones are parsed on demand by
   // `syncToothTemplate`, so a chart with no milk teeth - the common case - does
   // not pay for drawings it never mounts. Preloading all seventeen nearly
