@@ -239,12 +239,25 @@ describe("Ganzer Zahn", () => {
 });
 
 describe("Was wir verstehen, aber nicht ablegen koennen", () => {
-  it("meldet die Vitalitaetspruefung als offen, nicht als unbekannt", () => {
-    const r = parseShorthand("+ - ? p");
-    expect(r.edits).toEqual([]);
-    expect(r.unknown).toEqual([]);
-    expect(r.pending.map(p => p.token)).toEqual(["+", "-", "?", "p"]);
-    expect(new Set(r.pending.map(p => p.bead))).toEqual(new Set(["odontogram-fu1"]));
+  it("die Vitalitaetspruefung hat seit odontogram-fu1 ein Ziel", () => {
+    // Bis zum 20.08.2026 standen diese vier auf der Warteliste. Der Test
+    // bleibt stehen und prueft jetzt das Gegenteil: dass sie ankommen.
+    expect(parseShorthand("+").edits).toEqual([
+      { kind: "axis", field: "sensibility", value: "vital" }]);
+    expect(parseShorthand("-").edits).toEqual([
+      { kind: "axis", field: "sensibility", value: "no-response" }]);
+    expect(parseShorthand("?").edits).toEqual([
+      { kind: "axis", field: "sensibility", value: "questionable" }]);
+    expect(parseShorthand("p").edits).toEqual([
+      { kind: "axis", field: "percussion", value: "sensitive" }]);
+    expect(parseShorthand("+ - ? p").pending).toEqual([]);
+  });
+
+  it("ein vitaler Zahn kann perkussionsempfindlich sein - zwei Achsen", () => {
+    expect(parseShorthand("+p").edits).toEqual([
+      { kind: "axis", field: "sensibility", value: "vital" },
+      { kind: "axis", field: "percussion", value: "sensitive" },
+    ]);
   });
 
   it("nennt fuer jede offene Taste den Bead, der ihr ein Ziel gibt", () => {
@@ -284,6 +297,7 @@ describe("Die Tabelle selbst", () => {
       "toothSelection", "toothSubstrate", "restorationType", "restorationMaterial",
       "endo", "endoResection", "apicalDx", "periapicalType",
       "extractionPlan", "missingClosed", "prosthesis",
+      "sensibility", "percussion",
     ]);
     for(const f of felder) expect(bekannt.has(f), `unbekanntes Feld: ${f}`).toBe(true);
   });

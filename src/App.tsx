@@ -1225,6 +1225,18 @@ export default function App({
 
               <div id="rpRootBlock">
                 <div className="hint">{t("endo.hint")}</div>
+                {/* Bead odontogram-fu1: was GEPRUEFT wurde, VOR dem, was daraus
+                    geschlossen wurde. Die Reihenfolge im Bedienfeld ist die
+                    Reihenfolge am Stuhl - erst Kaeltespray und Klopfen, dann
+                    die Benennung. */}
+                <div id="sensibilityRow" className="row">
+                  <span>{t("sensibility.label")}</span>
+                  <select id="sensibilitySelect"></select>
+                </div>
+                <div id="percussionRow" className="row">
+                  <span>{t("percussion.label")}</span>
+                  <select id="percussionSelect"></select>
+                </div>
                 <div id="pulpEndoRow" className="row">
                   <span>{t("pulpEndo.label")}</span>
                   <select id="pulpEndoSelect"></select>

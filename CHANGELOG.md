@@ -1,5 +1,56 @@
 # Changelog
 
+## 2.23.0 - 2026-08-20
+
+### Die Pulpapruefung neben der Pulpadiagnose (Bead odontogram-fu1)
+
+Der Grund in einem Satz: `apicalDx` unterscheidet symptomatische von
+asymptomatischer apikaler Parodontitis, und was diese beiden trennt, IST die
+Perkussionsempfindlichkeit. Wir fuehrten die Schlussfolgerung und nirgends den
+Test. Gefunden beim Abgleich mit charlys Befundtastenfeld (`+`, `-`, `?`, `p`).
+
+- **Zwei neue Registry-Enum-Achsen**, Nutzlast **2.25 -> 2.26** (additiv,
+  omit-when-`none`):
+  - `sensibility` — `none` | `vital` | `no-response` | `questionable`
+  - `percussion` — `none` | `negative` | `sensitive`
+- **ZWEI Achsen, nicht eine:** ein vitaler Zahn kann perkussionsempfindlich
+  sein. In einer Achse waere das nicht darstellbar.
+- **`none` heisst NICHT GEPRUEFT**, nicht "unauffaellig" - dieselbe
+  Unterscheidung, auf der der ganze parodontale Teil besteht. Deshalb traegt
+  die Perkussion einen eigenen Wert `negative`: geprueft und nicht
+  klopfempfindlich ist ein Befund, kein fehlender, und ohne ihn liesse sich die
+  Diagnose direkt darunter nicht begruenden.
+- **Gattern:** `sensibilityAllowed` verlangt einen vorhandenen natuerlichen
+  Zahn oder Milchzahn - ein Implantat hat keine Pulpa. `percussionAllowed` geht
+  weiter und schliesst das Implantat EIN, wo Klopfempfindlichkeit ein
+  periimplantaeres Zeichen ist. Beide Sperren stehen VOR dem DS-1-Gate (wie bei
+  `setRetention`), gelten also auch fuer die Tastatur - eine Sperre, die nur im
+  Bedienfeld haengt, ist keine.
+- **Bedienung:** zwei Auswahlfelder auf der Karte "Wurzel und Parodont", und
+  zwar VOR Pulpa und apikaler Diagnose - die Reihenfolge im Bedienfeld ist die
+  Reihenfolge am Stuhl. Ausgeblendet, wo die Pruefung nicht geht.
+- **Kurzschrift:** `+` `-` `?` `p` haben jetzt ein Ziel und verlassen
+  `SHORTHAND_PENDING` (odontogram-t8y). Drei der sieben heimatlosen Tasten
+  bleiben: `Fra`, `Hem`, `D`.
+- **Kein Dental-Core-Eintrag.** Fuer diese beiden ist keine erzeugte
+  Eigenschaft nachgewiesen, und eine zu erfinden verstiesse gegen dieselbe
+  Regel, unter der odontogram-c51 keine unbelegte Norm ausliefert. Lokale Kodes
+  in `fhir/codesystems.ts`, wie bei den parodontalen Achsen ohne verifizierten
+  LOINC.
+- Kein `svgLayer` - beide zeichnen nichts, die SVG-Fingerabdruck-Paritaet
+  bleibt byte-identisch.
+
+### Nebenbei behoben
+
+- `fhir/fromFhirDentalCore.ts` trug die Nutzlastversion als Zahl `"2.25"` fest
+  verdrahtet und waere bei jedem Bump veraltet gewesen: ein importiertes
+  Dokument haette eine andere Version getragen als ein exportiertes, ohne
+  Unterschied im Inhalt. Jetzt `PAYLOAD_VERSION`.
+
+### i18n
+
+- 14 neue Schluessel in allen zwoelf Sprachen (`sensibility.*`, `percussion.*`).
+
 ## 2.22.0 - 2026-08-20
 
 ### Tiefenwirkung: der Bogen liest sich als Relief statt als Scherenschnitt

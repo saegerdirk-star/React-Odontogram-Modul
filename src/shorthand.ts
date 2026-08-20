@@ -185,6 +185,14 @@ export const SHORTHAND_DE: Record<string, Entry> = {
   "K4":   { kind: "severity", severity: 5 },
   "K5":   { kind: "severity", severity: 6 },
 
+  // --- Pulpapruefung (Bead odontogram-fu1, gebaut am 20.08.2026). Vier Tasten,
+  // ZWEI Achsen: ein vitaler Zahn kann perkussionsempfindlich sein.
+  "+":    { kind: "axis", field: "sensibility", value: "vital" },
+  "-":    { kind: "axis", field: "sensibility", value: "no-response" },
+  "\u2212": { kind: "axis", field: "sensibility", value: "no-response" },  // typografisches Minus
+  "?":    { kind: "axis", field: "sensibility", value: "questionable" },
+  "p":    { kind: "axis", field: "percussion", value: "sensitive" },
+
   // --- material mode. `E` and `Ker` both switch to ceramic (Dirk,
   // 19.08.2026: "E schaltet das Material auf Keramik um") — one is the
   // Ersatz-row spelling, the other the material row's.
@@ -211,11 +219,6 @@ export const SHORTHAND_DE: Record<string, Entry> = {
  *  it a target. Reported separately from `unknown`: a key with no field is a
  *  different situation from a typo, and the caller should be able to say which. */
 export const SHORTHAND_PENDING: Record<string, string> = {
-  "+":   "odontogram-fu1",   // vital
-  "-":   "odontogram-fu1",   // keine Reaktion
-  "−": "odontogram-fu1",// keine Reaktion, typografisches Minus
-  "?":   "odontogram-fu1",   // Vitalitaet fraglich
-  "p":   "odontogram-fu1",   // perkussionsempfindlich
   "Fra": "odontogram-t6y",   // Wurzelfraktur
   "Hem": "odontogram-ca0",   // Hemisektion
   "D":   "odontogram-0n8",   // Durchbruchstadium

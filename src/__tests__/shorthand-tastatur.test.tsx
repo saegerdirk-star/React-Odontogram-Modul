@@ -163,11 +163,13 @@ describe("Kurzschrift auf der Tastatur", () => {
     await raster();
     await act(async () => { kachel(16).dispatchEvent(new MouseEvent("click", { bubbles: true })); });
     kachel(16).focus();
-    // p ist perkussionsempfindlich - verstanden, aber noch ohne Achse.
-    await tippe("p");
+    // D ist das Durchbruchstadium - verstanden, aber noch ohne Achse
+    // (odontogram-0n8). Bis zum 20.08.2026 stand hier `p` fuer die Perkussion;
+    // die hat seit odontogram-fu1 ein Ziel und taugt als Beispiel nicht mehr.
+    await tippe("D");
     await taste("Enter");
     expect(anzeige()?.classList.contains("notice")).toBe(true);
-    expect(anzeige()?.textContent ?? "").toContain("p");
+    expect(anzeige()?.textContent ?? "").toContain("D");
     expect(anzeige()?.classList.contains("empty")).toBe(false);
   }, 30000);
 

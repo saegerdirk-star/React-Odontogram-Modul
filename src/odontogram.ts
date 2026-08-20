@@ -472,6 +472,10 @@ function defaultState(){
     // and the exclusion falls out of the model instead of needing a rule.
     retention: "none",      // none | clasp | attachment | bar-abutment
     retentionSide: "none",  // none | mesial | distal | both (charly's <Kl / Kl>)
+    // Bead odontogram-fu1: was GEPRUEFT wurde, neben dem, was daraus
+    // geschlossen wurde. `none` heisst NICHT GEPRUEFT, nicht "unauffaellig".
+    sensibility: "none", // none | vital | no-response | questionable
+    percussion: "none",  // none | negative | sensitive
     cejVisibility: "none", // none | detectable | not-detectable
     rootConcavity: "none", // none | mild | deep
     // SP-perio PG-D Task 3: two per-tooth categorical DATA axes (registry/FHIR/
@@ -2383,8 +2387,26 @@ function millerClassSummaryLabel(toothNo: number): string | null {
  *  getStateSummary's dedicated push), not the pulp/apical/resorption diagnoses
  *  section, so an implant's periodontal state is reported consistently in one
  *  place instead of contradicting it elsewhere. */
+/** Bead odontogram-fu1: das PRUEFERGEBNIS, nicht die Benennung.
+ *
+ *  Steht bei den Diagnosen, weil man es dort liest - der Perkussionsbefund ist
+ *  die Begruendung fuer die apikale Diagnose direkt darueber. Aber es ist eine
+ *  eigene Zeile: sie sagt, was geprueft wurde, jene, was daraus folgte. */
+function sensibilitySummaryLabel(state: Any): string | null {
+  if(!state.sensibility || state.sensibility === "none") return null;
+  if(!sensibilityAllowed(state)) return null;
+  return t("sensibility.summary." + kebabToCamel(state.sensibility));
+}
+function percussionSummaryLabel(state: Any): string | null {
+  if(!state.percussion || state.percussion === "none") return null;
+  if(!percussionAllowed(state)) return null;
+  return t("percussion.summary." + kebabToCamel(state.percussion));
+}
+
 function diagnosisSummaryLabels(state: Any): string[] {
   return [
+    sensibilitySummaryLabel(state),
+    percussionSummaryLabel(state),
     pulpDiagnosisLabel(state),
     apicalDiagnosisLabel(state),
     resorptionDiagnosisLabel(state),
@@ -2796,6 +2818,12 @@ export function pulpEndoOnSelect(s: Any, value: string): void {
 
 function getApicalDxOptions(): { value: string; label: string }[]{
   return Array.from(VALID_APICAL_DX).map(v => ({ value: v, label: t("apicalDx." + kebabToCamel(v)) }));
+}
+function getSensibilityOptions(): { value: string; label: string }[]{
+  return Array.from(VALID_SENSIBILITY).map(v => ({ value: v, label: t("sensibility.option." + kebabToCamel(v)) }));
+}
+function getPercussionOptions(): { value: string; label: string }[]{
+  return Array.from(VALID_PERCUSSION).map(v => ({ value: v, label: t("percussion.option." + kebabToCamel(v)) }));
 }
 function getResorptionOptions(): { value: string; label: string }[]{
   return Array.from(VALID_RESORPTION_TYPE).map(v => ({ value: v, label: t("resorption.type." + kebabToCamel(v)) }));
@@ -5119,6 +5147,15 @@ function syncControlsFromState(state: Any){
   // whole perio block) rather than a single post-hoc sweep, so each control's
   // Status behavior is untouched. See the tagged sites for specifics.
   const isPlan = getChartMode() === "plan";
+  // Bead odontogram-fu1: die beiden Pruefzeilen. Sie werden AUSGEBLENDET, wo
+  // die Pruefung nicht geht - an einer Luecke laesst sich nichts pruefen, und
+  // ein Implantat hat keine Pulpa. Die Perkussion bleibt am Implantat, dort
+  // ist Klopfempfindlichkeit ein periimplantaeres Zeichen.
+  setSelectOptions($("#sensibilitySelect"), getSensibilityOptions(), state.sensibility ?? "none");
+  setSelectOptions($("#percussionSelect"), getPercussionOptions(), state.percussion ?? "none");
+  $("#sensibilityRow").classList.toggle("hidden", !sensibilityAllowed(state));
+  $("#percussionRow").classList.toggle("hidden", !percussionAllowed(state));
+
   // SP4 Task 5: apical (AAE) diagnosis picker.
   setSelectOptions($("#apicalDxSelect"), getApicalDxOptions(), state.apicalDx);
   if($("#apicalDxSelect").value !== state.apicalDx){
@@ -7328,6 +7365,8 @@ function serializeState(s: Any){
     // stays byte-identical apart from the version field.
     ...(s.retention && s.retention !== "none" ? { retention: s.retention } : {}),
     ...(s.retentionSide && s.retentionSide !== "none" ? { retentionSide: s.retentionSide } : {}),
+    ...(s.sensibility && s.sensibility !== "none" ? { sensibility: s.sensibility } : {}),
+    ...(s.percussion && s.percussion !== "none" ? { percussion: s.percussion } : {}),
     ...(s.cejVisibility && s.cejVisibility !== "none" ? { cejVisibility: s.cejVisibility } : {}),
     ...(s.rootConcavity && s.rootConcavity !== "none" ? { rootConcavity: s.rootConcavity } : {}),
     // SP-perio PG-D Task 3: gingivalThickness/millerClass are emitted ONLY
@@ -7386,6 +7425,8 @@ export const VALID_PERI_IMPLANT = validValues("periImplant");
 // from AXES like every other enum).
 export const VALID_RETENTION = validValues("retention");
 export const VALID_RETENTION_SIDE = validValues("retentionSide");
+export const VALID_SENSIBILITY = validValues("sensibility");
+export const VALID_PERCUSSION = validValues("percussion");
 export const VALID_CEJ_VISIBILITY = validValues("cejVisibility");
 export const VALID_ROOT_CONCAVITY = validValues("rootConcavity");
 // SP-perio PG-D Task 3: the two new categorical data axes (registry axes; read
@@ -7701,6 +7742,8 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   // key, which reads as "no retention element recorded".
   s.retention = validateEnum(raw.retention, VALID_RETENTION, "none");
   s.retentionSide = validateEnum(raw.retentionSide, VALID_RETENTION_SIDE, "none");
+  s.sensibility = validateEnum(raw.sensibility, VALID_SENSIBILITY, "none");
+  s.percussion = validateEnum(raw.percussion, VALID_PERCUSSION, "none");
   s.cejVisibility = validateEnum(raw.cejVisibility, VALID_CEJ_VISIBILITY, "none");
   s.rootConcavity = validateEnum(raw.rootConcavity, VALID_ROOT_CONCAVITY, "none");
   // SP-perio PG-D Task 3: gingivalThickness/millerClass (additive enum axes).
@@ -9495,6 +9538,81 @@ function assessmentSummaryFragment(): string {
  * else is a silent no-op (state unchanged). Fires {@link notifyStateChange}
  * only when it actually changes state; never on a rejected/no-op call.
  */
+/** Ob an diesem Zahn ueberhaupt eine Pulpapruefung sinnvoll ist.
+ *
+ *  Ein Implantat hat keine Pulpa, eine Luecke auch nicht. Ein Wurzelrest
+ *  dagegen SCHON - man prueft ihn, und das Ergebnis ist ein Befund. Deshalb
+ *  haengt es an der ANWESENHEIT eines natuerlichen Zahns, nicht am Substrat. */
+export function sensibilityAllowed(state: Any): boolean {
+  const sel = state?.toothSelection;
+  return sel === "tooth-base" || sel === "milktooth";
+}
+
+/** Perkussion geht weiter als die Sensibilitaet: ein Implantat laesst sich
+ *  klopfen, und Klopfempfindlichkeit ist dort ein periimplantaeres Zeichen. */
+export function percussionAllowed(state: Any): boolean {
+  const sel = state?.toothSelection;
+  return sel === "tooth-base" || sel === "milktooth" || sel === "implant";
+}
+
+/**
+ * Bead odontogram-fu1: das Ergebnis der Sensibilitaetspruefung.
+ *
+ * `none` heisst NICHT GEPRUEFT. Wer "geprueft und vital" meint, waehlt `vital`.
+ * Diese Unterscheidung ist dieselbe, auf der der ganze parodontale Teil
+ * besteht, und sie ist der Grund, warum es die Achse gibt: `pulpDx` trug bisher
+ * die Benennung, aber nirgends stand, ob je jemand geprueft hat.
+ *
+ * Die Sperre steht VOR dem DS-1-Gate, wie bei `setRetention`: ein tolerant
+ * importierter Wert an einem Implantat wird gespeichert, aber nicht
+ * beschreibbar - und ueberall dort unsichtbar, wo die Bedienung ihn ablehnt.
+ */
+export function setSensibility(toothNo: number, value: string): void {
+  if(!VALID_SENSIBILITY.has(value)) return;
+  let s = toothState.get(toothNo);
+  if(!s){ s = defaultState(); toothState.set(toothNo, s); }
+  if(value !== "none" && !sensibilityAllowed(s)) return;
+  gateToothEdit(toothNo, () => {
+    if(s.sensibility === value) return false;
+    s.sensibility = value;
+    notifyStateChange();
+    return true;
+  });
+}
+
+/** Liest die Sensibilitaetspruefung aus dem aktiven Chart. */
+export function getSensibility(toothNo: number): string {
+  const s = toothState.get(toothNo);
+  return (s?.sensibility as string) ?? "none";
+}
+
+/**
+ * Bead odontogram-fu1: die Perkussionspruefung.
+ *
+ * EIGENE Achse neben der Sensibilitaet, nicht ein Wert davon: ein vitaler Zahn
+ * kann perkussionsempfindlich sein. Und `negative` ist ein eigener Wert, weil
+ * geprueft und nicht klopfempfindlich ein Befund ist - genau der, an dem die
+ * AAE symptomatische von asymptomatischer apikaler Parodontitis unterscheidet.
+ */
+export function setPercussion(toothNo: number, value: string): void {
+  if(!VALID_PERCUSSION.has(value)) return;
+  let s = toothState.get(toothNo);
+  if(!s){ s = defaultState(); toothState.set(toothNo, s); }
+  if(value !== "none" && !percussionAllowed(s)) return;
+  gateToothEdit(toothNo, () => {
+    if(s.percussion === value) return false;
+    s.percussion = value;
+    notifyStateChange();
+    return true;
+  });
+}
+
+/** Liest die Perkussionspruefung aus dem aktiven Chart. */
+export function getPercussion(toothNo: number): string {
+  const s = toothState.get(toothNo);
+  return (s?.percussion as string) ?? "none";
+}
+
 export function setCejVisibility(toothNo: number, value: string): void {
   if(!VALID_CEJ_VISIBILITY.has(value)) return;
   let s = toothState.get(toothNo);
@@ -11759,6 +11877,19 @@ function wireControls(){
       applyToSelected((s)=>{ pulpEndoOnSelect(s, value); });
     });
   }
+
+  // Bead odontogram-fu1: die beiden Pruefungen. Sie gehen NICHT ueber
+  // applyToSelected, sondern je Zahn ueber setSensibility/setPercussion -
+  // dort sitzt die Sperre (kein Implantat hat eine Pulpa), und eine Sperre,
+  // die nur im Bedienfeld haengt, gilt fuer die Tastatur nicht.
+  buildSelect($("#sensibilitySelect"), getSensibilityOptions(), (value)=>{
+    for(const toothNo of Array.from(selectedTeeth) as number[]) setSensibility(toothNo, value);
+    if(activeTooth) syncControlsFromState(toothState.get(activeTooth));
+  });
+  buildSelect($("#percussionSelect"), getPercussionOptions(), (value)=>{
+    for(const toothNo of Array.from(selectedTeeth) as number[]) setPercussion(toothNo, value);
+    if(activeTooth) syncControlsFromState(toothState.get(activeTooth));
+  });
 
   // Apical (AAE) diagnosis
   buildSelect($("#apicalDxSelect"), getApicalDxOptions(), (value)=>{

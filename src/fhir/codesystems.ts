@@ -302,6 +302,20 @@ export const LOCAL_VALUE_MAPS: Record<string, Record<string, CodeEntry>> = {
   },
   // Two per-tooth categorical DATA axes. NO svgLayer — neither renders. Local
   // codes only (no verified SNOMED/LOINC).
+  // Bead odontogram-fu1. Lokale Kodes: fuer eine Sensibilitaets- oder
+  // Perkussionspruefung ist hier kein SNOMED/LOINC nachgewiesen, und einen zu
+  // erfinden waere schlimmer als keinen zu haben.
+  sensibility: {
+    "none": { code: "none", display: "Sensibility not tested" },
+    "vital": { code: "vital", display: "Vital response" },
+    "no-response": { code: "no-response", display: "No response" },
+    "questionable": { code: "questionable", display: "Questionable response" },
+  },
+  percussion: {
+    "none": { code: "none", display: "Percussion not tested" },
+    "negative": { code: "negative", display: "Percussion negative" },
+    "sensitive": { code: "sensitive", display: "Percussion sensitive" },
+  },
   cejVisibility: {
     "none": { code: "none", display: "CEJ visibility not assessed" },
     "detectable": { code: "detectable", display: "CEJ detectable" },

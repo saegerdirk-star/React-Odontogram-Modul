@@ -250,6 +250,32 @@ export const AXES: ClinicalAxis[] = [
   // neither renders on the odontogram, so SVG-fingerprint parity is byte-identical
   // (mirrors the periImplant/discoloration foundation axes — declarative FHIR via
   // FIELD_MAPPINGS, no render metadata here).
+  // Bead odontogram-fu1: die Pruefung neben der Diagnose. Kein `svgLayer` -
+  // beide zeichnen nichts, die SVG-Fingerabdruck-Paritaet bleibt
+  // byte-identisch (wie cejVisibility/rootConcavity darunter).
+  //
+  // BEWUSST NICHT in `fhir/dentalCoreContract.ts` eingetragen: dort stehen
+  // erzeugte Dental-Core-Eigenschaften, und fuer diese beiden ist keine
+  // nachgewiesen. Eine zu erfinden waere gegen dieselbe Regel, unter der
+  // odontogram-c51 keine unbelegte Norm ausliefert. Lokale Kodes genuegen,
+  // wie bei den parodontalen Achsen ohne verifizierten LOINC.
+  { id: "sensibility", field: "sensibility", kind: "enum", valueGroup: "sensibility",
+    skipValue: "none", finding: { local: "pulp-sensibility-test", display: "Pulp sensibility test" },
+    values: valuesFrom("sensibility"),
+    uiOptions: [
+      { value: "none", labelKey: "sensibility.option.none" },
+      { value: "vital", labelKey: "sensibility.option.vital" },
+      { value: "no-response", labelKey: "sensibility.option.noResponse" },
+      { value: "questionable", labelKey: "sensibility.option.questionable" },
+    ] },
+  { id: "percussion", field: "percussion", kind: "enum", valueGroup: "percussion",
+    skipValue: "none", finding: { local: "percussion-test", display: "Percussion test" },
+    values: valuesFrom("percussion"),
+    uiOptions: [
+      { value: "none", labelKey: "percussion.option.none" },
+      { value: "negative", labelKey: "percussion.option.negative" },
+      { value: "sensitive", labelKey: "percussion.option.sensitive" },
+    ] },
   { id: "cejVisibility", field: "cejVisibility", kind: "enum", valueGroup: "cejVisibility",
     skipValue: "none", finding: { local: "cej-visibility", display: "CEJ visibility" },
     values: valuesFrom("cejVisibility") },

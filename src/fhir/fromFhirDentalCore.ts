@@ -1,4 +1,5 @@
 import type { Bundle, Observation, Resource } from "fhir/r4";
+import { PAYLOAD_VERSION } from "../document";
 import { DentalChartStateProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalChartState";
 import { DentalCariesFindingProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalCariesFinding";
 import { DentalClinicalProvenanceProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Provenance_DentalClinicalProvenance";
@@ -365,7 +366,11 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
     return Array.isArray(profiles) && profiles.some((profile) => typeof profile === "string" && dentalCoreProfileValues.has(profile));
   });
   if (!hasBundleMarker && !hasAdmittedProfile) return undefined;
-  const payload: OdontogramExportPayload = { version: "2.25", globals: {}, teeth: {} };
+  // PAYLOAD_VERSION statt einer Zahl: hier stand "2.25" fest verdrahtet und
+  // waere bei jedem Bump veraltet - ein importiertes Dokument haette dann eine
+  // andere Version getragen als ein exportiertes, ohne dass sich am Inhalt
+  // etwas unterscheidet (odontogram-fu1, 20.08.2026).
+  const payload: OdontogramExportPayload = { version: PAYLOAD_VERSION, globals: {}, teeth: {} };
   const entriesByReference = new Map<string, ResourceEntry>();
   for (const entry of bundle.entry) {
     const resource = entry?.resource as ResourceRecord | undefined;

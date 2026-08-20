@@ -195,6 +195,35 @@ export const LOCAL_VALUE_MAPS: Record<string, Record<string, CodeEntry>> = {
   // SP-perio PG-C Task 2: two per-tooth categorical DATA axes (registry/FHIR/
   // payload only; the Dental Chart rows/UI land in PG-C Task 3). NO svgLayer —
   // neither renders. Local codes only (no verified SNOMED/LOINC).
+  // Bead odontogram-fu1: was am Zahn GEPRUEFT wurde, nicht was daraus
+  // geschlossen wurde.
+  //
+  // `pulpDx` und `apicalDx` fuehren die Benennung nach AAE - sie sagen, was man
+  // geschlossen hat. Der Test dahinter stand nirgends. Am schaerfsten sichtbar
+  // an einer Stelle: `apicalDx` unterscheidet symptomatische von
+  // asymptomatischer apikaler Parodontitis, und was diese beiden trennt, IST
+  // die Perkussionsempfindlichkeit.
+  //
+  // ZWEI Achsen, nicht eine: ein vitaler Zahn kann perkussionsempfindlich sein.
+  //
+  // `none` heisst NICHT GEPRUEFT, nicht "unauffaellig" - dieselbe Unterscheidung,
+  // auf der der ganze parodontale Teil besteht. Deshalb traegt die Perkussion
+  // einen eigenen Wert `negative`: geprueft und nicht klopfempfindlich ist ein
+  // Befund, kein fehlender.
+  //
+  // Abgelesen von charlys Befundtastenfeld (`+`, `-`, `?`, `p`), siehe
+  // docs/charly/01-befund-tastenfeld.md.
+  sensibility: {
+    "none": { code: "none", display: "Sensibility not tested" },
+    "vital": { code: "vital", display: "Vital response" },
+    "no-response": { code: "no-response", display: "No response" },
+    "questionable": { code: "questionable", display: "Questionable response" },
+  },
+  percussion: {
+    "none": { code: "none", display: "Percussion not tested" },
+    "negative": { code: "negative", display: "Percussion negative" },
+    "sensitive": { code: "sensitive", display: "Percussion sensitive" },
+  },
   cejVisibility: {
     "none": { code: "none", display: "CEJ visibility not assessed" },
     "detectable": { code: "detectable", display: "CEJ detectable" },
