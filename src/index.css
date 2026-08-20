@@ -2796,3 +2796,20 @@ body.odon-dragging{ cursor: cell; }
 .tooth-grid > svg.gum-shade{
   position: absolute; inset: 0; pointer-events: none; z-index: 2;
 }
+
+/* Hoeckerschattierung auf den Kauflaechen.
+
+   Die Felder liegen in der Vorlage schon als eigene Formen unter `tooth-base`,
+   nur mit linearen Verlaeufen - eine Rampe statt einer Kuppel.
+
+   `:not([id])` laesst den Aussenumriss `background-cusp` in Ruhe, und
+   `:not([style*="fill: none"])` die Fissurenzuege: die sind nur Striche, und
+   ein `fill` mit `!important` wuerde sie zu Flaechen machen. Ohne diese zweite
+   Bedingung waere die Kauflaeche zugemalt.
+
+   Nur unter `tooth-base` - liegt eine Krone oder Fuellung darauf, ist diese
+   Ebene abgeschaltet und die Restauration behaelt ihre eigene Farbe. */
+#toothGrid.odon-depth .tooth-tile.occl-view [id="tooth-base"]
+  path:not([id]):not([style*="fill: none"]){
+  fill: url(#odonDepthCusp) !important;
+}

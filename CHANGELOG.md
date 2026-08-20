@@ -36,9 +36,21 @@ gehoeren alle den Restaurationsmaterialien; dem Zahn selbst gehoerte keiner.
   JavaScript - dieselbe Bauweise wie bei den Restaurationsfarben.
   Sitzungszustand wie `perioViewMode`, nie Teil der Nutzlast.
 
+- **Hoecker als Kuppeln statt als Rampen.** Die Kauflaechenvorlagen tragen
+  jedes Hoeckerfeld bereits als eigene Form - sechs beim Sechser -, aber mit
+  einem LINEAREN Verlauf: hell auf der einen, dunkel auf der anderen Seite. Ein
+  Hoecker ist eine Kuppel, und die liest man an einem radialen Verlauf. Zwei
+  Fallen dabei umgangen: der Aussenumriss `background-cusp` bleibt unberuehrt
+  (er traegt eine `id`), sonst bekaeme der ganze Tisch EINE grosse Kuppel statt
+  sechs kleiner; und die Fissurenzuege bleiben es auch (`fill: none`) - eine
+  Fuellung mit `!important` haette aus Strichen Flaechen gemacht und die
+  Kauflaeche zugemalt.
+
 **Die Grenze**: geschattet wird nur die ZAHNSUBSTANZ. Farbe traegt hier
 Bedeutung - ueber eine Karies, eine Fuellung oder ein Material zu schattieren
-hiesse zu veraendern, wie ein Befund gelesen wird.
+hiesse zu veraendern, wie ein Befund gelesen wird. Bei den Hoeckern faellt das
+von selbst richtig aus: sie liegen unter `tooth-base`, und liegt eine Krone
+oder Fuellung darauf, ist diese Ebene abgeschaltet.
 
 **Paritaetssicher von der Bauart her, nicht aus Versehen**:
 `collectActiveLayers` ueberspringt alles unter `<defs>` und jedes

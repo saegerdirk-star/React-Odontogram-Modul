@@ -872,6 +872,26 @@ export default function App({
               <stop offset="0.87" stopColor="#f6f4ee" />
               <stop offset="1" stopColor="#d5d3ca" />
             </linearGradient>
+            {/* Hoecker als KUPPELN statt als Rampen.
+
+                Die Kauflaechenvorlagen tragen jedes Hoeckerfeld bereits als
+                eigene Form - sechs beim Sechser -, aber mit einem LINEAREN
+                Verlauf: eine Rampe ueber das Feld, hell auf der einen und
+                dunkel auf der anderen Seite. Ein Hoecker ist aber eine Kuppel,
+                und die liest man an einem radialen Verlauf.
+
+                `objectBoundingBox` rechnet ihn auf jede Form um, ein Element
+                genuegt also fuer alle Hoecker aller Kauflaechen. Der Mittelpunkt
+                sitzt leicht ueber der Mitte - dort, wo das Licht auf eine
+                Woelbung faellt.
+
+                Die Felder tragen keine `id`, der Fingerabdruck sieht sie also
+                ohnehin nicht; er sammelt nur Elemente MIT `id`. */}
+            <radialGradient id="odonDepthCusp" cx="0.5" cy="0.40" r="0.66">
+              <stop offset="0" stopColor="#fcfbf8" />
+              <stop offset="0.55" stopColor="#f1efe9" />
+              <stop offset="1" stopColor="#dcd8ce" />
+            </radialGradient>
           </defs>
         </svg>
         <section className="chart">
