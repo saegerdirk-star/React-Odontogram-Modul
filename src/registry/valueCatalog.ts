@@ -213,6 +213,12 @@ export const LOCAL_VALUE_MAPS: Record<string, Record<string, CodeEntry>> = {
   //
   // Abgelesen von charlys Befundtastenfeld (`+`, `-`, `?`, `p`), siehe
   // docs/charly/01-befund-tastenfeld.md.
+  //
+  // DIE PRUEFMETHODE GEHOERT NICHT DAZU - entschieden von Dirk am 20.08.2026,
+  // und das ist eine Entscheidung, keine Luecke. Kaelte, elektrisch oder
+  // Testkavitaet werden NICHT als eigene Angabe gefuehrt. Wer sie spaeter
+  // "hilfsbereit" ergaenzt, hebt diese Entscheidung auf; wer sie braucht, holt
+  // sie vorher ein.
   sensibility: {
     "none": { code: "none", display: "Sensibility not tested" },
     "vital": { code: "vital", display: "Vital response" },
