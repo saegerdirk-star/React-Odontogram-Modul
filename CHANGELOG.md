@@ -1,5 +1,60 @@
 # Changelog
 
+## 2.24.0 - 2026-08-20
+
+### Wurzelfraktur und Hemisektion werden gezeichnet (Beads odontogram-t6y / -ca0)
+
+Dirk, 20.08.2026: *"Bei einer Wurzelfraktur sollte eine Bruchlinie durch die
+Wurzel gezeichnet werden, bei mehrwurzeligen Zaehnen per Schalter zwischen den
+Wurzeln wechselbar. Bei der Hemisektion wird an der Furkation durchtrennt und
+eine Wurzel entfernt. Auch hier muss die entfernte Wurzel umschaltbar sein."*
+
+- **`rootsOf(toothNo)` BENENNT die Wurzeln einer Position**, statt sie zu
+  zaehlen: oberer Molar mesiobukkal/distobukkal/palatinal, unterer
+  mesial/distal, 14 und 24 bukkal/palatinal. Positionsbasiert wie
+  `furcationEntrances` daneben. Leer heisst einwurzelig - dort zeigt die
+  Bedienung den Schalter gar nicht erst.
+- **Zwei Wurzelangaben** (`rootFractureRoot`, `rootResectionRoot`), gegen
+  `rootsOf` geprueft: ein palatinaler Wert landet nie an einem unteren Molaren.
+  Payload **2.26 -> 2.27**.
+- **Die Bruchlinie** ist schwarz und liegt in einer Auflage VOR den Kacheln -
+  eine Fraktur liegt auf dem Zahn. Laengs laeuft sie mit der Wurzel, quer
+  darueber. Ausserhalb der Zahn-SVG, also kein neuer Fingerabdruck und kein
+  Generatorlauf.
+- **Die Hemisektion schneidet weg** (`clip-path` an der Kachel, Seite als
+  `data-hemi-side`, Form in der CSS). Etwas wegzunehmen kann keine Auflage -
+  eine Auflage legt auf.
+- **Eine Wurzel wird vorbelegt**, wo der Zahn mehrere hat. "Nicht angegeben"
+  heisst beim Zeichnen "Mitte", und die Mitte eines unteren Molaren liegt
+  ZWISCHEN den Wurzeln; eine Hemisektion ohne benannte Wurzel zeigte gar nichts.
+  Beides sah aus wie ein Fehler. Die Vorbelegung ist im Bild sofort sichtbar
+  und mit einem Griff zu berichtigen.
+- Die palatinale Wurzel eines Oberkiefermolaren kann NICHT weggeschnitten
+  werden: in einer bukkalen Ansicht steht sie hinter der bukkalen und hat keine
+  eigene Seite. Der Befund bleibt als Text stehen. Deshalb ist die Hemisektion
+  in der Regel ein unterer Zahn.
+
+### Die Halsverschattung ist wieder entfernt
+
+Sie kam mit 2.22.0 und hat nie gezeichnet: sie mass an `gum-base`, und das ist
+in der Kachel `display:none` - ein ausgeblendetes Element liefert Nullen. Nach
+der Reparatur sass sie sichtbar falsch, und zwar nicht durch einen Rechenfehler:
+sie haengt am gezeichneten Zahnfleischrand, und dessen Hoehe stimmt selbst noch
+nicht (Bead **odontogram-x8k**). Einen Schatten an einen Rand zu legen, der noch
+wandert, verdoppelt den Fehler. Koerperverlauf und Hoeckerkuppeln bleiben.
+
+Derselbe Fehler hatte die Bruchlinie quer durch das ganze Odontogramm laufen
+lassen. Beide Auflagen messen jetzt am KLON in der Bandauflage, der eine echte
+Ausdehnung hat, oder an der Kachel - nie am ausgeblendeten Original.
+
+### Behoben
+
+- Die vier neuen Auswahlfelder (Sensibilitaet, Perkussion, Wurzelfraktur,
+  resektives Verfahren) gehen absichtlich nicht ueber `applyToSelected`, weil
+  die Sperren in den Settern sitzen. Dabei fehlte, was `applyToSelected` sonst
+  mitmacht: neu zeichnen und die Auflagen erneuern. Der Zustand aenderte sich,
+  das Bild nicht.
+
 ## 2.23.0 - 2026-08-20
 
 ### Die Pulpapruefung neben der Pulpadiagnose (Bead odontogram-fu1)

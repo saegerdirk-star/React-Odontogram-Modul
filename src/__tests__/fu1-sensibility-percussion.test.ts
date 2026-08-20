@@ -117,9 +117,19 @@ describe("Welche Wurzel (Beads odontogram-t6y / -ca0)", () => {
   it("nimmt nur eine Wurzel an, die es an dieser Position gibt", () => {
     setRootFracture(46, "vertical", "mesial");
     expect(getRootFractureRoot(46)).toBe("mesial");
-    // palatinal gibt es im Unterkiefer nicht
+    // Palatinal gibt es im Unterkiefer nicht - und statt leer zu bleiben faellt
+    // es auf die erste Wurzel zurueck: eine Fraktur sitzt in EINER Wurzel, und
+    // "nicht angegeben" hiesse beim Zeichnen "Mitte", wo bei einem unteren
+    // Molaren gar keine Wurzel ist.
     setRootFracture(46, "vertical", "palatal");
-    expect(getRootFractureRoot(46)).toBe("");
+    expect(getRootFractureRoot(46)).toBe("mesial");
+  });
+
+  it("belegt am mehrwurzeligen Zahn vor, statt nichts zu zeichnen", () => {
+    setRootFracture(36, "horizontal", "");
+    expect(getRootFractureRoot(36)).toBe("mesial");
+    setRootResection(37, "hemisection", "");
+    expect(getRootResectionRoot(37)).toBe("mesial");
   });
 
   it("ein Einwurzler nimmt gar keine an", () => {

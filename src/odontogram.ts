@@ -40,7 +40,7 @@ import {
 import {
   retentionOptions, retentionAllowed, detectBarSpans, retentionMark,
   isTelescopeRetention, hasRetention, computeRetentionBars, computeClaspGlyphs,
-  type RetentionValue,
+  type RetentionValue, mesialIsLeft,
 } from "./retention";
 import {
   renderBridgeOverlay,
@@ -351,6 +351,23 @@ export function furcationEntrances(toothNo: number): string[] {
  * Namen stehen dort ohnehin nicht. Zwei Tabellen sind es damit nicht - jene
  * zaehlt fuer die Zeichnung, diese benennt fuer den Befund.
  */
+/**
+ * Auf welcher Seite eine benannte Wurzel im Bild steht.
+ *
+ * Zum ZEICHNEN reicht der anatomische Name nicht: eine Seitenansicht kennt nur
+ * links und rechts. Mesial liegt je nach Quadrant auf der einen oder der
+ * anderen Seite (`mesialIsLeft`), und die palatinale Wurzel eines
+ * Oberkiefermolaren steht in dieser Ansicht HINTER der bukkalen - sie hat gar
+ * keine eigene Seite. Sie bekommt deshalb "mitte", und was dort gezeichnet
+ * wird, liegt auf dem Stamm.
+ */
+export function rootSideOf(toothNo: number, root: string): "links" | "rechts" | "mitte" {
+  const mesialLinks = mesialIsLeft(toothNo);
+  if(root === "mesial" || root === "mesiobuccal") return mesialLinks ? "links" : "rechts";
+  if(root === "distal" || root === "distobuccal") return mesialLinks ? "rechts" : "links";
+  return "mitte";   // palatinal und bukkal stehen hintereinander
+}
+
 export function rootsOf(toothNo: number): string[] {
   const position = toothNo % 10;
   const quadrant = Math.floor(toothNo / 10);
@@ -4150,6 +4167,8 @@ function applyStateToSvg(toothNo: Any){
   }
   applyPluginOverlays(toothNo);
   updateToothRetentionMark(toothNo);
+  syncHemisectionClip(toothNo);   // Bead odontogram-ca0
+  syncFractureMark(toothNo);      // Bead odontogram-t6y
   updateToothTooltip(toothNo);
 }
 
@@ -7238,6 +7257,58 @@ function onToothKeydown(toothNo: number, evt: KeyboardEvent){
   }
 }
 
+/**
+ * Bead odontogram-ca0: die entfernte Wurzel wird WEGGESCHNITTEN.
+ *
+ * Dirk, 20.08.2026: "Bei der Hemisektion wird an der Furkation durchtrennt und
+ * eine Wurzel entfernt." Etwas wegzunehmen kann eine Auflage nicht - eine
+ * Auflage legt auf. Deshalb ein `clip-path` an der Kachel selbst.
+ *
+ * Hier steht nur, WELCHE SEITE weg soll; die Form des Schnitts steht in der
+ * CSS. Das ist Absicht: eine Schnittfuehrung stellt man am Bild ein, und in der
+ * CSS kostet das ein Neuladen statt eines Generatorlaufs.
+ *
+ * Der anatomische Name allein reicht zum Zeichnen nicht - eine Seitenansicht
+ * kennt links und rechts, und mesial liegt je nach Quadrant anders (siehe
+ * `rootSideOf`). Die palatinale Wurzel steht in dieser Ansicht hinter der
+ * bukkalen und hat gar keine eigene Seite; dort wird nichts geschnitten,
+ * sondern der Befund bleibt als Text stehen.
+ */
+/** Bead odontogram-t6y: Art und Seite der Bruchlinie an die Kachel schreiben.
+ *  Gezeichnet wird sie in der Auflage (`gumOverlay.ts`); hier steht nur, WAS
+ *  und WO - dieselbe Aufgabenteilung wie bei der Hemisektionsmaske. */
+function syncFractureMark(toothNo: number): void {
+  const tiles = toothTile.get(toothNo);
+  if(!tiles) return;
+  const st = toothState.get(toothNo);
+  const art = (st?.rootFracture as string) ?? "none";
+  const wurzel = (st?.rootFractureRoot as string) ?? "";
+  const zeigen = art !== "none" && rootFractureAllowed(st ?? defaultState());
+  for(const tile of tiles){
+    if(zeigen && tile.classList.contains("side-view")){
+      tile.dataset.fractureKind = art;
+      tile.dataset.fractureSide = wurzel ? rootSideOf(toothNo, wurzel) : "mitte";
+    }else{
+      delete tile.dataset.fractureKind;
+      delete tile.dataset.fractureSide;
+    }
+  }
+}
+
+function syncHemisectionClip(toothNo: number): void {
+  const tiles = toothTile.get(toothNo);
+  if(!tiles) return;
+  const st = toothState.get(toothNo);
+  const wert = st?.rootResection ?? "none";
+  const wurzel = (st?.rootResectionRoot as string) ?? "";
+  const nimmtWeg = (wert === "hemisection" || wert === "amputation") && !!wurzel;
+  const seite = nimmtWeg ? rootSideOf(toothNo, wurzel) : "mitte";
+  for(const tile of tiles){
+    if(nimmtWeg && seite !== "mitte") tile.dataset.hemiSide = seite;
+    else delete tile.dataset.hemiSide;
+  }
+}
+
 function updateToothTileVisibility(){
   const hiddenSet = new Set([18,28,38,48]);
   for(const toothNo of ALL_TEETH){
@@ -9679,8 +9750,16 @@ export function setRootFracture(toothNo: number, value: string, root = ""): void
   if(value !== "none" && !rootFractureAllowed(s)) return;
   // Die Wurzel muss es an DIESER Position geben. Ein Einwurzler nimmt keine
   // Angabe an - dort gibt es nichts zu unterscheiden.
+  //
+  // Und an einem MEHRWURZELIGEN Zahn wird sie VORBELEGT, statt leer zu bleiben:
+  // eine Fraktur sitzt in EINER Wurzel, und "nicht angegeben" hiesse beim
+  // Zeichnen "Mitte" - bei einem unteren Molaren also zwischen den Wurzeln, wo
+  // gar keine ist. Genau das hat Dirk am 20.08.2026 gesehen. Die Vorbelegung
+  // ist am Bild sofort sichtbar und mit einem Griff zu berichtigen; nichts zu
+  // zeichnen ist es nicht.
   const wurzeln = rootsOf(toothNo);
-  const neueWurzel = value === "none" ? "" : (wurzeln.includes(root) ? root : "");
+  const neueWurzel = value === "none" ? ""
+    : (wurzeln.includes(root) ? root : (wurzeln[0] ?? ""));
   gateToothEdit(toothNo, () => {
     if(s.rootFracture === value && s.rootFractureRoot === neueWurzel) return false;
     s.rootFracture = value;
@@ -9719,8 +9798,14 @@ export function setRootResection(toothNo: number, value: string, root = ""): voi
   const wurzeln = rootsOf(toothNo);
   // Bei der Praemolarisierung wird KEINE Wurzel entfernt - beide Haelften
   // bleiben stehen. Eine Angabe waere dort schlicht falsch.
+  //
+  // Bei den anderen beiden wird sie VORBELEGT: eine Hemisektion entfernt eine
+  // Wurzel, "nicht angegeben" ist also kein Zustand, sondern eine
+  // unvollstaendige Eingabe - und das Bild zeigte dann gar nichts, was wie ein
+  // Fehler aussieht (Dirk, 20.08.2026: "Hemisection 37 not visible").
   const nimmtWurzel = value === "hemisection" || value === "amputation";
-  const neueWurzel = nimmtWurzel && wurzeln.includes(root) ? root : "";
+  const neueWurzel = !nimmtWurzel ? ""
+    : (wurzeln.includes(root) ? root : (wurzeln[0] ?? ""));
   gateToothEdit(toothNo, () => {
     if(s.rootResection === value && s.rootResectionRoot === neueWurzel) return false;
     s.rootResection = value;
@@ -12087,31 +12172,45 @@ function wireControls(){
   // applyToSelected, sondern je Zahn ueber setSensibility/setPercussion -
   // dort sitzt die Sperre (kein Implantat hat eine Pulpa), und eine Sperre,
   // die nur im Bedienfeld haengt, gilt fuer die Tastatur nicht.
-  buildSelect($("#rootFractureSelect"), getRootFractureOptions(), (value)=>{
-    for(const toothNo of Array.from(selectedTeeth) as number[]){
-      setRootFracture(toothNo, value, getRootFractureRoot(toothNo));
+  // Diese vier gehen NICHT ueber `applyToSelected`, weil die Sperren in den
+  // Settern sitzen (kein Einwurzler nimmt ein resektives Verfahren an) - und
+  // eine Sperre, die nur im Bedienfeld haengt, gilt fuer die Tastatur nicht.
+  //
+  // Dafuer muessen sie NACHHOLEN, was applyToSelected sonst mitmacht: neu
+  // zeichnen und die Auflagen erneuern. Ohne das aendert sich der Zustand und
+  // das Bild nicht - genau der Fehler, den Dirk am 20.08.2026 gesehen hat
+  // ("Hemisection on 36 is not visible, nor was fracture before").
+  const nachZeichnen = (betroffen: number[]) => {
+    for(const toothNo of betroffen){
+      applyStateToSvg(toothNo);
+      updateToothTileNumber(toothNo);
     }
+    updateBridgeOverlay();
     if(activeTooth) syncControlsFromState(toothState.get(activeTooth));
+    notifyStateChange();
+  };
+
+  buildSelect($("#rootFractureSelect"), getRootFractureOptions(), (value)=>{
+    const betroffen = Array.from(selectedTeeth) as number[];
+    for(const toothNo of betroffen) setRootFracture(toothNo, value, getRootFractureRoot(toothNo));
+    nachZeichnen(betroffen);
   });
   $("#rootFractureRootSelect").addEventListener("change", (e)=>{
     const wurzel = (e.target as HTMLSelectElement).value;
-    for(const toothNo of Array.from(selectedTeeth) as number[]){
-      setRootFracture(toothNo, getRootFracture(toothNo), wurzel);
-    }
-    if(activeTooth) syncControlsFromState(toothState.get(activeTooth));
+    const betroffen = Array.from(selectedTeeth) as number[];
+    for(const toothNo of betroffen) setRootFracture(toothNo, getRootFracture(toothNo), wurzel);
+    nachZeichnen(betroffen);
   });
   buildSelect($("#rootResectionSelect"), getRootResectionOptions(), (value)=>{
-    for(const toothNo of Array.from(selectedTeeth) as number[]){
-      setRootResection(toothNo, value, getRootResectionRoot(toothNo));
-    }
-    if(activeTooth) syncControlsFromState(toothState.get(activeTooth));
+    const betroffen = Array.from(selectedTeeth) as number[];
+    for(const toothNo of betroffen) setRootResection(toothNo, value, getRootResectionRoot(toothNo));
+    nachZeichnen(betroffen);
   });
   $("#rootResectionRootSelect").addEventListener("change", (e)=>{
     const wurzel = (e.target as HTMLSelectElement).value;
-    for(const toothNo of Array.from(selectedTeeth) as number[]){
-      setRootResection(toothNo, getRootResection(toothNo), wurzel);
-    }
-    if(activeTooth) syncControlsFromState(toothState.get(activeTooth));
+    const betroffen = Array.from(selectedTeeth) as number[];
+    for(const toothNo of betroffen) setRootResection(toothNo, getRootResection(toothNo), wurzel);
+    nachZeichnen(betroffen);
   });
 
   buildSelect($("#sensibilitySelect"), getSensibilityOptions(), (value)=>{

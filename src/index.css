@@ -2790,12 +2790,6 @@ body.odon-dragging{ cursor: cell; }
 #toothGrid.odon-depth .tooth-tile [id="tooth-base"]{ fill: url(#odonDepthBody) !important; }
 #toothGrid.odon-depth .tooth-tile [id="milktooth-base"]{ fill: url(#odonDepthMilk) !important; }
 
-/* Die Halsverschattung liegt VOR den Kacheln, anders als die Zahnfleischbaender
-   dahinter - ein Schatten, der hinter dem Zahn liegt, ist keiner. Sie steht
-   ausserhalb der Zahn-SVG und damit ausserhalb jedes Vertrags. */
-.tooth-grid > svg.gum-shade{
-  position: absolute; inset: 0; pointer-events: none; z-index: 2;
-}
 
 /* Hoeckerschattierung auf den Kauflaechen.
 
@@ -2812,4 +2806,43 @@ body.odon-dragging{ cursor: cell; }
 #toothGrid.odon-depth .tooth-tile.occl-view [id="tooth-base"]
   path:not([id]):not([style*="fill: none"]){
   fill: url(#odonDepthCusp) !important;
+}
+
+/* Bead odontogram-ca0: die entfernte Wurzel wird weggeschnitten.
+   -------------------------------------------------------------------------
+   Dirk, 20.08.2026: "Bei der Hemisektion wird an der Furkation durchtrennt und
+   eine Wurzel entfernt." Etwas wegzunehmen kann keine Auflage - eine Auflage
+   legt auf. Deshalb ein clip-path an der Kachel.
+
+   Die SEITE setzt odontogram.ts als `data-hemi-side`; die FORM des Schnitts
+   steht hier, weil man eine Schnittfuehrung am Bild einstellt und das hier ein
+   Neuladen kostet statt eines Generatorlaufs.
+
+   FURKATION bei 46 % der Kachelhoehe, von der Krone aus gerechnet - dort teilt
+   sich die Wurzel. Der Oberkiefer traegt die Krone unten, der Unterkiefer oben,
+   deshalb zwei Fassungen je Seite.
+
+   Der Schnitt laeuft SCHRAEG von der Furkation zum Rand: durchtrennt wird an
+   der Furkation, und der verbleibende Stumpf laeuft nicht senkrecht aus. */
+.tooth-tile[data-hemi-side] .tooth-svg svg{ transition: none; }
+
+/* Unterkiefer: Krone oben, Wurzeln nach unten. */
+.lower-arch .tooth-tile[data-hemi-side="links"] .tooth-svg svg{
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 50% 100%, 42% 54%, 0% 54%);
+}
+.lower-arch .tooth-tile[data-hemi-side="rechts"] .tooth-svg svg{
+  clip-path: polygon(0% 0%, 100% 0%, 100% 54%, 58% 54%, 50% 100%, 0% 100%);
+}
+/* Oberkiefer: Wurzeln nach oben, Krone unten - der Schnitt spiegelt sich. */
+.upper-arch .tooth-tile[data-hemi-side="links"] .tooth-svg svg{
+  clip-path: polygon(0% 46%, 42% 46%, 50% 0%, 100% 0%, 100% 100%, 0% 100%);
+}
+.upper-arch .tooth-tile[data-hemi-side="rechts"] .tooth-svg svg{
+  clip-path: polygon(0% 0%, 50% 0%, 58% 46%, 100% 46%, 100% 100%, 0% 100%);
+}
+
+/* Bead odontogram-t6y: die Bruchlinien liegen wie die Halsverschattung VOR den
+   Kacheln - eine Fraktur liegt AUF dem Zahn. */
+.tooth-grid > svg.fracture-lines{
+  position: absolute; inset: 0; pointer-events: none; z-index: 3;
 }

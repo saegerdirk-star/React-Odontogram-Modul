@@ -112,87 +112,106 @@ export function renderGumOverlay(grid: HTMLElement | null): void {
         `translate(${gx} ${gy}) scale(${sx} ${sy}) translate(${-vb[0]} ${-vb[1]}) `
           + transformKette(quelle, svg).join(" "),
       );
+      // Gestempelt, damit ein spaeterer Aufsatz den Klon wiederfindet. Am
+      // ORIGINAL in der Kachel laesst sich nicht messen: die Baender sind dort
+      // `display:none`, und ein ausgeblendetes Element hat keine Ausdehnung.
+      // Genau daran ist die Halsverschattung gescheitert, bevor sie am
+      // 20.08.2026 wieder herausgenommen wurde.
+      huelle.dataset.tooth = String((kachel as HTMLElement).dataset.tooth ?? "");
+      huelle.dataset.layer = id;
       huelle.appendChild(quelle.cloneNode(true));
       overlay.appendChild(huelle);
     }
   }
 
-  halsVerschattung(grid, gridRect, kacheln);
+  bruchlinien(grid, gridRect, kacheln);
+  // Die Halsverschattung ist am 20.08.2026 wieder ENTFERNT worden. Sie sass
+  // falsch, und zwar nicht durch einen Rechenfehler: sie haengt am gezeichneten
+  // Zahnfleischrand, und dessen Hoehe stimmt selbst noch nicht (das Band steht
+  // zu weit koronal und ist zu hoch - siehe den Bead zur Zahnfleischhoehe).
+  // Einen Schatten an einen Rand zu legen, der noch wandert, heisst den Fehler
+  // zu verdoppeln. Sie kommt wieder, wenn der Rand sitzt.
 }
 
-/** Der weiche dunkle Saum dort, wo der Zahn ins Zahnfleisch eintritt.
+/** Bead odontogram-t6y: die Bruchlinie durch die Wurzel.
  *
- *  Dirk, 20.08.2026, zur Frage nach der dritten Dimension. Von den drei
- *  Tiefenreizen ist das der staerkste: eine Zahnreihe ist ein Relief, und ein
- *  Relief erkennt man an dem, was es verschattet - nicht an seiner Woelbung.
+ *  Dirk, 20.08.2026: "Bei einer Wurzelfraktur sollte eine Bruchlinie durch die
+ *  Wurzel gezeichnet werden, bei mehrwurzeligen Zaehnen per Schalter zwischen
+ *  den Wurzeln wechselbar." Schwarz, weil ein Bruch keine Farbe hat und weil
+ *  jede Farbe hier schon etwas anderes bedeutet.
  *
- *  VOR den Kacheln, nicht dahinter. Die Baender oben liegen hinter dem Raster,
- *  weil sie hinter den Zaehnen stehen; ein Schatten dagegen faellt AUF sie.
- *  Deshalb eine zweite Auflage, die zuletzt eingehaengt wird.
+ *  In der Auflage VOR den Kacheln, aus demselben Grund wie die
+ *  Halsverschattung: sie liegt AUF dem Zahn. Ausserhalb der Zahn-SVG und damit
+ *  ausserhalb jedes Vertrags - keine neue Ebene, kein neuer Fingerabdruck, kein
+ *  Generatorlauf.
  *
- *  Ausserhalb der Zahn-SVG und damit ausserhalb jedes Vertrags: der
- *  Fingerabdruck laeuft ueber die Vorlagen, nicht ueber die Auflagen.
+ *  LAENGS laeuft die Linie mit der Wurzel, QUER quer darueber. Das ist der
+ *  Unterschied, der klinisch zaehlt: die Laengsfraktur ist der
+ *  Extraktionsgrund.
  *
- *  Die Hoehe kommt vom Zahnfleisch SELBST (`gum-base`, seine koronale Kante),
- *  nicht aus einer gesetzten Zahl - sonst wandert der Schatten, sobald die
- *  Gingiva sich aendert, und liegt an einem hochgezogenen Hals daneben. */
-function halsVerschattung(grid: HTMLElement, gridRect: DOMRect,
-                          kacheln: ArrayLike<Element>): void {
-  let schatten = grid.querySelector(":scope > svg.gum-shade") as SVGSVGElement | null;
-  const an = grid.classList.contains("odon-depth");
-  if(!an){
-    if(schatten) schatten.remove();
+ *  Die Seite kommt aus `data-fracture-side`, das odontogram.ts setzt - eine
+ *  Seitenansicht kennt links und rechts, nicht mesial und distal, und mesial
+ *  liegt je nach Quadrant anders. */
+function bruchlinien(grid: HTMLElement, gridRect: DOMRect,
+                     kacheln: ArrayLike<Element>): void {
+  let auflage = grid.querySelector(":scope > svg.fracture-lines") as SVGSVGElement | null;
+  const betroffen = Array.from(kacheln).filter(
+    (k) => (k as HTMLElement).dataset.fractureKind);
+  if(betroffen.length === 0){
+    if(auflage) auflage.remove();
     return;
   }
-  if(!schatten){
-    schatten = document.createElementNS(SVG_NS, "svg");
-    schatten.setAttribute("class", "gum-shade");
-    schatten.setAttribute("aria-hidden", "true");
-    grid.appendChild(schatten);          // zuletzt = vorne
+  if(!auflage){
+    auflage = document.createElementNS(SVG_NS, "svg");
+    auflage.setAttribute("class", "fracture-lines");
+    auflage.setAttribute("aria-hidden", "true");
+    grid.appendChild(auflage);
   }
-  while(schatten.firstChild) schatten.removeChild(schatten.firstChild);
-  schatten.setAttribute("viewBox", `0 0 ${gridRect.width} ${gridRect.height}`);
+  while(auflage.firstChild) auflage.removeChild(auflage.firstChild);
+  auflage.setAttribute("viewBox", `0 0 ${gridRect.width} ${gridRect.height}`);
 
-  const defs = document.createElementNS(SVG_NS, "defs");
-  for(const [id, y1, y2] of [["odonHalsAb", "0", "1"], ["odonHalsAuf", "1", "0"]] as const){
-    const g = document.createElementNS(SVG_NS, "linearGradient");
-    g.setAttribute("id", id);
-    g.setAttribute("x1", "0"); g.setAttribute("x2", "0");
-    g.setAttribute("y1", y1); g.setAttribute("y2", y2);
-    for(const [off, op] of [["0", "0.20"], ["0.45", "0.06"], ["1", "0"]] as const){
-      const st = document.createElementNS(SVG_NS, "stop");
-      st.setAttribute("offset", off);
-      st.setAttribute("stop-color", "#5a4038");
-      st.setAttribute("stop-opacity", op);
-      g.appendChild(st);
-    }
-    defs.appendChild(g);
-  }
-  schatten.appendChild(defs);
-
-  // Wie weit der Schatten koronal reicht, als Anteil der Kachelhoehe.
-  const TIEFE = 0.11;
-
-  for(const kachel of Array.from(kacheln)){
+  for(const kachel of betroffen){
+    const el = kachel as HTMLElement;
+    const art = el.dataset.fractureKind;          // "vertical" | "horizontal"
+    const seite = el.dataset.fractureSide || "mitte";
     const svg = kachel.querySelector("svg");
     if(!svg) continue;
-    const gum = svg.querySelector('[id="gum-base"]');
-    if(!gum || gum.getAttribute("data-active") === "0") continue;
-    const rk = (kachel as HTMLElement).getBoundingClientRect();
-    const rg = (gum as SVGGraphicsElement).getBoundingClientRect();
-    if(rk.width === 0 || rg.height === 0) continue;
-
-    // Oberkiefer: Krone nach unten, der Schatten faellt also nach unten.
+    const r = (kachel as HTMLElement).getBoundingClientRect();
+    if(r.width === 0) continue;
     const oben = !!kachel.closest(".upper-arch");
-    const hoehe = rk.height * TIEFE;
-    const y = oben ? rg.bottom - gridRect.top : rg.top - gridRect.top - hoehe;
 
-    const rect = document.createElementNS(SVG_NS, "rect");
-    rect.setAttribute("x", String(rk.left - gridRect.left));
-    rect.setAttribute("y", String(y));
-    rect.setAttribute("width", String(rk.width));
-    rect.setAttribute("height", String(hoehe));
-    rect.setAttribute("fill", `url(#${oben ? "odonHalsAb" : "odonHalsAuf"})`);
-    schatten.appendChild(rect);
+    // Verankert an der KACHEL, nicht an `gum-base`: das ist in der Kachel
+    // ausgeblendet und liefert Nullen - daran ist diese Linie beim ersten
+    // Versuch quer durch das ganze Odontogramm gelaufen.
+    const x0 = r.left - gridRect.left;
+    const oberkante = r.top - gridRect.top;
+    const hals = oberkante + r.height * (oben ? 0.46 : 0.54);
+    const apex = oben ? oberkante + r.height * 0.08
+                      : oberkante + r.height * 0.92;
+
+    // Wo quer ueber die Kachel: links, rechts oder auf dem Stamm.
+    const mitte = x0 + r.width * (seite === "links" ? 0.32 : seite === "rechts" ? 0.68 : 0.5);
+    const halb = r.width * 0.17;
+
+    const linie = document.createElementNS(SVG_NS, "line");
+    if(art === "vertical"){
+      // Laengs: vom Zahnhals bis kurz vor den Apex.
+      linie.setAttribute("x1", String(mitte));
+      linie.setAttribute("y1", String(hals));
+      linie.setAttribute("x2", String(mitte));
+      linie.setAttribute("y2", String(apex));
+    }else{
+      // Quer: auf halbem Weg zwischen Hals und Apex.
+      const y = (hals + apex) / 2;
+      linie.setAttribute("x1", String(mitte - halb));
+      linie.setAttribute("y1", String(y));
+      linie.setAttribute("x2", String(mitte + halb));
+      linie.setAttribute("y2", String(y));
+    }
+    linie.setAttribute("stroke", "#111");
+    linie.setAttribute("stroke-width", "1.6");
+    linie.setAttribute("stroke-linecap", "round");
+    auflage.appendChild(linie);
   }
 }
+
