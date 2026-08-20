@@ -334,6 +334,32 @@ export function furcationEntrances(toothNo: number): string[] {
 }
 
 /**
+ * Die beiden Zwischenraeume, an die ein Zahn grenzt - als Befundstellen.
+ *
+ * Eine Papille liegt ZWISCHEN zwei Zaehnen und gehoert damit zweien. Gespeichert
+ * wird sie trotzdem je Zahn und Seite, wie die sechs Sondierungsstellen: MB von
+ * 46 und DB von 47 beschreiben denselben Zwischenraum, und das ist im
+ * Parodontalstatus seit jeher so. Zwei Nachbarn koennen dieselbe Papille
+ * verschieden beurteilen - das ist kein Fehler des Modells, sondern zwei
+ * Beobachtungen von zwei Seiten, und beide werden angezeigt.
+ *
+ * Positionsbasiert wie `furcationEntrances`: der letzte Zahn im Bogen hat
+ * distal keinen Nachbarn und damit auch keine distale Papille. Ueber die
+ * Mittellinie hinweg gibt es sie sehr wohl - zwischen 11 und 21 liegt die
+ * Papille, die am haeufigsten fehlt.
+ *
+ * Ob an der Stelle wirklich ein Nachbar STEHT, entscheidet der Zustand und
+ * nicht die Position; das gehoert wie bei der Furkation in die Anzeige
+ * (`papillaLossAllowed`), nicht hierher.
+ */
+export function papillaSites(toothNo: number): string[] {
+  const position = toothNo % 10;
+  const quadrant = Math.floor(toothNo / 10);
+  const letzte = quadrant >= 5 ? 5 : 8;   // Milchgebiss endet am zweiten Milchmolaren
+  return position >= letzte ? ["mesial"] : ["mesial", "distal"];
+}
+
+/**
  * Welche Wurzeln eine Position hat - benannt, nicht gezaehlt.
  *
  * Dirk, 20.08.2026: eine Bruchlinie muss sich "bei mehrwurzeligen Zaehnen per
@@ -569,6 +595,13 @@ function defaultState(){
     // furcation's position-gated entrance set, no per-tooth gating function
     // is needed here.
     plaque: new Set(), // Set<"mesial"|"distal"|"buccal"|"lingual">
+    // Bead odontogram-gry: Papillenverlust nach Nordland & Tarnow (Klasse
+    // I-III, als 1-3), je Zwischenraum. Der BEOBACHTETE Befund neben der
+    // abgeleiteten Cairo-Klasse: `getToothRecessionType` braucht sechs
+    // sondierte Stellen, das schwarze Dreieck sieht man vorher. Eine Seite
+    // ohne Eintrag heisst nicht erhoben, nie Klasse 0 - dieselbe Regel wie
+    // bei `furcation` daneben.
+    papillaLoss: new Map(), // "mesial"|"distal" -> Nordland & Tarnow 1-3
     // SP-perio PG-D Task 1: Silness-Löe Plaque Index (`pi`) and Löe-Silness
     // Gingival Index (`gi`) — per-surface GRADED indices (1-3), over the
     // SAME 4 fixed surfaces as the O'Leary `plaque` boolean above but
@@ -2401,6 +2434,25 @@ function graduatedSurfaceSummaryLine(toothNo: number, getter: (toothNo: number, 
   if(parts.length === 0) return null;
   return `${t(rowLabelKey)} (${parts.join(", ")})`;
 }
+/** Bead odontogram-gry: Papillenverlust je Zwischenraum, mit der roemischen
+ *  Klasse, die auch die Bedienung zeigt. `null`, wenn an diesem Zahn keine
+ *  Papille beurteilt ist - nie eine leere Zeile.
+ *
+ *  Gefiltert wird gegen `papillaSites(toothNo)`, nicht nur gegen die
+ *  gespeicherten Schluessel: eine tolerant importierte distale Papille am
+ *  letzten Zahn wird gespeichert, aber nirgends angezeigt, wo die Bedienung
+ *  sie verweigert - dieselbe Regel wie bei der Retention. */
+function papillaLossSummaryLine(toothNo: number): string | null {
+  if(!papillaLossAllowed(toothNo)) return null;
+  const graded = getToothPapillaLoss(toothNo);
+  const parts: string[] = [];
+  for(const site of papillaSites(toothNo)){
+    const grade = graded[site];
+    if(grade) parts.push(`${t(`papillaLoss.site.${site}`)}: ${t(`papillaLoss.class.${grade}`)}`);
+  }
+  if(parts.length === 0) return null;
+  return `${t("papillaLoss.label")} (${parts.join(", ")})`;
+}
 function plaqueIndexSummaryLine(toothNo: number): string | null {
   return graduatedSurfaceSummaryLine(toothNo, getPlaqueIndex, "perio.pi.row");
 }
@@ -2904,6 +2956,12 @@ function getRootFractureOptions(): { value: string; label: string }[]{
 }
 function getRootResectionOptions(): { value: string; label: string }[]{
   return Array.from(VALID_ROOT_RESECTION).map(v => ({ value: v, label: t("rootResection.option." + kebabToCamel(v)) }));
+}
+/** Bead odontogram-gry: 0 heisst NICHT BEURTEILT, nicht "keine Papille" -
+ *  dieselbe Unterscheidung wie beim Sondieren, wo eine leere Stelle nicht
+ *  null Millimeter heisst. */
+function getPapillaLossOptions(): { value: string; label: string }[]{
+  return ["0", "1", "2", "3"].map(v => ({ value: v, label: t("papillaLoss.class." + v) }));
 }
 function getSensibilityOptions(): { value: string; label: string }[]{
   return Array.from(VALID_SENSIBILITY).map(v => ({ value: v, label: t("sensibility.option." + kebabToCamel(v)) }));
@@ -4169,6 +4227,7 @@ function applyStateToSvg(toothNo: Any){
   updateToothRetentionMark(toothNo);
   syncHemisectionClip(toothNo);   // Bead odontogram-ca0
   syncFractureMark(toothNo);      // Bead odontogram-t6y
+  syncPapillaMark(toothNo);       // Bead odontogram-gry
   updateToothTooltip(toothNo);
 }
 
@@ -4624,6 +4683,9 @@ function getStateSummary(toothNo: number): string[]{
   { const kg = keratinizedWidthSummaryLine(toothNo); if(kg) summary.push(kg); }
   { const gt = gingivalThicknessSummaryLabel(toothNo); if(gt) summary.push(gt); }
   { const mc = millerClassSummaryLabel(toothNo); if(mc) summary.push(mc); }
+  // Bead odontogram-gry: Papillenverlust - der beobachtete Befund, in
+  // derselben parodontalen Gruppe wie die abgeleitete Cairo-Klasse darueber.
+  { const pl = papillaLossSummaryLine(toothNo); if(pl) summary.push(pl); }
   // SP-perio PG-E Task 3: mPI/mBI (Mombelli peri-implant indices) — same
   // periodontal-presence grouping as PI/GI/KG/GT/Miller above.
   { const mpi = periImplantPlaqueSummaryLine(toothNo); if(mpi) summary.push(mpi); }
@@ -5259,6 +5321,21 @@ function syncControlsFromState(state: Any){
   $("#rootResectionRootRow").classList.toggle(
     "hidden", !(mehrwurzelig && (state.rootResection === "hemisection"
                                  || state.rootResection === "amputation")));
+  // Bead odontogram-gry: je Zwischenraum eine Zeile. Der letzte Zahn im Bogen
+  // hat distal keinen Nachbarn, also auch keine Papille - `papillaSites`
+  // entscheidet, nicht der Zustand.
+  {
+    const erlaubt = !!activeTooth && papillaLossAllowed(activeTooth);
+    const graded = activeTooth ? getToothPapillaLoss(activeTooth) : {};
+    const stellen = activeTooth ? papillaSites(activeTooth) : [];
+    for(const site of ["mesial", "distal"]){
+      const gross = site === "mesial" ? "Mesial" : "Distal";
+      setSelectOptions($(`#papilla${gross}Select`), getPapillaLossOptions(),
+                       String(graded[site] ?? 0));
+      $(`#papilla${gross}Row`).classList.toggle(
+        "hidden", !(erlaubt && stellen.includes(site)));
+    }
+  }
   setSelectOptions($("#sensibilitySelect"), getSensibilityOptions(), state.sensibility ?? "none");
   setSelectOptions($("#percussionSelect"), getPercussionOptions(), state.percussion ?? "none");
   $("#sensibilityRow").classList.toggle("hidden", !sensibilityAllowed(state));
@@ -7295,6 +7372,31 @@ function syncFractureMark(toothNo: number): void {
   }
 }
 
+/** Bead odontogram-gry: den Papillenverlust an die Kachel schreiben, als
+ *  LINKS/RECHTS statt mesial/distal. Gezeichnet wird er in der Auflage
+ *  (`gumOverlay.ts`) - dieselbe Aufgabenteilung wie bei der Bruchlinie, und
+ *  aus demselben Grund: eine Seitenansicht kennt keine Himmelsrichtungen.
+ *
+ *  Beide Nachbarn schreiben ihre Haelfte derselben Papille an ihre eigene
+ *  Kachel. Die Auflage zeichnet an einem Gelenk daher unter Umstaenden zwei
+ *  Dreiecke uebereinander - und wenn die beiden verschieden beurteilt sind,
+ *  gewinnt das groessere, weil der Verlust der Papille die schlechtere der
+ *  beiden Beobachtungen ist. */
+function syncPapillaMark(toothNo: number): void {
+  const tiles = toothTile.get(toothNo);
+  if(!tiles) return;
+  const graded = papillaLossAllowed(toothNo) ? getToothPapillaLoss(toothNo) : {};
+  const links = mesialIsLeft(toothNo) ? graded.mesial : graded.distal;
+  const rechts = mesialIsLeft(toothNo) ? graded.distal : graded.mesial;
+  for(const tile of tiles){
+    const zeigen = tile.classList.contains("side-view");
+    if(zeigen && links) tile.dataset.papillaLeft = String(links);
+    else delete tile.dataset.papillaLeft;
+    if(zeigen && rechts) tile.dataset.papillaRight = String(rechts);
+    else delete tile.dataset.papillaRight;
+  }
+}
+
 function syncHemisectionClip(toothNo: number): void {
   const tiles = toothTile.get(toothNo);
   if(!tiles) return;
@@ -7499,6 +7601,9 @@ function serializeState(s: Any){
     // convention as `perio`/`furcation` above (additive) — a no-plaque
     // tooth/payload stays byte-identical apart from the version field.
     ...((s.plaque?.size ?? 0) > 0 ? { plaque: Array.from(s.plaque) } : {}),
+    // Bead odontogram-gry: omit-when-empty wie `furcation` darueber - ein
+    // Zahn ohne beurteilte Papille bleibt byte-gleich bis auf die Version.
+    ...((s.papillaLoss?.size ?? 0) > 0 ? { papillaLoss: Object.fromEntries(s.papillaLoss) } : {}),
     // SP-perio PG-D Task 1: pi/gi are emitted ONLY when at least one surface
     // is graded, same omit-when-empty convention as perio/furcation/plaque
     // above — a tooth never touched by PI/GI stays byte-identical apart from
@@ -7627,6 +7732,15 @@ export const VALID_FURCATION_GRADE = new Set([1, 2, 3, 4]); // Glickman I-IV
 // per-tooth-position by furcationEntrances()), so both setPlaque() and
 // hydrateState() validate directly against this one constant.
 export const VALID_PLAQUE_SURFACE = new Set(["mesial", "distal", "buccal", "lingual"]);
+
+// Bead odontogram-gry: the two interdental spaces a tooth borders, and the
+// three Nordland & Tarnow classes of papilla loss.
+//
+// Tooth-INDEPENDENT, for hydration, exactly like VALID_FURCATION_ENTRANCE
+// above: papillaSites(toothNo) knows the tooth and drops the distal papilla of
+// the last tooth in the arch, hydrateState does not.
+export const VALID_PAPILLA_SITE = new Set(["mesial", "distal"]);
+export const VALID_PAPILLA_LOSS = new Set([1, 2, 3]); // Nordland & Tarnow I-III
 
 function filterSet(arr: Any, allowed: Set<string>): Set<string>{
   if(!Array.isArray(arr)) return new Set();
@@ -8149,6 +8263,18 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
       if(Number.isInteger(num) && VALID_FURCATION_GRADE.has(num)) s.furcation.set(entrance, num);
     }
   }
+  // Bead odontogram-gry: Papillenverlust wiederherstellen. Gegen die
+  // zahnunabhaengigen Mengen geprueft, aus demselben Grund wie die Furkation
+  // darueber: eine distale Papille am letzten Zahn ist hier harmlose tote
+  // Angabe, und die Bedienung zeigt sie ohnehin nicht.
+  const rawPapilla = raw.papillaLoss;
+  if(rawPapilla && typeof rawPapilla === "object"){
+    for(const [site, val] of Object.entries(rawPapilla)){
+      if(!VALID_PAPILLA_SITE.has(site)) continue;
+      const num = typeof val === "number" ? val : (typeof val === "string" ? Number(val) : NaN);
+      if(Number.isInteger(num) && VALID_PAPILLA_LOSS.has(num)) s.papillaLoss.set(site, num);
+    }
+  }
   // SP-perio P2b Task 3: restore the O'Leary plaque-surface presence set.
   // Absent/legacy payloads have no `plaque` key -> stays the empty default
   // (no throw). Validated against VALID_PLAQUE_SURFACE — an unrecognized
@@ -8399,6 +8525,21 @@ function perioSummaryLabel(s: Any): string {
  *  (reusing the exact same `furcation.grade.N` copy the furcation picker
  *  itself already shows), not a per-entrance breakdown. "Nothing charted"
  *  renders the shared `planChange.none` sentinel every other axis uses. */
+/** Bead odontogram-gry: ZUSAMMENFASSENDE Papillen-Beschriftung fuer EINEN
+ *  Zahnzustand, nur fuer den `papillaLoss`-Eintrag in DIFF_AXES - dieselbe
+ *  roemische Klasse, die auch die Bedienung zeigt. Zustandsbasiert und ohne
+ *  Zahnnummer, wie `furcationSummaryLabel` daneben, weil der Vergleich zwei
+ *  Zustaende gegeneinander haelt und keinen Zahn kennt. */
+function papillaLossSummaryLabel(s: Any): string {
+  const papilla = s.papillaLoss as Map<string, number> | undefined;
+  if(!papilla || papilla.size === 0) return t("planChange.none");
+  let maxGrade = 0;
+  for(const grade of papilla.values()){
+    if(typeof grade === "number" && grade > maxGrade) maxGrade = grade;
+  }
+  return maxGrade > 0 ? t(`papillaLoss.class.${maxGrade}`) : t("planChange.none");
+}
+
 function furcationSummaryLabel(s: Any): string {
   const furcation = s.furcation as Map<string, number> | undefined;
   if(!furcation || furcation.size === 0) return t("planChange.none");
@@ -8502,6 +8643,13 @@ const DIFF_AXES: { key: string; labelKey: string; label: (s: Any) => string }[] 
     // plaqueSummaryLabel above) — never one per surface.
     key: "plaque", labelKey: "planChange.axis.plaque",
     label: (s) => plaqueSummaryLabel(s),
+  },
+  {
+    // Bead odontogram-gry: EINE Zeile je Zahn, nie eine je Zwischenraum -
+    // dieselbe Bauart wie Furkation und Belag darueber. Die schlechtere der
+    // beiden Papillen steht darin, weil ein Plan an einem Zahn ansetzt.
+    key: "papillaLoss", labelKey: "planChange.axis.papillaLoss",
+    label: (s) => papillaLossSummaryLabel(s),
   },
 ];
 
@@ -8939,6 +9087,71 @@ export function getToothFurcation(toothNo: number): Record<string, number> {
   const furcation = s?.furcation as Map<string, number> | undefined;
   if(!furcation || furcation.size === 0) return {};
   return Object.fromEntries(furcation);
+}
+
+// ---- Bead odontogram-gry: Papillenverlust (Nordland & Tarnow I-III, je
+// Zwischenraum). Der BEOBACHTETE Befund neben der abgeleiteten Cairo-Klasse.
+
+/**
+ * Ob an diesem Zahn eine Papille zu beurteilen ist.
+ *
+ * EIGENER Waechter statt `perioAxisApplies`, wie `sensibilityAllowed` und
+ * `retentionAllowed`: das ist die Faehigkeitsmatrix des Parodontalrasters, und
+ * dieser Befund wird am Stuhl erhoben, bevor eine Sonde in der Hand war - er
+ * gehoert nicht in ein Raster, dessen Zellen sechs sondierte Stellen
+ * voraussetzen.
+ *
+ * Das IMPLANTAT ist ausdruecklich eingeschlossen. Es hat keine Pulpa und keinen
+ * Zahnfleischrand gegen eine Schmelz-Zement-Grenze, aber es hat sehr wohl eine
+ * Papille - und deren Verlust ist die haeufigste aesthetische Beschwerde nach
+ * einer Implantation. Ein Befund, den man an der Stelle nicht erheben koennte,
+ * waere hier der Fehler.
+ */
+export function papillaLossAllowed(toothNo: number): boolean {
+  const s = toothState.get(toothNo);
+  if(!s) return false;
+  if(s.toothSelection === "implant") return true;
+  // Sonst dieselbe Grenze wie beim Sondieren: ein fehlender, ein nicht
+  // durchgebrochener und ein frisch extrahierter Platz hat keine Papille.
+  return !perioRowHidden(s);
+}
+
+/**
+ * Eine Papille beurteilen oder die Beurteilung zuruecknehmen.
+ *
+ * - `site` muss zu {@link papillaSites}(toothNo) gehoeren; der letzte Zahn im
+ *   Bogen hat distal keinen Nachbarn und damit keine Papille.
+ * - `grade` ist 1-3 (Nordland & Tarnow I-III); `null`/`undefined` nimmt den
+ *   Eintrag zurueck. Alles andere ist ein stiller Leerlauf.
+ *
+ * Der Waechter steht VOR der DS-1-Schranke, damit er auch fuer die Tastatur
+ * gilt - dieselbe Anordnung wie bei `setRetention`.
+ */
+export function setPapillaLoss(toothNo: number, site: string, grade: number | null | undefined): void {
+  if(!papillaSites(toothNo).includes(site)) return;
+  if(!papillaLossAllowed(toothNo)) return;
+  let s = toothState.get(toothNo);
+  if(!s){ s = defaultState(); toothState.set(toothNo, s); }
+  gateToothEdit(toothNo, () => {
+    const papilla = s.papillaLoss as Map<string, number>;
+    if(grade === null || grade === undefined){
+      if(papilla.has(site)){ papilla.delete(site); notifyStateChange(); return true; }
+      return false;
+    }
+    if(!Number.isInteger(grade) || !VALID_PAPILLA_LOSS.has(grade)) return false;
+    if(papilla.get(site) !== grade){ papilla.set(site, grade); notifyStateChange(); return true; }
+    return false;
+  });
+}
+
+/** Die beurteilten Papillen eines Zahns als einfaches Objekt (Seite -> Klasse),
+ *  gefahrlos veraenderbar, nie ein Verweis auf den lebenden Zustand. Ein Zahn
+ *  ohne Beurteilung liefert `{}`. */
+export function getToothPapillaLoss(toothNo: number): Record<string, number> {
+  const s = toothState.get(toothNo);
+  const papilla = s?.papillaLoss as Map<string, number> | undefined;
+  if(!papilla || papilla.size === 0) return {};
+  return Object.fromEntries(papilla);
 }
 
 // ---- SP-perio P2b Task 3: O'Leary plaque-index (per-surface presence)
@@ -10144,6 +10357,10 @@ export function getPerioSummary(): {
   // SP-perio PG-E Task 3: mPI/mBI whole-mouth mean, implant-only — mirrors
   // piScore/giScore's mean-of-charted-grades definition above.
   mpiScore: number | null; mbiScore: number | null;
+  // Bead odontogram-gry: die schlechteste beurteilte Papille und wie viele
+  // ueberhaupt beurteilt sind. Zwei Zahlen, weil eine allein nicht sagt, ob
+  // ueberhaupt hingesehen wurde - dieselbe Trennung wie chartedSites/maxPd.
+  maxPapillaLoss: number | null; gradedPapillae: number;
 } {
   let chartedSites = 0, bleedingSites = 0;
   let worstCal: number | null = null, worstCalTooth: number | null = null, maxPd: number | null = null;
@@ -10176,6 +10393,25 @@ export function getPerioSummary(): {
     if(!s || !s.furcation) continue;
     for(const grade of (s.furcation as Map<string, number>).values()){
       if(maxFurcation === null || grade > maxFurcation) maxFurcation = grade;
+    }
+  }
+
+  // Bead odontogram-gry: Papillenverlust. Eigener Durchgang aus demselben
+  // Grund wie bei der Furkation - er haengt nicht daran, ob an dem Zahn
+  // ueberhaupt sondiert wurde.
+  //
+  // GEZAEHLT WIRD JE ZAHN UND SEITE, nicht je Zwischenraum, obwohl zwei
+  // Nachbarn dieselbe Papille meinen. Zusammenzufassen hiesse zu entscheiden,
+  // welche der beiden Beobachtungen gilt, und das ist nicht die Aufgabe einer
+  // Zaehlung. Der Parodontalstatus zaehlt seine Stellen aus demselben Grund
+  // doppelt.
+  let maxPapillaLoss: number | null = null, gradedPapillae = 0;
+  for(const toothNo of ALL_TEETH){
+    const s = toothState.get(toothNo);
+    if(!s || !s.papillaLoss) continue;
+    for(const grade of (s.papillaLoss as Map<string, number>).values()){
+      gradedPapillae++;
+      if(maxPapillaLoss === null || grade > maxPapillaLoss) maxPapillaLoss = grade;
     }
   }
 
@@ -10235,6 +10471,7 @@ export function getPerioSummary(): {
     chartedSites, bleedingSites, bopPercent, worstCal, worstCalTooth, maxPd, avgPd, avgCal, maxFurcation, plaquePercent,
     piScore, giScore, kgDeficientTeeth, gtDistribution, millerDistribution,
     mpiScore, mbiScore,
+    maxPapillaLoss, gradedPapillae,
   };
 }
 
@@ -10254,7 +10491,8 @@ export function hasAnyPerioData(): boolean {
     || s.millerDistribution.i > 0 || s.millerDistribution.ii > 0
     || s.millerDistribution.iii > 0 || s.millerDistribution.iv > 0
     || s.mpiScore !== null
-    || s.mbiScore !== null) return true;
+    || s.mbiScore !== null
+    || s.gradedPapillae > 0) return true;
   // `getPerioSummary()` doesn't surface three independently-chartable perio
   // axes, so scan for them directly (else a chart with ONLY such a finding is
   // wrongly treated as "no perio data" and its export section auto-skipped):
@@ -10851,11 +11089,12 @@ export type PerioRowId =
   | "mbi"
   | "kg"
   | "gt"
-  | "miller";
+  | "miller"
+  | "papillaLoss";
 
 const PERIO_ROW_IDS: readonly PerioRowId[] = [
   "plaque", "bop", "sup", "cal", "gm", "pd", "furcation", "mobility", "cej",
-  "rootConcavity", "pi", "gi", "mpi", "mbi", "kg", "gt", "miller",
+  "rootConcavity", "pi", "gi", "mpi", "mbi", "kg", "gt", "miller", "papillaLoss",
 ];
 
 /**
@@ -10889,6 +11128,7 @@ export const PERIO_INDEX_LABEL_KEYS: Record<PerioRowId, string> = {
   kg: "perio.kg.row",
   gt: "perio.gt.row",
   miller: "perio.miller.row",
+  papillaLoss: "papillaLoss.label",
 };
 
 function defaultPerioRowVisibility(): Record<PerioRowId, boolean> {
@@ -12213,6 +12453,16 @@ function wireControls(){
     nachZeichnen(betroffen);
   });
 
+  for(const site of ["mesial", "distal"]){
+    const gross = site === "mesial" ? "Mesial" : "Distal";
+    buildSelect($(`#papilla${gross}Select`), getPapillaLossOptions(), (value)=>{
+      const klasse = Number(value);
+      const betroffen = Array.from(selectedTeeth) as number[];
+      for(const toothNo of betroffen) setPapillaLoss(toothNo, site, klasse > 0 ? klasse : null);
+      nachZeichnen(betroffen);
+    });
+  }
+
   buildSelect($("#sensibilitySelect"), getSensibilityOptions(), (value)=>{
     for(const toothNo of Array.from(selectedTeeth) as number[]) setSensibility(toothNo, value);
     if(activeTooth) syncControlsFromState(toothState.get(activeTooth));
@@ -13274,6 +13524,8 @@ export function getOdontogramSummary(): OdontogramSummary {
     { const kg = keratinizedWidthSummaryLine(toothNo); if(kg) inflamed.push(`${lbl(toothNo)} (${kg})`); }
     { const gt = gingivalThicknessSummaryLabel(toothNo); if(gt) inflamed.push(`${lbl(toothNo)} (${gt})`); }
     { const mc = millerClassSummaryLabel(toothNo); if(mc) inflamed.push(`${lbl(toothNo)} (${mc})`); }
+    // Bead odontogram-gry: Papillenverlust - derselbe parodontale Eimer.
+    { const pl = papillaLossSummaryLine(toothNo); if(pl) inflamed.push(`${lbl(toothNo)} (${pl})`); }
     // SP-perio PG-E Task 3: mPI/mBI — same periodontal "inflamed" bucket as
     // PI/GI/KG/GT/Miller above.
     { const mpi = periImplantPlaqueSummaryLine(toothNo); if(mpi) inflamed.push(`${lbl(toothNo)} (${mpi})`); }

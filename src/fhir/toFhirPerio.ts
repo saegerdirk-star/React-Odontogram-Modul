@@ -85,6 +85,18 @@ const PLAQUE_SURFACE_DISPLAY: Record<PlaqueSurface, string> = {
 // odontogram.ts — so the fhir/ module tree stays independent of it, the same
 // way codesystems.ts independently duplicates its own English display text
 // instead of importing from i18n/translations.ts.
+// Bead odontogram-gry: the two interdental spaces a tooth borders. Own
+// constant rather than a reuse of PLAQUE_SURFACES, for the reason that one is
+// its own: these are SPACES BETWEEN teeth, not surfaces OF one, and the
+// vocabulary only happens to overlap.
+const PAPILLA_SITES = ["mesial", "distal"] as const;
+type PapillaSite = typeof PAPILLA_SITES[number];
+
+const PAPILLA_SITE_DISPLAY: Record<PapillaSite, string> = {
+  mesial: "Mesial interdental papilla",
+  distal: "Distal interdental papilla",
+};
+
 const PERIO_SITES = ["MB", "B", "DB", "ML", "L", "DL"] as const;
 type PerioSite = typeof PERIO_SITES[number];
 
@@ -186,6 +198,13 @@ function attachPlaqueBodySite(component: Any, tooth: string, surface: PlaqueSurf
   attachBodySite(component, tooth, `plaque-surface:${surface}`, PLAQUE_SURFACE_DISPLAY[surface]);
 }
 
+/** Papilla qualifier for one papilla-loss component: tooth (FDI) + which of
+ *  the two interdental spaces, via the same R4 backport extension mechanism
+ *  (see {@link attachBodySite}). */
+function attachPapillaBodySite(component: Any, tooth: string, site: PapillaSite): void {
+  attachBodySite(component, tooth, `papilla:${site}`, PAPILLA_SITE_DISPLAY[site]);
+}
+
 function isFiniteNumber(v: unknown): v is number {
   return typeof v === "number" && Number.isFinite(v);
 }
@@ -271,13 +290,24 @@ function buildToothPerioObservation(subjectRef: string, tooth: string, rec: Toot
   // Keratinized gingiva width — a single per-tooth BUCCAL mm scalar (integer
   // 0-15). Tolerant of malformed/foreign input (non-numeric, out-of-range,
   // null): treated as "not charted", same as every other axis above.
+  // Bead odontogram-gry: papilla loss after Nordland & Tarnow (class I-III),
+  // same tolerant parsing as furcation/PI/GI above.
+  const papillaRaw = rec.papillaLoss && typeof rec.papillaLoss === "object"
+    ? (rec.papillaLoss as Record<string, unknown>) : undefined;
+  const papillaEntries: [PapillaSite, number][] = papillaRaw
+    ? (PAPILLA_SITES.filter((site) => {
+        const v = papillaRaw[site];
+        return isFiniteNumber(v) && Number.isInteger(v) && v >= 1 && v <= 3;
+      }).map((site) => [site, papillaRaw[site] as number]))
+    : [];
+
   const kgRaw = rec.kg;
   const kgValue = isFiniteNumber(kgRaw) && Number.isInteger(kgRaw) && kgRaw >= 0 && kgRaw <= 15 ? kgRaw : undefined;
 
   if (
     chartedSites.length === 0 && gradedEntrances.length === 0 && plaqueSurfaces.length === 0 &&
     piEntries.length === 0 && giEntries.length === 0 && kgValue === undefined &&
-    mpiEntries.length === 0 && mbiEntries.length === 0
+    mpiEntries.length === 0 && mbiEntries.length === 0 && papillaEntries.length === 0
   ) return undefined;
 
   const components: Any[] = [];
@@ -400,6 +430,21 @@ function buildToothPerioObservation(subjectRef: string, tooth: string, rec: Toot
     };
     attachBodySite(kgComponent, tooth, "site:buccal", "Buccal");
     components.push(kgComponent);
+  }
+
+  // One integer component per assessed papilla — Nordland & Tarnow class I-III.
+  // No dedicated LOINC or SNOMED code could be verified for interdental papilla
+  // loss, so it rides on the engine-local system only, the same treatment
+  // per-site BOP, plaque, PI/GI and the Mombelli indices already get. Inventing
+  // a standard code here would be the renderer claiming terminology it has no
+  // authority over.
+  for (const [site, grade] of papillaEntries) {
+    const papillaComponent: Any = {
+      code: localConcept("papilla-loss-nordland-tarnow", "Interdental papilla loss (Nordland & Tarnow)"),
+      valueInteger: grade,
+    };
+    attachPapillaBodySite(papillaComponent, tooth, site);
+    components.push(papillaComponent);
   }
 
   const obs = baseObservation(subjectRef, tooth, loincConcept(LOINC.panel));

@@ -2846,3 +2846,10 @@ body.odon-dragging{ cursor: cell; }
 .tooth-grid > svg.fracture-lines{
   position: absolute; inset: 0; pointer-events: none; z-index: 3;
 }
+/* Bead odontogram-gry: das schwarze Dreieck des Papillenverlusts, VOR den
+   Kacheln aus demselben Grund wie die Bruchlinie - hinter ihnen bliebe von ihm
+   nur der vier Bildpunkte breite Rasterspalt sichtbar, weil sich die beiden
+   Kronen am Kontaktpunkt beruehren. */
+.tooth-grid > svg.papilla-marks{
+  position: absolute; inset: 0; pointer-events: none; z-index: 3;
+}

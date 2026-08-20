@@ -257,7 +257,12 @@ export function computeRetentionBars(
  *  follow, stated once per module rather than shared through a UI file. */
 export function mesialIsLeft(toothNo: number): boolean {
   const quadrant = Math.floor(toothNo / 10);
-  return quadrant === 2 || quadrant === 3;
+  // Die MILCHQUADRANTEN gehoeren dazu: 6 steht oben links wie 2, 7 unten links
+  // wie 3. Sie fehlten hier bis zum 20.08.2026 - eine Klammer an einem
+  // Milchzahn im zweiten oder dritten Quadranten haette an der falschen Seite
+  // gehangen. Aufgefallen beim Papillenverlust (odontogram-gry), der dieselbe
+  // Seitenfrage stellt und ihn im Milchgebiss oefter stellt.
+  return quadrant === 2 || quadrant === 3 || quadrant === 6 || quadrant === 7;
 }
 
 /** One drawn clasp arm, in grid-relative coordinates. FILLED, not stroked: a

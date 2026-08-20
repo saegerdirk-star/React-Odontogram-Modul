@@ -29,7 +29,7 @@ import {
 
 const ALL_ROW_IDS: PerioRowId[] = [
   "plaque", "bop", "sup", "cal", "gm", "pd", "furcation", "mobility", "cej",
-  "rootConcavity", "pi", "gi", "mpi", "mbi", "kg", "gt", "miller",
+  "rootConcavity", "pi", "gi", "mpi", "mbi", "kg", "gt", "miller", "papillaLoss",
 ];
 
 function openGrid() {
@@ -156,7 +156,7 @@ describe("UI-2 Task 2: hiding a two-block row (pd — buccal + palatal)", () => 
 });
 
 describe("UI-2 Task 2: hiding every row still leaves the header + graphic", () => {
-  it("hiding all 17 ids empties every row label but keeps the header + graphic placeholder", () => {
+  it("hiding all 18 ids empties every row label but keeps the header + graphic placeholder", () => {
     openGrid();
     act(() => {
       for (const id of ALL_ROW_IDS) setPerioRowVisibility(id, false);

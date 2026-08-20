@@ -124,6 +124,7 @@ export function renderGumOverlay(grid: HTMLElement | null): void {
     }
   }
 
+  papillenluecken(grid, overlay, gridRect, kacheln);
   bruchlinien(grid, gridRect, kacheln);
   // Die Halsverschattung ist am 20.08.2026 wieder ENTFERNT worden. Sie sass
   // falsch, und zwar nicht durch einen Rechenfehler: sie haengt am gezeichneten
@@ -131,6 +132,109 @@ export function renderGumOverlay(grid: HTMLElement | null): void {
   // zu weit koronal und ist zu hoch - siehe den Bead zur Zahnfleischhoehe).
   // Einen Schatten an einen Rand zu legen, der noch wandert, heisst den Fehler
   // zu verdoppeln. Sie kommt wieder, wenn der Rand sitzt.
+}
+
+/** Bead odontogram-gry: das SCHWARZE DREIECK.
+ *
+ *  Der Befund heisst so, und die Form ist nicht gewaehlt, sondern gegeben: wo
+ *  die Papille zurueckgegangen ist, bleibt zwischen zwei Zaehnen ein Raum, den
+ *  oben die beiden zusammenlaufenden Kronen begrenzen und unten der
+ *  Zahnfleischrand. Basis am Zahnfleisch, Spitze am Kontaktpunkt. Je weiter die
+ *  Papille zurueckgeht, desto groesser wird er - deshalb tragen Hoehe UND
+ *  Breite die Klasse nach Nordland & Tarnow.
+ *
+ *  Dirk, 19.08.2026, zu charlys Tastenfeld: "das Dreieck IST die Papille."
+ *
+ *  IN EINER AUFLAGE VOR DEN KACHELN, wie die Bruchlinie. Hinter ihnen gezeichnet
+ *  waere sie fast unsichtbar: am Kontaktpunkt beruehren sich die beiden Kronen,
+ *  und durch bleibt dort nur der vier Bildpunkte breite Rasterspalt. Genau so
+ *  sah es im ersten Versuch aus - ein dunkler Splitter statt eines Dreiecks.
+ *  Und der Ort stimmt auch so: ein schwarzes Dreieck sieht man VOR den Zaehnen,
+ *  nicht zwischen ihnen hindurch.
+ *
+ *  Die Hoehe des Zahnfleischrandes wird GEMESSEN, am Klon in der
+ *  Zahnfleischauflage. Am Original in der Kachel geht es nicht - dort ist das
+ *  Band `display:none` und liefert Nullen. Ein Bruchteil der Kachelhoehe stand
+ *  hier einen Zug lang, aus der Bruchlinie uebernommen; im Bild sassen die
+ *  Dreiecke daraufhin mitten im Knochen. Seit dem 20.08.2026 haengt die
+ *  Bandhoehe ohnehin an der Schmelz-Zement-Grenze des jeweiligen Zahns
+ *  (odontogram-x8k), eine geschaetzte Hoehe laege also auch noch je Zahn anders
+ *  daneben. */
+function papillenluecken(grid: HTMLElement, band: SVGSVGElement, gridRect: DOMRect,
+                         kacheln: ArrayLike<Element>): void {
+  let auflage = grid.querySelector(":scope > svg.papilla-marks") as SVGSVGElement | null;
+  const betroffen = Array.from(kacheln).filter((k) => {
+    const el = k as HTMLElement;
+    return el.classList.contains("side-view")
+      && (el.dataset.papillaLeft || el.dataset.papillaRight);
+  });
+  if(betroffen.length === 0){
+    if(auflage) auflage.remove();
+    return;
+  }
+  if(!auflage){
+    auflage = document.createElementNS(SVG_NS, "svg");
+    auflage.setAttribute("class", "papilla-marks");
+    auflage.setAttribute("aria-hidden", "true");
+    grid.appendChild(auflage);
+  }
+  while(auflage.firstChild) auflage.removeChild(auflage.firstChild);
+  auflage.setAttribute("viewBox", `0 0 ${gridRect.width} ${gridRect.height}`);
+
+  // Hoehe und halbe Breite je Klasse, in Bildpunkten. Beide wachsen mit, weil
+  // beide es im Mund tun.
+  //
+  // Dirk, 20.08.2026: "blende doch einfach ein graues Dreieck an die Stelle
+  // ein, wo die Papille fehlt, welches zwischen die Zaehne am Zahnhals passt."
+  // Also nach der LUECKE bemessen, nicht nach dem, was auf dem Schmelz noch
+  // Platz haette: am Zahnhals stehen die Nachbarn auseinander, am Kontaktpunkt
+  // beruehren sie sich. Deshalb bleibt die Basis schmal und die Spitze laeuft
+  // in die enger werdende Nische hinein.
+  const MASS: Record<string, [number, number]> = {
+    "1": [6, 3], "2": [9, 4], "3": [12, 5],
+  };
+  const GRID_GAP = 4;   // `gap` an `.tooth-arch` in src/index.css
+
+  for(const kachel of betroffen){
+    const el = kachel as HTMLElement;
+    const r = el.getBoundingClientRect();
+    if(r.width === 0) continue;
+    const oben = !!kachel.closest(".upper-arch");
+    const x0 = r.left - gridRect.left;
+    const oberkante = r.top - gridRect.top;
+
+    const klon = band.querySelector(
+      `g[data-tooth="${el.dataset.tooth}"][data-layer="gum-base"]`) as SVGGElement | null;
+    let rand = oberkante + r.height * (oben ? 0.46 : 0.54);   // Rueckfall ohne Layout
+    // `getBoundingClientRect`, NICHT `getBBox`: letzteres misst im eigenen
+    // Koordinatensystem des Elements, also VOR seiner eigenen Transformation -
+    // und genau die setzt den Klon erst ins Raster. Gemessen kam damit
+    // (3,3 | 42,7) heraus, wo (196 | 331) steht.
+    const kasten = klon && typeof klon.getBoundingClientRect === "function"
+      ? klon.getBoundingClientRect() : null;
+    if(kasten && kasten.height > 0) rand = (oben ? kasten.bottom : kasten.top) - gridRect.top;
+
+    for(const [seite, klasse] of [["links", el.dataset.papillaLeft ?? ""],
+                                  ["rechts", el.dataset.papillaRight ?? ""]] as const){
+      if(!klasse) continue;
+      // Die Mitte des Gelenks liegt in der RASTERLUECKE zwischen zwei Kacheln,
+      // nicht auf der Kachelkante - eine halbe Luecke daneben.
+      const gelenk = seite === "links" ? x0 - GRID_GAP / 2 : x0 + r.width + GRID_GAP / 2;
+      const [hoehe, halb] = MASS[klasse] ?? MASS["1"];
+      // Die Spitze zeigt zum KONTAKTPUNKT, also nach okklusal - im Oberkiefer
+      // nach unten, im Unterkiefer nach oben.
+      const spitze = oben ? rand + hoehe : rand - hoehe;
+      const dreieck = document.createElementNS(SVG_NS, "path");
+      dreieck.setAttribute("d",
+        `M${gelenk - halb},${rand}L${gelenk + halb},${rand}L${gelenk},${spitze}Z`);
+      // GRAU, nicht schwarz: der klinische Name ist zwar das schwarze Dreieck,
+      // aber im Odontogramm ist Schwarz schon die Bruchlinie, und eine Farbe
+      // traegt hier ueberall Bedeutung. Grau ist der Raum, der leer ist.
+      dreieck.setAttribute("fill", "#8d8d8d");
+      dreieck.setAttribute("opacity", "0.85");
+      auflage.appendChild(dreieck);
+    }
+  }
 }
 
 /** Bead odontogram-t6y: die Bruchlinie durch die Wurzel.

@@ -163,7 +163,7 @@ const PERIO_ROW_GROUPS: { titleKey: string; ids: PerioRowId[] }[] = [
   { titleKey: "settings.perio.group.pocket", ids: ["pd", "gm", "cal", "bop", "sup"] },
   { titleKey: "settings.perio.group.hygiene", ids: ["plaque", "pi", "gi"] },
   { titleKey: "settings.perio.group.mucogingival", ids: ["cej", "rootConcavity", "kg", "gt"] },
-  { titleKey: "settings.perio.group.support", ids: ["furcation", "mobility", "miller"] },
+  { titleKey: "settings.perio.group.support", ids: ["furcation", "mobility", "miller", "papillaLoss"] },
   { titleKey: "settings.perio.group.periimplant", ids: ["mpi", "mbi"] },
 ];
 

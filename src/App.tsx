@@ -1252,6 +1252,14 @@ export default function App({
                 {/* Beads odontogram-t6y / -ca0. Die Wurzelfraktur steht bei den
                     Wurzelbefunden, nicht bei den drei Bruchachsen der Krone -
                     sie ist ein anderer Befund mit anderer Folge. */}
+                <div id="papillaMesialRow" className="row">
+                  <span>{t("papillaLoss.label")} ({t("papillaLoss.site.mesial")})</span>
+                  <select id="papillaMesialSelect"></select>
+                </div>
+                <div id="papillaDistalRow" className="row">
+                  <span>{t("papillaLoss.label")} ({t("papillaLoss.site.distal")})</span>
+                  <select id="papillaDistalSelect"></select>
+                </div>
                 <div id="rootFractureRow" className="row">
                   <span>{t("rootFracture.label")}</span>
                   <select id="rootFractureSelect"></select>

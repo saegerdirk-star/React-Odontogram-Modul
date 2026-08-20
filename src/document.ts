@@ -110,6 +110,10 @@ export interface ToothRecord {
   // SP-perio P2b Task 3: O'Leary plaque-index per-surface presence. Membership
   // means plaque present; absence means clean/not recorded, never stored false.
   plaque?: string[];
+  // Bead odontogram-gry: der BEOBACHTETE Papillenverlust nach Nordland &
+  // Tarnow (Klasse I-III als 1-3), geschluesselt nach dem Zwischenraum
+  // ("mesial"/"distal"). Abwesenheit heisst nicht beurteilt, nie Klasse 0.
+  papillaLoss?: Record<string, number>;
   // SP-perio PG-D Task 1: Silness-Löe Plaque Index (`pi`) and Löe-Silness
   // Gingival Index (`gi`) are per-surface graded 1-3 axes. Absence means grade 0.
   pi?: Record<string, number>;
@@ -193,6 +197,14 @@ export interface DentalCoreIdentity {
 
 /** The payload/document version this engine writes. Readers accept earlier versions. */
 // 2.22 (odontogram-8vu): additive `not-erupted` tooth selection; no migration.
+// 2.28 (odontogram-gry): additive - `papillaLoss`, the OBSERVED interdental
+// papilla loss after Nordland & Tarnow (class I-III, keyed by the interdental
+// space: "mesial"/"distal"), beside the DERIVED Cairo recession type. The
+// derivation needs six probed sites; the black triangle is seen before a probe
+// is in hand, and a first examination has to be able to record it. Two
+// neighbours describe the same papilla from two sides, exactly as the six
+// probing sites already do. Omitted entirely when nothing is graded, so a chart
+// that records none is byte-identical apart from this version string.
 // 2.27 (odontogram-t6y / -ca0): additive - `rootFracture` (none/vertical/
 // horizontal) and `rootResection` (none/hemisection/amputation/
 // premolarisation), each with a  qualifier naming WHICH root -
@@ -216,7 +228,7 @@ export interface DentalCoreIdentity {
 // filling or caries lesion extends into the cervical region. Omitted entirely
 // when empty, so a document that never records it is byte-identical apart from
 // this version string, and an older document needs no migration.
-export const PAYLOAD_VERSION = "2.27";
+export const PAYLOAD_VERSION = "2.28";
 
 /**
  * The UI-domain document (bead odontogram-3l1, AC2/AC4): a versioned,

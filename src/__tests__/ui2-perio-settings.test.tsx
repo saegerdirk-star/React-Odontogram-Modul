@@ -24,7 +24,7 @@ import { SETTINGS_TABS, type SettingsState } from "../SettingsModal";
 
 const ALL_ROW_IDS: PerioRowId[] = [
   "plaque", "bop", "sup", "cal", "gm", "pd", "furcation", "mobility", "cej",
-  "rootConcavity", "pi", "gi", "mpi", "mbi", "kg", "gt", "miller",
+  "rootConcavity", "pi", "gi", "mpi", "mbi", "kg", "gt", "miller", "papillaLoss",
 ];
 
 afterEach(() => {
@@ -117,7 +117,7 @@ describe("UI-2 Task 1: Periodontal settings tab", () => {
     expect(tab?.titleKey).toBe("settings.tab.periodontal");
   });
 
-  it("renders one checkbox ToggleRow per the 17 row ids, all checked by default", () => {
+  it("renders one checkbox ToggleRow per the 18 row ids, all checked by default", () => {
     const tab = SETTINGS_TABS.find((tab) => tab.id === "periodontal")!;
     const s = makeSettings();
     const { container } = render(tab.render({ t, s }));

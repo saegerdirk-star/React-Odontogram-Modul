@@ -44,6 +44,7 @@ export const CANONICAL_INDEX_NAMES: Record<PerioRowId, string> = {
   kg: "Keratinized Gingiva (KG)",
   gt: "Gingival Thickness (GT)",
   miller: "Miller Class",
+  papillaLoss: "Papilla Loss (Nordland & Tarnow)",
 };
 
 /** The display name for a perio-chart index row, honoring the current

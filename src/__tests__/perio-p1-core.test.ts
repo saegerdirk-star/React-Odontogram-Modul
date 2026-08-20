@@ -181,6 +181,8 @@ describe("%BOP derivation", () => {
       millerDistribution: { i: 0, ii: 0, iii: 0, iv: 0 },
       // SP-perio PG-E Task 2 stopgap (Task 3 fills in the real computation):
       mpiScore: null, mbiScore: null,
+      // Bead odontogram-gry:
+      maxPapillaLoss: null, gradedPapillae: 0,
     });
   });
 
@@ -231,7 +233,7 @@ describe("payload round-trip (version 2.12)", () => {
     setPerioSite(16, "B", { pd: 6 });
 
     const payload = __collectExportPayloadForTest();
-    expect(payload.version).toBe("2.27");
+    expect(payload.version).toBe("2.28");
     expect(payload.teeth["16"].perio).toEqual({
       pd: { MB: 5, B: 6 }, gm: { MB: 1 }, bop: ["MB"], sup: [],
     });

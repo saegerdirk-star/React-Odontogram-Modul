@@ -18,6 +18,10 @@ import {
   getToothMobility,
   setToothMobility,
   furcationEntrances,
+  papillaSites,
+  papillaLossAllowed,
+  getToothPapillaLoss,
+  setPapillaLoss,
   setFurcation,
   getToothFurcation,
   setPlaque,
@@ -168,6 +172,10 @@ function diamondGridArea(surface: string, toothNo: number): "buc" | "mes" | "dis
 // Index 0 (no involvement) shows the em-dash placeholder, 1-4 show I-IV.
 const FURCATION_ROMAN = ["–", "I", "II", "III", "IV"];
 
+// Bead odontogram-gry: Nordland & Tarnow I-III auf demselben schmalen Knopf.
+// Index 0 heisst NICHT BEURTEILT und zeigt denselben Gedankenstrich.
+const PAPILLA_ROMAN = ["–", "I", "II", "III"];
+
 // SP-perio PG-C Task 3: cejVisibility / rootConcavity cycle-button value
 // order + compact face glyphs (mirrors FURCATION_ROMAN's role). Literal (not
 // imported from "./odontogram") for the same module-eval-safety reason as
@@ -269,6 +277,8 @@ const EMPTY_SUMMARY: PerioSummaryData = {
   // getPerioSummary(); null when nothing is charted (empty-chart default here).
   mpiScore: null,
   mbiScore: null,
+  maxPapillaLoss: null,
+  gradedPapillae: 0,
 };
 
 // UI-1 Task 1: the case-metadata (`CaseMetaData`/`EMPTY_CASE_META`) and
@@ -292,6 +302,8 @@ type ToothCellRefs = {
   // entrance string — only the furcated-position entrances exist) and the
   // 4 O'Leary plaque-surface toggle buttons.
   furcation: Partial<Record<string, HTMLButtonElement>>;
+  // Bead odontogram-gry: je Zwischenraum ein Knopf (mesial/distal).
+  papillaLoss: Partial<Record<string, HTMLButtonElement>>;
   plaque: Partial<Record<string, HTMLButtonElement>>;
   // SP-perio PG-C Task 3: single per-tooth cycle button each (no site/entrance
   // subdivision — mirrors `mobility` above, which is also one-per-tooth).
@@ -328,6 +340,7 @@ type GridHandlers = {
   onSup: (toothNo: number, site: PerioSite, checked: boolean) => void;
   onMobility: (toothNo: number, value: string) => void;
   onFurcation: (toothNo: number, entrance: string) => void;
+  onPapillaLoss: (toothNo: number, site: string) => void;
   onPlaque: (toothNo: number, surface: string) => void;
   onCejVisibility: (toothNo: number) => void;
   onRootConcavity: (toothNo: number) => void;
@@ -844,6 +857,21 @@ function syncToothCells(
     btn.setAttribute("aria-pressed", grade > 0 ? "true" : "false");
     btn.disabled = readOnly || !applies("furcation");
   }
+  // Bead odontogram-gry: Papillenknoepfe - Ziffer, Klasse und Druckzustand aus
+  // dem aktiven Chart. Der eigene Waechter statt `applies`, weil dieser Befund
+  // nicht in der Faehigkeitsmatrix des Rasters steht (siehe
+  // `papillaLossAllowed`) - und weil er am Implantat SEHR WOHL erhoben wird,
+  // wo `isPerioRowHidden` die uebrigen Zeilen abschaltet.
+  const papillen = getToothPapillaLoss(toothNo);
+  for (const site of Object.keys(cells.papillaLoss)) {
+    const btn = cells.papillaLoss[site];
+    if (!btn) continue;
+    const grade = papillen[site] ?? 0;
+    btn.textContent = PAPILLA_ROMAN[grade];
+    btn.dataset.grade = String(grade);
+    btn.setAttribute("aria-pressed", grade > 0 ? "true" : "false");
+    btn.disabled = readOnly || !papillaLossAllowed(toothNo);
+  }
   // SP-perio P2b Task 4: plaque toggles — present/absent mark + pressed state
   // from the active chart's plaque surface set (getToothPlaque). Disabled on
   // a non-present tooth (mirrors the PD/GM disable gate).
@@ -1079,6 +1107,35 @@ function buildFurcationCell(
     btn.addEventListener("click", () => handlers.onFurcation(toothNo, entrance));
     group.appendChild(btn);
     cells.furcation[entrance] = btn;
+  }
+  cell.appendChild(group);
+  return cell;
+}
+
+/** Bead odontogram-gry: EINE Papillenzelle - ein Schaltknopf je Zwischenraum,
+ *  an den der Zahn grenzt. Der letzte Zahn im Bogen hat distal keinen und
+ *  bekommt nur einen; ein Platz ohne Papille (`papillaLossAllowed`) bekommt
+ *  eine LEERE Zelle wie bei der Furkation, damit die Zeile trotzdem in der
+ *  Spalte bleibt. */
+function buildPapillaCell(
+  toothNo: number,
+  cells: ToothCellRefs,
+  handlers: GridHandlers,
+): HTMLDivElement {
+  const cell = mkEl("div", "perio-fullgrid-cell perio-fullgrid-cell-furcation");
+  cell.dataset.perioField = "papillaLoss";
+  if (!papillaLossAllowed(toothNo)) return cell;
+  const group = mkEl("div", "perio-fullgrid-sitegroup");
+  for (const site of papillaSites(toothNo)) {
+    const btn = mkEl("button", "perio-fullgrid-furc");
+    btn.type = "button";
+    btn.id = `perio-fg-papilla-${toothNo}-${site}`;
+    btn.dataset.papillaSite = site;
+    btn.title = t(`papillaLoss.site.${site}`);
+    btn.setAttribute("aria-label", `${t("papillaLoss.label")} ${t(`papillaLoss.site.${site}`)}`);
+    btn.addEventListener("click", () => handlers.onPapillaLoss(toothNo, site));
+    group.appendChild(btn);
+    cells.papillaLoss[site] = btn;
   }
   cell.appendChild(group);
   return cell;
@@ -1358,7 +1415,7 @@ function buildArch(teeth: readonly number[], registry: Map<number, ToothCellRefs
   // below reference these before the header row (which used to create them).
   for (const toothNo of teeth) {
     registry.set(toothNo, {
-      pd: {}, gm: {}, bop: {}, sup: {}, cal: {}, mobility: null, furcation: {}, plaque: {},
+      pd: {}, gm: {}, bop: {}, sup: {}, cal: {}, mobility: null, furcation: {}, plaque: {}, papillaLoss: {},
       cejVisibility: null, rootConcavity: null,
       pi: {}, gi: {}, kg: null, gingivalThickness: null, millerClass: null,
       mpi: {}, mbi: {}, assessment: {},
@@ -1440,6 +1497,17 @@ function buildArch(teeth: readonly number[], registry: Map<number, ToothCellRefs
       arch.appendChild(buildFurcationCell(toothNo, registry.get(toothNo)!, handlers));
     }
     appendAssessmentRow("furcation", indexName("furcation"));
+  }
+
+  // --- Bead odontogram-gry: Papillenverlust, direkt ueber der Furkation.
+  //     Keine Bewertungszeile darunter: `papillaLoss` steht nicht in
+  //     PERIO_ASSESSMENT_AXES, und es dort einzutragen hiesse, den Befund in
+  //     eine Matrix zu haengen, aus der er absichtlich heraussteht. ---
+  if (visible.papillaLoss) {
+    arch.appendChild(mkRowLabelCell(indexName("papillaLoss"), "perio.info.papillaLoss"));
+    for (const toothNo of teeth) {
+      arch.appendChild(buildPapillaCell(toothNo, registry.get(toothNo)!, handlers));
+    }
   }
 
   // --- BUCCAL tooth-row graphic cell: spans all tooth columns, crown-DOWN,
@@ -2026,6 +2094,17 @@ export default function PerioChart({
         const next = cur === undefined ? 1 : cur >= 4 ? null : cur + 1;
         suppressResyncRef.current = true;
         setFurcation(toothNo, entrance, next);
+        suppressResyncRef.current = false;
+        syncOneTooth(toothNo);
+      },
+      // Bead odontogram-gry: Klasse durchschalten, nicht beurteilt -> I -> II
+      // -> III -> nicht beurteilt. Wie bei der Furkation daneben aus dem
+      // AKTIVEN Chart gelesen und ueber den vorhandenen Setter geschrieben.
+      onPapillaLoss: (toothNo, site) => {
+        const cur = getToothPapillaLoss(toothNo)[site];
+        const next = cur === undefined ? 1 : cur >= 3 ? null : cur + 1;
+        suppressResyncRef.current = true;
+        setPapillaLoss(toothNo, site, next);
         suppressResyncRef.current = false;
         syncOneTooth(toothNo);
       },

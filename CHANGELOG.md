@@ -1,5 +1,61 @@
 # Changelog
 
+## 2.26.0 - 2026-08-20
+
+### Papillenverlust: der beobachtete Befund neben der Ableitung (Bead odontogram-gry)
+
+charlys Befund-Tastenfeld hat ein Dreieck fuer den Papillenverlust — Dirk,
+19.08.2026: *"das Dreieck IST die Papille."* Wir hatten den Befund halb.
+
+- **`papillaLoss`**, je Zwischenraum eine Klasse nach Nordland & Tarnow (I–III):
+  I unter dem Kontaktpunkt, II auf Hoehe oder apikal der approximalen, III auf
+  Hoehe oder apikal der bukkalen Schmelz-Zement-Grenze. Payload **2.27 → 2.28**,
+  weggelassen wo nichts beurteilt ist.
+- **Warum nicht die vorhandene Ableitung reicht:** `getToothRecessionType`
+  trennt Cairo RT2 von RT3 genau am interproximalen Attachmentverlust, und der
+  IST der Papillenverlust — inhaltlich also richtig. Nur braucht sie SECHS
+  sondierte Stellen. Das Dreieck sieht man, bevor die Sonde in der Hand war, und
+  bei der Erstuntersuchung gibt es die sechs Stellen noch nicht. Wir fuehren die
+  Ableitung, nicht die Beobachtung. Beide stehen jetzt nebeneinander, und keine
+  ueberschreibt die andere.
+- **`papillaSites(toothNo)`** nennt die Zwischenraeume einer Position,
+  positionsbasiert wie `furcationEntrances`: der letzte Zahn im Bogen hat distal
+  keinen Nachbarn. Ueber die Mittellinie hinweg gibt es die Papille sehr wohl —
+  die zwischen 11 und 21 ist die, die am haeufigsten fehlt.
+- **Zwei Nachbarn beschreiben dieselbe Papille von zwei Seiten**, und beide
+  Beurteilungen bleiben stehen. Das ist kein Fehler des Modells: der
+  Parodontalstatus zaehlt MB von 46 und DB von 47 seit jeher als zwei Stellen
+  desselben Zwischenraums. Die Zusammenfassung zaehlt entsprechend je Zahn und
+  Seite, weil Zusammenfassen hiesse zu entscheiden, welche der beiden gilt.
+- **Eigener Waechter statt der Faehigkeitsmatrix** (`papillaLossAllowed`, vor
+  der DS-1-Schranke wie bei `setRetention`): `perioAxisApplies` ist die Matrix
+  des Sondierungsrasters, und dieser Befund steht absichtlich daneben. **Das
+  IMPLANTAT ist eingeschlossen** — es hat keine Pulpa und keinen Rand gegen eine
+  Schmelz-Zement-Grenze, aber sehr wohl eine Papille, und deren Verlust ist die
+  haeufigste aesthetische Beschwerde nach einer Implantation.
+- **Gezeichnet als graues Dreieck** in einer eigenen Auflage VOR den Kacheln
+  (`svg.papilla-marks`), Basis am Zahnfleischrand, Spitze zum Kontaktpunkt, Hoehe
+  und Breite nach der Klasse. Dirk, 20.08.2026: *"blende doch einfach ein graues
+  Dreieck an die Stelle ein, wo die Papille fehlt, welches zwischen die Zaehne am
+  Zahnhals passt."* Ausserhalb der Zahn-SVG, also kein neuer Fingerabdruck und
+  kein Generatorlauf — **Parity byte-gleich**. Die Hoehe des Zahnfleischrandes
+  wird am KLON in der Bandauflage gemessen, nicht geschaetzt: ein Bruchteil der
+  Kachelhoehe setzte die Dreiecke im ersten Versuch mitten in den Knochen, und
+  seit 2.25.0 haengt die Bandhoehe ohnehin je Zahn an dessen Schmelz-Zement-
+  Grenze.
+- Zeile im Parodontalstatus (ueber der Furkation, mit Ein-/Ausschalter in den
+  Einstellungen), im PDF-/SVG-Export, im Kurzbericht am Zahn, im
+  Ganzkiefer-Bericht und in der "Was aendert sich"-Liste. FHIR: eine Komponente
+  an der bestehenden parodontalen Observation mit lokalem Code
+  (`papilla-loss-nordland-tarnow`) — fuer den Papillenverlust liess sich kein
+  LOINC und kein SNOMED-Code belegen, und einen zu erfinden hiesse Terminologie
+  zu behaupten, ueber die diese Anzeige nicht verfuegt. Dieselbe Behandlung wie
+  BOP je Stelle, Belag und die Mombelli-Indizes.
+- **Nebenbei repariert:** `mesialIsLeft` kannte die Milchquadranten nicht (6
+  steht oben links wie 2, 7 unten links wie 3). Eine Klammer an einem Milchzahn
+  im zweiten oder dritten Quadranten haette an der falschen Seite gehangen.
+
+
 ## 2.25.0 - 2026-08-20
 
 ### Das Zahnfleisch sitzt auf der Schmelz-Zement-Grenze (Bead odontogram-x8k)

@@ -53,6 +53,9 @@ import {
   getPerioClassification,
   isPerioRowHidden,
   furcationEntrances,
+  papillaSites,
+  papillaLossAllowed,
+  getToothPapillaLoss,
   getToothFurcation,
   getToothPlaque,
   getPlaqueIndex,
@@ -97,6 +100,8 @@ const PLAQUE_SURFACES: readonly string[] = ["mesial", "distal", "buccal", "lingu
 // doesn't export them (display-only, not a shared API): this module renders
 // its OWN standalone `<text>`, never the live grid's cycle-button labels.
 const FURCATION_ROMAN: readonly string[] = ["–", "I", "II", "III", "IV"];
+// Bead odontogram-gry: Nordland & Tarnow I-III, gespiegelt aus PAPILLA_ROMAN.
+const PAPILLA_ROMAN: readonly string[] = ["–", "I", "II", "III"];
 const GRADE_FACE: Record<number, string> = { 1: "1", 2: "2", 3: "3" };
 const MOBILITY_FACE: Record<string, string> = { m1: "1", m2: "2", m3: "3" };
 const CEJ_FACE: Record<string, string> = { detectable: "D", "not-detectable": "ND" };
@@ -221,6 +226,25 @@ function appendFurcationRow(root: Element, y: number, label: string, layout: Arc
       const grade = furc[entrance] ?? 0;
       const x = LABEL_WIDTH + tooth.x + (tooth.width * (j + 0.5)) / entrances.length;
       root.appendChild(text(x, y, FURCATION_ROMAN[grade] ?? "–"));
+    });
+  }
+}
+
+/** Bead odontogram-gry: die Papillenzeile - spiegelt `buildPapillaCell` in
+ *  `PerioChart.tsx` genau: ein Platz ohne Papille bekommt gar keine Marke, der
+ *  letzte Zahn im Bogen nur eine, und eine vorhandene, aber nicht beurteilte
+ *  Papille bekommt den Gedankenstrich, weil ihr blosses Dasein schon etwas
+ *  sagt. */
+function appendPapillaRow(root: Element, y: number, label: string, layout: ArchLayout): void {
+  appendRowLabel(root, y, label);
+  for (const tooth of layout.teeth) {
+    if (!papillaLossAllowed(tooth.toothNo)) continue;
+    const sites = papillaSites(tooth.toothNo);
+    const graded = getToothPapillaLoss(tooth.toothNo);
+    sites.forEach((site, j) => {
+      const grade = graded[site] ?? 0;
+      const x = LABEL_WIDTH + tooth.x + (tooth.width * (j + 0.5)) / sites.length;
+      root.appendChild(text(x, y, PAPILLA_ROMAN[grade] ?? "–"));
     });
   }
 }
@@ -384,6 +408,13 @@ export async function buildPerioSvg(): Promise<{ xml: string; width: number; hei
     // --- Furcation row, nearest the teeth (just above the buccal graphic). ---
     if (visible.furcation) {
       appendFurcationRow(svg, cursorY, indexName("furcation"), layout);
+      cursorY += ROW_HEIGHT;
+    }
+
+    // --- Bead odontogram-gry: Papillenverlust, direkt ueber der Furkation -
+    //     dieselbe Reihenfolge wie auf dem Bildschirm. ---
+    if (visible.papillaLoss) {
+      appendPapillaRow(svg, cursorY, indexName("papillaLoss"), layout);
       cursorY += ROW_HEIGHT;
     }
 

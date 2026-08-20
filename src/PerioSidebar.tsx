@@ -71,6 +71,8 @@ const EMPTY_SUMMARY: PerioSummaryData = {
   millerDistribution: { i: 0, ii: 0, iii: 0, iv: 0 },
   mpiScore: null,
   mbiScore: null,
+  maxPapillaLoss: null,
+  gradedPapillae: 0,
 };
 
 type CaseMetaData = ReturnType<typeof getCaseMeta>;
