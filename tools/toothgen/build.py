@@ -429,11 +429,17 @@ def replace_gum(
     cx: float,
     neck_half: float,
     col_px: float,
+    pap=None,
+    crest=None,
 ) -> str:
+    """``pap``/``crest`` sind die Hoehen an den beiden GELENKEN, links und
+    rechts. Fehlen sie, gilt der flache Rueckfall aus gum.py - so wird hier
+    weiter gebaut, waehrend die ausgelieferten Vorlagen im Redraw ihr Band an
+    der eigenen Zervikallinie bekommen."""
 
     for lid, d in (
-        ("bone-base", gum.bone_path(occl, cx, col_px)),
-        ("gum-base", gum.gum_path(occl, cej, cx, neck_half, col_px)),
+        ("bone-base", gum.bone_path(occl, cx, col_px, crest, cej)),
+        ("gum-base", gum.gum_path(occl, cej, cx, neck_half, col_px, pap, crest)),
     ):
         txt, n = re.subn(
             rf'(<path id="{lid}" d=")[^"]+(")',

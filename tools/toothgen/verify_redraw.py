@@ -40,7 +40,8 @@ import roots  # noqa: E402
 import spec  # noqa: E402
 import verify  # noqa: E402
 from build import ASSETS, PX_PER_UNIT, SPENDER, curve_extent, tooth_base_d  # noqa: E402
-from redraw_plan import GRID_GAP, PLAN, PLAN_OCCL, SPALTEN, ZUSCHLAG  # noqa: E402
+from redraw_plan import (GRID_GAP, PLAN, PLAN_OCCL, SPALTEN,  # noqa: E402
+                         ZERVIKAL, ZUSCHLAG)
 
 INDEX_CSS = ASSETS.parents[1] / "index.css"
 ZEICHNUNGEN = Path.home() / "dev" / "Odontogram-Anatomie"
@@ -55,6 +56,13 @@ TOL_UEBERSTAND = 15.0
 # Aehnlichkeitsabbildung skaliert ihn um wenige Prozent; das volle Zahnfeld
 # zog ihn am Sechser auf das Doppelte.
 TOL_IMPLANTAT = 1.3
+
+# Wie weit die gemessene Zervikallinie von `ZERVIKAL` abweichen darf. Die Kette
+# ist nicht bitgenau wiederholbar - ein Lauf ohne Aenderung verschiebt
+# Koordinaten um bis zu 0,02 Einheiten -, also kann hier nicht auf die Stelle
+# geprueft werden. 0,15 laesst das Rauschen durch und faengt eine geaenderte
+# Zeichnung.
+TOL_ZERVIKAL = 0.15
 
 
 def _implantat_laenge(txt: str) -> float | None:
@@ -227,6 +235,19 @@ def main() -> int:
             failures.append(
                 f"{key}: Zahnfleisch fuer eine {hat:g} px breite Spalte gezeichnet, "
                 f"steht aber in {soll:g} px; die Papille verfehlt das Gelenk")
+
+        # Und die Hoehe, auf der das Band sitzt, muss die Zervikallinie sein,
+        # die dieser Zahn wirklich hat. `redraw_plan.ZERVIKAL` ist die Tabelle,
+        # aus der das Band gezeichnet wird, und sie ist eingefroren wie
+        # `_KRONE`: aendert sich eine Zeichnung, ohne dass sie nachgezogen wird,
+        # steht die Girlande des Nachbarn auf einer Hoehe, die es nicht mehr
+        # gibt - und zwar lautlos, denn beide Baender waeren gueltiges SVG.
+        soll_cej = ZERVIKAL.get(int(key))
+        if soll_cej is not None and abs((inc - cej) - soll_cej) > TOL_ZERVIKAL:
+            failures.append(
+                f"{key}: Schmelz-Zement-Grenze steht {inc - cej:.2f} ueber der "
+                f"Kaukante, ZERVIKAL sagt {soll_cej:.2f}; das Zahnfleischband "
+                f"ist gegen eine Hoehe gezeichnet, die der Zahn nicht hat")
 
         # Spalte plus Spalt minus dem Zuschlag muss die gezeichnete Kronenbreite
         # sein. Ohne Zuschlag heisst das: die Nachbarn beruehren sich an ihren

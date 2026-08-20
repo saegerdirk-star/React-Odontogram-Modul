@@ -25,7 +25,8 @@ import redraw          # noqa: E402
 import roots           # noqa: E402
 import spec            # noqa: E402
 import svgpath         # noqa: E402
-from redraw_plan import GRID_GAP, NEIGUNG, SPALTEN  # noqa: E402
+from redraw_plan import (GRID_GAP, NEIGUNG, SPALTEN, ZERVIKAL,  # noqa: E402
+                         nachbarn)
 
 ZEICHNUNGEN = Path.home() / "dev" / "Odontogram-Anatomie"
 
@@ -46,6 +47,55 @@ def _ebene(txt: str, label: str) -> str:
 
 def _pfad(txt: str) -> str:
     return re.search(r'\sd="([^"]+)"', txt).group(1)
+
+
+def _bandhoehen(pos: int, cej_h: float) -> tuple[tuple[float, float],
+                                                 tuple[float, float]]:
+    """Papillen- und Kammhoehe an den beiden Gelenken, (links, rechts).
+
+    Beide haengen an der Zervikallinie des Zahns (`gum.papilla_h`,
+    `gum.crest_h`), und am Gelenk wird ueber die zwei Nachbarn gemittelt. Der
+    Nachbar rechnet dieselbe Mittelung und kommt auf dieselbe Zahl, also treffen
+    sich die beiden Haelften einer Papille weiterhin auf einem Punkt - nur nicht
+    mehr, weil alle auf derselben Zahl stehen, sondern weil beide dieselben zwei
+    Zaehne befragen.
+
+    LINKS ist distal, RECHTS mesial: die ausgelieferten Saetze sind Quadrant 1
+    und Quadrant 4, und in beiden liegt die Bogenmitte im Rahmen rechts.
+
+    Faellt eine Position aus `ZERVIKAL` heraus, gilt fuer diese Seite die eigene
+    Hoehe - eine unbekannte Nachbarschaft soll ein Band verschieben, aber nie
+    einen Lauf anhalten.
+    """
+    distal, mesial = nachbarn(pos)
+    eigen = cej_h
+
+    def hoehe(n: int) -> float:
+        return float(ZERVIKAL.get(n, eigen))
+
+    def mittel(f, n: int) -> float:
+        return (f(eigen) + f(hoehe(n))) / 2.0
+
+    def flacher(f, n: int) -> float:
+        """Der KORONALERE der beiden - die kleinere Hoehe ueber der Kauebene."""
+        return min(f(eigen), f(hoehe(n)))
+
+    # Die Papille wird gemittelt, der Kamm nicht.
+    #
+    # Am Kamm muss das Gelenk der koronalste Punkt sein, und zwar aus zwei
+    # Gruenden, die zusammenfallen. Anatomisch ist das interdentale Septum die
+    # hoechste Stelle des Knochens; die Girlande zeigt zwischen den Zaehnen nach
+    # oben. Und zeichnerisch ist es die Bedingung, unter der die Kante ueber das
+    # Gelenk hinweg glatt bleibt: jedes Band steht drei Einheiten in die Spalte
+    # des Nachbarn hinein und ist dort flach auf dem Gelenkwert, waehrend der
+    # Nachbar dort schon seine Neigung hat. Sichtbar ist immer die APIKALERE der
+    # beiden Kanten. Faellt der Nachbar vom Gelenk aus nach apikal, verdeckt er
+    # den flachen Ueberstand vollstaendig und man sieht eine Linie; steigt er
+    # an, hoert der Ueberstand irgendwo mittendrin auf und dort steht eine
+    # Stufe. Gemessen waren es bis zu 1,2 Einheiten, deutlich sichtbar. Mit dem
+    # Minimum kann der Nachbar nur noch fallen.
+    return ((mittel(gum.papilla_h, distal), mittel(gum.papilla_h, mesial)),
+            (flacher(gum.crest_h, distal), flacher(gum.crest_h, mesial)))
 
 
 def elemente_von(txt: str, ident: str) -> list[tuple[str, str]]:
@@ -835,10 +885,13 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = 
     # misst 37). Mit der Spenderspalte gerechnet verfehlte die Papille an einem
     # der beiden das Gelenk.
     pos = int(ziel_key or template)
-    if 51 <= pos <= 55 or 81 <= pos <= 85:
-        pos -= 40
+    # Die SPALTE gehoert der Position im Gitter - ein Milchzahn steht auf dem
+    # Platz seines Nachfolgers -, die ZERVIKALLINIE dagegen dem Zahn selbst.
+    # Deshalb zwei Nummern und nicht eine.
+    spalten_pos = pos - 40 if (51 <= pos <= 55 or 81 <= pos <= 85) else pos
     out = build.replace_gum(out, occl, cej_neu, cx, neck_half,
-                            float(SPALTEN.get(pos, s_spec.col_px)))
+                            float(SPALTEN.get(spalten_pos, s_spec.col_px)),
+                            *_bandhoehen(pos, occl - cej_neu))
 
     # Die okklusale Fuellung so breit machen, wie die zentrale Fissur lang ist.
     #

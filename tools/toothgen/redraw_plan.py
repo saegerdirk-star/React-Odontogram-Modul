@@ -200,3 +200,54 @@ NEIGUNG: dict[str, float] = {
 # die 180-Grad-Drehung im Bogen wegzunehmen: sie stammte aus der Zeit, als die
 # unteren Kauflaechen vom OBERKIEFER-Template geliehen waren.
 SPIEGELN_OCCL: set[str] = set()
+
+
+# Die Hoehe der Schmelz-Zement-Grenze ueber der GEZEICHNETEN Kaukante, je
+# Position, in Template-Einheiten. Gemessen am 20.08.2026 aus dem
+# `toothgen:`-Stempel der ausgelieferten Vorlagen (`occl` minus `cej`) - also
+# aus Dirks Zeichnungen und nicht aus einer Norm.
+#
+# Wozu: das Zahnfleischband haengt daran. Bis heute stand seine apikale Kante
+# auf EINER Zahl fuer den ganzen Bogen (`gum.CREST_H`), die Zervikallinie aber
+# streut zwischen 21,9 (41) und 28,6 (43) - und bei den Milchzaehnen bis auf
+# 16,1 herunter. Ein gerader Kamm unter einer gewellten Zervikallinie ergibt ein
+# Band, das an 41 achteinhalb Einheiten hoch ist und am Nachbarn 43 zwei; an
+# einem Milchschneidezahn stand die Papille sogar APIKAL des eigenen Randes, die
+# Girlande lief also verkehrt herum.
+#
+# Die Tabelle ist eingefroren wie `_KRONE`, und `verify_redraw.py` misst sie
+# gegen die Vorlagen nach. Sie steht hier und nicht im Generator, damit eine
+# Pruefung sie lesen kann, ohne einen Generator zu laden.
+ZERVIKAL: dict[int, float] = {
+    11: 24.69, 12: 27.51, 13: 26.98, 14: 24.25,
+    15: 23.74, 16: 27.62, 17: 27.78, 18: 23.88,
+    41: 21.93, 42: 22.80, 43: 28.57, 44: 25.03,
+    45: 24.44, 46: 27.49, 47: 24.17, 48: 22.98,
+    51: 20.12, 52: 16.33, 53: 21.14, 54: 16.48, 55: 16.17,
+    81: 16.09, 82: 16.88, 83: 20.80, 84: 16.47, 85: 21.03,
+}
+
+
+def nachbarn(pos: int) -> tuple[int, int]:
+    """Die beiden Nachbarn im Bogen: (distal, mesial).
+
+    Im Rahmen einer Zeichnung liegt MESIAL rechts. Beide ausgelieferten Saetze
+    sind Quadrant 1 und Quadrant 4, die Gegenseite entsteht durch Spiegeln, und
+    in beiden faellt die Mitte des Bogens nach rechts.
+
+    An den beiden Enden gibt es keinen Nachbarn, und der Zahn ist sein eigener:
+
+    * ueber die Mittellinie hinweg steht der gespiegelte Zwilling (21 neben 11),
+      der dieselbe Zeichnung ist und damit dieselbe Zervikallinie hat - das
+      Gelenk stimmt also von selbst;
+    * am hinteren Ende hoert der Bogen auf.
+
+    Ein Milchzahn bekommt Milchzahn-Nachbarn. Im WECHSELGEBISS steht er
+    tatsaechlich neben einem bleibenden, und dort springt die Linie - so wie sie
+    im Mund an dieser Stelle auch springt.
+    """
+    q, p = divmod(pos, 10)
+    letzte = 5 if q >= 5 else 8
+    mesial = pos - 1 if p > 1 else pos
+    distal = pos + 1 if p < letzte else pos
+    return distal, mesial

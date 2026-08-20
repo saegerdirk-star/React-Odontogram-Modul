@@ -1,5 +1,53 @@
 # Changelog
 
+## 2.25.0 - 2026-08-20
+
+### Das Zahnfleisch sitzt auf der Schmelz-Zement-Grenze (Bead odontogram-x8k)
+
+Dirk, 20.08.2026, zu einer Zeichnung auf dem laufenden Bogen (`docs/zahnfleisch/dirks-linien-2026-08-20.png`): *"So
+stelle ich mir das Zahnfleisch vor; wie die schwarzen Linien laufen und die
+gerade untere Linie sollte das caudale Ende der Gingiva sein."* Die Papillen
+laufen also richtig - die apikale Kante des Bandes sass zu weit unten.
+
+- **Beide Kanten des Bandes haengen jetzt an der Zervikallinie des Zahns**,
+  statt auf je einer Zahl fuer den ganzen Bogen zu stehen. Der Kamm sitzt
+  `CREST_BELOW_CEJ` = 3,85 Einheiten apikal der Schmelz-Zement-Grenze (aus
+  Dirks Zeichnung an ihren vier Gelenken gemessen: 4,60 / 3,37 / 2,89 / 4,52,
+  Mittel 3,85 - knapp einen Millimeter, wo der Knochen in Gesundheit auch
+  steht). Die Papillenspitze steht bei `PAPILLA_FRAC` = 0,75 der Kronenlaenge
+  ueber der Kauebene, also knapp unter dem Kontaktpunkt.
+- **Warum ueberhaupt:** die Zervikallinie streut ueber den ausgelieferten Satz
+  von 21,9 Einheiten (41) bis 28,6 (43) und bei den Milchzaehnen bis 16,1
+  herunter. Gegen einen geraden Kamm bei 36,0 ergab das ein Band, das an 41
+  achteinhalb Einheiten hoch war und am fast benachbarten 43 zwei; gegen eine
+  gerade Papille bei 19,0 stand die Papille an ALLEN ZEHN Milchzaehnen apikal
+  des eigenen Randes, die Girlande lief dort also verkehrt herum.
+- **Die Bedingung, die vorher Konstanten erzwang, gilt nicht mehr.** Sie
+  lautete: eine Papille gehoert zwei Zaehnen, und kein Template weiss, neben
+  wem es steht. Seit dem 17.08.2026 gibt es eine Vorlage JE POSITION, der
+  Nachbar ist also bekannt. Der Aufrufer reicht die Hoehe je GELENK herein,
+  beide Nachbarn rechnen dieselbe - und treffen sich weiter auf einem Punkt.
+- **Am Kamm ist das Gelenk das MINIMUM der beiden, nicht das Mittel.**
+  Anatomisch ist das interdentale Septum die hoechste Stelle des Knochens.
+  Zeichnerisch ist es die Bedingung, unter der die Kante ueber das Gelenk
+  hinweg glatt bleibt: jedes Band steht drei Einheiten in die Nachbarspalte
+  hinein, und sichtbar ist immer die apikalere Kante - faellt der Nachbar vom
+  Gelenk aus, verdeckt er den Ueberstand ganz; steigt er an, steht dort eine
+  Stufe. Gemessen waren es 1,2 Einheiten, im Bild deutlich zu sehen.
+- **Nachgemessen, nicht geschaetzt:** ueber beide Boegen abgetastet hat die
+  apikale Kante des Bandes KEINEN Sprung ueber 0,35 Einheiten mehr - vorher bis
+  1,2. Genau diese Messung fordert der Bead, und zwar vor der Aenderung.
+- **`redraw_plan.ZERVIKAL`** haelt die 26 Hoehen, eingefroren wie `_KRONE`;
+  `verify_redraw.py` misst sie gegen die ausgelieferten Vorlagen nach, damit
+  eine geaenderte Zeichnung nicht lautlos die Girlande des Nachbarn auf eine
+  Hoehe stellt, die es nicht mehr gibt.
+- Die SPENDER bleiben auf der alten flachen Regel und damit byte-gleich - ihr
+  Band wird im Redraw ohnehin ueberschrieben, und siebzehn eingefrorene
+  Geometrie-Pruefsummen fuer eine Form zu bewegen, die niemand sieht, waere der
+  falsche Preis. Der Fingerabdruck des Odontogramms liest id, opacity und class
+  und nie Geometrie: Parity byte-gleich, Payload unveraendert bei 2.27.
+
+
 ## 2.24.0 - 2026-08-20
 
 ### Wurzelfraktur und Hemisektion werden gezeichnet (Beads odontogram-t6y / -ca0)

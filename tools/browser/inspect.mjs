@@ -1,9 +1,12 @@
 // Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
 // Cognovis fork - https://github.com/cognovis/React-Odontogram-Modul
 // Dirk Saeger, Malte Sussdorff 2026
-
-#!/usr/bin/env node
-// Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
+//
+// Aufgerufen wird sie mit `node tools/browser/inspect.mjs`. Die Raute-Zeile
+// stand hier bis zum 20.08.2026 mitten in der Datei, weil der Lizenzkopf
+// nachtraeglich davorgesetzt wurde - und ein Shebang gilt nur in Zeile 1.
+// Node brach mit "Invalid or unexpected token" ab, also lief das Werkzeug
+// ueberhaupt nicht mehr.
 //
 // A measuring tool for the RUNNING app. Not a substitute for a test: it answers
 // the questions the source cannot settle, because only the browser resolves

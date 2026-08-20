@@ -4,7 +4,7 @@ Jede der 52 Vorlagen unter `src/assets/teeth-svgs/` ist ERZEUGT. Keine wird von
 Hand bearbeitet — eine Handänderung ist beim nächsten Lauf weg, und der
 Vertrag, den `verify_redraw.py` prüft, kennt sie nicht.
 
-Stand 19.08.2026. Wer hier etwas ändert, aktualisiert diese Datei mit; sie war
+Stand 20.08.2026. Wer hier etwas ändert, aktualisiert diese Datei mit; sie war
 bis heute auf dem Stand von neun Vorlagen aus vier Quellzeichnungen und
 beschrieb damit ein Werkzeug, das es so nicht mehr gibt.
 
@@ -95,6 +95,29 @@ sitzt eine halbe Spalte plus einen halben Rasterabstand von der Zahnmitte
 entfernt, damit zwei Nachbarn denselben Punkt treffen; `ToothSpec.col_px` hält
 diese Spaltenbreite und `verify.py` prüft sie gegen `grid-template-columns` in
 `src/index.css`.
+
+**Beide Kanten des Bandes hängen an der Zervikallinie des Zahns** (seit
+20.08.2026, Bead odontogram-x8k): der Kamm 3,85 Einheiten apikal davon
+(`CREST_BELOW_CEJ`), die Papillenspitze bei drei Vierteln der Kronenlänge über
+der Kauebene (`PAPILLA_FRAC`). Vorher stand jede auf EINER Zahl für den ganzen
+Bogen, weil kein Template wusste, neben wem es steht — seit es eine Vorlage je
+Position gibt, weiß es der Aufrufer, und er reicht die Höhe je GELENK herein.
+Beide Nachbarn rechnen dieselbe.
+
+Am Kamm ist das Gelenk das MINIMUM der beiden, nicht das Mittel. Anatomisch ist
+das interdentale Septum die höchste Stelle des Knochens; zeichnerisch ist es
+die Bedingung, unter der die Kante über das Gelenk glatt bleibt. Jedes Band
+steht drei Einheiten in die Nachbarspalte hinein, und sichtbar ist immer die
+APIKALERE der beiden Kanten: fällt der Nachbar vom Gelenk aus, verdeckt er den
+Überstand ganz; steigt er an, hört der Überstand mittendrin auf und dort steht
+eine Stufe (gemessen 1,2 Einheiten).
+
+Die 26 Höhen stehen als `ZERVIKAL` in `redraw_plan.py`, eingefroren wie
+`_KRONE`, und `verify_redraw.py` misst sie gegen die ausgelieferten Vorlagen
+nach. Die SPENDER bleiben auf der alten flachen Regel und damit byte-gleich —
+ihr Band wird im Redraw überschrieben, und die eingefrorenen Geometrie-
+Prüfsummen in `verify.py` für eine Form zu bewegen, die niemand sieht, wäre der
+falsche Preis.
 
 `fillings.py` streckt die mesiale und distale Füllungsform, bis sie die
 okklusale berühren, damit MO/OD/MOD als EINE Restauration zeichnet

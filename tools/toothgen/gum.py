@@ -24,24 +24,34 @@ after the warp. Three facts make that possible:
 * ``collectActiveLayers`` fingerprints id, opacity and class - never geometry -
   so replacing the path data leaves SVG parity byte-identical.
 
-The band has two boundaries, and they are deliberately unlike each other:
+The band has two boundaries, and both of them follow the tooth's own
+cervical line:
 
-    crest   ______________________________________________  bone level
+    crest   \\____________/\\______________/\\____________  bone level
                     ___                       ___
     papilla ___/       \\_____________/       \\___  free gingival margin
 
-The APICAL one is a straight line at ``CREST_H``, the same in every template,
-so the boundary between bone and gum is one line across the whole arch. It can
-be straight because the part of the alveolar crest that scallops is the part
-the tooth is drawn over: the crest only shows beside the root, and there it is
-level anyway.
+BOTH used to be one number for the whole arch - ``CREST_H`` and ``PAPILLA_H``,
+still here as the fallback the donors are drawn with. The reason they were
+constants was that "a papilla is shared between two teeth, and neither template
+knows which tooth it will stand next to". Since 2026-08-17 that is no longer
+true: there is ONE template per position, so the neighbour IS known, and the
+caller passes the height for each JOINT - the average of what the two
+neighbours ask for. Both of them compute the same average, so they still meet
+on one point, and the constraint that forced a flat line is gone.
 
-The CORONAL one is the free gingival margin, and it is the line the eye
-actually follows. It rises to ``PAPILLA_H`` between the teeth and dips to this
-tooth's own cervix in the middle - so the margin still moves per tooth, which
-is what it does in the mouth, while the papillae land at one height. Both
-constants have to be constants for the same reason: a papilla is shared between
-two teeth, and neither template knows which tooth it will stand next to.
+What forced the change is what a flat line did under a cervical line that is
+not flat. Measured over the shipped set (``redraw_plan.ZERVIKAL``), the cervix
+runs from 21.9 units above the occlusal plane at 41 to 28.6 at 43 - and down to
+16.1 on a deciduous incisor. Against a crest at a fixed 36.0 that gave a band
+8.7 units tall at 41 and 3.1 at its neighbour 43; against a papilla at a fixed
+19.0 the deciduous teeth came out with the papilla APICAL to their own margin,
+so the scallop ran the wrong way round on all ten of them.
+
+Dirk drew the line he wants on 20.08.2026 (``gum.png``): the papillae as they
+already run, and a lower boundary a good deal coronal to where it was. Measured
+off that drawing at its four joints, the crest sits 2.9 to 4.6 units apical to
+the cervical line, mean 3.85 - which is ``CREST_BELOW_CEJ`` below.
 
 Each transition is ONE cubic, and a smoothstep IS a cubic Bezier exactly
 (control ordinates a, a, b, b over an evenly spaced abscissa), so it arrives at
@@ -62,18 +72,41 @@ from __future__ import annotations
 
 # Heights above the occlusal plane, in template units.
 #
-# CREST_H is the bone-gum boundary. One number for the whole arch: it has to
-# clear the highest cervix in the set (tpl 11 at 33.1) with room for the band
-# to be a band, and stay under the lowest root apex (tpl 16 at 63.6) so bone is
-# still drawn around every root.
+# CREST_H and PAPILLA_H are the FALLBACK, used when no per-joint heights are
+# passed. That is the case for the donors in build.py, and only there: the band
+# a donor carries is overwritten in the redraw stage before anything ships, so
+# leaving it on the old rule keeps `verify.py`'s frozen donor digests where
+# they are instead of moving seventeen of them for a shape nobody sees.
 CREST_H = 36.0
-
-# How far the papilla reaches coronally into the embrasure. Measured against
-# the cervix it gives a long pointed papilla between the incisors (long crowns,
-# high cervix) and a short blunt one between the molars, which is the way round
-# the mouth has it. It has to stay coronal to the LOWEST cervix in the set
-# (tpl 46 at 24.8) or that tooth's margin would run the wrong way.
 PAPILLA_H = 19.0
+
+# What the shipped templates use instead, both measured against the tooth's OWN
+# cervical line (`redraw_plan.ZERVIKAL`).
+#
+# CREST_BELOW_CEJ is how far apical of the cervix the bone-gum boundary sits.
+# Read off Dirk's drawing of 20.08.2026 at its four joints: 4.60, 3.37, 2.89
+# and 4.52 units, mean 3.85. Just under a millimetre at 4.048 units per mm,
+# which is also where the alveolar crest sits in health.
+CREST_BELOW_CEJ = 3.85
+
+# PAPILLA_FRAC puts the papilla tip at a FRACTION of the crown length above the
+# occlusal plane - just under the contact point, which is where a papilla ends.
+# A proportion rather than an offset, so a long crown gets a long papilla and a
+# milk tooth a short one; measured against the margin it gives 2.0 units on a
+# deciduous incisor and 5.6 at the canine, and never a negative one, which the
+# flat 19.0 could not manage. 0.75 keeps the permanent set within a unit or two
+# of the papillae that are there today, which is the line Dirk confirmed.
+PAPILLA_FRAC = 0.75
+
+
+def papilla_h(cej_h: float) -> float:
+    """Papilla tip height above the occlusal plane, from the crown length."""
+    return cej_h * PAPILLA_FRAC
+
+
+def crest_h(cej_h: float) -> float:
+    """Bone-gum boundary height above the occlusal plane, from the cervix."""
+    return cej_h + CREST_BELOW_CEJ
 
 # Where the margin sits relative to THIS tooth's cervical line, and how far the
 # dip runs sideways as a multiple of the tooth's own half width AT THAT HEIGHT.
@@ -154,44 +187,105 @@ def _span(cx: float, neck_half: float, col_px: float):
     return xkn_l - EXT, xkn_l, xma_l, xma_r, xkn_r, xkn_r + EXT
 
 
+def _crest_run(occl, cej, cx, crest, xa, xkn_a, xkn_b, xb, off=0.0) -> str:
+    """Der Kammzug von ``xa`` nach ``xb``, als ``M...L...`` beginnend bei xa.
+
+    Drei Dinge auf einmal, und jedes davon musste sein:
+
+    * FLACH ueber den Ueberstand hinter dem Gelenk (``xa`` bis ``xkn_a``).
+      Ohne das lief die geneigte Kante mit ihrer Neigung ueber das Gelenk
+      hinaus weiter, waehrend der Nachbar dort mit seiner eigenen Neigung
+      ankam - und an jeder Papille stand eine Stufe. Beide flach heisst: beide
+      auf derselben Zahl, und der Ueberstand faellt zusammen. Dasselbe
+      Argument wie oben an der Papille, nur an der anderen Kante.
+    * Am GELENK die Zahl, die der Aufrufer aus beiden Nachbarn gemittelt hat.
+    * In der MITTE die Hoehe, die dieser Zahn aus seiner eigenen Zervikallinie
+      bekommt. Ohne diesen Punkt kaeme der Kamm nur bis zum Mittel der
+      Nachbarn, und ein Zahn mit langer Krone zwischen zwei kurzen (43 steht
+      zwischen 42 und 44) haette sein Band nie in voller Hoehe.
+    """
+    if crest is None:
+        y = occl - CREST_H + off
+        return f"M{xa:.2f},{y:.2f}L{xb:.2f},{y:.2f}"
+    ya = occl - (crest[0] if xa < xb else crest[1]) + off
+    yb = occl - (crest[1] if xa < xb else crest[0]) + off
+    y_mitte = occl - crest_h(occl - cej) + off
+    return (
+        f"M{xa:.2f},{ya:.2f}"
+        f"L{xkn_a:.2f},{ya:.2f}"
+        f"L{cx:.2f},{y_mitte:.2f}"
+        f"L{xkn_b:.2f},{yb:.2f}"
+        f"L{xb:.2f},{yb:.2f}"
+    )
+
+
+def _paar(wert, fallback: float) -> tuple[float, float]:
+    """``(links, rechts)`` aus einem Paar oder dem Rueckfallwert."""
+    if wert is None:
+        return fallback, fallback
+    return float(wert[0]), float(wert[1])
+
+
 def gum_path(
     occl: float,
     cej: float,
     cx: float,
     neck_half: float,
     col_px: float,
+    pap: tuple[float, float] | None = None,
+    crest: tuple[float, float] | None = None,
 ) -> str:
     """The gum band for one template, in that template's final coordinates.
 
     ``occl`` is the y of the occlusal plane, ``cej`` the y of the cervical
     line, ``cx`` the tooth's centre, ``neck_half`` its half width at the height
     the margin sits at, and ``col_px`` the width of its grid column.
+
+    ``pap`` and ``crest`` are the papilla and crest heights above the occlusal
+    plane AT THE TWO JOINTS, left and right. The caller averages them over the
+    two neighbours, so both sides of a joint arrive at the same number and the
+    line stays one line. Left them out and the flat fallback applies - see the
+    note on the constants.
     """
-    y_crest = occl - CREST_H
-    y_pap = occl - PAPILLA_H
+    pap_l, pap_r = _paar(pap, PAPILLA_H)
+    y_pap_l, y_pap_r = occl - pap_l, occl - pap_r
     y_marg = cej + MARGIN_DOWN
     xl, xkn_l, xma_l, xma_r, xkn_r, xr = _span(cx, neck_half, col_px)
+    kamm = _crest_run(occl, cej, cx, crest, xl, xkn_l, xkn_r, xr)
 
     return (
-        f"M{xl:.2f},{y_crest:.2f}"
-        f"L{xr:.2f},{y_crest:.2f}"
-        f"L{xr:.2f},{y_pap:.2f}"
-        f"L{xkn_r:.2f},{y_pap:.2f}"
-        + _ease(xkn_r, y_pap, xma_r, y_marg, flat_b=False)
+        kamm
+        + f"L{xr:.2f},{y_pap_r:.2f}"
+        f"L{xkn_r:.2f},{y_pap_r:.2f}"
+        + _ease(xkn_r, y_pap_r, xma_r, y_marg, flat_b=False)
         + f"L{xma_l:.2f},{y_marg:.2f}"
-        + _rev_ease(xma_l, y_marg, xkn_l, y_pap)
-        + f"L{xl:.2f},{y_pap:.2f}Z"
+        + _rev_ease(xma_l, y_marg, xkn_l, y_pap_l)
+        + f"L{xl:.2f},{y_pap_l:.2f}Z"
     )
 
 
-def bone_path(occl: float, cx: float, col_px: float) -> str:
-    """The alveolar bone block, ending at the gum's own crest line."""
+def bone_path(
+    occl: float,
+    cx: float,
+    col_px: float,
+    crest: tuple[float, float] | None = None,
+    cej: float | None = None,
+) -> str:
+    """The alveolar bone block, ending at the gum's own crest line.
+
+    It follows the gum's crest joint for joint, for the reason the block is
+    drawn here at all: bone and gum are one figure, and a level block under a
+    crest that is no longer level would open a sliver at every embrasure.
+    """
+    if cej is None:
+        cej = occl - CREST_H + CREST_BELOW_CEJ   # gibt genau CREST_H zurueck
     y_top = occl - BONE_TOP_H
-    y_bot = occl - CREST_H + BONE_OVERLAP
-    xl, _, _, _, _, xr = _span(cx, 0.0, col_px)
+    xl, xkn_l, _, _, xkn_r, xr = _span(cx, 0.0, col_px)
+    # Rueckwaerts, weil der Block hier von rechts nach links geschlossen wird.
+    kamm = _crest_run(occl, cej, cx, crest,
+                      xr, xkn_r, xkn_l, xl, off=BONE_OVERLAP)
     return (
         f"M{xl:.2f},{y_top:.2f}"
         f"L{xr:.2f},{y_top:.2f}"
-        f"L{xr:.2f},{y_bot:.2f}"
-        f"L{xl:.2f},{y_bot:.2f}Z"
+        + "L" + kamm[1:] + "Z"
     )
