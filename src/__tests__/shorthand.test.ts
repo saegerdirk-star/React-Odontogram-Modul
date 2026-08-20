@@ -261,9 +261,16 @@ describe("Was wir verstehen, aber nicht ablegen koennen", () => {
   });
 
   it("nennt fuer jede offene Taste den Bead, der ihr ein Ziel gibt", () => {
-    expect(parseShorthand("Fra").pending[0].bead).toBe("odontogram-t6y");
-    expect(parseShorthand("Hem").pending[0].bead).toBe("odontogram-ca0");
+    // Fra und Hem haben seit odontogram-t6y/-ca0 eines; D wartet noch.
     expect(parseShorthand("D").pending[0].bead).toBe("odontogram-0n8");
+  });
+
+  it("Fra ist die WURZELfraktur, nicht die der Krone", () => {
+    expect(parseShorthand("Fra").edits).toEqual([
+      { kind: "axis", field: "rootFracture", value: "vertical" }]);
+    expect(parseShorthand("Hem").edits).toEqual([
+      { kind: "axis", field: "rootResection", value: "hemisection" }]);
+    expect(parseShorthand("Fra Hem").pending).toEqual([]);
   });
 
   it("trennt einen Tippfehler von einer offenen Taste", () => {
@@ -297,7 +304,7 @@ describe("Die Tabelle selbst", () => {
       "toothSelection", "toothSubstrate", "restorationType", "restorationMaterial",
       "endo", "endoResection", "apicalDx", "periapicalType",
       "extractionPlan", "missingClosed", "prosthesis",
-      "sensibility", "percussion",
+      "sensibility", "percussion", "rootFracture", "rootResection",
     ]);
     for(const f of felder) expect(bekannt.has(f), `unbekanntes Feld: ${f}`).toBe(true);
   });

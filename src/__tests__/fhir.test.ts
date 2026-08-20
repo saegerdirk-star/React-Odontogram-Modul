@@ -38,7 +38,7 @@ const testFileUrl = import.meta.url;
 
 function fixture(): OdontogramExportPayload {
   return {
-    version: "2.26",
+    version: "2.27",
     globals: {},
     teeth: {
       "16": {
@@ -62,7 +62,7 @@ function fixture(): OdontogramExportPayload {
 
 function clinicalFixture(): OdontogramExportPayload {
   return {
-    version: "2.26",
+    version: "2.27",
     globals: { wisdomVisible: true, showBase: true, occlusalVisible: true, showHealthyPulp: true },
     teeth: {
       "16": {
@@ -159,7 +159,7 @@ describe("configured FHIR codecs", () => {
 
   it("uses recorder and case exam date while leaving shared patient resources host-owned", () => {
     const base: OdontogramExportPayload = {
-      version: "2.26",
+      version: "2.27",
       globals: { edentulous: true },
       teeth: { "16": { endo: "endo-filling" } },
       case: {
@@ -205,7 +205,7 @@ describe("configured FHIR codecs", () => {
 
   it("accepts a shared smoking status coded with the LOINC LL2201-3 answer list", () => {
     const base: OdontogramExportPayload = {
-      version: "2.26",
+      version: "2.27",
       globals: {},
       teeth: { "16": { toothSelection: "tooth-base", endo: "endo-filling" } },
       case: {},
@@ -352,7 +352,7 @@ describe("configured FHIR codecs", () => {
 
   it("preserves explicit false and mapped defaults without inventing omitted state", () => {
     const source: OdontogramExportPayload = {
-      version: "2.26",
+      version: "2.27",
       globals: {},
       teeth: { "16": { endoResection: false, periapicalType: "none", retention: "none" } },
     };
@@ -367,7 +367,7 @@ describe("configured FHIR codecs", () => {
       const values = mapping.kind === "boolean" ? [true, false] : Object.keys(mapping.values ?? {});
       for (const value of values) {
         const source: OdontogramExportPayload = {
-          version: "2.26",
+          version: "2.27",
           globals: {},
           teeth: { "16": { [mapping.field]: mapping.kind === "set" ? [value] : value } },
         };
@@ -378,8 +378,8 @@ describe("configured FHIR codecs", () => {
   });
 
   it("accepts empty Core collections and rejects ambiguous Core collections", () => {
-    const empty = buildFhirBundle({ version: "2.26", globals: {}, teeth: {} }, options);
-    expect(parseFhirBundle(empty, { dialect: "dental-core" })).toEqual({ version: "2.26", globals: {}, teeth: {} });
+    const empty = buildFhirBundle({ version: "2.27", globals: {}, teeth: {} }, options);
+    expect(parseFhirBundle(empty, { dialect: "dental-core" })).toEqual({ version: "2.27", globals: {}, teeth: {} });
 
     const invalidType = structuredClone(buildFhirBundle(fixture(), options));
     invalidType.type = "transaction";
@@ -402,7 +402,7 @@ describe("configured FHIR codecs", () => {
 
   it("keeps treatment-plan claims independent from the current chart", () => {
     const source: OdontogramExportPayload = {
-      version: "2.26",
+      version: "2.27",
       globals: {},
       teeth: { "16": { retention: "clasp" } },
       plan: { "16": {
@@ -583,7 +583,7 @@ describe("configured FHIR codecs", () => {
 
   it("clears a live session's imported identity when a status import replaces its document", () => {
     const session = createOdontogramSession({
-      version: "2.26",
+      version: "2.27",
       globals: {},
       teeth: { "16": { endoResection: true } },
       fhirIdentity: { resources: { "Observation/chart/status/16": { id: "host-a-chart", versionId: "17", fullUrl: "https://aidbox.example/fhir/Observation/host-a-chart" } } },
@@ -591,7 +591,7 @@ describe("configured FHIR codecs", () => {
 
     session.activate();
     try {
-      __importStatusForTest({ version: "2.26", globals: {}, teeth: { "16": { fissureSealing: true } } });
+      __importStatusForTest({ version: "2.27", globals: {}, teeth: { "16": { fissureSealing: true } } });
       expect(session.getDocument().fhirIdentity).toBeUndefined();
     } finally {
       session.release();
@@ -647,7 +647,7 @@ describe("configured FHIR codecs", () => {
 
   it("fails closed instead of silently dropping unsupported populated Core state", () => {
     const unsupported: OdontogramExportPayload = {
-      version: "2.26",
+      version: "2.27",
       globals: {},
       teeth: { "16": { customStates: { "unsupported-clinical-state": true } } },
     };
@@ -688,7 +688,7 @@ describe("configured FHIR codecs", () => {
 
   it("roundtrips subcrown caries and refuses orphaned severity or peri-implant state", () => {
     const subcrown: OdontogramExportPayload = {
-      version: "2.26", globals: {}, teeth: { "16": { caries: ["caries-subcrown"], cariesSeverity: { subcrown: 3 } } },
+      version: "2.27", globals: {}, teeth: { "16": { caries: ["caries-subcrown"], cariesSeverity: { subcrown: 3 } } },
     };
     expect(parseDentalCoreBundle(buildDentalCoreBundle(subcrown, options))?.teeth).toEqual(subcrown.teeth);
     expect(() => buildDentalCoreBundle({ ...subcrown, teeth: { "16": { cariesSeverity: { occlusal: 4 } } } }, options)).toThrow("teeth.16.cariesSeverity.occlusal");
@@ -696,7 +696,7 @@ describe("configured FHIR codecs", () => {
   });
 
   it("fails closed for plan-only implant fields, targetless recorder, performer, and invalid kg", () => {
-    const empty: OdontogramExportPayload = { version: "2.26", globals: {}, teeth: {} };
+    const empty: OdontogramExportPayload = { version: "2.27", globals: {}, teeth: {} };
     expect(() => buildDentalCoreBundle({ ...empty, plan: { "15": { toothSelection: "implant", implantProduct: { system: "Line" } } } }, options)).toThrow("plan.15.implantProduct");
     expect(() => buildDentalCoreBundle({ ...empty, examination: { recorder: "Practitioner/recorder" } }, options)).toThrow("examination.recorder");
     expect(() => buildDentalCoreBundle({ ...empty, teeth: { "16": { endo: "endo-filling" } }, examination: { performer: "Practitioner/performer" } }, options)).toThrow("examination.performer");
@@ -705,13 +705,13 @@ describe("configured FHIR codecs", () => {
 
   it("treats unknown or cleared shared fields as uncharted and rejects hostile shared carriers", () => {
     const source: OdontogramExportPayload = {
-      version: "2.26", globals: {}, teeth: { "16": { endo: "endo-filling" } },
+      version: "2.27", globals: {}, teeth: { "16": { endo: "endo-filling" } },
       case: { diabetesStatus: "unknown", hba1c: null as unknown as number, smokingStatus: "unknown" },
     };
     expect(() => buildDentalCoreBundle(source, options)).not.toThrow();
 
     const sharedBase: OdontogramExportPayload = {
-      version: "2.26", globals: {}, teeth: { "16": { endo: "endo-filling" } }, case: { hba1c: 6.4 },
+      version: "2.27", globals: {}, teeth: { "16": { endo: "endo-filling" } }, case: { hba1c: 6.4 },
     };
     const hba1c = { fullUrl: "https://aidbox.example/fhir/Observation/hba1c", resource: {
       resourceType: "Observation" as const, id: "hba1c", status: "final" as const,
@@ -751,7 +751,7 @@ describe("configured FHIR codecs", () => {
 describe("configured FHIR sessions", () => {
   it("keeps the selected codec immutable and makes a rejected Core import non-destructive", () => {
     const source: OdontogramExportPayload = {
-      version: "2.26",
+      version: "2.27",
       globals: {},
       teeth: { "16": { retention: "attachment", endoResection: true } },
       plan: { "16": { retention: "clasp" } },
@@ -786,7 +786,7 @@ describe("configured FHIR sessions", () => {
   });
 
   it("rejects malformed Legacy input and admitted Core content without replacing the Legacy document", () => {
-    const legacy = createOdontogramSession({ version: "2.26", globals: {}, teeth: { "16": { endoResection: true } } }, { fhir: { dialect: "legacy" } });
+    const legacy = createOdontogramSession({ version: "2.27", globals: {}, teeth: { "16": { endoResection: true } } }, { fhir: { dialect: "legacy" } });
     const before = legacy.getDocument();
     const coreWithoutMarker = structuredClone(buildFhirBundle(fixture(), options));
     coreWithoutMarker.identifier = { system: "https://example.test/bundles", value: "assembled" };
@@ -805,7 +805,7 @@ describe("configured FHIR sessions", () => {
 
   it("keeps the upstream Legacy semantic roundtrip independent of newer Core-only state", () => {
     const source: OdontogramExportPayload = {
-      version: "2.26",
+      version: "2.27",
       globals: {},
       teeth: { "16": { endoResection: true, fissureSealing: true, mods: ["mobility"] } },
     };

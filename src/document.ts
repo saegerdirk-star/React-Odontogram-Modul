@@ -193,6 +193,13 @@ export interface DentalCoreIdentity {
 
 /** The payload/document version this engine writes. Readers accept earlier versions. */
 // 2.22 (odontogram-8vu): additive `not-erupted` tooth selection; no migration.
+// 2.27 (odontogram-t6y / -ca0): additive - `rootFracture` (none/vertical/
+// horizontal) and `rootResection` (none/hemisection/amputation/
+// premolarisation). The three crown-fracture flags mean the CROWN; a broken
+// root is a different finding with a different consequence, and vertical vs
+// horizontal is the distinction that decides whether the tooth can be kept.
+// `rootResection` is NOT `endoResection`: that is the apicoectomy, where the
+// apex is cut and the tooth stays whole. Both omit-when-none.
 // 2.26 (odontogram-fu1): additive - `sensibility` (none/vital/no-response/
 // questionable) and `percussion` (none/negative/sensitive), the pulp tests
 // themselves beside the AAE diagnosis they feed. `none` means NOT TESTED, not
@@ -207,7 +214,7 @@ export interface DentalCoreIdentity {
 // filling or caries lesion extends into the cervical region. Omitted entirely
 // when empty, so a document that never records it is byte-identical apart from
 // this version string, and an older document needs no migration.
-export const PAYLOAD_VERSION = "2.26";
+export const PAYLOAD_VERSION = "2.27";
 
 /**
  * The UI-domain document (bead odontogram-3l1, AC2/AC4): a versioned,

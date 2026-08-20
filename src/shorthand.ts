@@ -160,6 +160,12 @@ export const SHORTHAND_DE: Record<string, Entry> = {
   "Twf":  { kind: "axis", field: "endo", value: "endo-medical-filling" },
   "Sti":  { kind: "axis", field: "endo", value: "endo-metal-pin" },
   "Res":  { kind: "axis", field: "endoResection", value: true },
+  // Beads odontogram-t6y / -ca0, gebaut am 20.08.2026. `Fra` meint bei charly
+  // die WURZELfraktur; unsere drei Bruchachsen meinen die Krone. Ob laengs
+  // oder quer sagt die Taste nicht - sie setzt den haeufigeren und klinisch
+  // folgenschwereren Fall, die Laengsfraktur, und der Klickweg verfeinert.
+  "Fra":  { kind: "axis", field: "rootFracture", value: "vertical" },
+  "Hem":  { kind: "axis", field: "rootResection", value: "hemisection" },
 
   // --- apical. `Be` is "beherdet" — one key against our five AAE values, so it
   // resolves to the unspecific one and the picker keeps the refinement.
@@ -219,8 +225,6 @@ export const SHORTHAND_DE: Record<string, Entry> = {
  *  it a target. Reported separately from `unknown`: a key with no field is a
  *  different situation from a typo, and the caller should be able to say which. */
 export const SHORTHAND_PENDING: Record<string, string> = {
-  "Fra": "odontogram-t6y",   // Wurzelfraktur
-  "Hem": "odontogram-ca0",   // Hemisektion
   "D":   "odontogram-0n8",   // Durchbruchstadium
   "z":   "",                 // zervikale Flaeche — unser Flaechensatz hat sie nicht
   "R":   "",                 // Wurzelkappe — Dirk fragt selbst, ob es die noch gibt

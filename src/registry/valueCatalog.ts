@@ -245,6 +245,36 @@ export const LOCAL_VALUE_MAPS: Record<string, Record<string, CodeEntry>> = {
     "negative": { code: "negative", display: "Percussion negative" },
     "sensitive": { code: "sensitive", display: "Percussion sensitive" },
   },
+  // Bead odontogram-t6y: die WURZEL, nicht die Krone.
+  //
+  // `brokenMesial`, `brokenIncisal` und `brokenDistal` meinen alle drei die
+  // KRONE, und `toothSubstrate: broken` die zerstoerte Krone. Eine gebrochene
+  // Wurzel stand nirgends - ein anderer Befund mit anderer Folge.
+  //
+  // LAENGS ODER QUER ist der Unterschied, der zaehlt, und deshalb sind es zwei
+  // Werte und kein Schalter: die Laengsfraktur ist der Extraktionsgrund, die
+  // Querfraktur kann je nach Hoehe erhalten werden.
+  rootFracture: {
+    "none": { code: "none", display: "No root fracture" },
+    "vertical": { code: "vertical", display: "Vertical root fracture" },
+    "horizontal": { code: "horizontal", display: "Horizontal root fracture" },
+  },
+  // Bead odontogram-ca0: die drei resektiven Verfahren am mehrwurzeligen Zahn.
+  //
+  // NICHT dasselbe wie `endoResection` - das ist die Wurzelspitzenresektion,
+  // die Spitze wird gekappt und der Zahn bleibt ganz. Hier wird er GETEILT.
+  //
+  // Alle drei in EINER Achse, weil sie einander ausschliessen und weil die
+  // Abgrenzung sonst nirgends stuende:
+  //   Hemisektion       geteilt, eine Haelfte samt Wurzel entfernt
+  //   Wurzelamputation  Wurzel entfernt, die Krone bleibt ganz
+  //   Praemolarisierung geteilt, BEIDE Haelften bleiben stehen
+  rootResection: {
+    "none": { code: "none", display: "No root resection" },
+    "hemisection": { code: "hemisection", display: "Hemisection" },
+    "amputation": { code: "amputation", display: "Root amputation" },
+    "premolarisation": { code: "premolarisation", display: "Premolarisation" },
+  },
   cejVisibility: {
     "none": { code: "none", display: "CEJ visibility not assessed" },
     "detectable": { code: "detectable", display: "CEJ detectable" },

@@ -474,6 +474,8 @@ function defaultState(){
     retentionSide: "none",  // none | mesial | distal | both (charly's <Kl / Kl>)
     // Bead odontogram-fu1: was GEPRUEFT wurde, neben dem, was daraus
     // geschlossen wurde. `none` heisst NICHT GEPRUEFT, nicht "unauffaellig".
+    rootFracture: "none",  // none | vertical | horizontal (die WURZEL, nicht die Krone)
+    rootResection: "none", // none | hemisection | amputation | premolarisation
     sensibility: "none", // none | vital | no-response | questionable
     percussion: "none",  // none | negative | sensitive
     cejVisibility: "none", // none | detectable | not-detectable
@@ -2403,6 +2405,16 @@ function percussionSummaryLabel(state: Any): string | null {
   return t("percussion.summary." + kebabToCamel(state.percussion));
 }
 
+function rootFractureSummaryLabel(state: Any): string | null {
+  if(!state.rootFracture || state.rootFracture === "none") return null;
+  if(!rootFractureAllowed(state)) return null;
+  return t("rootFracture.summary." + kebabToCamel(state.rootFracture));
+}
+function rootResectionSummaryLabel(state: Any): string | null {
+  if(!state.rootResection || state.rootResection === "none") return null;
+  return t("rootResection.option." + kebabToCamel(state.rootResection));
+}
+
 function diagnosisSummaryLabels(state: Any): string[] {
   return [
     sensibilitySummaryLabel(state),
@@ -2410,6 +2422,8 @@ function diagnosisSummaryLabels(state: Any): string[] {
     pulpDiagnosisLabel(state),
     apicalDiagnosisLabel(state),
     resorptionDiagnosisLabel(state),
+    rootFractureSummaryLabel(state),
+    rootResectionSummaryLabel(state),
   ].filter((x): x is string => !!x);
 }
 /** Coarse 3-tier caries-severity qualifier (max across caried surfaces), or null. */
@@ -2818,6 +2832,12 @@ export function pulpEndoOnSelect(s: Any, value: string): void {
 
 function getApicalDxOptions(): { value: string; label: string }[]{
   return Array.from(VALID_APICAL_DX).map(v => ({ value: v, label: t("apicalDx." + kebabToCamel(v)) }));
+}
+function getRootFractureOptions(): { value: string; label: string }[]{
+  return Array.from(VALID_ROOT_FRACTURE).map(v => ({ value: v, label: t("rootFracture.option." + kebabToCamel(v)) }));
+}
+function getRootResectionOptions(): { value: string; label: string }[]{
+  return Array.from(VALID_ROOT_RESECTION).map(v => ({ value: v, label: t("rootResection.option." + kebabToCamel(v)) }));
 }
 function getSensibilityOptions(): { value: string; label: string }[]{
   return Array.from(VALID_SENSIBILITY).map(v => ({ value: v, label: t("sensibility.option." + kebabToCamel(v)) }));
@@ -5151,6 +5171,13 @@ function syncControlsFromState(state: Any){
   // die Pruefung nicht geht - an einer Luecke laesst sich nichts pruefen, und
   // ein Implantat hat keine Pulpa. Die Perkussion bleibt am Implantat, dort
   // ist Klopfempfindlichkeit ein periimplantaeres Zeichen.
+  setSelectOptions($("#rootFractureSelect"), getRootFractureOptions(), state.rootFracture ?? "none");
+  setSelectOptions($("#rootResectionSelect"), getRootResectionOptions(), state.rootResection ?? "none");
+  $("#rootFractureRow").classList.toggle("hidden", !rootFractureAllowed(state));
+  // Die Resektionszeile haengt am ZAHN, nicht nur am Zustand: an einem
+  // Einwurzler ist keines der drei Verfahren moeglich.
+  $("#rootResectionRow").classList.toggle(
+    "hidden", !(activeTooth && rootResectionAllowed(state, activeTooth)));
   setSelectOptions($("#sensibilitySelect"), getSensibilityOptions(), state.sensibility ?? "none");
   setSelectOptions($("#percussionSelect"), getPercussionOptions(), state.percussion ?? "none");
   $("#sensibilityRow").classList.toggle("hidden", !sensibilityAllowed(state));
@@ -7365,6 +7392,8 @@ function serializeState(s: Any){
     // stays byte-identical apart from the version field.
     ...(s.retention && s.retention !== "none" ? { retention: s.retention } : {}),
     ...(s.retentionSide && s.retentionSide !== "none" ? { retentionSide: s.retentionSide } : {}),
+    ...(s.rootFracture && s.rootFracture !== "none" ? { rootFracture: s.rootFracture } : {}),
+    ...(s.rootResection && s.rootResection !== "none" ? { rootResection: s.rootResection } : {}),
     ...(s.sensibility && s.sensibility !== "none" ? { sensibility: s.sensibility } : {}),
     ...(s.percussion && s.percussion !== "none" ? { percussion: s.percussion } : {}),
     ...(s.cejVisibility && s.cejVisibility !== "none" ? { cejVisibility: s.cejVisibility } : {}),
@@ -7425,6 +7454,8 @@ export const VALID_PERI_IMPLANT = validValues("periImplant");
 // from AXES like every other enum).
 export const VALID_RETENTION = validValues("retention");
 export const VALID_RETENTION_SIDE = validValues("retentionSide");
+export const VALID_ROOT_FRACTURE = validValues("rootFracture");
+export const VALID_ROOT_RESECTION = validValues("rootResection");
 export const VALID_SENSIBILITY = validValues("sensibility");
 export const VALID_PERCUSSION = validValues("percussion");
 export const VALID_CEJ_VISIBILITY = validValues("cejVisibility");
@@ -7742,6 +7773,8 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   // key, which reads as "no retention element recorded".
   s.retention = validateEnum(raw.retention, VALID_RETENTION, "none");
   s.retentionSide = validateEnum(raw.retentionSide, VALID_RETENTION_SIDE, "none");
+  s.rootFracture = validateEnum(raw.rootFracture, VALID_ROOT_FRACTURE, "none");
+  s.rootResection = validateEnum(raw.rootResection, VALID_ROOT_RESECTION, "none");
   s.sensibility = validateEnum(raw.sensibility, VALID_SENSIBILITY, "none");
   s.percussion = validateEnum(raw.percussion, VALID_PERCUSSION, "none");
   s.cejVisibility = validateEnum(raw.cejVisibility, VALID_CEJ_VISIBILITY, "none");
@@ -9538,6 +9571,84 @@ function assessmentSummaryFragment(): string {
  * else is a silent no-op (state unchanged). Fires {@link notifyStateChange}
  * only when it actually changes state; never on a rejected/no-op call.
  */
+/** Ob dieser Zahn eine Wurzel hat, die brechen kann.
+ *
+ *  Ein Wurzelrest ZAEHLT - er ist Wurzel und sonst nichts, und gerade dort ist
+ *  eine Laengsfraktur die Frage. Deshalb haengt es an der Anwesenheit eines
+ *  natuerlichen Zahns, nicht am Substrat. Ein Implantat hat keine Wurzel; was
+ *  dort bricht, ist ein Fabrikteil und ein anderer Befund. */
+export function rootFractureAllowed(state: Any): boolean {
+  const sel = state?.toothSelection;
+  return sel === "tooth-base" || sel === "milktooth";
+}
+
+/** Ob an diesem Zahn ein resektives Verfahren ueberhaupt moeglich ist.
+ *
+ *  Nur an einem MEHRWURZELIGEN Zahn - eine Hemisektion an einem Einwurzler ist
+ *  keine Behandlung, sondern eine Extraktion. Gemessen wird das an
+ *  `furcationEntrances(toothNo)`: die Tabelle steht schon da, sie ist
+ *  positionsbasiert, und "hat eine Furkation" ist genau dasselbe wie "hat mehr
+ *  als eine Wurzel". Zwei Tabellen fuer dieselbe Frage waeren zwei Tabellen,
+ *  die auseinanderlaufen koennen. */
+export function rootResectionAllowed(state: Any, toothNo: number): boolean {
+  const sel = state?.toothSelection;
+  if(sel !== "tooth-base" && sel !== "milktooth") return false;
+  return furcationEntrances(toothNo).length > 0;
+}
+
+/**
+ * Bead odontogram-t6y: die Wurzelfraktur.
+ *
+ * `brokenMesial`/`brokenIncisal`/`brokenDistal` meinen die KRONE. Laengs oder
+ * quer ist hier der Unterschied, der zaehlt: die Laengsfraktur ist der
+ * Extraktionsgrund, die Querfraktur kann je nach Hoehe erhalten werden.
+ */
+export function setRootFracture(toothNo: number, value: string): void {
+  if(!VALID_ROOT_FRACTURE.has(value)) return;
+  let s = toothState.get(toothNo);
+  if(!s){ s = defaultState(); toothState.set(toothNo, s); }
+  if(value !== "none" && !rootFractureAllowed(s)) return;
+  gateToothEdit(toothNo, () => {
+    if(s.rootFracture === value) return false;
+    s.rootFracture = value;
+    notifyStateChange();
+    return true;
+  });
+}
+
+/** Liest die Wurzelfraktur aus dem aktiven Chart. */
+export function getRootFracture(toothNo: number): string {
+  const s = toothState.get(toothNo);
+  return (s?.rootFracture as string) ?? "none";
+}
+
+/**
+ * Bead odontogram-ca0: Hemisektion, Wurzelamputation, Praemolarisierung.
+ *
+ * EINE Achse fuer alle drei, weil sie einander ausschliessen und weil die
+ * Abgrenzung sonst nirgends stuende. NICHT dasselbe wie `endoResection`: das
+ * ist die Wurzelspitzenresektion, dort wird die Spitze gekappt und der Zahn
+ * bleibt ganz - hier wird er geteilt.
+ */
+export function setRootResection(toothNo: number, value: string): void {
+  if(!VALID_ROOT_RESECTION.has(value)) return;
+  let s = toothState.get(toothNo);
+  if(!s){ s = defaultState(); toothState.set(toothNo, s); }
+  if(value !== "none" && !rootResectionAllowed(s, toothNo)) return;
+  gateToothEdit(toothNo, () => {
+    if(s.rootResection === value) return false;
+    s.rootResection = value;
+    notifyStateChange();
+    return true;
+  });
+}
+
+/** Liest das resektive Verfahren aus dem aktiven Chart. */
+export function getRootResection(toothNo: number): string {
+  const s = toothState.get(toothNo);
+  return (s?.rootResection as string) ?? "none";
+}
+
 /** Ob an diesem Zahn ueberhaupt eine Pulpapruefung sinnvoll ist.
  *
  *  Ein Implantat hat keine Pulpa, eine Luecke auch nicht. Ein Wurzelrest
@@ -11882,6 +11993,15 @@ function wireControls(){
   // applyToSelected, sondern je Zahn ueber setSensibility/setPercussion -
   // dort sitzt die Sperre (kein Implantat hat eine Pulpa), und eine Sperre,
   // die nur im Bedienfeld haengt, gilt fuer die Tastatur nicht.
+  buildSelect($("#rootFractureSelect"), getRootFractureOptions(), (value)=>{
+    for(const toothNo of Array.from(selectedTeeth) as number[]) setRootFracture(toothNo, value);
+    if(activeTooth) syncControlsFromState(toothState.get(activeTooth));
+  });
+  buildSelect($("#rootResectionSelect"), getRootResectionOptions(), (value)=>{
+    for(const toothNo of Array.from(selectedTeeth) as number[]) setRootResection(toothNo, value);
+    if(activeTooth) syncControlsFromState(toothState.get(activeTooth));
+  });
+
   buildSelect($("#sensibilitySelect"), getSensibilityOptions(), (value)=>{
     for(const toothNo of Array.from(selectedTeeth) as number[]) setSensibility(toothNo, value);
     if(activeTooth) syncControlsFromState(toothState.get(activeTooth));

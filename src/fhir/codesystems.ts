@@ -316,6 +316,18 @@ export const LOCAL_VALUE_MAPS: Record<string, Record<string, CodeEntry>> = {
     "negative": { code: "negative", display: "Percussion negative" },
     "sensitive": { code: "sensitive", display: "Percussion sensitive" },
   },
+  // Beads odontogram-t6y / -ca0. Lokale Kodes, kein verifizierter SNOMED.
+  rootFracture: {
+    "none": { code: "none", display: "No root fracture" },
+    "vertical": { code: "vertical", display: "Vertical root fracture" },
+    "horizontal": { code: "horizontal", display: "Horizontal root fracture" },
+  },
+  rootResection: {
+    "none": { code: "none", display: "No root resection" },
+    "hemisection": { code: "hemisection", display: "Hemisection" },
+    "amputation": { code: "amputation", display: "Root amputation" },
+    "premolarisation": { code: "premolarisation", display: "Premolarisation" },
+  },
   cejVisibility: {
     "none": { code: "none", display: "CEJ visibility not assessed" },
     "detectable": { code: "detectable", display: "CEJ detectable" },

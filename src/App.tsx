@@ -1249,6 +1249,17 @@ export default function App({
                   <span>{t("periapical.typeLabel")}</span>
                   <select id="periapicalTypeSelect"></select>
                 </div>
+                {/* Beads odontogram-t6y / -ca0. Die Wurzelfraktur steht bei den
+                    Wurzelbefunden, nicht bei den drei Bruchachsen der Krone -
+                    sie ist ein anderer Befund mit anderer Folge. */}
+                <div id="rootFractureRow" className="row">
+                  <span>{t("rootFracture.label")}</span>
+                  <select id="rootFractureSelect"></select>
+                </div>
+                <div id="rootResectionRow" className="row">
+                  <span>{t("rootResection.label")}</span>
+                  <select id="rootResectionSelect"></select>
+                </div>
                 <div id="resorptionRow" className="row">
                   <span>{t("root.resorption")}</span>
                   <select id="resorptionSelect"></select>
