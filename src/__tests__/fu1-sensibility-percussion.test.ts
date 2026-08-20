@@ -13,6 +13,8 @@ import {
   setSensibility, getSensibility, setPercussion, getPercussion,
   sensibilityAllowed, percussionAllowed,
   getStatusChart, __resetChartStateForTest, __setToothStateForTest,
+  rootsOf, setRootFracture, getRootFracture, getRootFractureRoot,
+  setRootResection, getRootResection, getRootResectionRoot,
 } from "../odontogram";
 
 beforeEach(() => { __resetChartStateForTest(); });
@@ -96,5 +98,53 @@ describe("Ungueltiges wird nicht angenommen", () => {
     setSensibility(16, "vital");
     setSensibility(16, "halbvital");
     expect(getSensibility(16)).toBe("vital");
+  });
+});
+
+describe("Welche Wurzel (Beads odontogram-t6y / -ca0)", () => {
+  it("benennt die Wurzeln je nach Kiefer verschieden", () => {
+    expect(rootsOf(16)).toEqual(["mesiobuccal", "distobuccal", "palatal"]);
+    expect(rootsOf(46)).toEqual(["mesial", "distal"]);
+    expect(rootsOf(14)).toEqual(["buccal", "palatal"]);
+  });
+
+  it("ein Einwurzler hat nichts zu waehlen", () => {
+    expect(rootsOf(11)).toEqual([]);
+    expect(rootsOf(15)).toEqual([]);
+    expect(rootsOf(44)).toEqual([]);   // untere Praemolaren sind einwurzelig
+  });
+
+  it("nimmt nur eine Wurzel an, die es an dieser Position gibt", () => {
+    setRootFracture(46, "vertical", "mesial");
+    expect(getRootFractureRoot(46)).toBe("mesial");
+    // palatinal gibt es im Unterkiefer nicht
+    setRootFracture(46, "vertical", "palatal");
+    expect(getRootFractureRoot(46)).toBe("");
+  });
+
+  it("ein Einwurzler nimmt gar keine an", () => {
+    setRootFracture(11, "horizontal", "mesial");
+    expect(getRootFracture(11)).toBe("horizontal");
+    expect(getRootFractureRoot(11)).toBe("");
+  });
+
+  it("die Praemolarisierung entfernt keine Wurzel, also traegt sie auch keine", () => {
+    setRootResection(46, "hemisection", "distal");
+    expect(getRootResectionRoot(46)).toBe("distal");
+    setRootResection(46, "premolarisation", "distal");
+    expect(getRootResectionRoot(46)).toBe("");
+  });
+
+  it("ein resektives Verfahren geht nur am mehrwurzeligen Zahn", () => {
+    setRootResection(45, "hemisection", "");
+    expect(getRootResection(45)).toBe("none");
+    setRootResection(46, "hemisection", "mesial");
+    expect(getRootResection(46)).toBe("hemisection");
+  });
+
+  it("die Wurzel faellt weg, wenn der Befund weggenommen wird", () => {
+    setRootFracture(36, "vertical", "distal");
+    setRootFracture(36, "none");
+    expect(getRootFractureRoot(36)).toBe("");
   });
 });

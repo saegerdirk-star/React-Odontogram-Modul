@@ -1256,9 +1256,19 @@ export default function App({
                   <span>{t("rootFracture.label")}</span>
                   <select id="rootFractureSelect"></select>
                 </div>
+                {/* Welche Wurzel. Nur bei mehrwurzeligen Zaehnen sichtbar -
+                    bei einem Einwurzler gibt es nichts zu waehlen. */}
+                <div id="rootFractureRootRow" className="row hidden">
+                  <span>{t("rootFracture.rootLabel")}</span>
+                  <select id="rootFractureRootSelect"></select>
+                </div>
                 <div id="rootResectionRow" className="row">
                   <span>{t("rootResection.label")}</span>
                   <select id="rootResectionSelect"></select>
+                </div>
+                <div id="rootResectionRootRow" className="row hidden">
+                  <span>{t("rootResection.rootLabel")}</span>
+                  <select id="rootResectionRootSelect"></select>
                 </div>
                 <div id="resorptionRow" className="row">
                   <span>{t("root.resorption")}</span>

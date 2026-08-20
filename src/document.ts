@@ -195,7 +195,9 @@ export interface DentalCoreIdentity {
 // 2.22 (odontogram-8vu): additive `not-erupted` tooth selection; no migration.
 // 2.27 (odontogram-t6y / -ca0): additive - `rootFracture` (none/vertical/
 // horizontal) and `rootResection` (none/hemisection/amputation/
-// premolarisation). The three crown-fracture flags mean the CROWN; a broken
+// premolarisation), each with a  qualifier naming WHICH root -
+// validated against rootsOf(toothNo), so a palatal value never lands on a
+// lower molar. The three crown-fracture flags mean the CROWN; a broken
 // root is a different finding with a different consequence, and vertical vs
 // horizontal is the distinction that decides whether the tooth can be kept.
 // `rootResection` is NOT `endoResection`: that is the apicoectomy, where the

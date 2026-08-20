@@ -333,6 +333,37 @@ export function furcationEntrances(toothNo: number): string[] {
   return [];
 }
 
+/**
+ * Welche Wurzeln eine Position hat - benannt, nicht gezaehlt.
+ *
+ * Dirk, 20.08.2026: eine Bruchlinie muss sich "bei mehrwurzeligen Zaehnen per
+ * Schalter zwischen den Wurzeln wechseln" lassen, und bei der Hemisektion muss
+ * "die entfernte Wurzel umschaltbar sein". Beides braucht NAMEN, nicht nur eine
+ * Zahl - und die Namen sind anatomisch verschieden je Kiefer.
+ *
+ * Positionsbasiert wie `furcationEntrances` daneben, und aus demselben Grund:
+ * die Wurzelzahl haengt an der Position und nicht am Zustand. Ein leeres
+ * Ergebnis heisst EINWURZELIG - dort gibt es nichts zu waehlen, und die
+ * Bedienung zeigt den Schalter gar nicht erst.
+ *
+ * Nicht aus `tools/toothgen/spec.py` gelesen, obwohl dort die Wurzelzahl
+ * steht: das ist Python, laeuft beim Erzeugen und nicht zur Laufzeit, und die
+ * Namen stehen dort ohnehin nicht. Zwei Tabellen sind es damit nicht - jene
+ * zaehlt fuer die Zeichnung, diese benennt fuer den Befund.
+ */
+export function rootsOf(toothNo: number): string[] {
+  const position = toothNo % 10;
+  const quadrant = Math.floor(toothNo / 10);
+  const oben = quadrant === 1 || quadrant === 2 || quadrant === 5 || quadrant === 6;
+  const unten = quadrant === 3 || quadrant === 4 || quadrant === 7 || quadrant === 8;
+  const molar = position === 6 || position === 7 || position === 8;
+  const milchmolar = (quadrant >= 5) && (position === 4 || position === 5);
+  if((molar || milchmolar) && oben) return ["mesiobuccal", "distobuccal", "palatal"];
+  if((molar || milchmolar) && unten) return ["mesial", "distal"];
+  if(position === 4 && oben && quadrant < 5) return ["buccal", "palatal"];  // nur 14/24
+  return [];
+}
+
 const MOD_OPTIONS = optionsFor("mods");
 
 function getPeriapicalTypeOptions(){
@@ -475,7 +506,13 @@ function defaultState(){
     // Bead odontogram-fu1: was GEPRUEFT wurde, neben dem, was daraus
     // geschlossen wurde. `none` heisst NICHT GEPRUEFT, nicht "unauffaellig".
     rootFracture: "none",  // none | vertical | horizontal (die WURZEL, nicht die Krone)
+    // Welche Wurzel es trifft. "" heisst: der Zahn hat nur eine, oder es ist
+    // noch nicht gesagt. Der Wert wird gegen `rootsOf(toothNo)` geprueft, also
+    // gegen die Anatomie der POSITION - ein palatinaler Wert an einem Molaren
+    // des Unterkiefers wird gar nicht erst angenommen.
+    rootFractureRoot: "",
     rootResection: "none", // none | hemisection | amputation | premolarisation
+    rootResectionRoot: "",  // die ENTFERNTE Wurzel
     sensibility: "none", // none | vital | no-response | questionable
     percussion: "none",  // none | negative | sensitive
     cejVisibility: "none", // none | detectable | not-detectable
@@ -2405,14 +2442,19 @@ function percussionSummaryLabel(state: Any): string | null {
   return t("percussion.summary." + kebabToCamel(state.percussion));
 }
 
+function wurzelZusatz(wurzel: string): string {
+  return wurzel ? ` (${t("root." + kebabToCamel(wurzel))})` : "";
+}
 function rootFractureSummaryLabel(state: Any): string | null {
   if(!state.rootFracture || state.rootFracture === "none") return null;
   if(!rootFractureAllowed(state)) return null;
-  return t("rootFracture.summary." + kebabToCamel(state.rootFracture));
+  return t("rootFracture.summary." + kebabToCamel(state.rootFracture))
+    + wurzelZusatz(state.rootFractureRoot ?? "");
 }
 function rootResectionSummaryLabel(state: Any): string | null {
   if(!state.rootResection || state.rootResection === "none") return null;
-  return t("rootResection.option." + kebabToCamel(state.rootResection));
+  return t("rootResection.option." + kebabToCamel(state.rootResection))
+    + wurzelZusatz(state.rootResectionRoot ?? "");
 }
 
 function diagnosisSummaryLabels(state: Any): string[] {
@@ -2832,6 +2874,13 @@ export function pulpEndoOnSelect(s: Any, value: string): void {
 
 function getApicalDxOptions(): { value: string; label: string }[]{
   return Array.from(VALID_APICAL_DX).map(v => ({ value: v, label: t("apicalDx." + kebabToCamel(v)) }));
+}
+/** Die Wurzeln einer Position als Auswahl, mit einem leeren ersten Eintrag -
+ *  "welche, ist noch nicht gesagt" ist ein zulaessiger Zustand. */
+function getRootOptions(toothNo: number | null): { value: string; label: string }[]{
+  const wurzeln = toothNo ? rootsOf(toothNo) : [];
+  return [{ value: "", label: t("root.unspecified") }]
+    .concat(wurzeln.map(w => ({ value: w, label: t("root." + kebabToCamel(w)) })));
 }
 function getRootFractureOptions(): { value: string; label: string }[]{
   return Array.from(VALID_ROOT_FRACTURE).map(v => ({ value: v, label: t("rootFracture.option." + kebabToCamel(v)) }));
@@ -5178,6 +5227,19 @@ function syncControlsFromState(state: Any){
   // Einwurzler ist keines der drei Verfahren moeglich.
   $("#rootResectionRow").classList.toggle(
     "hidden", !(activeTooth && rootResectionAllowed(state, activeTooth)));
+  // Die beiden Wurzelschalter: nur bei mehr als einer Wurzel, und nur wenn der
+  // Befund darueber ueberhaupt gesetzt ist. Bei der Praemolarisierung nicht -
+  // dort wird keine Wurzel entfernt.
+  const mehrwurzelig = !!activeTooth && rootsOf(activeTooth).length > 1;
+  setSelectOptions($("#rootFractureRootSelect"), getRootOptions(activeTooth),
+                   state.rootFractureRoot ?? "");
+  setSelectOptions($("#rootResectionRootSelect"), getRootOptions(activeTooth),
+                   state.rootResectionRoot ?? "");
+  $("#rootFractureRootRow").classList.toggle(
+    "hidden", !(mehrwurzelig && rootFractureAllowed(state) && state.rootFracture !== "none"));
+  $("#rootResectionRootRow").classList.toggle(
+    "hidden", !(mehrwurzelig && (state.rootResection === "hemisection"
+                                 || state.rootResection === "amputation")));
   setSelectOptions($("#sensibilitySelect"), getSensibilityOptions(), state.sensibility ?? "none");
   setSelectOptions($("#percussionSelect"), getPercussionOptions(), state.percussion ?? "none");
   $("#sensibilityRow").classList.toggle("hidden", !sensibilityAllowed(state));
@@ -7393,7 +7455,9 @@ function serializeState(s: Any){
     ...(s.retention && s.retention !== "none" ? { retention: s.retention } : {}),
     ...(s.retentionSide && s.retentionSide !== "none" ? { retentionSide: s.retentionSide } : {}),
     ...(s.rootFracture && s.rootFracture !== "none" ? { rootFracture: s.rootFracture } : {}),
+    ...(s.rootFractureRoot ? { rootFractureRoot: s.rootFractureRoot } : {}),
     ...(s.rootResection && s.rootResection !== "none" ? { rootResection: s.rootResection } : {}),
+    ...(s.rootResectionRoot ? { rootResectionRoot: s.rootResectionRoot } : {}),
     ...(s.sensibility && s.sensibility !== "none" ? { sensibility: s.sensibility } : {}),
     ...(s.percussion && s.percussion !== "none" ? { percussion: s.percussion } : {}),
     ...(s.cejVisibility && s.cejVisibility !== "none" ? { cejVisibility: s.cejVisibility } : {}),
@@ -7775,6 +7839,11 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   s.retentionSide = validateEnum(raw.retentionSide, VALID_RETENTION_SIDE, "none");
   s.rootFracture = validateEnum(raw.rootFracture, VALID_ROOT_FRACTURE, "none");
   s.rootResection = validateEnum(raw.rootResection, VALID_ROOT_RESECTION, "none");
+  // Die Wurzelangaben werden hier TOLERANT uebernommen und erst beim Schreiben
+  // gegen die Position geprueft - wie ueberall sonst: ein Import darf tragen,
+  // was er traegt, und die Bedienung zeigt nur, was sie zulaesst.
+  s.rootFractureRoot = typeof raw.rootFractureRoot === "string" ? raw.rootFractureRoot : "";
+  s.rootResectionRoot = typeof raw.rootResectionRoot === "string" ? raw.rootResectionRoot : "";
   s.sensibility = validateEnum(raw.sensibility, VALID_SENSIBILITY, "none");
   s.percussion = validateEnum(raw.percussion, VALID_PERCUSSION, "none");
   s.cejVisibility = validateEnum(raw.cejVisibility, VALID_CEJ_VISIBILITY, "none");
@@ -9603,17 +9672,29 @@ export function rootResectionAllowed(state: Any, toothNo: number): boolean {
  * quer ist hier der Unterschied, der zaehlt: die Laengsfraktur ist der
  * Extraktionsgrund, die Querfraktur kann je nach Hoehe erhalten werden.
  */
-export function setRootFracture(toothNo: number, value: string): void {
+export function setRootFracture(toothNo: number, value: string, root = ""): void {
   if(!VALID_ROOT_FRACTURE.has(value)) return;
   let s = toothState.get(toothNo);
   if(!s){ s = defaultState(); toothState.set(toothNo, s); }
   if(value !== "none" && !rootFractureAllowed(s)) return;
+  // Die Wurzel muss es an DIESER Position geben. Ein Einwurzler nimmt keine
+  // Angabe an - dort gibt es nichts zu unterscheiden.
+  const wurzeln = rootsOf(toothNo);
+  const neueWurzel = value === "none" ? "" : (wurzeln.includes(root) ? root : "");
   gateToothEdit(toothNo, () => {
-    if(s.rootFracture === value) return false;
+    if(s.rootFracture === value && s.rootFractureRoot === neueWurzel) return false;
     s.rootFracture = value;
+    s.rootFractureRoot = neueWurzel;
     notifyStateChange();
     return true;
   });
+}
+
+/** Welche Wurzel die Fraktur traegt; "" bei einem Einwurzler oder solange es
+ *  nicht gesagt ist. */
+export function getRootFractureRoot(toothNo: number): string {
+  const s = toothState.get(toothNo);
+  return (s?.rootFractureRoot as string) ?? "";
 }
 
 /** Liest die Wurzelfraktur aus dem aktiven Chart. */
@@ -9630,17 +9711,30 @@ export function getRootFracture(toothNo: number): string {
  * ist die Wurzelspitzenresektion, dort wird die Spitze gekappt und der Zahn
  * bleibt ganz - hier wird er geteilt.
  */
-export function setRootResection(toothNo: number, value: string): void {
+export function setRootResection(toothNo: number, value: string, root = ""): void {
   if(!VALID_ROOT_RESECTION.has(value)) return;
   let s = toothState.get(toothNo);
   if(!s){ s = defaultState(); toothState.set(toothNo, s); }
   if(value !== "none" && !rootResectionAllowed(s, toothNo)) return;
+  const wurzeln = rootsOf(toothNo);
+  // Bei der Praemolarisierung wird KEINE Wurzel entfernt - beide Haelften
+  // bleiben stehen. Eine Angabe waere dort schlicht falsch.
+  const nimmtWurzel = value === "hemisection" || value === "amputation";
+  const neueWurzel = nimmtWurzel && wurzeln.includes(root) ? root : "";
   gateToothEdit(toothNo, () => {
-    if(s.rootResection === value) return false;
+    if(s.rootResection === value && s.rootResectionRoot === neueWurzel) return false;
     s.rootResection = value;
+    s.rootResectionRoot = neueWurzel;
     notifyStateChange();
     return true;
   });
+}
+
+/** Die ENTFERNTE Wurzel; "" bei der Praemolarisierung und solange es nicht
+ *  gesagt ist. */
+export function getRootResectionRoot(toothNo: number): string {
+  const s = toothState.get(toothNo);
+  return (s?.rootResectionRoot as string) ?? "";
 }
 
 /** Liest das resektive Verfahren aus dem aktiven Chart. */
@@ -11994,11 +12088,29 @@ function wireControls(){
   // dort sitzt die Sperre (kein Implantat hat eine Pulpa), und eine Sperre,
   // die nur im Bedienfeld haengt, gilt fuer die Tastatur nicht.
   buildSelect($("#rootFractureSelect"), getRootFractureOptions(), (value)=>{
-    for(const toothNo of Array.from(selectedTeeth) as number[]) setRootFracture(toothNo, value);
+    for(const toothNo of Array.from(selectedTeeth) as number[]){
+      setRootFracture(toothNo, value, getRootFractureRoot(toothNo));
+    }
+    if(activeTooth) syncControlsFromState(toothState.get(activeTooth));
+  });
+  $("#rootFractureRootSelect").addEventListener("change", (e)=>{
+    const wurzel = (e.target as HTMLSelectElement).value;
+    for(const toothNo of Array.from(selectedTeeth) as number[]){
+      setRootFracture(toothNo, getRootFracture(toothNo), wurzel);
+    }
     if(activeTooth) syncControlsFromState(toothState.get(activeTooth));
   });
   buildSelect($("#rootResectionSelect"), getRootResectionOptions(), (value)=>{
-    for(const toothNo of Array.from(selectedTeeth) as number[]) setRootResection(toothNo, value);
+    for(const toothNo of Array.from(selectedTeeth) as number[]){
+      setRootResection(toothNo, value, getRootResectionRoot(toothNo));
+    }
+    if(activeTooth) syncControlsFromState(toothState.get(activeTooth));
+  });
+  $("#rootResectionRootSelect").addEventListener("change", (e)=>{
+    const wurzel = (e.target as HTMLSelectElement).value;
+    for(const toothNo of Array.from(selectedTeeth) as number[]){
+      setRootResection(toothNo, getRootResection(toothNo), wurzel);
+    }
     if(activeTooth) syncControlsFromState(toothState.get(activeTooth));
   });
 
