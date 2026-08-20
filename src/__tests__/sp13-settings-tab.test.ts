@@ -84,7 +84,7 @@ describe("SP13 Task 3: toothDetails settings tab", () => {
     expect(SETTINGS_TABS[toothDetailsIdx].titleKey).toBe("settings.tab.toothDetails");
   });
 
-  it("renders three controls bound to wearDetailLevel, discolorationDetailLevel, and surfaceNotation", () => {
+  it("renders the three controls bound to wearDetailLevel, discolorationDetailLevel, and surfaceNotation", () => {
     const tab = SETTINGS_TABS.find((tab) => tab.id === "toothDetails")!;
     const s = stubSettings();
     const node = tab.render({ t, s });
@@ -94,9 +94,17 @@ describe("SP13 Task 3: toothDetails settings tab", () => {
     ).filter(
       isValidElement,
     ) as ReactElement<SettingsRowProps>[];
-    expect(children).toHaveLength(3);
-
-    const [wearRow, discoRow, notationRow] = children;
+    // Der Reiter darf wachsen - am 20.08.2026 kam der Schalter fuer die
+    // Tiefenwirkung dazu. Festgehalten wird, dass DIESE DREI da sind und an
+    // ihren Werten haengen, nicht dass es keine vierten gibt. Eine Zahl
+    // festzunageln haette den naechsten Schalter zu einem Fehlschlag gemacht,
+    // ohne dass an diesen dreien etwas falsch waere.
+    const [wearRow, discoRow, notationRow] = children.filter(
+      (c) => (c.props as SettingsRowProps).options !== undefined,
+    );
+    expect(wearRow).toBeDefined();
+    expect(discoRow).toBeDefined();
+    expect(notationRow).toBeDefined();
 
     expect(wearRow.props.value).toBe(s.wearDetailLevel);
     expect(wearRow.props.descKey).toBe("settings.wearDetail.desc");
@@ -131,7 +139,11 @@ describe("SP13 Task 3: toothDetails settings tab", () => {
     ).filter(
       isValidElement,
     ) as ReactElement<SettingsRowProps>[];
-    const [wearRow, discoRow, notationRow] = children;
+    // Dieselbe Auswahl wie oben: die drei Auswahlfelder, nicht "die ersten drei
+    // Kinder" - der Reiter traegt seit dem 20.08.2026 auch einen Schalter.
+    const [wearRow, discoRow, notationRow] = children.filter(
+      (c) => (c.props as SettingsRowProps).options !== undefined,
+    );
 
     wearRow.props.onChange("simple");
     expect(s.onWearDetailLevel).toHaveBeenCalledTimes(1);

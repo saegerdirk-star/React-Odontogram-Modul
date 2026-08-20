@@ -20,6 +20,7 @@ import type {
 import {
   getRestorationColours, getRestorationPalette, setRestorationColour, resetRestorationColours,
   getShorthandEnabled, setShorthandEnabled, getShorthandTabWalk, setShorthandTabWalk,
+  getToothDepth, setToothDepth,
 } from "./odontogram";
 import { SHORTHAND_DE, SHORTHAND_PENDING, MATERIALS } from "./shorthand";
 import { AXES } from "./registry/axes";
@@ -393,6 +394,23 @@ function ShorthandTab({ t }: { t: TFn }) {
   );
 }
 
+/** Dirk, 20.08.2026: "Aber das laesst sich alles an und abschalten?" - zur
+ *  Tiefenwirkung an Zahnsubstanz und Zahnhals. Ja: sie traegt keinen Befund,
+ *  sie ist Darstellung, und wer den flachen Schnitt lieber liest, bekommt ihn.
+ *  Liest und schreibt die Maschine direkt, wie {@link ColourTab}. */
+function DepthToggle({ t }: { t: TFn }) {
+  const [, bump] = useState(0);
+  return (
+    <ToggleRow
+      t={t}
+      label={t("settings.depth.label")}
+      descKey="settings.depth.desc"
+      checked={getToothDepth()}
+      onChange={(v) => { setToothDepth(v); bump((n) => n + 1); }}
+    />
+  );
+}
+
 export const SETTINGS_TABS: SettingsTab[] = [
   {
     id: "general",
@@ -476,6 +494,7 @@ export const SETTINGS_TABS: SettingsTab[] = [
     titleKey: "settings.tab.toothDetails",
     render: ({ t, s }) => (
       <>
+        <DepthToggle t={t} />
         <SelectRow<ToothDetailLevel>
           t={t}
           label={t("settings.wearDetail.label")}

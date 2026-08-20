@@ -1,5 +1,69 @@
 # Changelog
 
+## 2.22.0 - 2026-08-20
+
+### Tiefenwirkung: der Bogen liest sich als Relief statt als Scherenschnitt
+
+Dirk, 20.08.2026: *"Das Odontogramm wirkt absolut zweidimensional. Koennte man
+ueber optische Tricks an den Wurzeln und den anderen Flaechen die Illusion
+einer dritten Dimension erzeugen?"* - und gleich danach die richtige Frage:
+*"Aber das laesst sich alles an und abschalten?"*
+
+Der Befund vorweg: die Zahnsubstanz war EINFARBIG. `tooth-base` traegt inline
+`fill: #ebebeb`, und die Glanzebene `tooth-base-beauty` besteht aus zwei
+FLACHEN Weissflaechen. Die elf linearen und acht radialen Verlaeufe im Template
+gehoeren alle den Restaurationsmaterialien; dem Zahn selbst gehoerte keiner.
+
+- **Ein Koerperverlauf quer ueber Krone und Wurzel** laesst beide als Zylinder
+  lesen. SYMMETRISCH, und das ist kein Geschmack: der linke Quadrant ist
+  derselbe Zahn gespiegelt, ein Verlauf mit heller und dunkler Seite haette dem
+  Bogen zwei Lichtquellen gegeben. Der Saum sitzt in den aeusseren gut zehn
+  Prozent - eine schmalere, dunklere Fassung wurde ausprobiert und verworfen:
+  die Kontur hat ohnehin ihre eigene Linie, ein zweiter harter Rand daneben
+  verdoppelt sie nur.
+- **Eine Halsverschattung**, wo der Zahn ins Zahnfleisch eintritt, nach koronal
+  auslaufend. Von den drei Tiefenreizen der staerkste - ein Relief erkennt man
+  an dem, was es verschattet. Sie liegt in einer ZWEITEN Auflage VOR den
+  Kacheln (`svg.gum-shade`): die Zahnfleischbaender liegen hinter dem Raster,
+  weil sie hinter den Zaehnen stehen, ein Schatten dagegen faellt auf sie. Ihre
+  Hoehe kommt vom Zahnfleisch selbst (koronale Kante von `gum-base`), nicht aus
+  einer gesetzten Zahl - sonst laege sie daneben, sobald sich die Gingiva
+  aendert.
+- **Abschaltbar**: Einstellungen -> Zahndetails -> *Tiefenwirkung*
+  (`getToothDepth`/`setToothDepth`). Ein Schalter fuer beides. Aus heisst: die
+  Klasse `odon-depth` am Raster faellt weg, die Fuellungsregeln greifen nicht
+  mehr, die Schattenauflage wird entfernt. Im Renderpfad laeuft dabei KEIN
+  JavaScript - dieselbe Bauweise wie bei den Restaurationsfarben.
+  Sitzungszustand wie `perioViewMode`, nie Teil der Nutzlast.
+
+**Die Grenze**: geschattet wird nur die ZAHNSUBSTANZ. Farbe traegt hier
+Bedeutung - ueber eine Karies, eine Fuellung oder ein Material zu schattieren
+hiesse zu veraendern, wie ein Befund gelesen wird.
+
+**Paritaetssicher von der Bauart her, nicht aus Versehen**:
+`collectActiveLayers` ueberspringt alles unter `<defs>` und jedes
+Verlaufselement, und es haelt nur `id`, `opacity` und `class` fest - die
+Fuellung nicht. Was NICHT ginge, waere ein neues SICHTBARES Element mit `id`.
+Geprueft, nicht angenommen.
+
+### i18n
+
+- Zwei neue Schluessel in allen zwoelf Sprachen: `settings.depth.label`,
+  `settings.depth.desc`.
+
+### Test
+
+- `sp13-settings-tab.test.ts` hielt fest, dass der Reiter "Zahndetails" GENAU
+  DREI Bedienelemente hat. Er prueft jetzt, dass DIESE DREI da sind und an
+  ihren Werten haengen. Eine Zahl festzunageln haette jeden kuenftigen Schalter
+  zu einem Fehlschlag gemacht, ohne dass an den dreien etwas falsch waere.
+
+### Unveraendert
+
+Keine Vorlage geaendert, kein Zustandsfeld, keine Nutzlast. Nutzlast bleibt
+**2.25**, SVG-Fingerabdruck-Paritaet, FHIR-Gold und Rundlauf-Gold
+byte-identisch.
+
 ## 2.21.0 - 2026-08-20
 
 ### Kauflaechen: wie gross sie DARGESTELLT werden (Bead odontogram-bn3)

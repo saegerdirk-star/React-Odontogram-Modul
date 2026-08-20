@@ -2771,3 +2771,28 @@ body.odon-dragging{ cursor: cell; }
 .tooth-tile.tpl-55-occl{ --occl-scale: 0.85; }
 .tooth-tile.tpl-84-occl{ --occl-scale: 0.85; }
 .tooth-tile.tpl-85-occl{ --occl-scale: 0.85; }
+
+/* Tiefenreiz an der Zahnsubstanz (Dirks Frage vom 20.08.2026: "Koennte man
+   ueber optische Tricks an den Wurzeln und den anderen Flaechen die Illusion
+   einer dritten Dimension erzeugen?").
+   -------------------------------------------------------------------------
+   Ein Koerperverlauf quer ueber den Zahn laesst Krone und Wurzel als Zylinder
+   lesen statt als Scherenschnitt. Die Verlaufsdefinition steht einmal im
+   Dokument (src/App.tsx), `objectBoundingBox` rechnet sie auf jede Form um.
+
+   `!important`, weil `tooth-base` seine Fuellung INLINE traegt - eine
+   Stilregel kaeme sonst nicht dagegen an. Das ist hier kein Notnagel, sondern
+   der Schalter: die Regel wegzunehmen heisst, den Zahn wieder flach zu haben.
+
+   NUR die Zahnsubstanz, und das ist die Grenze: Farbe traegt bei uns
+   Bedeutung. Ueber eine Karies, eine Fuellung oder ein Material zu
+   schattieren, hiesse zu veraendern, wie ein Befund gelesen wird. */
+#toothGrid.odon-depth .tooth-tile [id="tooth-base"]{ fill: url(#odonDepthBody) !important; }
+#toothGrid.odon-depth .tooth-tile [id="milktooth-base"]{ fill: url(#odonDepthMilk) !important; }
+
+/* Die Halsverschattung liegt VOR den Kacheln, anders als die Zahnfleischbaender
+   dahinter - ein Schatten, der hinter dem Zahn liegt, ist keiner. Sie steht
+   ausserhalb der Zahn-SVG und damit ausserhalb jedes Vertrags. */
+.tooth-grid > svg.gum-shade{
+  position: absolute; inset: 0; pointer-events: none; z-index: 2;
+}

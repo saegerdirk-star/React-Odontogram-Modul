@@ -6704,6 +6704,33 @@ function extendSelectionTo(target: number){
 // Both default ON in this fork, because this is Dirk's chart and he asked for
 // them; a host that wants the upstream default flips them at mount. Session
 // state like `perioViewMode`, never part of the payload.
+// Dirk, 20.08.2026: "Das Odontogramm wirkt absolut zweidimensional. Koennte man
+// ueber optische Traicks an den Wurzeln und den anderen Flaechen die Illusion
+// einer dritten Dimension erzeugen?" - und gleich danach die richtige Frage:
+// "Aber das laesst sich alles an und abschalten?"
+//
+// Ja. Der Tiefenreiz ist eine DARSTELLUNGSSACHE und traegt keinen Befund; wer
+// den flachen Schnitt lieber liest, bekommt ihn. Sitzungszustand wie
+// `perioViewMode`, nie Teil der Nutzlast. Geschaltet wird ueber eine Klasse am
+// Raster, damit im Renderpfad kein JavaScript laeuft - dieselbe Bauweise wie
+// bei den Restaurationsfarben.
+let toothDepth = true;
+
+export function getToothDepth(): boolean { return toothDepth; }
+export function setToothDepth(on: boolean): void {
+  const next = !!on;
+  if(next === toothDepth) return;
+  toothDepth = next;
+  syncToothDepthClass();
+  updateBridgeOverlay();   // zeichnet die Auflagen neu, samt Halsverschattung
+  notifyStateChange();
+}
+
+function syncToothDepthClass(): void {
+  const grid = document.getElementById("toothGrid");
+  if(grid) grid.classList.toggle("odon-depth", toothDepth);
+}
+
 let shorthandEnabled = true;
 let shorthandTabWalk = true;
 
@@ -11623,6 +11650,8 @@ async function buildGrid(token: number){
   updateToothTileVisibility();
   setOcclusalVisible(occlusalVisible);
   setHealthyPulpVisible(showHealthyPulp);
+
+  syncToothDepthClass();
 
   // Bead odontogram-apn: drag to select. pointer* rather than mouse*, so the
   // same code carries mouse and stylus, and the existing touch handling below

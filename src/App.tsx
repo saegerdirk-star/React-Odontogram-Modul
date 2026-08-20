@@ -830,6 +830,50 @@ export default function App({
           className="chart-column"
           style={viewMode === "toggle" && activeView === "dentalChart" ? { display: "none" } : undefined}
         >
+        {/* Tiefenreiz: Verlaufsdefinitionen fuer die Zahnsubstanz.
+            ------------------------------------------------------------------
+            Die Zaehne sind einfarbig gefuellt (`tooth-base` traegt inline
+            `fill: #ebebeb`), und die Glanzebene `tooth-base-beauty` besteht aus
+            zwei FLACHEN Weissflaechen. Deshalb wirkt der Bogen flach: dem Zahn
+            selbst gehoert kein einziger Verlauf, die elf linearen und acht
+            radialen im Template gehoeren alle den Restaurationsmaterialien.
+
+            EINMAL im Dokument, nicht je Kachel: `objectBoundingBox` rechnet den
+            Verlauf auf die Bezugsbox JEDER Form um, ein Element genuegt also
+            fuer alle 64.
+
+            SYMMETRISCH, und das ist kein Geschmack: der linke Quadrant ist
+            derselbe Zahn gespiegelt. Ein Verlauf mit einer hellen und einer
+            dunklen Seite wuerde dort von der anderen Seite beleuchtet, und der
+            Bogen haette zwei Lichtquellen.
+
+            Paritaetssicher von der Bauart her, nicht aus Versehen:
+            `collectActiveLayers` ueberspringt alles unter `<defs>` und jedes
+            Verlaufselement, und es haelt nur `id`, `opacity` und `class` fest -
+            die Fuellung nicht. Was NICHT ginge, waere ein neues SICHTBARES
+            Element mit `id`. */}
+        <svg width="0" height="0" aria-hidden="true" focusable="false"
+             style={{ position: "absolute" }}>
+          <defs>
+            {/* Schmaler dunkler Rand: die Abdunklung sitzt in den aeusseren
+                gut zehn Prozent, der Koerper bleibt hell. Ein breiter Verlauf
+                macht den ganzen Zahn grau, statt ihn zu woelben. */}
+            <linearGradient id="odonDepthBody" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stopColor="#c9cbcc" />
+              <stop offset="0.13" stopColor="#ededed" />
+              <stop offset="0.5" stopColor="#f7f7f7" />
+              <stop offset="0.87" stopColor="#ededed" />
+              <stop offset="1" stopColor="#c9cbcc" />
+            </linearGradient>
+            <linearGradient id="odonDepthMilk" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stopColor="#d5d3ca" />
+              <stop offset="0.13" stopColor="#f6f4ee" />
+              <stop offset="0.5" stopColor="#fcfbf7" />
+              <stop offset="0.87" stopColor="#f6f4ee" />
+              <stop offset="1" stopColor="#d5d3ca" />
+            </linearGradient>
+          </defs>
+        </svg>
         <section className="chart">
           <div className="chart-header">
             <div>

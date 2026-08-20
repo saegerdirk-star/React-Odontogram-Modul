@@ -116,4 +116,83 @@ export function renderGumOverlay(grid: HTMLElement | null): void {
       overlay.appendChild(huelle);
     }
   }
+
+  halsVerschattung(grid, gridRect, kacheln);
+}
+
+/** Der weiche dunkle Saum dort, wo der Zahn ins Zahnfleisch eintritt.
+ *
+ *  Dirk, 20.08.2026, zur Frage nach der dritten Dimension. Von den drei
+ *  Tiefenreizen ist das der staerkste: eine Zahnreihe ist ein Relief, und ein
+ *  Relief erkennt man an dem, was es verschattet - nicht an seiner Woelbung.
+ *
+ *  VOR den Kacheln, nicht dahinter. Die Baender oben liegen hinter dem Raster,
+ *  weil sie hinter den Zaehnen stehen; ein Schatten dagegen faellt AUF sie.
+ *  Deshalb eine zweite Auflage, die zuletzt eingehaengt wird.
+ *
+ *  Ausserhalb der Zahn-SVG und damit ausserhalb jedes Vertrags: der
+ *  Fingerabdruck laeuft ueber die Vorlagen, nicht ueber die Auflagen.
+ *
+ *  Die Hoehe kommt vom Zahnfleisch SELBST (`gum-base`, seine koronale Kante),
+ *  nicht aus einer gesetzten Zahl - sonst wandert der Schatten, sobald die
+ *  Gingiva sich aendert, und liegt an einem hochgezogenen Hals daneben. */
+function halsVerschattung(grid: HTMLElement, gridRect: DOMRect,
+                          kacheln: ArrayLike<Element>): void {
+  let schatten = grid.querySelector(":scope > svg.gum-shade") as SVGSVGElement | null;
+  const an = grid.classList.contains("odon-depth");
+  if(!an){
+    if(schatten) schatten.remove();
+    return;
+  }
+  if(!schatten){
+    schatten = document.createElementNS(SVG_NS, "svg");
+    schatten.setAttribute("class", "gum-shade");
+    schatten.setAttribute("aria-hidden", "true");
+    grid.appendChild(schatten);          // zuletzt = vorne
+  }
+  while(schatten.firstChild) schatten.removeChild(schatten.firstChild);
+  schatten.setAttribute("viewBox", `0 0 ${gridRect.width} ${gridRect.height}`);
+
+  const defs = document.createElementNS(SVG_NS, "defs");
+  for(const [id, y1, y2] of [["odonHalsAb", "0", "1"], ["odonHalsAuf", "1", "0"]] as const){
+    const g = document.createElementNS(SVG_NS, "linearGradient");
+    g.setAttribute("id", id);
+    g.setAttribute("x1", "0"); g.setAttribute("x2", "0");
+    g.setAttribute("y1", y1); g.setAttribute("y2", y2);
+    for(const [off, op] of [["0", "0.20"], ["0.45", "0.06"], ["1", "0"]] as const){
+      const st = document.createElementNS(SVG_NS, "stop");
+      st.setAttribute("offset", off);
+      st.setAttribute("stop-color", "#5a4038");
+      st.setAttribute("stop-opacity", op);
+      g.appendChild(st);
+    }
+    defs.appendChild(g);
+  }
+  schatten.appendChild(defs);
+
+  // Wie weit der Schatten koronal reicht, als Anteil der Kachelhoehe.
+  const TIEFE = 0.11;
+
+  for(const kachel of Array.from(kacheln)){
+    const svg = kachel.querySelector("svg");
+    if(!svg) continue;
+    const gum = svg.querySelector('[id="gum-base"]');
+    if(!gum || gum.getAttribute("data-active") === "0") continue;
+    const rk = (kachel as HTMLElement).getBoundingClientRect();
+    const rg = (gum as SVGGraphicsElement).getBoundingClientRect();
+    if(rk.width === 0 || rg.height === 0) continue;
+
+    // Oberkiefer: Krone nach unten, der Schatten faellt also nach unten.
+    const oben = !!kachel.closest(".upper-arch");
+    const hoehe = rk.height * TIEFE;
+    const y = oben ? rg.bottom - gridRect.top : rg.top - gridRect.top - hoehe;
+
+    const rect = document.createElementNS(SVG_NS, "rect");
+    rect.setAttribute("x", String(rk.left - gridRect.left));
+    rect.setAttribute("y", String(y));
+    rect.setAttribute("width", String(rk.width));
+    rect.setAttribute("height", String(hoehe));
+    rect.setAttribute("fill", `url(#${oben ? "odonHalsAb" : "odonHalsAuf"})`);
+    schatten.appendChild(rect);
+  }
 }

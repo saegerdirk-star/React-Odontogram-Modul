@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
-[![Version](https://img.shields.io/badge/version-2.21.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
+[![Version](https://img.shields.io/badge/version-2.22.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](https://raw.githubusercontent.com/ZoliQua/React-Odontogram-Modul/main/src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
 
@@ -248,6 +248,7 @@ yes, across the jaw never.
 - 🔗 **HL7 FHIR R4** export/import; JSON export/import with migrations
 - 🖼️ PNG / JPG / SVG chart export and a **PDF report** (jsPDF, lazy-loaded)
 - ⌨️ **Charting by shorthand** (see above) — mark teeth by dragging, Shift+arrow or Shift+click, then type the finding; Tab walks the arch
+- 🪞 **Depth shading** — a body gradient across crown and root and a soft shading where the tooth enters the gum, so the arch reads as a relief rather than a cut-out. Only the tooth substance is shaded: colour carries meaning here. One switch in Settings → Tooth details
 - 🔢 FDI / Universal / Palmer numbering · 🌐 12 UI languages (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR/AR/ZH/FR, Arabic RTL) · 🎨 theming via `--odon-*` CSS variables · 🧩 plugin system · ⌨️ keyboard accessibility
 
 ## 📖 Documentation
