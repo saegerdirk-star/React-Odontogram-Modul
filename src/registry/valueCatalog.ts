@@ -219,6 +219,21 @@ export const LOCAL_VALUE_MAPS: Record<string, Record<string, CodeEntry>> = {
   // Testkavitaet werden NICHT als eigene Angabe gefuehrt. Wer sie spaeter
   // "hilfsbereit" ergaenzt, hebt diese Entscheidung auf; wer sie braucht, holt
   // sie vorher ein.
+  //
+  // UND `pulpDx` WIRD AUS DIESEN ACHSEN NICHT ABGELEITET - ebenfalls entschieden
+  // am 20.08.2026. Dirk: "Kaelteprobe stuetzt eine Diagnose. Auch ein
+  // gangraenoeser Zahn kann dabei falsch positiv reagieren."
+  //
+  // Damit ist die Frage nicht eine des Geschmacks, sondern der Sache: ein Test,
+  // der falsch positiv ausfallen kann, darf eine Diagnose STUETZEN und nicht
+  // STELLEN. Beim Parodont leiten wir ab (`getPerioClassification`, abgeleitet
+  // mit Uebersteuerung je Achse) - dort sind die Eingangsgroessen Messwerte in
+  // Millimetern und keine Reizantworten. Der Unterschied liegt in der Natur der
+  // Messung, nicht in der Bauweise, und deshalb ist es kein Widerspruch, dass
+  // die beiden Stellen es verschieden halten.
+  //
+  // Die Pruefung und die Benennung stehen also nebeneinander, jede fuer sich,
+  // und der Zusammenhang wird gelesen statt gerechnet.
   sensibility: {
     "none": { code: "none", display: "Sensibility not tested" },
     "vital": { code: "vital", display: "Vital response" },
