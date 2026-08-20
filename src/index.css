@@ -2683,3 +2683,26 @@ body.odon-dragging{ cursor: cell; }
   letter-spacing: 0;
   font-family: inherit;
 }
+
+/* Bead odontogram-t8y: the key table in Settings. A shorthand nobody can look
+   up is a shorthand nobody uses, so the whole table is on the page rather than
+   hidden behind a help link. Greyed out — not removed — while the feature is
+   off, so one can read it before deciding. */
+.settings-shorthand-table{ margin-top: 12px; }
+.settings-shorthand-table[aria-disabled="true"]{ opacity: .5; }
+.settings-shorthand-table h4{
+  margin: 14px 0 6px; font-size: .82rem; font-weight: 600;
+  color: var(--odon-text-muted, #5b6470);
+}
+.settings-shorthand-table dl{ margin: 0; display: grid; gap: 2px 10px; }
+.settings-shorthand-row{ display: grid; grid-template-columns: 4.5rem 1fr; align-items: baseline; }
+.settings-shorthand-row dt{ margin: 0; }
+.settings-shorthand-row dd{ margin: 0; font-size: .84rem; }
+.settings-shorthand-table kbd,
+.settings-shorthand-pending kbd{
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .78rem; padding: 1px 6px; border-radius: 4px;
+  border: 1px solid var(--odon-border, #d0d5dd);
+  background: var(--odon-surface-2, #f6f7f9);
+}
+.settings-shorthand-pending{ display: flex; flex-wrap: wrap; gap: 6px; }

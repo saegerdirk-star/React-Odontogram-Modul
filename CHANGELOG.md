@@ -1,5 +1,50 @@
 # Changelog
 
+## 2.20.0 - 2026-08-20
+
+### Die Kurzschrift ist einstellbar (Bead odontogram-t8y)
+
+Zoltan Dul im Upstream-Issue, 19.08.2026, auf Dirks Frage nach der Bedienung:
+
+> *"The one firm principle, whatever we add here: it has to be flexible and
+> fully configurable in Settings, never hard-wired. If you want to build a
+> keyboard-entry path, that is the bar. Someone who wants it can switch it on
+> and shape it, and someone who does not never has to see it."*
+
+Er hat ueber die Upstream-Frage hinaus recht. Buchstaben auf einer Kachel zu
+tippen ist additiv - nichts sonst benutzt diese Tasten -, aber der
+Tabulatorgang UEBERSCHREIBT eine Standard-Navigationstaste, und ein Chart, auf
+dem niemand tippt, sollte das nicht muessen.
+
+- Neuer Einstellungsreiter **Kuerzel** mit zwei Schaltern: `shorthandEnabled`
+  und `shorthandTabWalk`, getrennt schaltbar
+  (`getShorthandEnabled`/`setShorthandEnabled`,
+  `getShorthandTabWalk`/`setShorthandTabWalk`). Aus heisst wirklich aus: kein
+  Tastendruck kommt an, und der Tabulator verlaesst das Zahnschema wieder wie
+  ueberall sonst - ein Test prueft `defaultPrevented`, nicht nur die Wirkung.
+- **Abschalten raeumt auf.** Ein halb getipptes Kuerzel oder ein stehender
+  Materialmodus duerfen den Schalter nicht ueberleben, sonst waere die naechste
+  Krone nach dem Wiedereinschalten stillschweigend golden.
+- **Die Kuerzeltabelle liegt offen** im Reiter, gruppiert nach Material,
+  Flaechen und ganzem Zahn, dazu die Tasten ohne Ziel. Eine Kurzschrift, die
+  man nicht nachschlagen kann, benutzt niemand. Die Beschriftungen kommen aus
+  der bestehenden Achsen-Registry (`uiOptions[].labelKey`), es gibt also keine
+  zweite Textsammlung in zwoelf Sprachen, die auseinanderlaufen koennte.
+- **Beide Schalter stehen in diesem Fork auf AN**, weil dies Dirks Chart ist
+  und er sie angefragt hat. Ein Wirt, der Zoltans Voreinstellung will, legt sie
+  beim Einhaengen um. Sitzungszustand wie `perioViewMode`, nie Teil der
+  Nutzlast.
+
+### i18n
+
+- 17 neue Schluessel in allen zwoelf Sprachen (`settings.tab.shorthand`,
+  `settings.shorthand.*`).
+
+### Unveraendert
+
+Kein neues Zustandsfeld, kein Renderpfad. Nutzlast bleibt **2.25**,
+SVG-Fingerabdruck-Paritaet, FHIR-Gold und Rundlauf-Gold byte-identisch.
+
 ## 2.19.0 - 2026-08-19
 
 ### Befundeingabe ueber Kuerzel (Bead odontogram-t8y)

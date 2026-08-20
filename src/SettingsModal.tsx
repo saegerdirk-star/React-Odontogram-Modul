@@ -19,7 +19,10 @@ import type {
 // surface, so it reads and writes it directly rather than through SettingsState.
 import {
   getRestorationColours, getRestorationPalette, setRestorationColour, resetRestorationColours,
+  getShorthandEnabled, setShorthandEnabled, getShorthandTabWalk, setShorthandTabWalk,
 } from "./odontogram";
+import { SHORTHAND_DE, SHORTHAND_PENDING, MATERIALS } from "./shorthand";
+import { AXES } from "./registry/axes";
 
 /** Translation function signature (subset of `useI18n`'s `t`). */
 type TFn = (key: string, params?: Record<string, string | number>) => string;
@@ -283,6 +286,109 @@ function ColourTab({ t }: { t: (k: string, v?: Record<string, unknown>) => strin
         disabled={!dirty}
         onClick={() => { resetRestorationColours(); bump((n) => n + 1); }}
       >{t("settings.colours.reset")}</button>
+    </>
+  );
+}
+
+/** Resolves a shorthand entry into a translated label, so the key list needs no
+ *  copy of its own in twelve languages. The registry already carries a
+ *  `labelKey` for every enum value the pickers show; a key that writes
+ *  `restorationType: crown` therefore reads exactly as the dropdown does. */
+function shorthandLabel(t: TFn, entry: unknown): string {
+  const e = entry as { kind: string; field?: string; value?: unknown;
+                       edits?: { field: string; value: unknown }[];
+                       surface?: string; material?: string; severity?: number };
+  const axisLabel = (field: string, value: unknown): string | null => {
+    const axis = AXES.find(a => a.field === field);
+    const opt = axis?.uiOptions?.find(o => o.value === value);
+    if(opt) return t(opt.labelKey);
+    if(typeof value === "boolean") return field;
+    return null;
+  };
+  switch(e.kind){
+    case "axis": {
+      const l = axisLabel(e.field!, e.value);
+      return l ?? `${e.field}: ${String(e.value)}`;
+    }
+    case "axes":
+      return (e.edits ?? [])
+        .map(x => axisLabel(x.field, x.value) ?? `${x.field}: ${String(x.value)}`)
+        .join(" + ");
+    case "surface":  return t(`surface.${e.surface}`);
+    case "material": return t(`settings.shorthand.material`, { m: e.material ?? "" });
+    case "caries":   return t("settings.shorthand.cariesRun");
+    case "severity": return t("settings.shorthand.severity", { n: e.severity ?? 0 });
+    case "denture":  return t("settings.shorthand.denture");
+    case "reset":    return t("settings.shorthand.reset");
+    default:         return e.kind;
+  }
+}
+
+/** Bead odontogram-t8y + Zoltán Dul's condition on the upstream issue
+ *  (19.08.2026): keyboard entry "has to be flexible and fully configurable in
+ *  Settings, never hard-wired". Two switches, and the key table laid open —
+ *  a shorthand nobody can look up is a shorthand nobody uses.
+ *
+ *  Reads and writes the engine directly, like {@link ColourTab}. */
+function ShorthandTab({ t }: { t: TFn }) {
+  const [, bump] = useState(0);
+  const on = getShorthandEnabled();
+  const walk = getShorthandTabWalk();
+  const materials = Object.keys(MATERIALS);
+  const gruppen: { titleKey: string; keys: string[] }[] = [
+    { titleKey: "settings.shorthand.groupMaterial",
+      keys: Object.keys(SHORTHAND_DE).filter(k => (SHORTHAND_DE[k] as { kind: string }).kind === "material") },
+    { titleKey: "settings.shorthand.groupSurface",
+      keys: Object.keys(SHORTHAND_DE).filter(k => {
+        const kind = (SHORTHAND_DE[k] as { kind: string }).kind;
+        return kind === "surface" || kind === "caries" || kind === "severity";
+      }) },
+    { titleKey: "settings.shorthand.groupTooth",
+      keys: Object.keys(SHORTHAND_DE).filter(k => {
+        const kind = (SHORTHAND_DE[k] as { kind: string }).kind;
+        return kind !== "material" && kind !== "surface" && kind !== "caries" && kind !== "severity";
+      }) },
+  ];
+  return (
+    <>
+      <p className="settings-desc">{t("settings.shorthand.desc")}</p>
+      <ToggleRow
+        t={t}
+        label={t("settings.shorthand.enabled")}
+        descKey="settings.shorthand.enabled.desc"
+        checked={on}
+        onChange={(v) => { setShorthandEnabled(v); bump(n => n + 1); }}
+      />
+      <ToggleRow
+        t={t}
+        label={t("settings.shorthand.tabWalk")}
+        descKey="settings.shorthand.tabWalk.desc"
+        checked={walk}
+        onChange={(v) => { setShorthandTabWalk(v); bump(n => n + 1); }}
+      />
+      <div className="settings-shorthand-table" aria-disabled={!on}>
+        {gruppen.map(g => (
+          <section key={g.titleKey}>
+            <h4>{t(g.titleKey)}</h4>
+            <dl>
+              {g.keys.map(k => (
+                <div key={k} className="settings-shorthand-row">
+                  <dt><kbd>{k}</kbd></dt>
+                  <dd>{shorthandLabel(t, SHORTHAND_DE[k])}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        ))}
+        <section>
+          <h4>{t("settings.shorthand.groupPending")}</h4>
+          <p className="settings-desc">{t("settings.shorthand.pending.desc")}</p>
+          <p className="settings-shorthand-pending">
+            {Object.keys(SHORTHAND_PENDING).map(k => <kbd key={k}>{k}</kbd>)}
+          </p>
+        </section>
+      </div>
+      <p className="settings-desc">{t("settings.shorthand.materialsHint", { list: materials.join(" ") })}</p>
     </>
   );
 }

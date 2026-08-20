@@ -6691,6 +6691,41 @@ function extendSelectionTo(target: number){
 // The arrow keys are untouched. They are the map (two rows, spatial, no wrap);
 // Tab is the round (one chain, around the mouth, wraps). Different intents.
 
+// Zoltán Dul, 19.08.2026, on the upstream issue: "The one firm principle,
+// whatever we add here: it has to be flexible and fully configurable in
+// Settings, never hard-wired. If you want to build a keyboard-entry path, that
+// is the bar. Someone who wants it can switch it on and shape it, and someone
+// who does not never has to see it."
+//
+// He is right beyond the upstream question. Typing letters on a tile is
+// additive — nothing else uses those keys — but the Tab walk OVERRIDES a
+// standard navigation key, and a chart nobody types on should not have to.
+//
+// Both default ON in this fork, because this is Dirk's chart and he asked for
+// them; a host that wants the upstream default flips them at mount. Session
+// state like `perioViewMode`, never part of the payload.
+let shorthandEnabled = true;
+let shorthandTabWalk = true;
+
+export function getShorthandEnabled(): boolean { return shorthandEnabled; }
+export function setShorthandEnabled(on: boolean): void {
+  const next = !!on;
+  if(next === shorthandEnabled) return;
+  shorthandEnabled = next;
+  // Switching it off must not leave half-typed keys or a material mode
+  // standing, invisible and waiting to be applied by the next switch-on.
+  if(!next) resetShorthandInput();
+  notifyStateChange();
+}
+
+export function getShorthandTabWalk(): boolean { return shorthandTabWalk; }
+export function setShorthandTabWalk(on: boolean): void {
+  const next = !!on;
+  if(next === shorthandTabWalk) return;
+  shorthandTabWalk = next;
+  notifyStateChange();
+}
+
 /** The material mode, as charly carries it: chosen once, then it stands. Session
  *  state — never serialized, like `perioViewMode` and friends. */
 let shorthandMaterial: MaterialKey | null = null;
@@ -6975,12 +7010,12 @@ function handleShorthandUndoKey(evt: KeyboardEvent): boolean {
 
 function onToothKeydown(toothNo: number, evt: KeyboardEvent){
   if(readOnly) return;
-  if(handleShorthandUndoKey(evt)) return;
+  if(shorthandEnabled && handleShorthandUndoKey(evt)) return;
   switch(evt.key){
     case "Enter":
     case " ":
       evt.preventDefault();
-      if(shorthandBuffer){
+      if(shorthandEnabled && shorthandBuffer){
         // Apply without advancing — the other half of Tab.
         reportShorthand(applyShorthand(shorthandBuffer));
         shorthandBuffer = "";
@@ -7007,14 +7042,15 @@ function onToothKeydown(toothNo: number, evt: KeyboardEvent){
       break;
     }
     case "Tab":
-      // Deliberate departure from the usual ARIA rule that Tab LEAVES a
-      // composite widget: this is charly's charting walk, and it is the whole
-      // point of the shorthand. Escape is the way out.
+      // A deliberate departure from the usual ARIA rule that Tab LEAVES a
+      // composite widget — which is exactly why it is switchable. Off, Tab
+      // does what it does everywhere else and leaves the chart.
+      if(!shorthandEnabled || !shorthandTabWalk) break;
       evt.preventDefault();
       shorthandStep(toothNo, evt.shiftKey ? -1 : 1);
       break;
     case "Backspace":
-      if(shorthandBuffer){
+      if(shorthandEnabled && shorthandBuffer){
         evt.preventDefault();
         shorthandBuffer = shorthandBuffer.slice(0, -1);
         syncShorthandReadout();
@@ -7022,7 +7058,7 @@ function onToothKeydown(toothNo: number, evt: KeyboardEvent){
       break;
     case "Escape":
       evt.preventDefault();
-      if(shorthandBuffer || shorthandMaterial){
+      if(shorthandEnabled && (shorthandBuffer || shorthandMaterial)){
         shorthandBuffer = "";
         shorthandMaterial = null;
         syncShorthandReadout();
@@ -7031,7 +7067,7 @@ function onToothKeydown(toothNo: number, evt: KeyboardEvent){
       }
       break;
     default:
-      if(isShorthandKey(evt)){
+      if(shorthandEnabled && isShorthandKey(evt)){
         evt.preventDefault();
         shorthandBuffer += evt.key;
         // A key that is a finding on its own applies at once — six anteriors

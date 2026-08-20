@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
-[![Version](https://img.shields.io/badge/version-2.19.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
+[![Version](https://img.shields.io/badge/version-2.20.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](https://raw.githubusercontent.com/ZoliQua/React-Odontogram-Modul/main/src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
 
@@ -221,6 +221,12 @@ The shorthand itself is not invented: it is transcribed from the finding keypad 
 `docs/charly/01-befund-tastenfeld.md`. Seven of its keys are understood and have no axis here
 yet; they are reported as such rather than silently ignored, since a typo and a missing axis are
 different situations.
+
+Both halves are switchable in **Settings → Shorthand**, separately: charting by
+shorthand, and the Tab walk. Off means off — no keystroke lands, and Tab leaves the chart as it
+does everywhere else, because a chart nobody types on should not have a standard navigation key
+taken from it. The key table is listed in the tab itself; a shorthand nobody can look up is a
+shorthand nobody uses.
 
 Selecting a span follows the **arch**, not the geometry (`odontogram-apn`): a rectangle over the
 tile centres picks up the opposing jaw as soon as the pointer strays. Across the midline (13 to 23)
