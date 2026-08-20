@@ -2706,3 +2706,68 @@ body.odon-dragging{ cursor: cell; }
   background: var(--odon-surface-2, #f6f7f9);
 }
 .settings-shorthand-pending{ display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* Bead odontogram-bn3: wie gross eine Kauflaeche DARGESTELLT wird.
+   -------------------------------------------------------------------------
+   Dirk, 20.08.2026: "die Frontzaehne in der okklusalen Ansicht etwas groesser
+   und die Molaren etwas kleiner… Eckzaehne und Praemolaren natuerlich auch
+   etwas groesser."
+
+   WARUM HIER UND NICHT IM GENERATOR. Es wurde dreimal am Erzeugnis versucht
+   und ging dreimal schief: die Fissuren kommen vom SPENDER und werden nur
+   mitgezogen (siehe den Kopf von tools/toothgen/redraw_occl.py), also
+   vertraegt der Umriss keine grosse Aenderung - beim letzten Versuch meldete
+   `verify_hoecker.py` an sechs Vorlagen, dass die Kauflaeche nicht mehr in
+   dieselben Hoecker zerfaellt. Die DARSTELLUNGSGROESSE ist aber gar keine
+   Frage der Geometrie. Hier kostet sie nichts: kein Warpfeld, keine Fissur,
+   kein Vertrag, kein Fingerabdruck - und sie laesst sich beim Hinsehen
+   nachstellen, statt in zwei Minuten neu erzeugt zu werden.
+
+   Es ist eine LESBARKEITSENTSCHEIDUNG, keine anatomische. Eine Rechnung
+   "Kauflaeche so breit wie die Krone" wurde versucht und verworfen: sie ging
+   von der Spaltenbreite aus, waehrend die Kacheln sich nach der HOEHE richten
+   und die Breite dem Seitenverhaeltnis folgt - heraus kam das Gegenteil des
+   Gewollten. Die Zahlen unten sind am Bild eingestellt.
+
+   Je Zahn eine Zahl. Wer einen anders haben will, aendert seine. */
+.tooth-tile.occl-view{ --occl-scale: 1; }
+.tooth-tile.occl-view .tooth-svg svg{
+  transform: scale(var(--occl-scale));
+  transform-origin: center center;
+}
+
+/* Front, Eckzaehne und die Milchfront: etwas groesser. */
+.tooth-tile.tpl-11-occl{ --occl-scale: 1.25; }
+.tooth-tile.tpl-12-occl{ --occl-scale: 1.25; }
+.tooth-tile.tpl-13-occl{ --occl-scale: 1.25; }
+.tooth-tile.tpl-41-occl{ --occl-scale: 1.25; }
+.tooth-tile.tpl-42-occl{ --occl-scale: 1.25; }
+.tooth-tile.tpl-43-occl{ --occl-scale: 1.25; }
+.tooth-tile.tpl-51-occl{ --occl-scale: 1.25; }
+.tooth-tile.tpl-52-occl{ --occl-scale: 1.25; }
+.tooth-tile.tpl-53-occl{ --occl-scale: 1.25; }
+.tooth-tile.tpl-81-occl{ --occl-scale: 1.25; }
+.tooth-tile.tpl-82-occl{ --occl-scale: 1.25; }
+.tooth-tile.tpl-83-occl{ --occl-scale: 1.25; }
+
+/* Praemolaren: eigene Zahl, zwischen Front und Molar.
+
+   Mit derselben 1,25 wie die Front standen sie fast so gross da wie ein
+   Siebener, und ein Molarentisch ist deutlich groesser als ein
+   Praemolarentisch. Drei Gruppen statt zwei. */
+.tooth-tile.tpl-14-occl{ --occl-scale: 1.15; }
+.tooth-tile.tpl-15-occl{ --occl-scale: 1.15; }
+.tooth-tile.tpl-44-occl{ --occl-scale: 1.15; }
+.tooth-tile.tpl-45-occl{ --occl-scale: 1.15; }
+
+/* Molaren und Milchmolaren: etwas kleiner. */
+.tooth-tile.tpl-16-occl{ --occl-scale: 0.85; }
+.tooth-tile.tpl-17-occl{ --occl-scale: 0.85; }
+.tooth-tile.tpl-18-occl{ --occl-scale: 0.85; }
+.tooth-tile.tpl-46-occl{ --occl-scale: 0.85; }
+.tooth-tile.tpl-47-occl{ --occl-scale: 0.85; }
+.tooth-tile.tpl-48-occl{ --occl-scale: 0.85; }
+.tooth-tile.tpl-54-occl{ --occl-scale: 0.85; }
+.tooth-tile.tpl-55-occl{ --occl-scale: 0.85; }
+.tooth-tile.tpl-84-occl{ --occl-scale: 0.85; }
+.tooth-tile.tpl-85-occl{ --occl-scale: 0.85; }

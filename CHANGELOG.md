@@ -1,5 +1,62 @@
 # Changelog
 
+## 2.21.0 - 2026-08-20
+
+### Kauflaechen: wie gross sie DARGESTELLT werden (Bead odontogram-bn3)
+
+Dirk, 20.08.2026: *"die Frontzaehne in der okklusalen Ansicht etwas groesser
+und die Molaren etwas kleiner… Eckzaehne und Praemolaren natuerlich auch etwas
+groesser."*
+
+- **Eine Zahl je Position in `src/index.css`** (`--occl-scale` auf der
+  `tpl-N-occl`-Kachel), in drei Gruppen: Front, Eckzaehne und Milchfront 1,25;
+  Praemolaren 1,15; Molaren und Milchmolaren 0,85. Vorher stand die
+  Kauflaechenreihe als Sprung da - winzige Frontzahnovale zwischen zwei
+  Bloecken wuchtiger Molarentische; jetzt waechst sie vom Einser zum Sechser
+  durch.
+- Die Praemolaren haben eine EIGENE Zahl bekommen. Mit derselben 1,25 wie die
+  Front standen sie fast so gross da wie ein Siebener, und ein Molarentisch ist
+  deutlich groesser als ein Praemolarentisch.
+- **Der Export zieht mit** (geprueft): `buildChartSvg` setzt jede Zahn-SVG ueber
+  ihr `getBoundingClientRect()`, und eine CSS-Skalierung steckt in dieser Box.
+  PNG, JPG, SVG und der PDF-Bericht zeigen dasselbe wie der Bildschirm.
+
+**Warum in der CSS und nicht im Generator.** Es wurde an diesem Tag DREIMAL am
+Erzeugnis versucht und ging dreimal schief. Die Fissuren einer Kauflaeche
+kommen vom SPENDER und werden nur mitgezogen, nicht eingesetzt (der Grund steht
+im Kopf von `tools/toothgen/redraw_occl.py`: an `fissure-sealing-occlusal`
+haengt ein Befund, und die Versiegelungsflaeche muss auf den Fissuren liegen).
+Der Umriss vertraegt deshalb keine grosse Aenderung - beim letzten Versuch
+meldete `verify_hoecker.py` an sechs Vorlagen, dass die Kauflaeche nicht mehr in
+dieselben Hoecker zerfaellt. Die Darstellungsgroesse ist aber gar keine Frage
+der Geometrie.
+
+### Der Hoeckerbestand jeder Kauflaeche wird geprueft
+
+- **`tools/toothgen/verify_hoecker.py`** zerlegt jede AUSGELIEFERTE Kauflaeche
+  per Flutfuellung (`hoecker.gebiete()` ueber `background-cusp` plus die
+  `fissure`-Ebene) und vergleicht Zahl und Flaechenanteile der Gebiete gegen
+  eine eingefrorene Tabelle. Laeuft in `npm run toothgen:verify` mit, unter
+  `python3` statt `uv run` - die Zerlegung braucht numpy.
+- Es gibt sie, weil an diesem Tag zweimal das Fissurenmuster kaputtging und
+  KEIN Vertrag es sah: Ebenenbestand, Kontur, Kauebene und sogar die Zahl der
+  Pfade in der `fissure`-Ebene waren unveraendert - das Falsche sass eine Ebene
+  weiter. Gesehen hat es beide Male Dirk im Bild.
+- Die Grundlinie ist selbst eine Probe, weil sie anatomisch stimmt: Frontzahn
+  zwei Gebiete, Praemolar vier, Molar sechs, oberer Siebener vier (dort ist der
+  distopalatinale Hoecker zurueckgebildet).
+- Festgehalten dabei: **die Generatorkette ist nicht bit-genau wiederholbar.**
+  Ein Lauf ohne jede Aenderung verschiebt Koordinaten um bis zu 0,02 Einheiten
+  (208 Zahlen an 26 Dateien). `git status` kann also nicht sagen, ob ein Lauf
+  etwas Echtes geaendert hat - deshalb sind die Flaechenanteile mit drei
+  Prozentpunkten Toleranz eingefroren und nicht auf die Stelle.
+
+### Unveraendert
+
+Keine Vorlage geaendert, kein Zustandsfeld, keine Nutzlast. Nutzlast bleibt
+**2.25**, SVG-Fingerabdruck-Paritaet, FHIR-Gold und Rundlauf-Gold
+byte-identisch.
+
 ## 2.20.0 - 2026-08-20
 
 ### Die Kurzschrift ist einstellbar (Bead odontogram-t8y)
