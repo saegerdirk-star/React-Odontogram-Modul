@@ -69,7 +69,7 @@
     "toothgen:redraw": "npm run toothgen:spender && python3 tools/toothgen/redraw_alle.py src/assets/teeth-svgs && python3 tools/toothgen/redraw_occl.py src/assets/teeth-svgs && npm run toothgen:flaechen",
     "toothgen:build": "uv run tools/toothgen/build.py",
     "toothgen:build:primary": "uv run tools/toothgen/build.py --set primary",
-    "toothgen:verify": "npm run toothgen:spender && uv run tools/toothgen/verify.py --all && uv run tools/toothgen/verify_redraw.py && uv run tools/toothgen/check_roundtrip.py",
+    "toothgen:verify": "npm run toothgen:spender && uv run tools/toothgen/verify.py --all && uv run tools/toothgen/verify_redraw.py && uv run tools/toothgen/check_roundtrip.py && python3 tools/toothgen/verify_hoecker.py",
     "toothgen:verify:primary": "uv run tools/toothgen/verify.py --primary",
     "docs": "typedoc",
     "prepublishOnly": "npm run build:lib",

@@ -136,6 +136,36 @@ dann alle drei Prüfungen:
     check_roundtrip.py  beweist, dass Pfad-Serialisierung verlustfrei ist.
                         build.py zweimal laufen zu lassen muss byte-gleiche
                         Dateien ergeben.
+    verify_hoecker.py   zerfaellt jede Kauflaeche noch in dieselben Hoecker?
+                        Umriss und Fissurenebene der AUSGELIEFERTEN Vorlage
+                        werden per Flutfuellung in Gebiete zerlegt; Zahl und
+                        Flaechenanteile sind eingefroren. Laeuft unter
+                        `python3`, nicht unter `uv run` - die Zerlegung
+                        braucht numpy. Rund 35 Sekunden.
+
+## Warum es die Hoeckerpruefung gibt
+
+Am 20.08.2026 ging beim Versuch, die Praemolaren-Kauflaechen auf ihre
+Kronenbreite zu ziehen, **zweimal das Fissurenmuster kaputt, und kein Vertrag
+hat es gesehen.** Der Ebenenbestand stimmte, die Kontur war durchgehend, die
+Kauebene lag auf einer Linie, und die `fissure`-Ebene zaehlte weiter dieselbe
+Zahl Pfade — sie war nur skaliert. Das Falsche sass eine Ebene weiter.
+
+Die Ursache ist eine wacklige Stelle, die es weiterhin gibt: `redraw_occl`
+erkennt den Umriss als **den Pfad mit den meisten Punkten**. Nach einer
+Neuserialisierung kann ein Hoecker ihn ueberholen — an `18_occl_norm` tut er es
+heute schon, dort liefern Punktzahl und Flaeche verschiedene Pfade. Wird ein
+Hoecker zum Umriss erklaert, wird alles uebrige darauf gewarpt.
+
+Gesehen hat es beide Male Dirk im Bild. `verify_hoecker.py` ist der Versuch,
+das vor ihm zu sehen.
+
+**Und ein zweiter Grund, warum es eine eigene Messung braucht: die Kette ist
+nicht bit-genau wiederholbar.** Ein voller Lauf ohne jede Aenderung verschiebt
+Koordinaten um bis zu 0,02 Einheiten (gemessen: 208 Zahlen an 26 Dateien).
+`git status` kann also nicht sagen, ob ein Lauf etwas Echtes geaendert hat.
+Genau deshalb sind die Flaechenanteile mit einer Toleranz von drei Prozentpunkten
+eingefroren und nicht auf die Stelle.
 
 ## Fallstricke
 
