@@ -2736,19 +2736,14 @@ body.odon-dragging{ cursor: cell; }
   transform-origin: center center;
 }
 
-/* Front, Eckzaehne und die Milchfront: etwas groesser. */
+/* Bleibende Front und Eckzaehne: etwas groesser. Die MILCHFRONT stand hier bis
+   zum 21.08.2026 mit; sie hat jetzt ihre eigene Gruppe weiter unten. */
 .tooth-tile.tpl-11-occl{ --occl-scale: 1.25; }
 .tooth-tile.tpl-12-occl{ --occl-scale: 1.25; }
 .tooth-tile.tpl-13-occl{ --occl-scale: 1.25; }
 .tooth-tile.tpl-41-occl{ --occl-scale: 1.25; }
 .tooth-tile.tpl-42-occl{ --occl-scale: 1.25; }
 .tooth-tile.tpl-43-occl{ --occl-scale: 1.25; }
-.tooth-tile.tpl-51-occl{ --occl-scale: 1.25; }
-.tooth-tile.tpl-52-occl{ --occl-scale: 1.25; }
-.tooth-tile.tpl-53-occl{ --occl-scale: 1.25; }
-.tooth-tile.tpl-81-occl{ --occl-scale: 1.25; }
-.tooth-tile.tpl-82-occl{ --occl-scale: 1.25; }
-.tooth-tile.tpl-83-occl{ --occl-scale: 1.25; }
 
 /* Praemolaren: eigene Zahl, zwischen Front und Molar.
 
@@ -2768,46 +2763,62 @@ body.odon-dragging{ cursor: cell; }
 .tooth-tile.tpl-47-occl{ --occl-scale: 0.85; }
 .tooth-tile.tpl-48-occl{ --occl-scale: 0.85; }
 
-/* MILCHMOLAREN: eigene Zahlen, und zwar deutlich groessere.
+/* DIE MILCHZAEHNE: EINE Zahl fuer alle zehn, aus der eigenen Kronenbreite.
    -------------------------------------------------------------------------
-   Dirk, 21.08.2026, am Milchgebiss: "Milchmolaren-Kauflaechen sind im
-   Vergleich zu Eck und Schneidezaehnen zu klein."
+   Zwei Beobachtungen von Dirk am 21.08.2026, und sie legen die Zahl zusammen
+   fest:
 
-   Der Grund ist kein Zeichenfehler, sondern das Spaltenmodell: ein Milchzahn
-   steht auf dem PLATZ SEINES NACHFOLGERS, und ein zweiter Milchmolar ist
-   deutlich breiter als der Praemolar, dessen Spalte er einnimmt (85 misst
-   41,6 Einheiten in einer 41-px-Spalte, 84 sogar 37,6 in 34). Die Kauflaeche
-   fuellt aber die Kachel - also wird gerade der breiteste Milchzahn am
-   staerksten zusammengestaucht, waehrend der schmale Milchschneidezahn in
-   seiner Spalte Luft hat.
+     "Milchmolaren-Kauflaechen sind im Vergleich zu Eck und Schneidezaehnen
+      zu klein."
+     "Die Milchzahnkrone 75 ist im Vergleich zu 36 zu gross."
 
-   Nachgemessen im Bild, gemalte Tischbreite geteilt durch die wahre:
+   Gemessen (gemalte Tischbreite geteilt durch die WAHRE Kronenbreite der
+   Seitenansicht, in Bildpunkten je Einheit) sass der Satz vorher so:
 
-       bleibende Front      0,89 - 1,01
-       bleibende Molaren    0,70 - 0,83
-       Milchfront           1,01 - 1,18
-       MILCHMOLAREN         0,34 - 0,44     <- ein Drittel der Milchfront
+       bleibende Molaren        1,16 - 1,21
+       bleibende Front          1,53 - 1,64
+       MILCHFRONT               1,66 - 1,94
+       Milchmolaren (vorher)    1,19        <- zu klein neben der Milchfront
+       Milchmolaren (Zwischenstand) 1,52 - 2,13  <- zu gross neben 36
 
-   Die Zahlen unten heben sie auf 0,69 bis 0,75 - die Hoehe der bleibenden
-   Molaren. Weiter geht es nicht: bei glatt 0,75 fuer alle vier ueberlappten
-   sich 84 und 85 im Bild um sieben Bildpunkte (gemessen), weil beide in den
-   engsten Spalten des Bogens stehen. Die beiden sind deshalb um genau diese
-   sieben Punkte zurueckgenommen und beruehren sich nun. Oben reicht der Platz;
-   dort bleiben 54 und 55 auf 0,75 und stehen einen Punkt auseinander.
+   Der Fehler war, die Milchmolaren wie die bleibenden zu behandeln. Der
+   Verkleinerungsfaktor 0,85 dort ist eine LESBARKEITSENTSCHEIDUNG gegen die
+   Wucht eines Sechsers - ein bleibender Molar ist 65 % breiter als der
+   Eckzahn. Ein zweiter MILCHmolar ist nur 25 % breiter als der Milcheckzahn;
+   derselbe Faktor dreht dort die Reihenfolge um, und der Molar wird kleiner
+   als der Eckzahn. Genau das war Dirks erste Beobachtung.
+
+   Deshalb EINE Zahl fuer alle zehn Milchvorlagen: 1,35 Bildpunkte je Einheit
+   wahrer Kronenbreite. Damit stimmt der Milchsatz in sich (54 und 53 kommen
+   fast gleich gross heraus, wie im Mund: 7,1 gegen 7,0 mm), und er stimmt
+   gegen den bleibenden Nachbarn - 85 misst 42 Bildpunkte gegen 46 des
+   Sechsers, ist also sichtbar kleiner, wie es sein muss.
+
+   1,35 ist die obere Grenze: bei 1,48 waere 85 so breit wie der Sechser.
+   Der Preis steht dabei: die Milchfront wird kleiner als vorher. Sie stand mit
+   1,66 bis 1,94 als einzige Gruppe ueber allem anderen, und ohne sie
+   herunterzunehmen ist die erste Beobachtung nicht zu erfuellen, ohne die
+   zweite zu verletzen.
+
+   IM WECHSELGEBISS STIMMT DAS VON SELBST. Die Klasse haengt an der VORLAGE,
+   und die Vorlage daran, was an der Position wirklich gechartet ist - nicht an
+   einem Gebissmodus. Steht auf 84 ein Milchmolar, greift `tpl-84-occl`; steht
+   dort der bleibende Praemolar, greift `tpl-44-occl`. Es gibt keinen Schalter,
+   der falsch stehen koennte.
 
    Die Kacheln richten sich nach der HOEHE, die Breite folgt dem
    Seitenverhaeltnis - eine Skalenzahl laesst sich also nicht aus der
-   Spaltenbreite ausrechnen. Sie sind am Bild gemessen und nachgestellt.
-
-   IM WECHSELGEBISS STIMMT DAS VON SELBST. Die Klasse haengt an der VORLAGE,
-   und die Vorlage haengt daran, was an der Position wirklich gechartet ist -
-   nicht an einem Gebissmodus. Steht auf 84 ein Milchmolar, greift `tpl-84-occl`;
-   steht dort der bleibende Praemolar, greift `tpl-44-occl`. Es gibt keinen
-   Schalter, der falsch stehen koennte. */
-.tooth-tile.tpl-54-occl{ --occl-scale: 1.45; }
-.tooth-tile.tpl-55-occl{ --occl-scale: 1.60; }
-.tooth-tile.tpl-84-occl{ --occl-scale: 1.71; }
-.tooth-tile.tpl-85-occl{ --occl-scale: 1.49; }
+   Spaltenbreite ausrechnen. Sie sind am Bild gemessen und nachgestellt. */
+.tooth-tile.tpl-51-occl{ --occl-scale: 0.96; }
+.tooth-tile.tpl-52-occl{ --occl-scale: 0.87; }
+.tooth-tile.tpl-53-occl{ --occl-scale: 0.96; }
+.tooth-tile.tpl-54-occl{ --occl-scale: 0.92; }
+.tooth-tile.tpl-55-occl{ --occl-scale: 1.31; }
+.tooth-tile.tpl-81-occl{ --occl-scale: 1.01; }
+.tooth-tile.tpl-82-occl{ --occl-scale: 0.90; }
+.tooth-tile.tpl-83-occl{ --occl-scale: 0.89; }
+.tooth-tile.tpl-84-occl{ --occl-scale: 1.25; }
+.tooth-tile.tpl-85-occl{ --occl-scale: 1.33; }
 
 /* Tiefenreiz an der Zahnsubstanz (Dirks Frage vom 20.08.2026: "Koennte man
    ueber optische Tricks an den Wurzeln und den anderen Flaechen die Illusion

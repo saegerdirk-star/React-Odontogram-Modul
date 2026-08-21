@@ -1,5 +1,43 @@
 # Changelog
 
+## 2.28.4 - 2026-08-21
+
+### Eine Zahl fuer alle Milchzaehne, aus ihrer eigenen Kronenbreite
+
+Dirk, direkt nach 2.28.3: *"Die Milchzahnkrone 75 ist im Vergleich zu 36 zu
+gross. Die muss kleiner werden."* Zusammen mit seiner vorigen Beobachtung
+(*"Milchmolaren-Kauflaechen sind im Vergleich zu Eck und Schneidezaehnen zu
+klein"*) legen die beiden die Zahl fest — jede allein tut es nicht.
+
+- **Der Fehler in 2.28.3 war, die Milchmolaren wie die bleibenden zu
+  behandeln.** Der Verkleinerungsfaktor 0,85 dort ist eine
+  Lesbarkeitsentscheidung gegen die Wucht eines Sechsers: ein bleibender Molar
+  ist 65 % breiter als der Eckzahn. Ein zweiter MILCHmolar ist nur 25 % breiter
+  als der Milcheckzahn — derselbe Faktor dreht dort die Reihenfolge um und macht
+  den Molaren kleiner als den Eckzahn. Ihn dagegen anzuheben, wie in 2.28.3
+  geschehen, macht ihn groesser als den bleibenden Nachbarn.
+- **Deshalb EINE Zahl fuer alle zehn Milchvorlagen**, gemessen an der wahren
+  Kronenbreite der Seitenansicht: 1,35 Bildpunkte je Einheit. Gemessen (gemalte
+  Tischbreite geteilt durch die wahre Kronenbreite):
+
+      bleibende Molaren            1,16 - 1,21
+      bleibende Front              1,53 - 1,64
+      Milchfront (vorher)          1,66 - 1,94
+      Milchmolaren (2.28.2)        1,19      zu klein neben der Milchfront
+      Milchmolaren (2.28.3)        1,52 - 2,13  zu gross neben dem Sechser
+      ALLE Milchzaehne (jetzt)     1,35
+
+- Damit stimmt der Milchsatz **in sich** — 54 und 53 kommen fast gleich gross
+  heraus, wie im Mund (7,1 gegen 7,0 mm) — **und gegen den bleibenden
+  Nachbarn**: 85 misst 42 Bildpunkte gegen 46 des Sechsers, ist also sichtbar
+  kleiner. 1,35 ist dabei die obere Grenze; bei 1,48 waeren die beiden gleich
+  breit.
+- **Der Preis steht im Quelltext:** die Milchfront wird kleiner als vorher. Sie
+  stand als einzige Gruppe ueber allem anderen, und ohne sie herunterzunehmen
+  ist die erste Beobachtung nicht zu erfuellen, ohne die zweite zu verletzen.
+- Zehn Zahlen in `src/index.css`, sonst nichts.
+
+
 ## 2.28.3 - 2026-08-21
 
 ### Milchmolaren-Kauflaechen waren ein Drittel so gross wie die Milchfront
