@@ -50,7 +50,8 @@ import {
   tileRectFor,
   defaultMaterialColor,
   UPPER_ARCH, LOWER_ARCH,
-  type BridgeToothState,
+  checkBridgeSpans, bridgeSpanNeedsAttention,      // Bead odontogram-5rv
+  type BridgeToothState, type BridgeSpanCheck,
 } from "./bridgeOverlay";
 import { renderGumOverlay } from "./gumOverlay";
 import { derivePerioClassification, type PerioClassification, type PerioDerivationInput, type ToothDerivationInput } from "./perioClassification";
@@ -504,6 +505,12 @@ function defaultState(){
     crownNeeded: false,
     missingClosed: false,
     bridgePillar: false,
+    // Bead odontogram-5rv: dieses Brueckenglied haengt einseitig, und zwar
+    // ABSICHTLICH - die Schwebebruecke. Ohne diese Angabe ist sie von einem
+    // unfertigen Befund nicht zu unterscheiden, und der Hinweis auf die
+    // fehlenden Pfeiler stuende dauerhaft an einer fertigen Arbeit. charly
+    // fuehrt sie ebenfalls als eigenen Eintrag ("SB Schwebebruecke").
+    cantilever: false,
     prosthesis: "none", // none | healing-abutment | locator | locator-denture | bar | bar-denture | removable-partial | removable-full
     mobility: "none", // none | m1 | m2 | m3
     toothSubstrate: "natural",  // natural | radix | broken | crownprep
@@ -2322,11 +2329,16 @@ function applyRestorationSelection(s: Any, value: string){
     s.restorationMaterial = "none";
     s.bridgePillar = false;
     s.crownReplace = false;
+    s.cantilever = false;
   }else{
     const [type, material] = value.split("|");
     s.restorationType = type || "none";
     s.restorationMaterial = material || "none";
     s.prosthesis = "none";
+    // Bead odontogram-5rv: "schwebend" gehoert dem Brueckenglied. Wird die
+    // Restauration etwas anderes, ist die Angabe gegenstandslos - so wie
+    // `bridgePillar` und `crownReplace` daneben.
+    if(s.restorationType !== "bridge") s.cantilever = false;
     if(s.restorationType === "none"){
       s.bridgePillar = false;
       s.crownReplace = false;
@@ -5657,6 +5669,18 @@ function syncControlsFromState(state: Any){
   const restorationRowCurrentlyHidden = $("#restorationRow").classList.contains("hidden");
   const bridgePillarAllowed = !restorationRowCurrentlyHidden && state.restorationType !== "none";
   $("#bridgePillarRow").classList.toggle("hidden", !bridgePillarAllowed);
+  // Bead odontogram-5rv: "schwebend" nur am Brueckenglied, und der Hinweis nur
+  // dort, wo die Spanne wirklich einen verdient.
+  $("#cantilever").checked = !!state.cantilever;
+  $("#cantileverRow").classList.toggle("hidden", !cantileverAllowed(state));
+  {
+    const el = $("#bridgeSupportGap");
+    if(el){
+      const luecke = activeTooth != null ? bridgeSupportGap(activeTooth) : null;
+      el.classList.toggle("hidden", !luecke);
+      if(luecke) el.textContent = t(`bridgeSupport.${luecke}`);
+    }
+  }
   // Crown-leakage toggle: only meaningful on a fixed crown/bridge restoration
   // (mirrors the crownLeakage axis's appliesWhen in src/registry/axes.ts).
   const crownLeakageAllowed = !restorationRowCurrentlyHidden && (state.restorationType === "crown" || state.restorationType === "bridge");
@@ -7570,6 +7594,9 @@ function serializeState(s: Any){
     crownNeeded: !!s.crownNeeded,
     missingClosed: !!s.missingClosed,
     bridgePillar: !!s.bridgePillar,
+    // Bead odontogram-5rv: nur wenn gesetzt, damit eine Karte ohne
+    // Schwebebruecke byte-gleich bleibt bis auf die Version.
+    ...(s.cantilever ? { cantilever: true } : {}),
     prosthesis: s.prosthesis,
     mobility: s.mobility,
     toothSubstrate: s.toothSubstrate,
@@ -8161,6 +8188,7 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   s.crownNeeded = !!raw.crownNeeded;
   s.missingClosed = !!raw.missingClosed;
   s.bridgePillar = !!raw.bridgePillar;
+  s.cantilever = !!raw.cantilever;                      // Bead odontogram-5rv
   s.prosthesis = validateEnum(raw.prosthesis, VALID_PROSTHESIS, "none");
   s.mobility = validateEnum(raw.mobility, VALID_MOBILITY, s.mobility);
   s.toothSubstrate = validateEnum(raw.toothSubstrate, VALID_TOOTH_SUBSTRATE, s.toothSubstrate);
@@ -9567,6 +9595,60 @@ function syncImplantProduct(state: Any): void {
  * guess dressed as a finding. That is the same silence im1 kept before ap7
  * existed, now conditioned on the archive rather than on the calendar.
  */
+// ---- Bead odontogram-5rv: die Schwebebruecke und der Hinweis auf fehlende
+// Pfeiler.
+
+/** Wo "schwebend" ueberhaupt angegeben werden kann: an einem BRUECKENGLIED,
+ *  also an einer Luecke, die als Bruecke gechartet ist. An einem Pfeilerzahn
+ *  ist die Angabe sinnlos - er traegt, er haengt nicht. */
+export function cantileverAllowed(state: Any): boolean {
+  if(!state) return false;
+  return state.restorationType === "bridge"
+    && (state.toothSelection === "none" || state.toothSelection === "no-tooth-after-extraction");
+}
+
+/** Ein Brueckenglied als schwebend erklaeren oder die Erklaerung zuruecknehmen.
+ *
+ *  Der Waechter steht VOR der DS-1-Schranke, damit er auch fuer die Tastatur
+ *  gilt - dieselbe Anordnung wie bei `setRetention` und `setPapillaLoss`. */
+export function setCantilever(toothNo: number, value: boolean): void {
+  let s = toothState.get(toothNo);
+  if(!s){ s = defaultState(); toothState.set(toothNo, s); }
+  if(!cantileverAllowed(s)) return;
+  gateToothEdit(toothNo, () => {
+    const neu = !!value;
+    if(!!s.cantilever === neu) return false;
+    s.cantilever = neu;
+    notifyStateChange();
+    return true;
+  });
+}
+
+export function getCantilever(toothNo: number): boolean {
+  return !!toothState.get(toothNo)?.cantilever;
+}
+
+/** Jede Brueckenspanne im aktiven Chart mit ihrer Lagerung. Reine Ableitung -
+ *  liest nur Zustand, aendert nichts, zeichnet nichts. */
+export function getBridgeSpanChecks(): BridgeSpanCheck[] {
+  return checkBridgeSpans(bridgeStateFor);
+}
+
+/** Ob dieser Zahn zu einer Spanne gehoert, die einen Hinweis verdient - ein
+ *  Glied ohne jeden Pfeiler, oder eine einseitige Lagerung, die niemand als
+ *  gewollt erklaert hat. `null`, wenn es nichts zu melden gibt.
+ *
+ *  Der Hinweis haengt am ZAHN, nicht an der Spanne, weil die Bedienung immer
+ *  einen Zahn ausgewaehlt hat und nie eine Spanne. */
+export function bridgeSupportGap(toothNo: number): "unsupported" | "cantilever" | null {
+  for(const check of getBridgeSpanChecks()){
+    if(!check.span.includes(toothNo)) continue;
+    if(!bridgeSpanNeedsAttention(check)) continue;
+    return check.support === "unsupported" ? "unsupported" : "cantilever";
+  }
+  return null;
+}
+
 export function isImplantProductGap(toothNo: number): boolean {
   if(!getBaselineExamination()) return false;         // provenance unknown
   const s = toothState.get(toothNo);
@@ -12801,6 +12883,17 @@ function wireControls(){
   $("#bridgePillar").addEventListener("change", (e)=>{
     applyToSelected((s)=>{
       s.bridgePillar = (e.target as HTMLInputElement).checked;
+    });
+  });
+
+  // Bead odontogram-5rv: ueber `applyToSelected` wie der Pfeilerschalter
+  // daneben, also durch die DS-1-Schranke und ueber die ganze Auswahl. Der
+  // Waechter steht IM Rueckruf, nicht davor: eine Auswahl kann Pfeiler und
+  // Glieder mischen, und die Angabe gehoert nur den Gliedern.
+  $("#cantilever").addEventListener("change", (e)=>{
+    const an = (e.target as HTMLInputElement).checked;
+    applyToSelected((s)=>{
+      if(cantileverAllowed(s)) s.cantilever = an;
     });
   });
 

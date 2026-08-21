@@ -1,5 +1,51 @@
 # Changelog
 
+## 2.27.0 - 2026-08-21
+
+### Eine Bruecke ohne Pfeiler ist kein Befund (Bead odontogram-5rv)
+
+Dirk, 19.08.2026, beim Aufbau der Kuerzeltabelle: *"zu b gehoert irgendwo ein k,
+oder links und rechts irgendwo jeweils ein k, k-b ist die Ausnahme, bedeutet
+Krone mit schwebendem Brueckenglied."*
+
+- **`checkBridgeSpans()`** (in `bridgeOverlay.ts`, DOM-frei wie die Ableitung
+  daneben) sieht jede Spanne daraufhin an, wie sie getragen wird:
+  `supported` (Pfeiler auf beiden Seiten der Gliederkette), `cantilever` (nur
+  auf einer) oder `unsupported` (gar keiner). Ein Pfeiler ist ein VORHANDENER
+  Zahn oder ein Implantat mit Krone oder Bruecke; ein Glied eine Luecke, die als
+  Bruecke gechartet ist. Beide tragen denselben Achsenwert — nur
+  `toothSelection` trennt sie, und genau das wurde bisher nirgends geprueft.
+- **Der Pfeiler darf eine KRONE sein und steht dann NEBEN dem Lauf.** Dirks
+  Regel sagt "irgendwo ein k", und eine Krone traegt `restorationType: "crown"`,
+  faellt also aus `detectBridgeSpans` heraus. Die Pruefung nimmt deshalb die
+  beiden unmittelbaren Bogennachbarn mit — ohne das haette sie jede
+  krongetragene Bruecke im Mund angemeckert.
+- **EIN Glied ist schon eine Bruecke.** `detectBridgeSpans` liefert nur Laeufe
+  ab zwei Zaehnen, weil ein Sattel eine Luecke zwischen zwei Kacheln fuellt und
+  dafuer zwei braucht. Die Pruefung stellt eine andere Frage: genau Dirks
+  Ausnahmefall `k-b` ist ein Lauf der LAENGE EINS, sobald der Pfeiler als Krone
+  gechartet ist, und waere sonst unbemerkt durchgefallen. Aufgefallen, weil der
+  Test dafuer fehlschlug — nicht beim Lesen.
+- **Sie MELDET, sie verhindert nichts.** Ein Befund wird in Bruchstuecken
+  aufgenommen — erst das Glied, dann die Pfeiler —, und eine Eingabe zu
+  blockieren, weil sie noch nicht fertig ist, waere am Stuhl unbrauchbar. Der
+  Hinweis (`#bridgeSupportGap`) steht neben der Restaurationszeile und
+  verschwindet, sobald die Pfeiler stehen. Vorbild ist `#implantProductGap`.
+- **Die Schwebebruecke wird gefuehrt** (`cantilever` am Glied, Payload
+  **2.28 → 2.29**, weggelassen wenn falsch). Ohne diese Angabe ist sie von einem
+  halb eingegebenen Befund nicht zu unterscheiden, und der Hinweis stuende
+  dauerhaft an einer fertigen Arbeit. charly fuehrt sie ebenfalls als eigenen
+  Eintrag ("SB Schwebebruecke"). Ein Glied OHNE jeden Pfeiler bleibt gemeldet,
+  auch als schwebend erklaert: schwebend heisst einseitig gelagert, nicht gar
+  nicht gelagert.
+- **Der Schalter und der Hinweis sassen zuerst in `#crownActionsRow`** — und die
+  steht an einer LUECKE auf `display:none`, also genau dort, wo ein
+  Brueckenglied steht. Im Quelltext war davon nichts zu sehen; gefunden beim
+  Nachmessen in der laufenden App.
+- Reine Ableitung ohne `svgLayer`: der Overlay zeichnet unveraendert weiter, was
+  gechartet ist. **Parity byte-gleich.** 20 neue Tests.
+
+
 ## 2.26.0 - 2026-08-20
 
 ### Papillenverlust: der beobachtete Befund neben der Ableitung (Bead odontogram-gry)

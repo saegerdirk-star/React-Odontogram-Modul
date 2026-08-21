@@ -117,11 +117,11 @@ describe("Nutzlast", () => {
     const p = __collectExportPayloadForTest() as Record<string, never>;
     expect((p.teeth as Record<string, Record<string, unknown>>)["11"]?.papillaLoss).toBeUndefined();
   });
-  it("faehrt bei 2.28 hin und zurueck", () => {
+  it("faehrt bei 2.29 hin und zurueck", () => {
     __setToothStateForTest(11, {});
     setPapillaLoss(11, "mesial", 2);
     const p = __collectExportPayloadForTest() as Record<string, unknown>;
-    expect(p.version).toBe("2.28");
+    expect(p.version).toBe("2.29");
     expect((p.teeth as Record<string, Record<string, unknown>>)["11"].papillaLoss).toEqual({ mesial: 2 });
     __resetChartStateForTest();
     __hydrateImportedChartsForTest(p);
@@ -129,7 +129,7 @@ describe("Nutzlast", () => {
   });
   it("nimmt eine fremde Stelle und eine fremde Klasse nicht an", () => {
     __hydrateImportedChartsForTest({
-      version: "2.28",
+      version: "2.29",
       teeth: { "11": { papillaLoss: { buccal: 2, mesial: 7, distal: 1 } } },
     });
     expect(getToothPapillaLoss(11)).toEqual({ distal: 1 });
@@ -158,7 +158,7 @@ describe("Zusammenfassung", () => {
     // Tolerant importiert: eine distale Papille am letzten Zahn. Gespeichert,
     // aber nirgends angezeigt - dieselbe Regel wie bei der Retention.
     __hydrateImportedChartsForTest({
-      version: "2.28",
+      version: "2.29",
       teeth: { "18": { papillaLoss: { distal: 3 } } },
     });
     expect(getToothPapillaLoss(18)).toEqual({ distal: 3 });

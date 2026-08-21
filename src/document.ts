@@ -60,6 +60,9 @@ export interface ToothRecord {
   crownNeeded?: boolean;
   missingClosed?: boolean;
   bridgePillar?: boolean;
+  // Bead odontogram-5rv: dieses Brueckenglied haengt einseitig, und zwar
+  // absichtlich - die Schwebebruecke. Weggelassen, wenn falsch.
+  cantilever?: boolean;
   prosthesis?: string;
   mobility?: string;
   toothSubstrate?: string;
@@ -197,6 +200,11 @@ export interface DentalCoreIdentity {
 
 /** The payload/document version this engine writes. Readers accept earlier versions. */
 // 2.22 (odontogram-8vu): additive `not-erupted` tooth selection; no migration.
+// 2.29 (odontogram-5rv): additive - `cantilever`, marking a bridge PONTIC that
+// hangs on one side on purpose. Without it a cantilever bridge is
+// indistinguishable from a half-entered one, and the "no abutment on that side"
+// hint would stand permanently on finished work. Omitted when false, so a chart
+// with no cantilever is byte-identical apart from this version string.
 // 2.28 (odontogram-gry): additive - `papillaLoss`, the OBSERVED interdental
 // papilla loss after Nordland & Tarnow (class I-III, keyed by the interdental
 // space: "mesial"/"distal"), beside the DERIVED Cairo recession type. The
@@ -228,7 +236,7 @@ export interface DentalCoreIdentity {
 // filling or caries lesion extends into the cervical region. Omitted entirely
 // when empty, so a document that never records it is byte-identical apart from
 // this version string, and an older document needs no migration.
-export const PAYLOAD_VERSION = "2.28";
+export const PAYLOAD_VERSION = "2.29";
 
 /**
  * The UI-domain document (bead odontogram-3l1, AC2/AC4): a versioned,

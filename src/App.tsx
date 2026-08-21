@@ -1089,6 +1089,22 @@ export default function App({
                 <select id="retentionSelect"></select>
                 <select id="retentionSideSelect"></select>
               </div>
+              {/* odontogram-5rv: die Schwebebruecke und der Hinweis auf
+                  fehlende Pfeiler. HIER und nicht bei den Kronen-Schaltern:
+                  jene Zeile (#crownActionsRow) haengt an extractionPlanAllowed
+                  und steht an einer LUECKE auf display:none - also genau dort,
+                  wo ein Brueckenglied steht und beides gebraucht wird. Erst in
+                  der laufenden App gemessen, im Quelltext war nichts zu sehen.
+
+                  Der Hinweis MELDET, er verhindert nichts: ein Befund wird in
+                  Bruchstuecken aufgenommen, erst das Glied, dann die Pfeiler.
+                  Er verschwindet, sobald die Pfeiler stehen oder das Glied als
+                  schwebend erklaert ist. */}
+              <label id="cantileverRow" className="row hidden">
+                <input type="checkbox" id="cantilever" />
+                <span>{t("tooth.cantilever")}</span>
+              </label>
+              <div id="bridgeSupportGap" className="hint bridge-support-gap hidden"></div>
               <label id="crownLeakageRow" className="row hidden">
                 <input type="checkbox" id="crownLeakage" />
                 <span>{t("crownLeakage.label")}</span>

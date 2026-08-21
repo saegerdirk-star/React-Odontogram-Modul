@@ -27,6 +27,11 @@ export interface BridgeToothState {
   restorationType?: string;
   restorationMaterial?: string;
   bridgePillar?: boolean;
+  /** Bead odontogram-5rv: needed to tell an ABUTMENT from a PONTIC. Both carry
+   *  `restorationType === "bridge"`; only this separates them. */
+  toothSelection?: string;
+  /** Bead odontogram-5rv: this pontic hangs on one side ON PURPOSE. */
+  cantilever?: boolean;
 }
 
 /** Reads a tooth's current state by FDI tooth number. May return undefined. */
@@ -110,7 +115,7 @@ function isBridgeTooth(s: BridgeToothState | undefined | null): boolean {
  * @param getState - Reads a tooth's state by FDI number.
  * @returns Arrays of consecutive tooth numbers, each of length >= 2.
  */
-export function detectBridgeSpans(getState: GetToothState): number[][] {
+function bridgeRuns(getState: GetToothState, minLength: number): number[][] {
   const spans: number[][] = [];
   for(const arch of ARCHES){
     let run: number[] = [];
@@ -118,13 +123,137 @@ export function detectBridgeSpans(getState: GetToothState): number[][] {
       if(isBridgeTooth(getState(tn))){
         run.push(tn);
       }else{
-        if(run.length >= 2) spans.push(run);
+        if(run.length >= minLength) spans.push(run);
         run = [];
       }
     }
-    if(run.length >= 2) spans.push(run);
+    if(run.length >= minLength) spans.push(run);
   }
   return spans;
+}
+
+export function detectBridgeSpans(getState: GetToothState): number[][] {
+  return bridgeRuns(getState, 2);
+}
+
+// ---------------------------------------------------------------------------
+// Bead odontogram-5rv: eine Bruecke ohne Pfeiler ist kein Befund.
+//
+// Dirk, 19.08.2026: "zu b gehoert irgendwo ein k, oder links und rechts
+// irgendwo jeweils ein k, k-b ist die Ausnahme, bedeutet Krone mit schwebendem
+// Brueckenglied."
+//
+// NEBEN der Ableitung, nicht in ihr. `detectBridgeSpans` liefert weiter jeden
+// Lauf, und der Overlay zeichnet ihn weiter - eine Eingabe zu verweigern, weil
+// sie noch nicht fertig ist, waere am Stuhl unbrauchbar. Ein Befund entsteht in
+// Bruchstuecken: erst das Glied, dann die Pfeiler. Gemeldet wird, nicht
+// verhindert.
+// ---------------------------------------------------------------------------
+
+/** Wie eine Spanne getragen wird. */
+export type BridgeSupport = "supported" | "cantilever" | "unsupported";
+
+export interface BridgeSpanCheck {
+  /** Der Lauf, wie `detectBridgeSpans` ihn liefert. */
+  span: number[];
+  support: BridgeSupport;
+  /** Pfeiler der Konstruktion, in Bogenreihenfolge - auch die, die NEBEN dem
+   *  Lauf stehen (siehe unten). */
+  abutments: number[];
+  /** Die Glieder: Luecken, die als Bruecke gechartet sind. */
+  pontics: number[];
+  /** Mindestens ein Glied traegt die Angabe "schwebend" - die einseitige
+   *  Lagerung ist dann gewollt und kein unfertiger Befund. */
+  declaredCantilever: boolean;
+}
+
+/** Ein PFEILER ist ein vorhandener Zahn oder ein Implantat, das eine Krone oder
+ *  eine Bruecke traegt. Ein Wurzelrest traegt nichts, eine Luecke erst recht
+ *  nicht. */
+function isAbutment(s: BridgeToothState | undefined | null): boolean {
+  if(!s) return false;
+  const sel = s.toothSelection ?? "tooth-base";
+  const vorhanden = sel !== "none" && sel !== "not-erupted"
+    && sel !== "no-tooth-after-extraction" && sel !== "tooth-under-gum";
+  if(!vorhanden) return false;
+  return s.restorationType === "crown" || s.restorationType === "bridge"
+    || s.bridgePillar === true;
+}
+
+/** Ein GLIED ist eine Luecke, die als Bruecke gechartet ist. */
+function isPontic(s: BridgeToothState | undefined | null): boolean {
+  if(!s) return false;
+  return s.restorationType === "bridge"
+    && (s.toothSelection === "none" || s.toothSelection === "no-tooth-after-extraction");
+}
+
+/**
+ * Jede Spanne daraufhin ansehen, ob sie getragen wird.
+ *
+ * Die KONSTRUKTION ist der Lauf PLUS seinen beiden unmittelbaren Nachbarn im
+ * Bogen, sofern die Pfeiler sind. Das muss so sein, weil ein Pfeiler nicht als
+ * Bruecke gechartet sein muss: Dirks Regel sagt ausdruecklich "irgendwo ein k",
+ * also eine KRONE, und eine Krone steht damit ausserhalb des Laufs, den
+ * `detectBridgeSpans` findet.
+ *
+ * Getragen heisst: mindestens ein Pfeiler VOR der Gliederkette und mindestens
+ * einer DAHINTER, in Bogenreihenfolge. Nur auf einer Seite ist die
+ * Schwebebruecke, auf keiner ein unvollstaendiger Befund.
+ *
+ * Ein Lauf ganz OHNE Glied ist keine Bruecke, die haengt - verblockte Kronen
+ * etwa -, und wird als getragen gemeldet; es gibt dort nichts, das
+ * herunterfallen koennte.
+ *
+ * DIE LAEUFE SIND HIER LAENGER ALS DIE GEZEICHNETEN. `detectBridgeSpans`
+ * liefert nur Laeufe ab zwei Zaehnen, weil ein Sattel eine Luecke zwischen zwei
+ * Kacheln fuellt und dafuer zwei braucht. Die Pruefung stellt eine andere
+ * Frage, und fuer sie ist EIN Glied schon eine Bruecke: genau Dirks
+ * Ausnahmefall "k-b", Krone mit einem einzigen schwebenden Glied, ist ein Lauf
+ * der Laenge eins, sobald der Pfeiler als KRONE gechartet ist - und der faellt
+ * sonst durch die Pruefung, ohne dass jemand es merkt.
+ *
+ * Geerbte Grenze: zwei Bruecken, die im Bogen aneinanderstossen, sind schon in
+ * `detectBridgeSpans` EIN Lauf, weil der Zustand keine Kennung je Bruecke
+ * traegt. Die Pruefung erbt das und kann es nicht besser wissen.
+ */
+export function checkBridgeSpans(getState: GetToothState): BridgeSpanCheck[] {
+  const out: BridgeSpanCheck[] = [];
+  for(const span of bridgeRuns(getState, 1)){
+    const arch = ARCHES.find((a) => a.includes(span[0]));
+    if(!arch) continue;
+    const von = arch.indexOf(span[0]);
+    const bis = arch.indexOf(span[span.length - 1]);
+
+    // Der Lauf plus die beiden Nachbarn, sofern sie Pfeiler sind.
+    const konstruktion: number[] = [];
+    if(von > 0 && isAbutment(getState(arch[von - 1]))) konstruktion.push(arch[von - 1]);
+    for(let i = von; i <= bis; i++) konstruktion.push(arch[i]);
+    if(bis < arch.length - 1 && isAbutment(getState(arch[bis + 1]))) konstruktion.push(arch[bis + 1]);
+
+    const abutments = konstruktion.filter((tn) => isAbutment(getState(tn)));
+    const pontics = konstruktion.filter((tn) => isPontic(getState(tn)));
+    const declaredCantilever = pontics.some((tn) => getState(tn)?.cantilever === true);
+
+    let support: BridgeSupport = "supported";
+    if(pontics.length > 0){
+      const erstes = arch.indexOf(pontics[0]);
+      const letztes = arch.indexOf(pontics[pontics.length - 1]);
+      const davor = abutments.some((tn) => arch.indexOf(tn) < erstes);
+      const dahinter = abutments.some((tn) => arch.indexOf(tn) > letztes);
+      support = davor && dahinter ? "supported"
+        : davor || dahinter ? "cantilever" : "unsupported";
+    }
+    out.push({ span, support, abutments, pontics, declaredCantilever });
+  }
+  return out;
+}
+
+/** Ob eine Spanne einen Hinweis verdient: ein Glied ohne jeden Pfeiler, oder
+ *  eine einseitige Lagerung, die niemand als gewollt erklaert hat. Eine
+ *  erklaerte Schwebebruecke ist ein fertiger Befund und schweigt. */
+export function bridgeSpanNeedsAttention(check: BridgeSpanCheck): boolean {
+  if(check.support === "unsupported") return true;
+  return check.support === "cantilever" && !check.declaredCantilever;
 }
 
 /**
