@@ -2856,6 +2856,32 @@ body.odon-dragging{ cursor: cell; }
   fill: url(#odonDepthCusp) !important;
 }
 
+/* Bead odontogram-5hm: die Krone als gewoelbter Koerper.
+   -------------------------------------------------------------------------
+   Die Form kommt seit `tools/toothgen/kronen.py` aus dem Zahn selbst; hier
+   bekommt sie ihr Volumen. e.max und Metallkeramik bringen ihre Rampe aus der
+   Vorlage mit und stehen deshalb nicht in dieser Liste - die uebrigen sieben
+   waren eine flache Farbe.
+
+   NICHT an den Schalter `odon-depth` gehaengt, anders als die Schattierung der
+   Zahnsubstanz darueber: jene ist eine Lesehilfe, die man abstellen koennen
+   muss; die Woelbung einer Krone ist die Materialdarstellung selbst. Der
+   mittlere Stopp IST die eingestellte Farbe, die Aussage aendert sich also
+   nicht - siehe den Kommentar an den Verlaeufen in App.tsx.
+
+   `!important` aus demselben Grund wie oben: die Fuellung steht INLINE in der
+   Vorlage. */
+#toothGrid .tooth-tile [id="gold-crown"]{ fill: url(#odonKroneGold) !important; }
+#toothGrid .tooth-tile [id="gradia-crown"]{ fill: url(#odonKroneGradia) !important; }
+#toothGrid .tooth-tile [id="zircon-crown"]{ fill: url(#odonKroneZirkon) !important; }
+#toothGrid .tooth-tile [id="metal-crown"]{ fill: url(#odonKroneMetall) !important; }
+#toothGrid .tooth-tile [id="temporary-crown"]{ fill: url(#odonKroneProvi) !important; }
+#toothGrid .tooth-tile [id="telescope-crown-outside"]{ fill: url(#odonKroneTeleAussen) !important; }
+#toothGrid .tooth-tile [id="telescope-crown-inside"]{ fill: url(#odonKroneTeleInnen) !important; }
+#toothGrid .tooth-tile [id="prosthesis-crown"]{ fill: url(#odonKroneProthZahn) !important; }
+#toothGrid .tooth-tile [id="prosthesis-implant-crown"]{ fill: url(#odonKroneProthBasis) !important; }
+
+
 /* Bead odontogram-ca0: die entfernte Wurzel wird weggeschnitten.
    -------------------------------------------------------------------------
    Dirk, 20.08.2026: "Bei der Hemisektion wird an der Furkation durchtrennt und

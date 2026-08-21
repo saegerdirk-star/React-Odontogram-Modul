@@ -37,6 +37,7 @@ from xml.dom import minidom
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import roots  # noqa: E402
+import svgpath  # noqa: E402
 import spec  # noqa: E402
 import verify  # noqa: E402
 from build import ASSETS, PX_PER_UNIT, SPENDER, curve_extent, tooth_base_d  # noqa: E402
@@ -156,6 +157,146 @@ def position_von(key: str) -> int:
     if 81 <= n <= 85:
         return n - 40
     return n
+
+
+# Ebenen, die ueber die Kontur hinausragen DUERFEN, weil sie nicht zum Zahn
+# gehoeren: Knochen und Zahnfleisch reichen zu den Nachbarn, ein Verbinder und
+# ein Steg spannen ueber die Luecke, Zyste, Granulom und Abszess liegen im
+# Knochen, die Lockerungspfeile stehen neben dem Zahn, und das Implantatzubehoer
+# sitzt auf ihm statt in ihm.
+DARF_HINAUS = re.compile(
+    r'bridge-connector|prosthesis-connector|implant-bar|gum-base|bone-base'
+    r'|gum-line|prosthesis-implant-gum|implant-connector|implant-locator-screw'
+    r'|implant-healing-abutment-connector'
+    r'|abscess|cysta|granuloma|peri-implant|parodontal|calculus|denture'
+    r'|mobility|arrow|contact-point|crown-leakage')
+
+# Wie weit eine Ebene ueber die Kontur hinausstehen darf.
+#
+# NICHT geraten, sondern an der Verteilung abgelesen: ueber alle 4294 Ebenen
+# des ausgelieferten Satzes liegt der Median bei -0,64 (also innerhalb), 99 %
+# liegen unter 1,59 - und darueber klafft eine Luecke bis zu einem Haufen von
+# gut zwei Dutzend Ebenen zwischen 3 und 9,6. Der Grenzwert liegt in dieser
+# Luecke. Null waere falsch: Umriss und Ebene entstehen unterschiedlich (der
+# eine wird EINGESETZT, die andere gewarpt), eine Strichstaerke Spiel ist
+# normal.
+TOL_INNERHALB = 3.0
+
+# WAS HEUTE SCHON NEBEN DEM ZAHN STEHT.
+#
+# Die Pruefung faengt den Fall, sie behebt ihn nicht - und ein Vertrag, der von
+# Anfang an rot ist, prueft nichts mehr. Also eingefroren, wie die Digests
+# daneben: gemeldet wird, was NICHT in dieser Liste steht. Und ebenso gemeldet
+# wird, was darin steht und inzwischen sauber ist, damit die Liste nur kuerzer
+# werden kann.
+#
+# Die 23 Eintraege an 46 sind odontogram-8i5: dort hat der Warp eine ganze
+# Ebenenfamilie um 9,3 Einheiten nach distal geschoben. Die elf Kronen dieser
+# Familie sind seit der Ableitung (`kronen.py`) heraus; was bleibt, sind die
+# Bruchvarianten, die Fissurenversiegelung, der Abrieb, Inlay und Veneer.
+BEKANNTE_UEBERSTAENDE: set[tuple[str, str]] = {
+    ("11", "endo-glass-pin"),   # 5.24
+    ("11", "endo-metal-pin"),   # 5.24
+    ("12", "endo-glass-pin"),   # 3.28
+    ("12", "endo-metal-pin"),   # 3.28
+    ("15", "endo-glass-pin"),   # 3.52
+    ("15", "endo-metal-pin"),   # 3.57
+    ("16", "endo-filling"),   # 8.14
+    ("16", "endo-medical-filling"),   # 8.14
+    ("16", "tooth-under-gum"),   # 5.63
+    ("18", "tooth-under-gum"),   # 3.64
+    ("44", "endo-glass-pin"),   # 4.63
+    ("46", "crown-needed-path"),   # 4.78
+    ("46", "crown-needed-shape"),   # 9.12
+    ("46", "crown-replace-shape"),   # 9.12
+    ("46", "emax-inlay"),   # 7.39
+    ("46", "emax-veneer"),   # 7.98
+    ("46", "fissure-sealing-occlusal"),   # 9.21
+    ("46", "gold-inlay"),   # 7.39
+    ("46", "gold-veneer"),   # 7.98
+    ("46", "gradia-inlay"),   # 7.39
+    ("46", "gradia-veneer"),   # 7.98
+    ("46", "temporary-inlay"),   # 7.39
+    ("46", "temporary-veneer"),   # 7.98
+    ("46", "tooth-base-beauty-2"),   # 5.59
+    ("46", "tooth-broken-distal"),   # 9.24
+    ("46", "tooth-broken-distal-incisal"),   # 3.34
+    ("46", "tooth-broken-incisal"),   # 9.26
+    ("46", "tooth-broken-mesial"),   # 9.32
+    ("46", "tooth-broken-mesial-distal"),   # 9.31
+    ("46", "tooth-broken-mesial-distal-incisal"),   # 8.42
+    ("46", "tooth-broken-mesial-incisal"),   # 9.23
+    ("46", "tooth-bruxism-wear"),   # 9.29
+    ("46", "zircon-inlay"),   # 7.39
+    ("46", "zircon-veneer"),   # 7.98
+    ("55", "endo-filling"),   # 8.54
+    ("55", "endo-medical-filling"),   # 8.54
+    ("55", "pulp-inflam-path-1"),   # 9.64
+    ("55", "tooth-inflam-pulp-base-2"),   # 4.32
+    ("83", "endo-glass-pin"),   # 3.77
+    ("83", "endo-metal-pin"),   # 3.77
+    ("84", "endo-resection"),   # 3.14
+    ("85", "tooth-inflam-pulp-base-2"),   # 6.4
+}
+
+
+def _x_bereich(d: str):
+    xs = []
+    for cmd, a in svgpath.to_absolute(d):
+        v = a if isinstance(a, (list, tuple)) else []
+        for i in range(0, len(v) - 1, 2):
+            xs.append(v[i])
+    return (min(xs), max(xs)) if xs else None
+
+
+def bleibt_im_zahn(txt: str, key: str, failures: list) -> set[tuple[str, str]]:
+    """Steht eine Ebene neben dem Zahn, statt auf ihm?
+
+    DIE PRUEFUNG, DIE GEFEHLT HAT. An 46 standen 35 Ebenen bis zu 9,4 Einheiten
+    neben der Kontur - jede Kronenkappe lief bis in die Nachbarkachel hinein.
+    Kein Vertrag hat es gemeldet: der Ebenenbestand war unveraendert, die Kontur
+    war eine durchgehende Linie, das Lumen lag in der Wurzel, die Kauebene stand
+    auf einer Hoehe. Der Schaden sass eine Ebene weiter (odontogram-8i5).
+
+    Geprueft wird nur WAAGERECHT. Senkrecht ragt vieles zu Recht hinaus - eine
+    Wurzelspitzenresektion sitzt unter dem Apex, ein Stift ragt darueber -, und
+    eine Liste von Ausnahmen, die laenger ist als die Regel, prueft nichts mehr.
+
+    Gibt zurueck, welche bekannten Ueberstaende hier wirklich noch stehen.
+    """
+    kontur = None
+    for pid in ("tooth-base", "background-cusp"):
+        for pat in (r'<path[^>]*\sid="%s"[^>]*?\sd="([^"]+)"',
+                    r'<path[^>]*\sd="([^"]+)"[^>]*?\sid="%s"'):
+            m = re.search(pat % pid, txt)
+            if m:
+                kontur = _x_bereich(m.group(1))
+                break
+        if kontur:
+            break
+    if kontur is None:
+        return set()
+    gesehen: set[tuple[str, str]] = set()
+    for m in re.finditer(r'<path\b(?:(?!/>).)*?\sid="([^"]+)"(?:(?!/>).)*?/>', txt, re.S):
+        ident = m.group(1)
+        if DARF_HINAUS.search(ident):
+            continue
+        d = re.search(r'\sd="([^"]+)"', m.group(0))
+        if not d:
+            continue
+        b = _x_bereich(d.group(1))
+        if b is None:
+            continue
+        ueber = max(kontur[0] - b[0], b[1] - kontur[1])
+        if ueber <= TOL_INNERHALB:
+            continue
+        gesehen.add((key, ident))
+        if (key, ident) in BEKANNTE_UEBERSTAENDE:
+            continue
+        failures.append(
+            f"{key}: {ident} steht {ueber:.2f} Einheiten neben der Kontur; "
+            f"die Ebene wurde neben den Zahn gewarpt")
+    return gesehen
 
 
 def main() -> int:
@@ -326,6 +467,21 @@ def main() -> int:
                 f"distal gezeichnet")
     print(f"\nZeichnungen mit mesial-Beschriftung: {beschriftet} von {len(PLAN)}"
           + ("" if beschriftet == len(PLAN) else "  (die uebrigen werden angenommen)"))
+
+    # Bead odontogram-5hm/-8i5: bleibt jede Ebene INNERHALB des Zahns?
+    innen_geprueft = 0
+    noch_da: set[tuple[str, str]] = set()
+    for datei in sorted(ASSETS.glob("*.svg")):
+        noch_da |= bleibt_im_zahn(datei.read_text(), datei.stem, failures)
+        innen_geprueft += 1
+    behoben = BEKANNTE_UEBERSTAENDE - noch_da
+    print(f"\nAuf Ueberstand geprueft: {innen_geprueft} Vorlagen, "
+          f"{len(noch_da)} von {len(BEKANNTE_UEBERSTAENDE)} bekannten stehen noch")
+    for key, ident in sorted(behoben):
+        failures.append(
+            f"{key}: {ident} steht NICHT mehr neben der Kontur - aus "
+            f"BEKANNTE_UEBERSTAENDE streichen, sonst deckt die Liste einen "
+            f"kuenftigen Fehler zu")
 
     verify.check_fillings(ASSETS, failures)
 

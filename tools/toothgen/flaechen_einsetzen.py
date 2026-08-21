@@ -32,6 +32,7 @@ import fuellflaechen as ff          # noqa: E402
 import fuellflaechen_einsetzen as fe  # noqa: E402
 import halsbaender as hb            # noqa: E402
 import kauflaechen as kf            # noqa: E402
+import kronen as kr                 # noqa: E402
 import redraw_plan as rp            # noqa: E402
 
 
@@ -43,6 +44,15 @@ def main() -> int:
         b = hb.einsetzen(z)
         print(f"  {z:4} " + "  ".join(f"{k} {v}" for k, v in n.items())
               + "   Baender " + " ".join(f"{k.split('-')[1]} {v:.2f}" for k, v in b.items()))
+
+    # Bead odontogram-5hm: die Kronen kommen AUS dem Umriss, also nach ihm -
+    # und fuer JEDE Vorlage, Seiten- wie Kauflaechenansicht.
+    vorlagen = kr.alle()
+    print(f"Kronen: {len(vorlagen)}")
+    getroffen = 0
+    for z in vorlagen:
+        getroffen += kr.einsetzen(z)["kronen"]
+    print(f"  {getroffen} Kronenebenen in {len(vorlagen)} Vorlagen")
 
     print(f"Kauflaechen: {len(rp.PLAN_OCCL)}")
     for ziel in rp.PLAN_OCCL:

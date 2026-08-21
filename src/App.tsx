@@ -887,6 +887,103 @@ export default function App({
 
                 Die Felder tragen keine `id`, der Fingerabdruck sieht sie also
                 ohnehin nicht; er sammelt nur Elemente MIT `id`. */}
+            {/* Bead odontogram-5hm: die KRONE als gewoelbter Koerper.
+
+                Dirk, 21.08.2026, nachdem er die Zahnform-Ableitung gesehen
+                hatte: "Ich finde B super, so bauen" - B war die Zahnform MIT
+                Verlauf. e.max und Metallkeramik bringen ihre Neun-Stopp-Rampe
+                schon aus der Vorlage mit; die uebrigen sieben Fuellungen sind
+                eine einzige flache Farbe, und eine flache Flaeche liest sich
+                wie Papier, nicht wie ein gegossener oder gefraester Koerper.
+
+                DER MITTLERE STOPP IST GENAU DIE EINGESTELLTE FARBE. Das ist
+                der Grund, warum diese Woelbung die Regel "nur die Zahnsubstanz
+                wird schattiert" nicht bricht: die Aussage der Farbe bleibt
+                unveraendert, sie wird nur beleuchtet. Aus derselben Ueberlegung
+                laufen alle drei Stopps ueber die Palettenvariable - wer unter
+                Einstellungen -> Farben eine andere Farbe waehlt, bekommt IHRE
+                Woelbung und nicht die des Standards.
+
+                ZWEI SCHREIBWEISEN JE STOPP, und das ist Absicht: das Attribut
+                traegt den ausgerechneten Rueckfall, die Stilangabe das
+                `color-mix`. Kennt ein Browser `color-mix` nicht, faellt die
+                Stilangabe beim Einlesen weg und das Attribut greift - statt
+                dass ein ungueltiger Farbwert die Krone schwarz macht.
+
+                `objectBoundingBox` rechnet den Verlauf auf jede Form um, ein
+                Element genuegt also fuer alle 52 Vorlagen. */}
+            <radialGradient id="odonKroneGold" cx="0.5" cy="0.38" r="0.72">
+              <stop offset="0" stopColor="#ecc969"
+                    style={{ stopColor: "color-mix(in srgb, var(--odon-rest-gold, #e0a80d) 62%, #fff)" }} />
+              <stop offset="0.55" stopColor="#e0a80d"
+                    style={{ stopColor: "var(--odon-rest-gold, #e0a80d)" }} />
+              <stop offset="1" stopColor="#b3860a"
+                    style={{ stopColor: "color-mix(in srgb, var(--odon-rest-gold, #e0a80d) 80%, #000)" }} />
+            </radialGradient>
+            <radialGradient id="odonKroneGradia" cx="0.5" cy="0.38" r="0.72">
+              <stop offset="0" stopColor="#97cfb3"
+                    style={{ stopColor: "color-mix(in srgb, var(--odon-rest-gradia, #57b285) 62%, #fff)" }} />
+              <stop offset="0.55" stopColor="#57b285"
+                    style={{ stopColor: "var(--odon-rest-gradia, #57b285)" }} />
+              <stop offset="1" stopColor="#468e6a"
+                    style={{ stopColor: "color-mix(in srgb, var(--odon-rest-gradia, #57b285) 80%, #000)" }} />
+            </radialGradient>
+            <radialGradient id="odonKroneZirkon" cx="0.5" cy="0.38" r="0.72">
+              <stop offset="0" stopColor="#e1eef4"
+                    style={{ stopColor: "color-mix(in srgb, var(--odon-rest-zircon, #cfe3ee) 62%, #fff)" }} />
+              <stop offset="0.55" stopColor="#cfe3ee"
+                    style={{ stopColor: "var(--odon-rest-zircon, #cfe3ee)" }} />
+              <stop offset="1" stopColor="#a6b6be"
+                    style={{ stopColor: "color-mix(in srgb, var(--odon-rest-zircon, #cfe3ee) 80%, #000)" }} />
+            </radialGradient>
+            <radialGradient id="odonKroneMetall" cx="0.5" cy="0.38" r="0.72">
+              <stop offset="0" stopColor="#6193d7"
+                    style={{ stopColor: "color-mix(in srgb, var(--odon-rest-metal, #0051bf) 62%, #fff)" }} />
+              <stop offset="0.55" stopColor="#0051bf"
+                    style={{ stopColor: "var(--odon-rest-metal, #0051bf)" }} />
+              <stop offset="1" stopColor="#004199"
+                    style={{ stopColor: "color-mix(in srgb, var(--odon-rest-metal, #0051bf) 80%, #000)" }} />
+            </radialGradient>
+            <radialGradient id="odonKroneProvi" cx="0.5" cy="0.38" r="0.72">
+              <stop offset="0" stopColor="#ddd0bb"
+                    style={{ stopColor: "color-mix(in srgb, var(--odon-rest-temporary, #c8b392) 62%, #fff)" }} />
+              <stop offset="0.55" stopColor="#c8b392"
+                    style={{ stopColor: "var(--odon-rest-temporary, #c8b392)" }} />
+              <stop offset="1" stopColor="#a08f75"
+                    style={{ stopColor: "color-mix(in srgb, var(--odon-rest-temporary, #c8b392) 80%, #000)" }} />
+            </radialGradient>
+            <radialGradient id="odonKroneTeleAussen" cx="0.5" cy="0.38" r="0.72">
+              <stop offset="0" stopColor="#6193d7"
+                    style={{ stopColor: "color-mix(in srgb, var(--odon-rest-telescope, #0051bf) 62%, #fff)" }} />
+              <stop offset="0.55" stopColor="#0051bf"
+                    style={{ stopColor: "var(--odon-rest-telescope, #0051bf)" }} />
+              <stop offset="1" stopColor="#004199"
+                    style={{ stopColor: "color-mix(in srgb, var(--odon-rest-telescope, #0051bf) 80%, #000)" }} />
+            </radialGradient>
+            <radialGradient id="odonKroneTeleInnen" cx="0.5" cy="0.38" r="0.72">
+              <stop offset="0" stopColor="#cacaca"
+                    style={{ stopColor: "color-mix(in srgb, var(--odon-rest-telescope-inner, #aaaaaa) 62%, #fff)" }} />
+              <stop offset="0.55" stopColor="#aaaaaa"
+                    style={{ stopColor: "var(--odon-rest-telescope-inner, #aaaaaa)" }} />
+              <stop offset="1" stopColor="#888888"
+                    style={{ stopColor: "color-mix(in srgb, var(--odon-rest-telescope-inner, #aaaaaa) 80%, #000)" }} />
+            </radialGradient>
+            <radialGradient id="odonKroneProthZahn" cx="0.5" cy="0.38" r="0.72">
+              <stop offset="0" stopColor="#c9ead4"
+                    style={{ stopColor: "color-mix(in srgb, var(--odon-rest-denture-tooth, #a8ddb9) 62%, #fff)" }} />
+              <stop offset="0.55" stopColor="#a8ddb9"
+                    style={{ stopColor: "var(--odon-rest-denture-tooth, #a8ddb9)" }} />
+              <stop offset="1" stopColor="#86b194"
+                    style={{ stopColor: "color-mix(in srgb, var(--odon-rest-denture-tooth, #a8ddb9) 80%, #000)" }} />
+            </radialGradient>
+            <radialGradient id="odonKroneProthBasis" cx="0.5" cy="0.38" r="0.72">
+              <stop offset="0" stopColor="#fbcdbd"
+                    style={{ stopColor: "color-mix(in srgb, var(--odon-rest-denture-base, #f9ae94) 62%, #fff)" }} />
+              <stop offset="0.55" stopColor="#f9ae94"
+                    style={{ stopColor: "var(--odon-rest-denture-base, #f9ae94)" }} />
+              <stop offset="1" stopColor="#c78b76"
+                    style={{ stopColor: "color-mix(in srgb, var(--odon-rest-denture-base, #f9ae94) 80%, #000)" }} />
+            </radialGradient>
             <radialGradient id="odonDepthCusp" cx="0.5" cy="0.40" r="0.66">
               <stop offset="0" stopColor="#fcfbf8" />
               <stop offset="0.55" stopColor="#f1efe9" />

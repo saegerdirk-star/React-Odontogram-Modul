@@ -1,5 +1,80 @@
 # Changelog
 
+## 2.31.0 - 2026-08-21
+
+### Die Krone kommt aus dem Zahn (Bead odontogram-5hm)
+
+Dirk, 21.08.2026: *"Ich habe den Eindruck, wir muessen die Art, wie
+Restaurationen gezeichnet werden, komplett ueberdenken. Wie waere es, die
+normale Kronenform des Zahnes zu nutzen und einfach einzufaerben."* — und nach
+dem Entwurf: *"Ich finde B super, so bauen."*
+
+- **`tools/toothgen/kronen.py`, dritte Stufe.** Bis hierher war jede Kronenkappe
+  eine EIGENE Zeichnung im Spender, die der Redraw auf Dirks Kontur verformte.
+  Zwei Formen, die uebereinanderliegen sollen und getrennt entstehen, koennen
+  auseinanderlaufen — an 46 taten sie es um 9,4 Einheiten. Jetzt wird die Krone
+  AUS der Kontur geschnitten: elf Kronenebenen je Vorlage, in allen 52.
+- **Der Schnitt braucht keine neue Zahl.** `redraw_plan.ZERVIKAL` haelt 26 am
+  Bestand gemessene Hoehen der Schmelz-Zement-Grenze, die `verify_redraw.py`
+  ohnehin auf 0,15 Einheiten genau nachprueft — sie traegt schon das
+  Zahnfleischband. Eine zweite Zahl daneben waere genau die Stelle, an der beide
+  auseinanderlaufen. Eine Ableitung aus dem Umriss allein (der Hals als engste
+  Stelle) ist probiert und verworfen: am mehrwurzeligen Zahn findet sie den
+  APEX, weil die Breite dort gegen null geht.
+- **Die Kauflaechenansicht hat keinen Hals** — dort IST die Krone der ganze
+  Umriss der Kautafel (`background-cusp`), und genau der wird sie.
+- **Die innere Teleskopkrone** entsteht aus derselben Form, um den Mittelpunkt
+  der Zervikallinie zusammengezogen: der Kronenrand bleibt stehen, die Kappe
+  wird nach koronal und seitlich schmaler. Der doppelte Umriss IST die Aussage
+  dieser Restauration.
+- **Gemessen:** Ueberstand der Krone ueber die Kontur ueber alle 26
+  Seitenansichten jetzt zwischen -4,47 und -0,00. Vorher stand 46 bei +9,40.
+
+### Und sie ist ein Koerper, keine Flaeche
+
+- Neun radiale Verlaeufe in `App.tsx`, je einer fuer die Materialien, die bisher
+  eine flache Farbe waren (e.max und Metallkeramik bringen ihre Neun-Stopp-Rampe
+  aus der Vorlage mit). **Der mittlere Stopp IST die eingestellte Farbe** — das
+  ist der Grund, warum diese Woelbung die Regel *"nur die Zahnsubstanz wird
+  schattiert"* nicht bricht: die Aussage der Farbe bleibt unveraendert, sie wird
+  nur beleuchtet. Alle drei Stopps laufen ueber die Palettenvariable, wer unter
+  Einstellungen → Farben eine andere Farbe waehlt, bekommt IHRE Woelbung.
+- **Zwei Schreibweisen je Stopp, mit Absicht:** das Attribut traegt den
+  ausgerechneten Rueckfall, die Stilangabe das `color-mix`. Kennt ein Browser
+  `color-mix` nicht, faellt die Stilangabe beim Einlesen weg und das Attribut
+  greift — statt dass ein ungueltiger Farbwert die Krone schwarz macht.
+- Nicht an den Schalter `odon-depth` gehaengt: jene Schattierung ist eine
+  Lesehilfe, die man abstellen koennen muss; die Woelbung einer Krone ist die
+  Materialdarstellung selbst.
+
+### Die Pruefung, die gefehlt hat
+
+- `verify_redraw.bleibt_im_zahn` prueft, ob eine Ebene WAAGERECHT innerhalb der
+  Kontur bleibt. Das ist die Eigenschaft, deren Fehlen odontogram-8i5 lautlos
+  hat entstehen lassen: Ebenenbestand, Kontur, Lumen und Okklusionsebene waren
+  alle unveraendert — der Schaden sass eine Ebene weiter.
+- **Der Grenzwert ist abgelesen, nicht geraten:** ueber alle 4294 Ebenen liegt
+  der Median bei -0,64, 99 % unter 1,59, und darueber klafft eine Luecke bis zu
+  einem Haufen zwischen 3 und 9,6. `TOL_INNERHALB` liegt in dieser Luecke.
+- **42 bestehende Ueberstaende sind eingefroren** (`BEKANNTE_UEBERSTAENDE`), 23
+  davon an 46 — ein Vertrag, der von Anfang an rot ist, prueft nichts mehr.
+  Gemeldet wird auch, was in der Liste steht und inzwischen sauber ist, damit
+  sie nur kuerzer werden kann.
+
+### Was das NICHT loest
+
+odontogram-8i5 wird kleiner, nicht erledigt. Von den 35 Ebenen, die an 46 neben
+der Kontur standen, sind **11 die Kronenfamilie** und mit der Ableitung
+verschwunden; **24 bleiben** — die sechs Bruchvarianten, die
+Fissurenversiegelung, der Bruxismus-Abrieb, `crown-needed`/`crown-replace`,
+Inlay und Veneer in je fuenf Materialien, `tooth-base-beauty-2`. Inlay, Onlay
+und Veneer decken den Zahn nur teilweise und lassen sich nicht aus seinem
+Umriss schneiden; beim Veneer ist genau dieses Muster schon einmal gescheitert
+(`veneer_aus`).
+
+Nutzlast, FHIR und die SVG-Fingerabdruecke sind unberuehrt: der Abdruck haelt
+`id`, `opacity` und `class` fest, nicht die Geometrie und nicht die Fuellung.
+
 ## 2.30.0 - 2026-08-21
 
 ### Das Inlay ist wieder auffindbar (Bead odontogram-1u2)
