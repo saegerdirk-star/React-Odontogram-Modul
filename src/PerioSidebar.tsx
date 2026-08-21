@@ -10,6 +10,7 @@ import {
   onStateChange,
   getCaseMeta,
   setPatientName,
+  setPatientDob,
   setExamDate,
   setCaseAge,
   setSmokingStatus,
@@ -250,6 +251,21 @@ export default function PerioSidebar() {
               disabled={readOnly}
               value={caseMeta.patientName ?? ""}
               onChange={(e) => setPatientName(e.target.value === "" ? null : e.target.value)}
+            />
+          </div>
+          {/* odontogram-iqj: das Geburtsdatum stand bisher NUR im
+              PDF-Export-Dialog. Dort wird es eingetragen, wenn der Bericht
+              schon fertig ist - fuer den Gebissvorschlag ist es dann zu spaet.
+              Es gehoert zu den Patientendaten, und hier stehen sie. */}
+          <div className="case-meta-row">
+            <label className="case-meta-row-label" htmlFor="caseMetaPatientDob">{t("case.patientDob")}</label>
+            <input
+              id="caseMetaPatientDob"
+              className="case-meta-input"
+              type="date"
+              disabled={readOnly}
+              value={caseMeta.patientDob ?? ""}
+              onChange={(e) => setPatientDob(e.target.value === "" ? null : e.target.value)}
             />
           </div>
           <div className="case-meta-row">

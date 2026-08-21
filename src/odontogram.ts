@@ -54,6 +54,7 @@ import {
   type BridgeToothState, type BridgeSpanCheck,
 } from "./bridgeOverlay";
 import { renderGumOverlay } from "./gumOverlay";
+import { ageFromDob, suggestDentition, type DentitionKind } from "./dentition";  // Bead odontogram-iqj
 import { derivePerioClassification, type PerioClassification, type PerioDerivationInput, type ToothDerivationInput } from "./perioClassification";
 import { buildPerioSvg } from "./perioExport";
 import { assemblePdf, type PdfExportOptions, type PdfAssembleData, type PdfDocLike } from "./perioPdf";
@@ -1767,6 +1768,33 @@ function notifyStateChange(){
   // break state notification.
   try{ updateBridgeOverlay(); }
   catch(e){ console.error("odontogram bridge overlay render failed", e); }
+  // Bead odontogram-iqj: der Gebissvorschlag haengt am Geburtsdatum, und das
+  // wird in der Parodontal-Seitenleiste gesetzt - also nicht auf dem Weg, den
+  // `syncControlsFromState` nimmt. Hier ist die eine Stelle, durch die JEDE
+  // Aenderung laeuft. Kostet eine Textzeile.
+  try{ syncDentitionSuggestion(); }
+  catch(e){ console.error("odontogram dentition suggestion failed", e); }
+}
+
+/** Bead odontogram-iqj: den Vorschlag anzeigen oder verbergen.
+ *
+ *  Er erscheint NUR, wo er etwas zu sagen hat: ein Alter muss bekannt sein, und
+ *  `permanent` schlaegt nichts vor - das bleibende Gebiss ist der
+ *  Ausgangszustand, und ein Knopf, der den ganzen Mund zuruecksetzt, waere dort
+ *  keine Uebernahme, sondern ein Verlust. */
+function syncDentitionSuggestion(): void {
+  const zeile = $("#dentitionSuggestion");
+  if(!zeile) return;
+  const v = getDentitionSuggestion();
+  const zeigen = !!v && v.kind !== "permanent";
+  zeile.classList.toggle("hidden", !zeigen);
+  if(!zeigen || !v) return;
+  const text = $("#dentitionSuggestionText");
+  const knopf = $("#btnApplyDentitionSuggestion");
+  if(text) text.textContent = t("dentition.suggestion", {
+    age: String(v.age), kind: t(`dentition.kind.${v.kind}`),
+  });
+  if(knopf) knopf.textContent = t("dentition.apply");
 }
 
 /** Read a tooth's state as the minimal shape the bridge overlay consumes. */
@@ -4483,6 +4511,51 @@ export function __resetToothForTest(toothNo: number): void {
  *  live DOM/initOdontogram() token. Not part of the public API. */
 export function __resetTeethForTest(toothNos: number[]): void {
   resetTeethGated(toothNos);
+}
+
+/**
+ * Bead odontogram-iqj: welches Gebiss zum Alter des Patienten passt, und
+ * woher das Alter kommt.
+ *
+ * VORSCHLAGEN, NIE ANWENDEN. Ein Geburtsdatum wird nachgetragen und
+ * korrigiert, und ein Umschalten der Dentition setzt JEDEN Zahn auf
+ * `defaultState()` zurueck - wer das Datum nachtraegt, hat womoeglich schon
+ * befundet. Eine Automatik loeschte hier Arbeit. Deshalb liefert diese
+ * Funktion nur die Auskunft; angewandt wird sie erst durch den Knopf, und der
+ * laeuft durch dieselbe DS-1-Bahn wie die Presets selbst.
+ *
+ * Das GEBURTSDATUM geht dem eingetragenen Alter vor, wo beide da sind: es ist
+ * die genauere Angabe und altert von selbst mit. Beide bleiben nebeneinander
+ * bestehen - `age` wird von der Parodontalklassifikation gelesen und darf von
+ * Hand gesetzt werden, wenn nur das Alter bekannt ist.
+ *
+ * `today` wird HEREINGEREICHT (ISO `YYYY-MM-DD`); ohne Angabe nimmt die
+ * Funktion den heutigen Tag. Der Parameter ist da, damit sich das Ergebnis
+ * pruefen laesst, ohne die Uhr zu stellen.
+ */
+export function getDentitionSuggestion(today?: string): {
+  kind: DentitionKind; age: number; source: "dob" | "age";
+} | null {
+  const dob = caseMeta.patientDob;
+  if(dob){
+    const stichtag = today ?? new Date().toISOString().slice(0, 10);
+    const alter = ageFromDob(dob, stichtag);
+    const kind = suggestDentition(alter);
+    if(alter !== null && kind) return { kind, age: alter, source: "dob" };
+  }
+  const kind = suggestDentition(caseMeta.age);
+  if(kind && caseMeta.age !== null) return { kind, age: caseMeta.age, source: "age" };
+  return null;
+}
+
+/** Bead odontogram-iqj: den Vorschlag anwenden - derselbe Weg, den die beiden
+ *  Preset-Knoepfe nehmen, also durch die DS-1-Bahn. Ein `permanent`-Vorschlag
+ *  wendet NICHTS an: das bleibende Gebiss ist der Ausgangszustand, und ein
+ *  Zuruecksetzen des ganzen Mundes waere hier keine Uebernahme, sondern ein
+ *  Verlust. Wer das will, hat den Knopf "Alles zuruecksetzen" daneben. */
+export function applyDentitionSuggestion(kind: DentitionKind): void {
+  if(kind === "primary") applyPrimaryDentition();
+  else if(kind === "mixed") applyMixedDentition();
 }
 
 /** TEST-ONLY (DS-1 review-fix seam): drive a dentition preset through the same
@@ -13109,6 +13182,11 @@ function wireControls(){
     notifyStateChange();
   });
 
+  // Bead odontogram-iqj: der Vorschlag aus dem Alter, neben den Presets.
+  $("#btnApplyDentitionSuggestion").addEventListener("click", ()=>{
+    const v = getDentitionSuggestion();
+    if(v) applyDentitionSuggestion(v.kind);
+  });
   $("#btnPrimaryDentition").addEventListener("click", applyPrimaryDentition);
 
   $("#btnMixedDentition").addEventListener("click", applyMixedDentition);

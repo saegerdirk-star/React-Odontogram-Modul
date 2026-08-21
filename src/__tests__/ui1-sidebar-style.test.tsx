@@ -74,6 +74,7 @@ describe("UI-1 Task 2: Páciens adatok metadata uses a labelled row structure", 
       "caseMetaCigarettesPerDay",
       "caseMetaDiabetes",
       "caseMetaHba1c",
+      "caseMetaPatientDob",
       "caseMetaRbl",
       "caseMetaToothLoss",
     ];
@@ -89,8 +90,11 @@ describe("UI-1 Task 2: Páciens adatok metadata uses a labelled row structure", 
   it("metadata rows use the two-column grid row class", () => {
     renderSidebar();
     const rows = document.querySelectorAll(".case-meta-row");
-    // 9 metadata rows (patientName, examDate, age, smoking, cigs, diabetes, hba1c, rbl, toothLoss)
-    expect(rows.length).toBe(9);
+    // 10 Zeilen: patientName, patientDob, examDate, age, smoking, cigs,
+    // diabetes, hba1c, rbl, toothLoss. Das Geburtsdatum kam mit
+    // odontogram-iqj dazu - es stand vorher nur im PDF-Export-Dialog, wo es
+    // fuer den Gebissvorschlag zu spaet ist.
+    expect(rows.length).toBe(10);
   });
 
   it("conditional fields (cigarettes/day, HbA1c) carry the disabled-row class when gated off", () => {

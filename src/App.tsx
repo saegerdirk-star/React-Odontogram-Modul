@@ -1046,6 +1046,14 @@ export default function App({
                   <button id="btnMixedDentition" className="btn btn-ghost btn-sm">{t("status.mixedDentition")}</button>
                   <button id="btnEdentulous" className="btn btn-toggle btn-sm" aria-pressed="false">{t("status.edentulous")}</button>
                 </div>
+                {/* odontogram-iqj: der Vorschlag aus dem Alter. Er SCHLAEGT VOR
+                    und wendet nie von selbst an - ein Preset setzt jeden Zahn
+                    auf den Ausgangszustand zurueck, und wer ein Geburtsdatum
+                    nachtraegt, hat womoeglich schon befundet. */}
+                <div id="dentitionSuggestion" className="row hidden">
+                  <span id="dentitionSuggestionText" className="hint"></span>
+                  <button id="btnApplyDentitionSuggestion" className="btn btn-ghost btn-sm"></button>
+                </div>
                 <div className="row status-extra-row">
                   <span>{t("status.extraLabel")}</span>
                   <select id="statusExtraSelect"></select>

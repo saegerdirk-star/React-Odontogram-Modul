@@ -1,5 +1,56 @@
 # Changelog
 
+## 2.29.0 - 2026-08-21
+
+### Die Dentition aus dem Alter VORSCHLAGEN (Bead odontogram-iqj)
+
+Dirk, 19.08.2026: *"Wir brauchen einen Schalter, um das ganze Gebiss auf
+Milchzahn zu stellen. Das koennte auch schon beim Auslesen des Geburtsdatums
+geschehen (Alter < 6 alles Milchzaehne)."*
+
+- **`src/dentition.ts`** (DOM-frei und ohne Import aus `odontogram.ts`, wie
+  `shorthand.ts` und `perioClassification.ts`): `ageFromDob(dob, today)` und
+  `suggestDentition(age)`. Das heutige Datum wird HEREINGEREICHT — eine
+  Ableitung, die sich die Zeit selbst holt, ist nicht pruefbar und liefert an
+  einem Fall, der morgen wieder geoeffnet wird, ein anderes Ergebnis, ohne dass
+  jemand etwas geaendert haette.
+- **Es SCHLAEGT VOR und wendet nie von selbst an.** Ein Preset setzt jeden Zahn
+  auf `defaultState()` zurueck; wer ein Geburtsdatum nachtraegt, hat womoeglich
+  schon befundet. Der Hinweis (`#dentitionSuggestion`) steht neben den
+  Preset-Knoepfen, und erst sein Knopf wendet an — durch dieselbe DS-1-Bahn wie
+  die Presets selbst. Ein Test haelt fest, dass ein gesetztes Geburtsdatum
+  keinen einzigen Zahn anfasst.
+- **`permanent` schlaegt gar nichts vor:** das bleibende Gebiss ist der
+  Ausgangszustand, und ein Knopf, der dort den ganzen Mund zuruecksetzt, waere
+  keine Uebernahme, sondern ein Verlust. Wer das will, hat "Alles zuruecksetzen"
+  daneben.
+- **Das Geburtsdatum geht dem eingetragenen Alter vor**, wo beide da sind: es
+  ist die genauere Angabe und altert von selbst mit. Beide bleiben nebeneinander
+  bestehen — `age` liest die Parodontalklassifikation, und es darf von Hand
+  gesetzt werden, wenn nur das Alter bekannt ist. Damit ist auch die zweite
+  Frage des Beads beantwortet.
+- **Das Geburtsdatum ist jetzt ueberhaupt erreichbar.** Es stand bisher NUR im
+  PDF-Export-Dialog — dort wird es eingetragen, wenn der Bericht schon fertig
+  ist, und fuer einen Gebissvorschlag ist das zu spaet. Es gehoert zu den
+  Patientendaten, und dort steht es nun (Parodontalstatus, Karte
+  "Patientendaten").
+- Die Altersgrenzen (unter 6 / 6 bis 12 / ab 13) stehen als FAUSTWERTE im
+  Quelltext, mit der Begruendung daneben: die untere ist die harte — der
+  Sechsjahrmolar bricht als erster bleibender Zahn durch, und zwar HINTER der
+  Milchreihe, ohne dass ein Milchzahn dafuer ausfaellt. Die obere ist weicher.
+  Dirk bestaetigt oder korrigiert sie; im Code steht eine Konstante.
+- Payload unveraendert (2.30), kein `svgLayer`, Parity byte-gleich. 12 neue
+  Tests.
+
+### Nebenbefund, gemeldet statt behoben
+
+`assemblePdf` druckt bei leeren Identitaetsfeldern **`John Doe` und
+`1980-01-01`**, damit der Bericht "wie ein vollstaendiges Dokument" liest. Ein
+Bericht mit einem erfundenen Geburtsdatum ist aber kein unvollstaendiger, er ist
+ein falscher — und seit diesem Bead liest der Gebissvorschlag dieses Feld.
+Angelegt als Bead; was auf dem Briefkopf steht, entscheidet Dirk.
+
+
 ## 2.28.4 - 2026-08-21
 
 ### Eine Zahl fuer alle Milchzaehne, aus ihrer eigenen Kronenbreite
