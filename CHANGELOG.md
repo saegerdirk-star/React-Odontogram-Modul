@@ -1,5 +1,58 @@
 # Changelog
 
+## 2.28.0 - 2026-08-21
+
+### Der Zahndurchbruch in Stufen statt als Schalter (Bead odontogram-0n8)
+
+charlys Taste `D` zeigt das Stadium eines Zahndurchbruchs in DREI Stufen. Wir
+hatten `not-erupted` — durchgebrochen oder nicht, ein Schalter. Fuer das
+Wechselgebiss ist gerade das Dazwischen der Befund.
+
+- **`eruptionStage`** (`emerging` / `half-crown` / `full-crown`), abgestuft nach
+  dem **sichtbaren Kronenanteil**. Nicht nach dem Bezug zur Kauebene: die
+  braeuchte den Antagonisten, und ihre dritte Stufe waere der Normalzustand.
+  Payload **2.29 → 2.30**, weggelassen bei `none`.
+- **Die Grenze zu `not-erupted` ist scharf und beide ueberschneiden sich
+  nicht:** jenes heisst, dass gar nichts zu sehen ist, dieses stuft ab, was zu
+  sehen IST. Die Leiter liest sich `not-erupted` → emerging → half-crown →
+  full-crown → `none` (in Okklusion). Ein nicht durchgebrochener Zahn nimmt
+  keine Stufe an, ein Implantat auch nicht — ein Fabrikteil bricht nicht durch.
+- **Gezeichnet wird durch VERSCHIEBEN, nicht durch neue Zeichnung.** Dirk,
+  21.08.2026: *"Wir setzen die Zahnkrone in Relation zum Kiefer und Zahnfleisch
+  auf eine niedrigere Hoehe und maskieren die Wurzel, die sonst aus dem Kasten
+  nach oben ragen wuerde."* Die Alternative — Krone ueber die Wurzel schieben —
+  haette den Umriss in zwei Teile schneiden muessen; der ist EIN durchgehender
+  Pfad, `verify_redraw.py` besteht darauf, und an Vorlage 14 allein kreuzen
+  **41 Ebenen** die Schmelz-Zement-Grenze. Ausserdem wird ein durchbrechender
+  Zahn nicht kuerzer, er wandert.
+- **Verschoben werden die Geschwister von `g#base`** — jene Gruppe enthaelt
+  genau `bone-base` und `gum-base`. Zahnfleisch und Knochen bleiben damit
+  stehen, weil sie nicht mitgenommen werden KOENNEN, nicht weil jemand
+  aufgepasst hat. Die Kieferdrehung haengt an einer Huelle als
+  Transform-ATTRIBUT, die CSS-Regel greift eine Ebene tiefer und setzt sich
+  darunter: ein negatives `translateY` heisst deshalb in BEIDEN Kiefern "nach
+  apikal", eine Regel statt eines Falls je Bogen.
+- **Die Strecke ist ein ANTEIL der Krone, keine feste Zahl** — und das ist
+  gemessen, nicht geschaetzt: mit festen 20 Einheiten war an 14 nichts mehr zu
+  sehen und an 13 mehr als die Haelfte. Die Kronen streuen von 16 Einheiten am
+  unteren Milchschneidezahn bis 28,6 am Eckzahn, und im Wechselgebiss — dem
+  einzigen Ort, an dem diese Achse gebraucht wird — stehen genau diese
+  nebeneinander. `sichtbareKrone()` liest sie je Vorlage aus dem `d`-ATTRIBUT
+  des Zahnfleischbandes und dem viewBox-Rand, nie aus dem Bild: eine Messung am
+  gerenderten Zahn liefe in die eigene Verschiebung zurueck.
+- Maskiert wird an der KACHELKANTE, nicht am Zahnfleisch: eine Wurzel, die im
+  Knochen steht, ist genau das Bild, das ein Wechselgebiss zeigen soll.
+- **Das Kuerzel `D` hat sein Ziel** (`D1`/`D2`/`D3`, Stufe als Ziffer wie `K3`
+  bei der Karies). Damit ist `SHORTHAND_PENDING` bis auf `z` und `R` leer, und
+  beide tragen keinen Bead, weil sie keinen bekommen: unser Flaechensatz kennt
+  die zervikale Flaeche nicht, und ob es die Wurzelkappe noch gibt, fragt Dirk
+  selbst.
+- Kein neuer SVG-Layer, keine neue Zeichnung, kein Generatorlauf — **Parity
+  byte-gleich**. Eigene Zeile in der "Was aendert sich"-Liste (ein Plan, der
+  einen Zahn durchbrechen laesst, aendert nicht seine Anwesenheit). 14 neue
+  Tests.
+
+
 ## 2.27.0 - 2026-08-21
 
 ### Eine Bruecke ohne Pfeiler ist kein Befund (Bead odontogram-5rv)

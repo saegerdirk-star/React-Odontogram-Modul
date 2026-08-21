@@ -254,6 +254,16 @@ export const LOCAL_VALUE_MAPS: Record<string, Record<string, CodeEntry>> = {
   // LAENGS ODER QUER ist der Unterschied, der zaehlt, und deshalb sind es zwei
   // Werte und kein Schalter: die Laengsfraktur ist der Extraktionsgrund, die
   // Querfraktur kann je nach Hoehe erhalten werden.
+  // Bead odontogram-0n8: wie weit ein sichtbarer Zahn durchgebrochen ist,
+  // gemessen am KRONENANTEIL, der ueber dem Zahnfleisch steht. Nicht am Bezug
+  // zur Kauebene - die braeuchte den Antagonisten, und ihre dritte Stufe waere
+  // der Normalzustand.
+  eruptionStage: {
+    "none": { code: "none", display: "Fully erupted or not assessed" },
+    "emerging": { code: "emerging", display: "Emerging: cusp tip or incisal edge just visible" },
+    "half-crown": { code: "half-crown", display: "About half the crown erupted" },
+    "full-crown": { code: "full-crown", display: "Crown fully erupted, not yet in occlusion" },
+  },
   rootFracture: {
     "none": { code: "none", display: "No root fracture" },
     "vertical": { code: "vertical", display: "Vertical root fracture" },

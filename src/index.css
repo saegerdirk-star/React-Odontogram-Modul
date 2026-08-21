@@ -2850,6 +2850,45 @@ body.odon-dragging{ cursor: cell; }
    Kacheln aus demselben Grund wie die Bruchlinie - hinter ihnen bliebe von ihm
    nur der vier Bildpunkte breite Rasterspalt sichtbar, weil sich die beiden
    Kronen am Kontaktpunkt beruehren. */
+/* Bead odontogram-0n8: der Durchbruchsstand.
+ *
+ * Ein durchbrechender Zahn ist derselbe Zahn, nur weiter von der Kauebene
+ * entfernt. Also wird er VERSCHOBEN, nicht neu gezeichnet - kein Generatorlauf,
+ * keine neue Ebene, kein neuer Fingerabdruck.
+ *
+ * Verschoben werden die GESCHWISTER von `g#base`, und das ist der ganze Trick:
+ * jene Gruppe enthaelt genau zwei Dinge, `bone-base` und `gum-base`. Zahnfleisch
+ * und Knochen bleiben damit stehen, weil sie nicht mitgenommen WERDEN KOENNEN,
+ * nicht weil jemand aufgepasst hat. Das Band gehoert dem Bogen, nicht dem Zahn.
+ *
+ * Die Kieferdrehung (`rotate180`/`mirrorVertical` in odontogram.ts) haengt an
+ * einer HUELLE um den Inhalt, als Transform-ATTRIBUT. Diese Regel greift eine
+ * Ebene tiefer und setzt sich darunter, statt sie zu ueberschreiben. Nebenbei
+ * heisst deshalb ein negatives translateY in BEIDEN Kiefern "nach apikal" - der
+ * Unterkiefer wird ja aussen gekippt. Eine Regel, kein Fall je Bogen.
+ *
+ * Die Einheiten sind Template-Einheiten (4,048 je Millimeter), nicht Bruchteile
+ * der Krone: ein Durchbruch ist eine Wanderung um Millimeter. Ein Bruchteil
+ * liesse den Sechser weiter wandern als den Zweier, obwohl beide gleich weit
+ * durchgebrochen sind.
+ */
+.tooth-tile[data-eruption] .tooth-svg svg{
+  /* Die Wurzel laeuft sonst in die Nachbarreihe - die Kachel-SVG traegt
+     `overflow: visible`, damit der Knochen an kurzen Vorlagen ueber den
+     viewBox-Rand darf. Maskiert wird an der KACHELKANTE, nicht am
+     Zahnfleisch: eine Wurzel, die im Knochen steht, ist genau das Bild, das
+     ein Wechselgebiss zeigen soll. */
+  clip-path: inset(0);
+}
+/* Die Strecke steht als `--erupt-shift` an der Kachel und ist je Vorlage aus
+   deren EIGENER Kronenhoehe gerechnet (siehe `sichtbareKrone` in
+   odontogram.ts). Eine feste Zahl waere hier falsch: die Kronen streuen von 16
+   Einheiten am unteren Milchschneidezahn bis 28,6 am Eckzahn, und im
+   Wechselgebiss stehen genau diese nebeneinander. */
+.tooth-tile[data-eruption] .tooth-svg svg g#base ~ g{
+  transform: translateY(calc(-1 * var(--erupt-shift, 0px)));
+}
+
 .tooth-grid > svg.papilla-marks{
   position: absolute; inset: 0; pointer-events: none; z-index: 3;
 }

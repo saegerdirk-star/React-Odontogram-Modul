@@ -1268,6 +1268,14 @@ export default function App({
                 {/* Beads odontogram-t6y / -ca0. Die Wurzelfraktur steht bei den
                     Wurzelbefunden, nicht bei den drei Bruchachsen der Krone -
                     sie ist ein anderer Befund mit anderer Folge. */}
+                {/* odontogram-0n8: wie weit ein SICHTBARER Zahn durchgebrochen
+                    ist. Nicht dasselbe wie "nicht durchgebrochen" in der
+                    Anwesenheitsliste darueber - jenes heisst, dass gar nichts
+                    zu sehen ist. */}
+                <div id="eruptionRow" className="row">
+                  <span>{t("eruptionStage.label")}</span>
+                  <select id="eruptionSelect"></select>
+                </div>
                 <div id="papillaMesialRow" className="row">
                   <span>{t("papillaLoss.label")} ({t("papillaLoss.site.mesial")})</span>
                   <select id="papillaMesialSelect"></select>

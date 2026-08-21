@@ -63,6 +63,9 @@ export interface ToothRecord {
   // Bead odontogram-5rv: dieses Brueckenglied haengt einseitig, und zwar
   // absichtlich - die Schwebebruecke. Weggelassen, wenn falsch.
   cantilever?: boolean;
+  // Bead odontogram-0n8: wie weit ein SICHTBARER Zahn durchgebrochen ist.
+  // Weggelassen, wenn "none".
+  eruptionStage?: string;
   prosthesis?: string;
   mobility?: string;
   toothSubstrate?: string;
@@ -200,6 +203,13 @@ export interface DentalCoreIdentity {
 
 /** The payload/document version this engine writes. Readers accept earlier versions. */
 // 2.22 (odontogram-8vu): additive `not-erupted` tooth selection; no migration.
+// 2.30 (odontogram-0n8): additive - `eruptionStage` (emerging / half-crown /
+// full-crown), how far a VISIBLE tooth has come through, graded by the portion
+// of the crown above the gum. Deliberately NOT the same question as
+// `toothSelection: "not-erupted"`, which means nothing is visible at all: the
+// ladder reads not-erupted -> emerging -> half-crown -> full-crown -> none (in
+// occlusion). Omitted when "none", so a chart with no mixed dentition is
+// byte-identical apart from this version string.
 // 2.29 (odontogram-5rv): additive - `cantilever`, marking a bridge PONTIC that
 // hangs on one side on purpose. Without it a cantilever bridge is
 // indistinguishable from a half-entered one, and the "no abutment on that side"
@@ -236,7 +246,7 @@ export interface DentalCoreIdentity {
 // filling or caries lesion extends into the cervical region. Omitted entirely
 // when empty, so a document that never records it is byte-identical apart from
 // this version string, and an older document needs no migration.
-export const PAYLOAD_VERSION = "2.29";
+export const PAYLOAD_VERSION = "2.30";
 
 /**
  * The UI-domain document (bead odontogram-3l1, AC2/AC4): a versioned,

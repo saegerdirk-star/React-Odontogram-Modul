@@ -278,6 +278,15 @@ export const AXES: ClinicalAxis[] = [
     ] },
   // Beads odontogram-t6y und -ca0. Wie sensibility/percussion: kein `svgLayer`,
   // keine erfundene Dental-Core-Eigenschaft, lokale Kodes.
+  { id: "eruptionStage", field: "eruptionStage", kind: "enum", valueGroup: "eruptionStage",
+    skipValue: "none", finding: { local: "tooth-eruption-stage", display: "Tooth eruption stage" },
+    values: valuesFrom("eruptionStage"),
+    uiOptions: [
+      { value: "none", labelKey: "eruptionStage.option.none" },
+      { value: "emerging", labelKey: "eruptionStage.option.emerging" },
+      { value: "half-crown", labelKey: "eruptionStage.option.halfCrown" },
+      { value: "full-crown", labelKey: "eruptionStage.option.fullCrown" },
+    ] },
   { id: "rootFracture", field: "rootFracture", kind: "enum", valueGroup: "rootFracture",
     skipValue: "none", finding: { local: "root-fracture", display: "Root fracture" },
     values: valuesFrom("rootFracture"),

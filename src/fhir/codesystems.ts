@@ -316,6 +316,15 @@ export const LOCAL_VALUE_MAPS: Record<string, Record<string, CodeEntry>> = {
     "negative": { code: "negative", display: "Percussion negative" },
     "sensitive": { code: "sensitive", display: "Percussion sensitive" },
   },
+  // Bead odontogram-0n8. Lokale Kodes: fuer den Durchbruchsstand liess sich
+  // kein verifizierter SNOMED-Kode belegen, und einen zu erfinden hiesse
+  // Terminologie zu behaupten, ueber die diese Anzeige nicht verfuegt.
+  eruptionStage: {
+    "none": { code: "none", display: "Fully erupted or not assessed" },
+    "emerging": { code: "emerging", display: "Emerging: cusp tip or incisal edge just visible" },
+    "half-crown": { code: "half-crown", display: "About half the crown erupted" },
+    "full-crown": { code: "full-crown", display: "Crown fully erupted, not yet in occlusion" },
+  },
   // Beads odontogram-t6y / -ca0. Lokale Kodes, kein verifizierter SNOMED.
   rootFracture: {
     "none": { code: "none", display: "No root fracture" },

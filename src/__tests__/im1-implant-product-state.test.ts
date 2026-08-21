@@ -79,7 +79,7 @@ describe("an implant with no product is a complete record", () => {
 
 describe("payload", () => {
   it("is at the version this axis was added in", () => {
-    expect(PAYLOAD_VERSION).toBe("2.29");
+    expect(PAYLOAD_VERSION).toBe("2.30");
   });
 
   it("round-trips a product through export and import", () => {

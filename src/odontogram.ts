@@ -467,6 +467,17 @@ export type PerioSite = typeof PERIO_SITES[number];
 function defaultState(){
   return {
     toothSelection: "tooth-base", // none | tooth-base | milktooth | implant | variants
+    // Bead odontogram-0n8: WIE WEIT ein vorhandener Zahn durchgebrochen ist,
+    // nach dem sichtbaren Kronenanteil. `none` heisst in Okklusion oder nicht
+    // erhoben - der Regelfall, und deshalb nie gespeichert.
+    //
+    // Die Grenze zu `toothSelection: "not-erupted"` ist scharf und beide
+    // ueberschneiden sich nicht: JENES heisst, dass gar nichts zu sehen ist,
+    // DIESES stuft einen sichtbaren Zahn ab. Ein nicht durchgebrochener Zahn
+    // traegt deshalb keine Stufe (`eruptionAllowed`), und wird ein Zahn auf
+    // `not-erupted` gesetzt, faellt die Stufe weg. Eine Frage, zwei Werte, aber
+    // kein Wert an zwei Orten.
+    eruptionStage: "none",  // none | emerging | half-crown | full-crown
     endoResection: false,
     mods: new Set(),
     periapicalType: "none", // none | granuloma | cyst | abscess (qualifies mods "inflammation")
@@ -2972,6 +2983,9 @@ function getRootResectionOptions(): { value: string; label: string }[]{
 /** Bead odontogram-gry: 0 heisst NICHT BEURTEILT, nicht "keine Papille" -
  *  dieselbe Unterscheidung wie beim Sondieren, wo eine leere Stelle nicht
  *  null Millimeter heisst. */
+function getEruptionOptions(): { value: string; label: string }[]{
+  return Array.from(VALID_ERUPTION_STAGE).map(v => ({ value: v, label: t("eruptionStage.option." + kebabToCamel(v)) }));
+}
 function getPapillaLossOptions(): { value: string; label: string }[]{
   return ["0", "1", "2", "3"].map(v => ({ value: v, label: t("papillaLoss.class." + v) }));
 }
@@ -4240,6 +4254,7 @@ function applyStateToSvg(toothNo: Any){
   syncHemisectionClip(toothNo);   // Bead odontogram-ca0
   syncFractureMark(toothNo);      // Bead odontogram-t6y
   syncPapillaMark(toothNo);       // Bead odontogram-gry
+  syncEruptionMark(toothNo);      // Bead odontogram-0n8
   updateToothTooltip(toothNo);
 }
 
@@ -4572,6 +4587,14 @@ function getStateSummary(toothNo: number): string[]{
   else if(state.toothSelection === "milktooth") summary.push(t("toothSelect.milk"));
   else if(state.toothSelection === "implant") summary.push(t("toothSelect.implant"));
   else if(state.toothSelection === "tooth-under-gum") summary.push(t("toothSelect.underGum"));
+
+  // Bead odontogram-0n8: der Durchbruchsstand, direkt bei der Anwesenheit -
+  // er beantwortet dieselbe Frage eine Stufe feiner. Gezeigt nur, wo die
+  // Bedienung ihn auch anbietet: eine tolerant importierte Stufe an einer
+  // Luecke ist gespeichert und bleibt unsichtbar.
+  if(state.eruptionStage && state.eruptionStage !== "none" && eruptionAllowed(state)){
+    summary.push(`${t("eruptionStage.label")}: ${t("eruptionStage.option." + kebabToCamel(state.eruptionStage))}`);
+  }
 
   // Tooth substrate (radix / broken / crown-prep) — independent of any restoration.
   if(state.toothSubstrate !== "natural"){
@@ -5333,6 +5356,9 @@ function syncControlsFromState(state: Any){
   $("#rootResectionRootRow").classList.toggle(
     "hidden", !(mehrwurzelig && (state.rootResection === "hemisection"
                                  || state.rootResection === "amputation")));
+  // Bead odontogram-0n8: nur an einem vorhandenen natuerlichen Zahn.
+  setSelectOptions($("#eruptionSelect"), getEruptionOptions(), state.eruptionStage ?? "none");
+  $("#eruptionRow").classList.toggle("hidden", !eruptionAllowed(state));
   // Bead odontogram-gry: je Zwischenraum eine Zeile. Der letzte Zahn im Bogen
   // hat distal keinen Nachbarn, also auch keine Papille - `papillaSites`
   // entscheidet, nicht der Zustand.
@@ -7396,6 +7422,87 @@ function syncFractureMark(toothNo: number): void {
   }
 }
 
+/** Bead odontogram-0n8: den Durchbruchsstand an die Kachel schreiben.
+ *
+ *  Gezeichnet wird er in der CSS, nicht hier: ein durchbrechender Zahn ist
+ *  derselbe Zahn, nur weiter apikal, und das ist eine Verschiebung - keine
+ *  neue Zeichnung. Dirk am 21.08.2026: "Wir setzen die Zahnkrone in Relation
+ *  zum Kiefer und Zahnfleisch auf eine niedrigere Hoehe und maskieren die
+ *  Wurzel, die sonst aus dem Kasten nach oben ragen wuerde."
+ *
+ *  Die Alternative - Krone ueber die Wurzel schieben - haette den Umriss in
+ *  zwei Teile schneiden muessen. Der ist EIN durchgehender Pfad, und
+ *  `verify_redraw.py` besteht darauf; an Vorlage 14 allein kreuzen ausserdem
+ *  41 Ebenen die Schmelz-Zement-Grenze und muessten alle mitgeschnitten
+ *  werden. Und ein durchbrechender Zahn wird nicht kuerzer, er wandert. */
+/** Wie hoch die Krone eines Templates ueber dem Zahnfleischrand steht, in
+ *  Template-Einheiten. Je Vorlage einmal gerechnet und gemerkt.
+ *
+ *  Gelesen wird das ATTRIBUT `d` des Zahnfleischbandes, nicht die gerenderte
+ *  Geometrie: eine CSS-Verschiebung an den Ebenen wuerde eine Messung am Bild
+ *  in sich selbst zurueckfuehren. Der koronale Rand des Bandes ist sein
+ *  groesstes y (die Papille), die Kauebene liegt `OCCL_MARGIN` ueber dem
+ *  unteren viewBox-Rand - das ist die eine Zahl, die alle Vorlagen teilen, und
+ *  `verify.py` besteht darauf. */
+const OCCL_MARGIN_UNITS = 8;
+const kronenhoehe = new Map<string, number>();
+function sichtbareKrone(svg: Element): number | null {
+  const tpl = svg.getAttribute("data-tooth-template") ?? "";
+  const gemerkt = kronenhoehe.get(tpl);
+  if(gemerkt !== undefined) return gemerkt;
+  const vb = (svg.getAttribute("viewBox") || "").trim().split(/\s+/).map(Number);
+  const band = svg.querySelector('[id="gum-base"]')?.getAttribute("d");
+  if(vb.length !== 4 || vb.some((n) => !Number.isFinite(n)) || !band) return null;
+  let yPap = -Infinity;
+  for(const paar of band.matchAll(/(-?[\d.]+),(-?[\d.]+)/g)){
+    const y = Number(paar[2]);
+    if(Number.isFinite(y) && y > yPap) yPap = y;
+  }
+  if(!Number.isFinite(yPap)) return null;
+  const hoehe = (vb[1] + vb[3] - OCCL_MARGIN_UNITS) - yPap;
+  if(tpl) kronenhoehe.set(tpl, hoehe);
+  return hoehe;
+}
+
+/** Wie weit eine Stufe den Zahn zurueckstellt, als ANTEIL der sichtbaren Krone.
+ *
+ *  Ein Anteil und keine Strecke, weil Dirks Einteilung am sichtbaren
+ *  Kronenanteil misst - und weil die Kronen zwischen 16 Einheiten (unterer
+ *  Milchschneidezahn) und 28,6 (Eckzahn) streuen. Gemessen mit einer festen
+ *  Strecke von 20 Einheiten war an 14 nichts mehr zu sehen und an 13 mehr als
+ *  die Haelfte; an einem Milchzahn waere er ganz verschwunden. Im
+ *  Wechselgebiss - dem einzigen Ort, an dem diese Achse gebraucht wird - stehen
+ *  beide nebeneinander. */
+const ERUPTION_ANTEIL: Record<string, number> = {
+  "emerging": 0.92,     // nur die Spitze steht heraus
+  "half-crown": 0.5,
+  "full-crown": 0.12,   // Krone frei, aber sichtbar kuerzer als die Reihe
+};
+
+function syncEruptionMark(toothNo: number): void {
+  const tiles = toothTile.get(toothNo);
+  if(!tiles) return;
+  const st = toothState.get(toothNo);
+  const stufe = (st?.eruptionStage as string) ?? "none";
+  const zeigen = stufe !== "none" && eruptionAllowed(st ?? defaultState());
+  for(const tile of tiles){
+    if(zeigen && tile.classList.contains("side-view")){
+      tile.dataset.eruption = stufe;
+      const svg = tile.querySelector("svg");
+      const krone = svg ? sichtbareKrone(svg) : null;
+      const anteil = ERUPTION_ANTEIL[stufe] ?? 0;
+      if(krone !== null && krone > 0){
+        tile.style.setProperty("--erupt-shift", `${(krone * anteil).toFixed(2)}px`);
+      }else{
+        tile.style.removeProperty("--erupt-shift");
+      }
+    }else{
+      delete tile.dataset.eruption;
+      tile.style.removeProperty("--erupt-shift");
+    }
+  }
+}
+
 /** Bead odontogram-gry: den Papillenverlust an die Kachel schreiben, als
  *  LINKS/RECHTS statt mesial/distal. Gezeichnet wird er in der Auflage
  *  (`gumOverlay.ts`) - dieselbe Aufgabenteilung wie bei der Bruchlinie, und
@@ -7657,6 +7764,9 @@ function serializeState(s: Any){
     // stays byte-identical apart from the version field.
     ...(s.retention && s.retention !== "none" ? { retention: s.retention } : {}),
     ...(s.retentionSide && s.retentionSide !== "none" ? { retentionSide: s.retentionSide } : {}),
+    // Bead odontogram-0n8: omit-when-none - eine Karte ohne Wechselgebiss
+    // bleibt byte-gleich bis auf die Version.
+    ...(s.eruptionStage && s.eruptionStage !== "none" ? { eruptionStage: s.eruptionStage } : {}),
     ...(s.rootFracture && s.rootFracture !== "none" ? { rootFracture: s.rootFracture } : {}),
     ...(s.rootFractureRoot ? { rootFractureRoot: s.rootFractureRoot } : {}),
     ...(s.rootResection && s.rootResection !== "none" ? { rootResection: s.rootResection } : {}),
@@ -7721,6 +7831,7 @@ export const VALID_PERI_IMPLANT = validValues("periImplant");
 // from AXES like every other enum).
 export const VALID_RETENTION = validValues("retention");
 export const VALID_RETENTION_SIDE = validValues("retentionSide");
+export const VALID_ERUPTION_STAGE = validValues("eruptionStage");   // Bead odontogram-0n8
 export const VALID_ROOT_FRACTURE = validValues("rootFracture");
 export const VALID_ROOT_RESECTION = validValues("rootResection");
 export const VALID_SENSIBILITY = validValues("sensibility");
@@ -8049,6 +8160,10 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   // key, which reads as "no retention element recorded".
   s.retention = validateEnum(raw.retention, VALID_RETENTION, "none");
   s.retentionSide = validateEnum(raw.retentionSide, VALID_RETENTION_SIDE, "none");
+  // Bead odontogram-0n8: tolerant wie jede Enum-Achse. Dass ein nicht
+  // durchgebrochener Zahn keine Stufe TRAEGT, erzwingt der Setter, nicht der
+  // Import - dieselbe Arbeitsteilung wie ueberall sonst hier.
+  s.eruptionStage = validateEnum(raw.eruptionStage, VALID_ERUPTION_STAGE, "none");
   s.rootFracture = validateEnum(raw.rootFracture, VALID_ROOT_FRACTURE, "none");
   s.rootResection = validateEnum(raw.rootResection, VALID_ROOT_RESECTION, "none");
   // Die Wurzelangaben werden hier TOLERANT uebernommen und erst beim Schreiben
@@ -8604,6 +8719,15 @@ const DIFF_AXES: { key: string; labelKey: string; label: (s: Any) => string }[] 
       const base = t(TOOTH_SELECT_LABEL_KEY[s.toothSelection] ?? "toothSelect.none");
       return s.extractionPlan ? `${base} (${t("tooth.extractionPlan")})` : base;
     },
+  },
+  {
+    // Bead odontogram-0n8: EIGENE Zeile, nicht an die Anwesenheit gehaengt.
+    // Ein Plan, der einen Zahn durchbrechen laesst, aendert nicht seine
+    // Anwesenheit - er war schon da.
+    key: "eruptionStage", labelKey: "eruptionStage.label",
+    label: (s) => (s.eruptionStage && s.eruptionStage !== "none"
+      ? t("eruptionStage.option." + kebabToCamel(s.eruptionStage))
+      : t("planChange.none")),
   },
   {
     key: "substrate", labelKey: "planChange.axis.substrate",
@@ -10038,6 +10162,41 @@ export function rootResectionAllowed(state: Any, toothNo: number): boolean {
  * quer ist hier der Unterschied, der zaehlt: die Laengsfraktur ist der
  * Extraktionsgrund, die Querfraktur kann je nach Hoehe erhalten werden.
  */
+/** Bead odontogram-0n8: wo ein Durchbruchsstand ueberhaupt abzustufen ist.
+ *
+ *  Ein VORHANDENER natuerlicher Zahn - bleibend oder Milchzahn. Nicht am
+ *  Implantat (ein Fabrikteil bricht nicht durch), nicht an einer Luecke, und
+ *  ausdruecklich NICHT an `not-erupted`: das heisst, dass gar nichts zu sehen
+ *  ist, und diese Achse stuft ab, was zu sehen IST. Die beiden ueberschneiden
+ *  sich damit nicht - eine Frage, zwei Werte, aber kein Wert an zwei Orten.
+ *
+ *  Die Leiter liest sich: `not-erupted` -> emerging -> half-crown ->
+ *  full-crown -> `none` (in Okklusion). */
+export function eruptionAllowed(state: Any): boolean {
+  if(!state) return false;
+  const sel = state.toothSelection;
+  return sel === "tooth-base" || sel === "milktooth";
+}
+
+/** Den Durchbruchsstand setzen. Der Waechter steht VOR der DS-1-Schranke,
+ *  damit er auch fuer die Tastatur gilt. */
+export function setEruptionStage(toothNo: number, value: string): void {
+  if(!VALID_ERUPTION_STAGE.has(value)) return;
+  let s = toothState.get(toothNo);
+  if(!s){ s = defaultState(); toothState.set(toothNo, s); }
+  if(value !== "none" && !eruptionAllowed(s)) return;
+  gateToothEdit(toothNo, () => {
+    if(s.eruptionStage === value) return false;
+    s.eruptionStage = value;
+    notifyStateChange();
+    return true;
+  });
+}
+
+export function getEruptionStage(toothNo: number): string {
+  return (toothState.get(toothNo)?.eruptionStage as string) ?? "none";
+}
+
 export function setRootFracture(toothNo: number, value: string, root = ""): void {
   if(!VALID_ROOT_FRACTURE.has(value)) return;
   let s = toothState.get(toothNo);
@@ -12532,6 +12691,12 @@ function wireControls(){
     const wurzel = (e.target as HTMLSelectElement).value;
     const betroffen = Array.from(selectedTeeth) as number[];
     for(const toothNo of betroffen) setRootResection(toothNo, getRootResection(toothNo), wurzel);
+    nachZeichnen(betroffen);
+  });
+
+  buildSelect($("#eruptionSelect"), getEruptionOptions(), (value)=>{
+    const betroffen = Array.from(selectedTeeth) as number[];
+    for(const toothNo of betroffen) setEruptionStage(toothNo, value);
     nachZeichnen(betroffen);
   });
 

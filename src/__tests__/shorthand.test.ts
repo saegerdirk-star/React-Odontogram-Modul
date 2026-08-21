@@ -31,9 +31,15 @@ describe("Zerlegung: laengste Uebereinstimmung, Gross- und Kleinschreibung", () 
     expect(klein.edits).toEqual([
       { kind: "surfaces", target: "filling", surfaces: ["distal"], material: "amalgam" },
     ]);
+    // Seit odontogram-0n8 traegt D seine Stufe als Ziffer, wie K3 die
+    // Kariesstufe. Ein blankes D ist damit kein Schluessel mehr - es ist der
+    // Anfang von dreien und wartet auf die Ziffer.
     const gross = parseShorthand("D");
     expect(gross.edits).toEqual([]);
-    expect(gross.pending).toEqual([{ token: "D", bead: "odontogram-0n8" }]);
+    expect(gross.pending).toEqual([]);
+    expect(shouldCommit("D")).toBe(false);
+    expect(parseShorthand("D2").edits).toEqual([
+      { kind: "axis", field: "eruptionStage", value: "half-crown" }]);
   });
 
   it("liest o.B. nicht als okklusale Flaeche", () => {
@@ -260,9 +266,13 @@ describe("Was wir verstehen, aber nicht ablegen koennen", () => {
     ]);
   });
 
-  it("nennt fuer jede offene Taste den Bead, der ihr ein Ziel gibt", () => {
-    // Fra und Hem haben seit odontogram-t6y/-ca0 eines; D wartet noch.
-    expect(parseShorthand("D").pending[0].bead).toBe("odontogram-0n8");
+  it("die Liste der offenen Tasten ist leer, bis auf die zwei ohne Bead", () => {
+    // Fra und Hem haben seit odontogram-t6y/-ca0 ein Ziel, D seit
+    // odontogram-0n8. Uebrig bleiben z (zervikale Flaeche - unser Flaechensatz
+    // hat sie nicht) und R (Wurzelkappe - Dirk fragt selbst, ob es die noch
+    // gibt); beide tragen deshalb KEINEN Bead.
+    expect(Object.keys(SHORTHAND_PENDING).sort()).toEqual(["R", "z"]);
+    for(const bead of Object.values(SHORTHAND_PENDING)) expect(bead).toBe("");
   });
 
   it("Fra ist die WURZELfraktur, nicht die der Krone", () => {
@@ -305,6 +315,7 @@ describe("Die Tabelle selbst", () => {
       "endo", "endoResection", "apicalDx", "periapicalType",
       "extractionPlan", "missingClosed", "prosthesis",
       "sensibility", "percussion", "rootFracture", "rootResection",
+      "eruptionStage",
     ]);
     for(const f of felder) expect(bekannt.has(f), `unbekanntes Feld: ${f}`).toBe(true);
   });

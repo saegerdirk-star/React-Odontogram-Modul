@@ -194,11 +194,11 @@ describe("Nutzlast", () => {
     expect((p.teeth as Record<string, Record<string, unknown>>)["14"].cantilever).toBeUndefined();
   });
 
-  it("faehrt bei 2.29 hin und zurueck", () => {
+  it("faehrt bei 2.30 hin und zurueck", () => {
     __setToothStateForTest(14, { toothSelection: "none", restorationType: "bridge" });
     setCantilever(14, true);
     const p = __collectExportPayloadForTest() as Record<string, unknown>;
-    expect(p.version).toBe("2.29");
+    expect(p.version).toBe("2.30");
     expect((p.teeth as Record<string, Record<string, unknown>>)["14"].cantilever).toBe(true);
     __resetChartStateForTest();
     __hydrateImportedChartsForTest(p);

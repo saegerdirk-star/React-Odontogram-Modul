@@ -111,6 +111,13 @@ export const SHORTHAND_DE: Record<string, Entry> = {
   "f":    { kind: "axis", field: "toothSelection", value: "none" },
   "i":    { kind: "axis", field: "toothSelection", value: "implant" },
   "x":    { kind: "axis", field: "extractionPlan", value: true },
+  // charlys Taste D zeigt das Stadium eines Zahndurchbruchs in DREI Stufen
+  // (Bead odontogram-0n8). Die Stufe wird als Ziffer angehaengt, wie `K3` bei
+  // der Kariesstufe - ein blankes `D` wartet deshalb auf seine Ziffer und tut
+  // fuer sich nichts, weil laengere Schluessel damit beginnen (`shouldCommit`).
+  "D1":   { kind: "axis", field: "eruptionStage", value: "emerging" },
+  "D2":   { kind: "axis", field: "eruptionStage", value: "half-crown" },
+  "D3":   { kind: "axis", field: "eruptionStage", value: "full-crown" },
   "WR":   { kind: "axis", field: "toothSubstrate", value: "radix" },
   ")L(":  { kind: "axis", field: "missingClosed", value: true },
   // "ersetzt" and "Brueckenglied" are both a gap that carries something. A
@@ -225,7 +232,6 @@ export const SHORTHAND_DE: Record<string, Entry> = {
  *  it a target. Reported separately from `unknown`: a key with no field is a
  *  different situation from a typo, and the caller should be able to say which. */
 export const SHORTHAND_PENDING: Record<string, string> = {
-  "D":   "odontogram-0n8",   // Durchbruchstadium
   "z":   "",                 // zervikale Flaeche — unser Flaechensatz hat sie nicht
   "R":   "",                 // Wurzelkappe — Dirk fragt selbst, ob es die noch gibt
 };
