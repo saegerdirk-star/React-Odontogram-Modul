@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.28.1 - 2026-08-21
+
+### Die Durchbruchszeile stand in der falschen Karte
+
+Sie sass bei "Wurzel und Parodontium", zwei Karten unter der Anwesenheit —
+und dort sucht sie niemand. Der Durchbruchsstand beantwortet dieselbe Frage wie
+"nicht durchgebrochen" in der Anwesenheitsliste, nur eine Stufe feiner; er steht
+jetzt direkt darunter, in "Zahndetails". Nebenbei hat der Kommentar zur
+Wurzelfraktur wieder seine Zeile gefunden, von der ihn zuerst der
+Papillenverlust und dann der Durchbruch getrennt hatten.
+
+
 ## 2.28.0 - 2026-08-21
 
 ### Der Zahndurchbruch in Stufen statt als Schalter (Bead odontogram-0n8)

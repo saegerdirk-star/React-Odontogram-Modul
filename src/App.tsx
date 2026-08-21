@@ -1063,6 +1063,16 @@ export default function App({
                 <span>{t("tooth.baseLabel")}</span>
                 <select id="toothSelect"></select>
               </div>
+              {/* odontogram-0n8: wie weit ein SICHTBARER Zahn durchgebrochen
+                  ist. Steht HIER, direkt unter der Anwesenheit, weil es
+                  dieselbe Frage eine Stufe feiner beantwortet: "nicht
+                  durchgebrochen" in der Liste darueber heisst, dass gar
+                  nichts zu sehen ist. Zwei Karten weiter bei den
+                  Wurzelbefunden stand es zuerst - und dort sucht es niemand. */}
+              <div id="eruptionRow" className="row">
+                <span>{t("eruptionStage.label")}</span>
+                <select id="eruptionSelect"></select>
+              </div>
               <div id="substrateRow" className="row">
                 <span>{t("substrate.label")}</span>
                 <select id="substrateSelect"></select>
@@ -1265,17 +1275,6 @@ export default function App({
                   <span>{t("periapical.typeLabel")}</span>
                   <select id="periapicalTypeSelect"></select>
                 </div>
-                {/* Beads odontogram-t6y / -ca0. Die Wurzelfraktur steht bei den
-                    Wurzelbefunden, nicht bei den drei Bruchachsen der Krone -
-                    sie ist ein anderer Befund mit anderer Folge. */}
-                {/* odontogram-0n8: wie weit ein SICHTBARER Zahn durchgebrochen
-                    ist. Nicht dasselbe wie "nicht durchgebrochen" in der
-                    Anwesenheitsliste darueber - jenes heisst, dass gar nichts
-                    zu sehen ist. */}
-                <div id="eruptionRow" className="row">
-                  <span>{t("eruptionStage.label")}</span>
-                  <select id="eruptionSelect"></select>
-                </div>
                 <div id="papillaMesialRow" className="row">
                   <span>{t("papillaLoss.label")} ({t("papillaLoss.site.mesial")})</span>
                   <select id="papillaMesialSelect"></select>
@@ -1284,6 +1283,9 @@ export default function App({
                   <span>{t("papillaLoss.label")} ({t("papillaLoss.site.distal")})</span>
                   <select id="papillaDistalSelect"></select>
                 </div>
+                {/* Beads odontogram-t6y / -ca0. Die Wurzelfraktur steht bei den
+                    Wurzelbefunden, nicht bei den drei Bruchachsen der Krone -
+                    sie ist ein anderer Befund mit anderer Folge. */}
                 <div id="rootFractureRow" className="row">
                   <span>{t("rootFracture.label")}</span>
                   <select id="rootFractureSelect"></select>
