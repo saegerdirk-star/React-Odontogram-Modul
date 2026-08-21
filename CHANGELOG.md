@@ -1,5 +1,35 @@
 # Changelog
 
+## 2.32.0 - 2026-08-21
+
+### Fissuren und Hoecker auch unter der Krone (Bead odontogram-qvr)
+
+Dirk, 21.08.2026: *"Bei Kronen und Onlays auf Praemolaren und Molaren sollte die
+Fissur- und Hoeckerkonfiguration die wir haben auch in der Kauflaeche in dem
+gewaehlten Material sichtbar sein. Das wuerde richtig elegant aussehen und das
+hat sonst niemand."*
+
+- **Gezeichnet wird nichts Neues.** Die Kauflaechenvorlage traegt die
+  Hoeckerfelder laengst als eigene Formen (`g#cusps`, sechs beim Sechser) und
+  die Fissuren als eigene Zuege (`g#fissure`) — und beide bleiben unter einer
+  Restauration sogar AKTIV. Die Kappe deckt sie nur zu, weil sie im Dokument
+  spaeter steht und die ganze Kautafel fuellt.
+- Also wird ihr die Fuellung genommen und den Hoeckern gegeben:
+  `syncOcclusalRelief` schreibt `data-occl-resto` mit dem Material an die
+  Kachel — an das DIV, nicht ans SVG —, und die Regeln in `index.css` malen
+  Tafelgrund, Hoeckerkuppeln und Fissuren aus diesem Material.
+- **Kein Element wird geschaltet, keine id angefasst**: der SVG-Fingerabdruck
+  haelt `id`, `opacity` und `class` fest und sieht davon nichts. Parität
+  byte-identisch, Nutzlast und FHIR unberuehrt.
+- **Die Fissurenfarbe ist der Materialton zu 45 % abgedunkelt**, ausgerechnet
+  statt gesetzt: eine feste graue Linie sieht auf Gold wie ein Kratzer aus und
+  auf Metall gar nicht.
+- **Nur Seitenzaehne.** Eine Frontzahn-Draufsicht hat keine Fissuren; ihre zwei
+  Felder sind die Schneidekante, und eine Krone darauf ist eine Kappe.
+- Ein Fehler beim Bauen, den ein Test jetzt festhaelt: die erste Fassung war
+  WENIGER spezifisch als die Hoeckerregel der Tiefenwirkung — die Goldkrone kam
+  weiss heraus, weil `odonDepthCusp` gewann.
+
 ## 2.31.3 - 2026-08-21
 
 ### Das Extraktionskreuz wird gezeichnet, nicht abgebildet (Bead odontogram-7xl)

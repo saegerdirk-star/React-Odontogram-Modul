@@ -4309,7 +4309,47 @@ function applyStateToSvg(toothNo: Any){
   syncFractureMark(toothNo);      // Bead odontogram-t6y
   syncPapillaMark(toothNo);       // Bead odontogram-gry
   syncEruptionMark(toothNo);      // Bead odontogram-0n8
+  syncOcclusalRelief(toothNo);    // Bead odontogram-qvr
   updateToothTooltip(toothNo);
+}
+
+/** Bead odontogram-qvr: Fissuren und Hoecker auch UNTER der Restauration.
+ *
+ *  Dirk, 21.08.2026: "Bei Kronen und Onlays auf Praemolaren und Molaren sollte
+ *  die Fissur- und Hoeckerkonfiguration die wir haben auch in der Kauflaeche in
+ *  dem gewaehlten Material sichtbar sein. Das wuerde richtig elegant aussehen
+ *  und das hat sonst niemand."
+ *
+ *  GEZEICHNET WIRD NICHTS NEUES. Die Kauflaechenvorlage traegt die Hoeckerfelder
+ *  laengst als eigene Formen (`g#cusps`, sechs beim Sechser) und die Fissuren
+ *  als eigene Zuege (`g#fissure`); beide bleiben unter einer Restauration sogar
+ *  AKTIV - die Krone deckt sie nur zu, weil sie im Dokument spaeter steht und
+ *  die ganze Kautafel fuellt.
+ *
+ *  Also wird sie durchsichtig gemacht: die Kachel bekommt `data-occl-resto` mit
+ *  dem Material, und die Regeln in index.css nehmen der Kappe ihre Fuellung und
+ *  geben sie den Hoeckern. Kein Element wird ein- oder ausgeschaltet, keine id
+ *  angefasst - der SVG-Fingerabdruck haelt `id`, `opacity` und `class` fest, und
+ *  ein `data-` am DIV der Kachel steht ohnehin ausserhalb des SVG.
+ *
+ *  NUR SEITENZAEHNE. Eine Frontzahn-Draufsicht hat keine Fissuren; ihre zwei
+ *  Felder sind die Schneidekante, und eine Krone darauf ist eine Kappe. */
+function syncOcclusalRelief(toothNo: number): void {
+  const tiles = toothTile.get(toothNo);
+  if(!tiles) return;
+  const st = toothState.get(toothNo);
+  const typ = String(st?.restorationType ?? "none");
+  const material = String(st?.restorationMaterial ?? "none");
+  const zeigen = !isAnteriorTooth(toothNo)
+    && (typ === "crown" || typ === "bridge" || typ === "onlay")
+    && material !== "none";
+  for(const tile of tiles){
+    if(zeigen && tile.classList.contains("occl-view")){
+      tile.dataset.occlResto = material;
+    }else{
+      delete tile.dataset.occlResto;
+    }
+  }
 }
 
 /** Bead odontogram-dma: put the retention element on the tile in charly's own

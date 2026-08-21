@@ -2882,6 +2882,78 @@ body.odon-dragging{ cursor: cell; }
 #toothGrid .tooth-tile [id="prosthesis-implant-crown"]{ fill: url(#odonKroneProthBasis) !important; }
 
 
+/* Bead odontogram-qvr: Fissuren und Hoecker unter der Restauration.
+   -------------------------------------------------------------------------
+   Dirk, 21.08.2026: "Bei Kronen und Onlays auf Praemolaren und Molaren sollte
+   die Fissur- und Hoeckerkonfiguration die wir haben auch in der Kauflaeche in
+   dem gewaehlten Material sichtbar sein."
+
+   GEZEICHNET WIRD NICHTS NEUES. Die Vorlage traegt die Hoeckerfelder als
+   `g#cusps` und die Fissuren als `g#fissure`, und beide bleiben unter einer
+   Restauration AKTIV - die Kappe deckt sie nur zu, weil sie im Dokument
+   spaeter steht und die ganze Tafel fuellt. Also nimmt man ihr die Fuellung
+   und gibt sie den Hoeckern.
+
+   `syncOcclusalRelief` in odontogram.ts schreibt `data-occl-resto` mit dem
+   Material an die Kachel - an das DIV, nicht ans SVG. Kein Element wird
+   geschaltet, keine id angefasst: der Fingerabdruck haelt id, opacity und
+   class fest und sieht davon nichts.
+
+   Die Fissurenfarbe ist der Materialton zu 45 Prozent abgedunkelt, ausgerechnet
+   statt geraten - eine feste graue Linie sieht auf Gold wie ein Kratzer aus und
+   auf Metall gar nicht.
+
+   NUR SEITENZAEHNE: das Gating steht in `syncOcclusalRelief`, eine
+   Frontzahn-Draufsicht hat keine Fissuren. */
+#toothGrid .tooth-tile.occl-view[data-occl-resto="gold"] [id$="-crown"],
+#toothGrid .tooth-tile.occl-view[data-occl-resto="gold"] [id$="-onlay"]{ fill: none !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="gold"] [id="background-cusp"]{ fill: var(--odon-rest-gold, #e0a80d) !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="gold"] [id="tooth-base"] [id="cusps"] path[style]{ fill: url(#odonKroneGold) !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="gold"] [id="fissure"] path{ stroke: #654c06 !important; stroke-width: .55px; }
+
+#toothGrid .tooth-tile.occl-view[data-occl-resto="gradia"] [id$="-crown"],
+#toothGrid .tooth-tile.occl-view[data-occl-resto="gradia"] [id$="-onlay"]{ fill: none !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="gradia"] [id="background-cusp"]{ fill: var(--odon-rest-gradia, #57b285) !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="gradia"] [id="tooth-base"] [id="cusps"] path[style]{ fill: url(#odonKroneGradia) !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="gradia"] [id="fissure"] path{ stroke: #27503c !important; stroke-width: .55px; }
+
+#toothGrid .tooth-tile.occl-view[data-occl-resto="zircon"] [id$="-crown"],
+#toothGrid .tooth-tile.occl-view[data-occl-resto="zircon"] [id$="-onlay"]{ fill: none !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="zircon"] [id="background-cusp"]{ fill: var(--odon-rest-zircon, #cfe3ee) !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="zircon"] [id="tooth-base"] [id="cusps"] path[style]{ fill: url(#odonKroneZirkon) !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="zircon"] [id="fissure"] path{ stroke: #5d666b !important; stroke-width: .55px; }
+
+#toothGrid .tooth-tile.occl-view[data-occl-resto="metal"] [id$="-crown"],
+#toothGrid .tooth-tile.occl-view[data-occl-resto="metal"] [id$="-onlay"]{ fill: none !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="metal"] [id="background-cusp"]{ fill: var(--odon-rest-metal, #0051bf) !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="metal"] [id="tooth-base"] [id="cusps"] path[style]{ fill: url(#odonKroneMetall) !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="metal"] [id="fissure"] path{ stroke: #002456 !important; stroke-width: .55px; }
+
+#toothGrid .tooth-tile.occl-view[data-occl-resto="temporary"] [id$="-crown"],
+#toothGrid .tooth-tile.occl-view[data-occl-resto="temporary"] [id$="-onlay"]{ fill: none !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="temporary"] [id="background-cusp"]{ fill: var(--odon-rest-temporary, #c8b392) !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="temporary"] [id="tooth-base"] [id="cusps"] path[style]{ fill: url(#odonKroneProvi) !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="temporary"] [id="fissure"] path{ stroke: #5a5142 !important; stroke-width: .55px; }
+
+#toothGrid .tooth-tile.occl-view[data-occl-resto="telescope"] [id$="-crown"],
+#toothGrid .tooth-tile.occl-view[data-occl-resto="telescope"] [id$="-onlay"]{ fill: none !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="telescope"] [id="background-cusp"]{ fill: var(--odon-rest-telescope, #0051bf) !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="telescope"] [id="tooth-base"] [id="cusps"] path[style]{ fill: url(#odonKroneTeleAussen) !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="telescope"] [id="fissure"] path{ stroke: #002456 !important; stroke-width: .55px; }
+
+#toothGrid .tooth-tile.occl-view[data-occl-resto="emax"] [id$="-crown"],
+#toothGrid .tooth-tile.occl-view[data-occl-resto="emax"] [id$="-onlay"]{ fill: none !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="emax"] [id="background-cusp"]{ fill: #f0d9c4 !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="emax"] [id="tooth-base"] [id="cusps"] path[style]{ fill: url(#odonKroneEmax) !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="emax"] [id="fissure"] path{ stroke: #6c6258 !important; stroke-width: .55px; }
+
+#toothGrid .tooth-tile.occl-view[data-occl-resto="metal-ceramic"] [id$="-crown"],
+#toothGrid .tooth-tile.occl-view[data-occl-resto="metal-ceramic"] [id$="-onlay"]{ fill: none !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="metal-ceramic"] [id="background-cusp"]{ fill: #cfe0d8 !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="metal-ceramic"] [id="tooth-base"] [id="cusps"] path[style]{ fill: url(#odonKroneMetKer) !important; }
+#toothGrid .tooth-tile.occl-view[data-occl-resto="metal-ceramic"] [id="fissure"] path{ stroke: #5d6561 !important; stroke-width: .55px; }
+
+
 /* Bead odontogram-ca0: die entfernte Wurzel wird weggeschnitten.
    -------------------------------------------------------------------------
    Dirk, 20.08.2026: "Bei der Hemisektion wird an der Furkation durchtrennt und

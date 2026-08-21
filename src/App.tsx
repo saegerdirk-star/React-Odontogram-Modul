@@ -984,6 +984,22 @@ export default function App({
               <stop offset="1" stopColor="#c78b76"
                     style={{ stopColor: "color-mix(in srgb, var(--odon-rest-denture-base, #f9ae94) 80%, #000)" }} />
             </radialGradient>
+            {/* Bead odontogram-qvr: e.max und Metallkeramik haben keine flache
+                Palettenvariable - sie malen aus einer Neun-Stopp-Rampe in der
+                Vorlage. Fuer die Hoecker unter einer Kauflaechenkrone braucht es
+                trotzdem eine Kuppel, also entsteht sie hier aus ihrem Grundton.
+                Ohne Palettenvariable: wer diese beiden umfaerbt, aendert die
+                Rampe, und die Kuppel bliebe sonst als einzige stehen. */}
+            <radialGradient id="odonKroneEmax" cx="0.5" cy="0.38" r="0.72">
+              <stop offset="0" stopColor="#f6e7da" />
+              <stop offset="0.55" stopColor="#f0d9c4" />
+              <stop offset="1" stopColor="#c0ae9d" />
+            </radialGradient>
+            <radialGradient id="odonKroneMetKer" cx="0.5" cy="0.38" r="0.72">
+              <stop offset="0" stopColor="#e1ece7" />
+              <stop offset="0.55" stopColor="#cfe0d8" />
+              <stop offset="1" stopColor="#a6b3ad" />
+            </radialGradient>
             <radialGradient id="odonDepthCusp" cx="0.5" cy="0.40" r="0.66">
               <stop offset="0" stopColor="#fcfbf8" />
               <stop offset="0.55" stopColor="#f1efe9" />
