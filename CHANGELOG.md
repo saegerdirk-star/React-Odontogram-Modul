@@ -1,5 +1,45 @@
 # Changelog
 
+## 2.30.0 - 2026-08-21
+
+### Das Inlay ist wieder auffindbar (Bead odontogram-1u2)
+
+Dirk, 18.08.2026: *"kein Goldinlay, kein Keramikinlay waehlbar oder ich finde es
+nicht."* Sie WAREN waehlbar und sogar schon nach Art gruppiert. Gefunden hat er
+sie trotzdem nicht, und daran waren zwei Dinge schuld:
+
+- **Jede der sechs festen Gruppen begann mit demselben Wort** — "Fest: Krone",
+  "Fest: Bruecke", "Fest: Inlay". Ein Wort, das auf jeder Ueberschrift steht,
+  unterscheidet nichts und muss bei jedem Lesen uebersprungen werden. Die
+  Ueberschrift ist jetzt die Art selbst; die herausnehmbaren behalten ihre
+  eigene, denn DA liegt der Unterschied.
+- **Die Zeile hiess nur "Gold"** — und ein `<select>` vergleicht getippte Zeichen
+  AUSSCHLIESSLICH mit dem Text der OPTION, nie mit dem Label der `optgroup`. Wer
+  "Gold" tippte, landete deshalb immer auf der Krone, und das Goldinlay war von
+  der Tastatur aus ueberhaupt nicht erreichbar. Jetzt nennt jede Zeile ihre Art
+  mit, und keine zwei Zeilen heissen mehr gleich.
+- Der Text kommt aus `restorationSummaryLabel`, derselben Funktion, die Kurzinfo
+  und Zusammenfassung benutzen — eine zweite Fassung derselben Beschriftung waere
+  genau die Stelle, an der beide auseinanderlaufen. Ein Test haelt das fest.
+
+### Das Provisorium bekommt eine Zahnfarbe
+
+Dirk, 21.08.2026: *"Das Provisorium braucht eine Farbe. Normalerweise benutzt man
+einen Kunststoff, der sich an einer Zahnfarbe Lumin A3 orientiert."*
+
+- Weiss war keine Materialfarbe, sondern gar keine: auf weissem Grund blieb vom
+  provisorischen Brueckenverbinder nur die Kontur uebrig — er sah aus, als fehle
+  er. Aufgefallen ist das beim Durchsehen des Kronen- und Brueckenrenderings
+  (odontogram-5hm).
+- `--odon-rest-temporary` faellt jetzt auf `#c8b392` zurueck, den A3-Ton der
+  VITA-classical-Reihe (frueher VITA Lumin Vacuum), aus dem gemessenen
+  CIELAB-Mittel L* 74 / a* 2 / b* 20 nach sRGB gerechnet. Die Messungen streuen
+  je nach Untersuchung um einige Einheiten — das ist also eine ANNAEHERUNG und
+  kein Normwert, und deshalb steht sie als Vorgabe da, die jede Praxis unter
+  Einstellungen → Farben durch ihre eigene ersetzt (odontogram-sjr).
+- Reine Fuellfarbe: der SVG-Fingerabdruck haelt `id`/`opacity`/`class` fest, nicht
+  `fill`. Nutzlast, FHIR und Parität sind unberuehrt.
+
 ## 2.29.2 - 2026-08-21
 
 ### Die Unterkiefer-Molaren standen in der PAR-Ansicht seitenverkehrt (Bead odontogram-ryn)

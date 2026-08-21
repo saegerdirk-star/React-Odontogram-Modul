@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.29.2-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.30.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -139,7 +139,7 @@ export default function OdontogramClient() {
 - 🦷 牙齿类型：恒牙、乳牙、种植体、龈下（未萌出）、缺失
 - 🍼 乳牙列拥有自己的解剖形态：八个生成模板覆盖全部二十颗乳牙，各有实测的根长比例、长度与宽度，牙髓相对更大，牙根围绕恒牙胚分叉。将牙齿记录为乳牙时，乳牙图形会替换其继承恒牙的图形挂载。在 FHIR 中该牙以 **51–85** 标识，因为在 FDI 记法中编号本身就说明它属于哪一副牙列；导入时以编号为准，只有存在状态可被覆盖
 - 🦷 牙体基质（与任何修复体正交）：天然、残根（radix）、折断、已预备冠
-- 👑 按类型 × 材料划分的修复体：牙冠 / 嵌体 / 高嵌体 / 贴面 / 桥，材料涵盖 e.max、金合金、Gradia、氧化锆、金属、金属烤瓷、套筒冠或临时冠（高嵌体仅限咬合面视图）——通过一个合并的低点击次数“Fix: Crown – …”选择器统一选取；旧版 `metal` 牙冠会自动迁移为 `metal-ceramic`（金属烤瓷）；种植体使用相同的类型 × 材料模型，并叠加一个种植体连接体层。选择器按牙齿种类进行限定：种植体仅提供牙冠/桥（以及下文的五种附着方式选项）；缺失/间隙牙位仅提供桥体（pontic）（以及可摘局部/全口义齿）；`radix`（残根）基质会完全隐藏修复体控件（残根上不能设置任何修复体）
+- 👑 按类型 × 材料划分的修复体：牙冠 / 嵌体 / 高嵌体 / 贴面 / 桥，材料涵盖 e.max、金合金、Gradia、氧化锆、金属、金属烤瓷、套筒冠或临时冠（高嵌体仅限咬合面视图）——通过一个合并的低点击次数选择器统一选取（按类型分组）；旧版 `metal` 牙冠会自动迁移为 `metal-ceramic`（金属烤瓷）；种植体使用相同的类型 × 材料模型，并叠加一个种植体连接体层。选择器按牙齿种类进行限定：种植体仅提供牙冠/桥（以及下文的五种附着方式选项）；缺失/间隙牙位仅提供桥体（pontic）（以及可摘局部/全口义齿）；`radix`（残根）基质会完全隐藏修复体控件（残根上不能设置任何修复体）
 - 🦿 专用 `prosthesis`（可摘/附着体）轴上的可摘/附着式修复（合并选择器中的“Kivehető:”条目）：种植体愈合基台、Locator 附着体、带覆盖义齿的 Locator、杆卡附着体、带覆盖义齿的杆卡附着体；牙支持式可摘局部或全口义齿
 - 🌉 桥体牙位同时渲染牙冠帽与桥体连接部；多牙位桥跨越叠加层会在连续的桥体牙位（桥体单位 + 基牙）及其间隙上渲染一条连续的、感知牙弓形态的连接体（上颌与下颌使用镜像的桥体几何形状，保证连接体在两侧牙弓上均对齐），并包含在 PNG/JPG/SVG 导出中；通过“状态预设”应用桥修复时会立即重新计算该叠加层
 - 🔍 6 个牙面的龋齿记录：近中、远中、颊侧、舌侧、咬合面、冠下
@@ -266,7 +266,7 @@ export default function OdontogramClient() {
 
 **🦷 牙齿编辑器面板**（针对所选牙齿，按可折叠卡片分组）：
 - **基础行：** 牙齿选择（基本类型，含断冠变体）及牙体基质（天然/残根/折断/已预备冠）
-- **修复体行：** 合并的“Fix: …” / “Kivehető: …”修复体下拉菜单（`restorationType` × `restorationMaterial` 固定选项，加上按牙齿种类限定的 `prosthesis` 附着体/可摘选项）；牙冠边缘微渗漏复选框（仅限牙冠/桥）；断冠位置复选框；需要牙冠/需要更换牙冠开关
+- **修复体行：** 合并的修复体下拉菜单，按类型分组（牙冠 / 桥 / 嵌体 / 高嵌体 / 贴面 / “Kivehető:”），每一行都自行标明其类型与材料（`restorationType` × `restorationMaterial` 固定选项，加上按牙齿种类限定的 `prosthesis` 附着体/可摘选项）；牙冠边缘微渗漏复选框（仅限牙冠/桥）；断冠位置复选框；需要牙冠/需要更换牙冠开关
 - **磨耗与变色行：** 切端/咬合面磨耗类型下拉菜单、颈部磨耗类型下拉菜单、变色病因下拉菜单（在设置 → 牙齿详情 → 简单模式下，各自切换为简单的是/否开关）
 - **正畸卡片：** 矫治器、近中/远中移位、垂直移动（伸长/压低）、扭转开关——显示于现有天然牙上
 - **龋齿卡片：** 龋齿深度模式下拉菜单、冠下龋复选框、根面龋严重度下拉菜单，以及带情境化 ICDAS 深度/CARS 弹窗和影像学深度徽标的 B/M/O/D/L 按牙面龋齿选择器

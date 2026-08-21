@@ -2328,15 +2328,41 @@ function getRestorationOptions(view: "front" | "occlusal", ctx: { isImplant?: bo
     if(o.restorationType === "none"){
       return { value: `${o.restorationType}|${o.restorationMaterial}`, label: t(o.labelKey) };
     }
-    // The restoration TYPE becomes the group heading and leaves the option
-    // itself carrying only the material, so a group reads "Fixed: Inlay" over
-    // "gold / e.max / zirconia" instead of five lines each repeating "Inlay".
+    // odontogram-1u2. Dirk, 18.08.2026: "kein Goldinlay, kein Keramikinlay
+    // waehlbar oder ich finde es nicht." Die Eintraege WAREN da und sogar schon
+    // nach Art gruppiert - gefunden hat er sie trotzdem nicht, und daran sind
+    // zwei Dinge schuld:
+    //
+    // 1. Jede der sechs festen Gruppen begann mit demselben Wort ("Fest: Krone",
+    //    "Fest: Bruecke", "Fest: Inlay" ...). Ein Wort, das auf jeder
+    //    Ueberschrift steht, unterscheidet nichts und muss bei jedem Lesen
+    //    uebersprungen werden. Die Ueberschrift ist jetzt die Art selbst; die
+    //    herausnehmbaren behalten ihre eigene, denn DA liegt der Unterschied.
+    // 2. Die Zeile hiess nur "Gold" - und ein <select> vergleicht getippte
+    //    Zeichen AUSSCHLIESSLICH mit dem Text der OPTION, nie mit dem Label der
+    //    optgroup. Wer "Gold" tippte, landete deshalb immer auf der Krone, und
+    //    das Goldinlay war von der Tastatur aus ueberhaupt nicht erreichbar.
+    //    Jetzt nennt jede Zeile ihre Art mit.
+    //
+    // Der Text kommt aus `restorationSummaryLabel`, derselben Funktion, die
+    // Kurzinfo und Zusammenfassung benutzen - eine zweite Fassung derselben
+    // Beschriftung waere genau die Stelle, an der beide auseinanderlaufen.
     return {
       value: `${o.restorationType}|${o.restorationMaterial}`,
-      group: `${t(o.prefixKey ?? "restoration.prefix.fixed")}: ${t(o.typeLabelKey ?? "")}`,
-      label: t(o.materialLabelKey ?? ""),
+      group: t(o.typeLabelKey ?? ""),
+      label: restorationSummaryLabel(o.restorationType, o.restorationMaterial),
     };
   });
+}
+
+/** TEST-ONLY: the composed entries of the combined restoration dropdown -
+ *  value, group heading and visible label - exactly as `setSelectOptions`
+ *  receives them. Not part of the public API. */
+export function __getRestorationOptionsForTest(
+  view: "front" | "occlusal",
+  ctx: { isImplant?: boolean; toothSelection?: string } = {},
+): { value: string; group?: string; label: string }[] {
+  return getRestorationOptions(view, ctx) as { value: string; group?: string; label: string }[];
 }
 
 // SP15 Task 1 (B5/B7): #restorationRow visibility gate — extracted as a

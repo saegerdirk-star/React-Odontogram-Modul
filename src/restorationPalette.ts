@@ -37,7 +37,17 @@ export const RESTORATION_PALETTE: PaletteEntry[] = [
   { key: "gradia",        kind: "flat", vars: ["--odon-rest-gradia"],        defaults: ["#57b285"] },
   { key: "zircon",        kind: "flat", vars: ["--odon-rest-zircon"],        defaults: ["#cfe3ee"] },
   { key: "metal",         kind: "flat", vars: ["--odon-rest-metal"],         defaults: ["#0051bf"] },
-  { key: "temporary",     kind: "flat", vars: ["--odon-rest-temporary"],     defaults: ["#fff"] },
+  // Dirk, 21.08.2026: "Das Provisorium braucht eine Farbe. Normalerweise
+  // benutzt man einen Kunststoff, der sich an einer Zahnfarbe Lumin A3
+  // orientiert." Weiss war keine Materialfarbe, sondern gar keine: auf weissem
+  // Grund blieb vom provisorischen Brueckenverbinder nur die Kontur uebrig.
+  // #c8b392 ist der A3-Ton der VITA-classical-Reihe (frueher VITA Lumin
+  // Vacuum), aus dem gemessenen CIELAB-Mittel L* 74 / a* 2 / b* 20 nach sRGB
+  // gerechnet. Die Messungen streuen je nach Untersuchung um einige Einheiten,
+  // deshalb ist das eine ANNAEHERUNG und kein Normwert - und deshalb steht sie
+  // hier als Vorgabe, die jede Praxis unter Einstellungen -> Farben durch ihre
+  // eigene ersetzen kann.
+  { key: "temporary",     kind: "flat", vars: ["--odon-rest-temporary"],     defaults: ["#c8b392"] },
   {
     key: "telescope", kind: "lightened",
     vars: ["--odon-rest-telescope", "--odon-rest-telescope-connector", "--odon-rest-telescope-connector-anterior"],
