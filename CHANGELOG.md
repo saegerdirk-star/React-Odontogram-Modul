@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.31.3 - 2026-08-21
+
+### Das Extraktionskreuz wird gezeichnet, nicht abgebildet (Bead odontogram-7xl)
+
+Dirk, 21.08.2026: *"Kannst du fuer X extrahieren auch ein einfaches X
+drueberlegen?"*
+
+- `starr_im_rahmen` hatte das Kreuz in 2.31.2 gerade gemacht — aber es blieb die
+  Form, die im Spender gezeichnet ist: zwei leicht geschwungene Baender, deren
+  Kreuzungspunkt hoch sitzt und deren Arme verschieden lang sind. Starr
+  abgebildet ist das ein sauberes Abbild einer Form, die niemand als Kreuz
+  gezeichnet hat.
+- **Ein Kreuz ist keine Zeichnung, sondern eine Konstruktion:** die beiden
+  Diagonalen eines Kastens. `tools/toothgen/symbole.py` rechnet sie aus dem
+  Zahnkasten — Seitenansicht die Kontur, Kauflaeche die Tafel — und schreibt sie
+  in die bestehende Ebene. Dieselbe Ueberlegung, aus der `gum.py` das
+  Zahnfleisch in Endkoordinaten zeichnet und `halsbaender.py` die Halsbaender
+  als Balken rechnet, statt beides zu warpen.
+- **Unangetastet bleiben Ebene, id, Zahl und Reihenfolge der Pfade und ihr
+  Stil** — ersetzt wird nur das `d`. Der Ebenenbestand bleibt damit identisch
+  (`verify_redraw.py` prueft ihn gegen den Spender) und der SVG-Fingerabdruck
+  ebenso; der haelt `id`, `opacity` und `class` fest, nicht die Geometrie.
+
 ## 2.31.2 - 2026-08-21
 
 ### Ein Symbol ist keine Anatomie (Bead odontogram-7xl)

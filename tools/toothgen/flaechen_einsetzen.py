@@ -34,6 +34,7 @@ import halsbaender as hb            # noqa: E402
 import kauflaechen as kf            # noqa: E402
 import kronen as kr                 # noqa: E402
 import redraw_plan as rp            # noqa: E402
+import symbole as sy                # noqa: E402
 
 
 def main() -> int:
@@ -53,6 +54,11 @@ def main() -> int:
     for z in vorlagen:
         getroffen += kr.einsetzen(z)["kronen"]
     print(f"  {getroffen} Kronenebenen in {len(vorlagen)} Vorlagen")
+
+    # Bead odontogram-7xl: das Extraktionskreuz wird KONSTRUIERT, nicht
+    # abgebildet - zwei Diagonalen des Zahnkastens.
+    kreuze = sum(sy.einsetzen(z)["kreuz"] for z in vorlagen)
+    print(f"Extraktionskreuze: {kreuze // 2} Vorlagen")
 
     print(f"Kauflaechen: {len(rp.PLAN_OCCL)}")
     for ziel in rp.PLAN_OCCL:
