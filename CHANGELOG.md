@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.32.1 - 2026-08-21
+
+### Die Schneidekante gehoert auch in die Draufsicht (Bead odontogram-qvr)
+
+Dirk, 21.08.2026: *"Mach bitte bei Kronen in der Front, 13-23, 33-43 auch die
+feine Zeichnung der Incisalkante mit in die okklusale Ansicht. Das sieht besser
+aus."*
+
+- Der erste Wurf (2.32.0) hatte die Front ausgenommen, mit der Begruendung, sie
+  habe keine Fissuren. **Nachgesehen stimmt die Begruendung nicht:** jede
+  Frontzahn-Draufsicht traegt beide Gruppen — vier Felder in `cusps`, drei Zuege
+  in `fissure` —, und das IST die Zeichnung der Schneidekante. Einer Krone fehlt
+  sie genauso wie dem Molaren sein Fissurenmuster.
+- Also faellt das Gatter weg: jede Kauflaechenkachel zeigt ihr eigenes Relief im
+  Material, vorn wie hinten. Kein neuer Weg, keine neue Regel — nur eine
+  Bedingung weniger.
+
 ## 2.32.0 - 2026-08-21
 
 ### Fissuren und Hoecker auch unter der Krone (Bead odontogram-qvr)

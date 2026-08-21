@@ -26,13 +26,16 @@ const MATERIALIEN = ["gold", "gradia", "zircon", "metal", "temporary",
                      "telescope", "emax", "metal-ceramic"];
 
 describe("Die Anschrift an der Kachel", () => {
-  it("nur an der KAUFLAECHENkachel, und nur am Seitenzahn", () => {
-    // Eine Frontzahn-Draufsicht hat keine Fissuren; ihre zwei Felder sind die
-    // Schneidekante, und eine Krone darauf ist eine Kappe.
+  it("nur an der KAUFLAECHENkachel - aber an jeder, auch der Front", () => {
+    // Dirk, 21.08.2026: "Mach bitte bei Kronen in der Front, 13-23, 33-43 auch
+    // die feine Zeichnung der Incisalkante mit in die okklusale Ansicht."
+    // Der erste Wurf hatte die Front ausgenommen, weil sie keine Fissuren hat -
+    // sie traegt aber sehr wohl `cusps` und `fissure`, und das IST die
+    // Zeichnung der Schneidekante.
     expect(odo).toContain("function syncOcclusalRelief");
     const fn = odo.slice(odo.indexOf("function syncOcclusalRelief"),
                          odo.indexOf("function syncOcclusalRelief") + 1400);
-    expect(fn).toContain("!isAnteriorTooth(toothNo)");
+    expect(fn).not.toContain("isAnteriorTooth");
     expect(fn).toContain('tile.classList.contains("occl-view")');
     expect(fn).toContain("tile.dataset.occlResto");
   });

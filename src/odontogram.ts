@@ -4332,16 +4332,23 @@ function applyStateToSvg(toothNo: Any){
  *  angefasst - der SVG-Fingerabdruck haelt `id`, `opacity` und `class` fest, und
  *  ein `data-` am DIV der Kachel steht ohnehin ausserhalb des SVG.
  *
- *  NUR SEITENZAEHNE. Eine Frontzahn-Draufsicht hat keine Fissuren; ihre zwei
- *  Felder sind die Schneidekante, und eine Krone darauf ist eine Kappe. */
+ *  AUCH IN DER FRONT, seit Dirks Nachtrag am selben Tag: "Mach bitte bei Kronen
+ *  in der Front, 13-23, 33-43 auch die feine Zeichnung der Incisalkante mit in
+ *  die okklusale Ansicht. Das sieht besser aus."
+ *
+ *  Der erste Wurf hatte die Front ausgenommen, weil sie keine Fissuren hat.
+ *  Nachgesehen traegt jede Frontzahn-Draufsicht sehr wohl beide Gruppen - vier
+ *  Felder in `cusps`, drei Zuege in `fissure` -, und das IST die Zeichnung der
+ *  Schneidekante. Sie fehlt einer Krone genauso wie dem Molaren sein
+ *  Fissurenmuster. Also kein Gatter mehr: jede Kauflaechenkachel zeigt ihr
+ *  eigenes Relief im Material. */
 function syncOcclusalRelief(toothNo: number): void {
   const tiles = toothTile.get(toothNo);
   if(!tiles) return;
   const st = toothState.get(toothNo);
   const typ = String(st?.restorationType ?? "none");
   const material = String(st?.restorationMaterial ?? "none");
-  const zeigen = !isAnteriorTooth(toothNo)
-    && (typ === "crown" || typ === "bridge" || typ === "onlay")
+  const zeigen = (typ === "crown" || typ === "bridge" || typ === "onlay")
     && material !== "none";
   for(const tile of tiles){
     if(zeigen && tile.classList.contains("occl-view")){
