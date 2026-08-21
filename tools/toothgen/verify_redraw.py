@@ -190,10 +190,10 @@ TOL_INNERHALB = 3.0
 # wird, was darin steht und inzwischen sauber ist, damit die Liste nur kuerzer
 # werden kann.
 #
-# Die 23 Eintraege an 46 sind odontogram-8i5: dort hat der Warp eine ganze
-# Ebenenfamilie um 9,3 Einheiten nach distal geschoben. Die elf Kronen dieser
-# Familie sind seit der Ableitung (`kronen.py`) heraus; was bleibt, sind die
-# Bruchvarianten, die Fissurenversiegelung, der Abrieb, Inlay und Veneer.
+# 46 STEHT NICHT MEHR DARIN. odontogram-8i5 ist behoben, nicht umgangen: die
+# Ursache war `STUFEN["46"] = 65` (siehe redraw_apply.py). Genau diese Pruefung
+# hat es gezeigt - sie meldet auch, was hier steht und sauber geworden ist, und
+# hat die 23 Eintraege selbst zum Streichen angemeldet.
 BEKANNTE_UEBERSTAENDE: set[tuple[str, str]] = {
     ("11", "endo-glass-pin"),   # 5.24
     ("11", "endo-metal-pin"),   # 5.24
@@ -206,29 +206,6 @@ BEKANNTE_UEBERSTAENDE: set[tuple[str, str]] = {
     ("16", "tooth-under-gum"),   # 5.63
     ("18", "tooth-under-gum"),   # 3.64
     ("44", "endo-glass-pin"),   # 4.63
-    ("46", "crown-needed-path"),   # 4.78
-    ("46", "crown-needed-shape"),   # 9.12
-    ("46", "crown-replace-shape"),   # 9.12
-    ("46", "emax-inlay"),   # 7.39
-    ("46", "emax-veneer"),   # 7.98
-    ("46", "fissure-sealing-occlusal"),   # 9.21
-    ("46", "gold-inlay"),   # 7.39
-    ("46", "gold-veneer"),   # 7.98
-    ("46", "gradia-inlay"),   # 7.39
-    ("46", "gradia-veneer"),   # 7.98
-    ("46", "temporary-inlay"),   # 7.39
-    ("46", "temporary-veneer"),   # 7.98
-    ("46", "tooth-base-beauty-2"),   # 5.59
-    ("46", "tooth-broken-distal"),   # 9.24
-    ("46", "tooth-broken-distal-incisal"),   # 3.34
-    ("46", "tooth-broken-incisal"),   # 9.26
-    ("46", "tooth-broken-mesial"),   # 9.32
-    ("46", "tooth-broken-mesial-distal"),   # 9.31
-    ("46", "tooth-broken-mesial-distal-incisal"),   # 8.42
-    ("46", "tooth-broken-mesial-incisal"),   # 9.23
-    ("46", "tooth-bruxism-wear"),   # 9.29
-    ("46", "zircon-inlay"),   # 7.39
-    ("46", "zircon-veneer"),   # 7.98
     ("55", "endo-filling"),   # 8.54
     ("55", "endo-medical-filling"),   # 8.54
     ("55", "pulp-inflam-path-1"),   # 9.64

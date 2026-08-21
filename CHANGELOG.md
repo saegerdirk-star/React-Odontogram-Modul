@@ -1,5 +1,50 @@
 # Changelog
 
+## 2.31.1 - 2026-08-21
+
+### Warum es an 46 ueberhaupt einen Warp gab (Bead odontogram-8i5, behoben)
+
+Dirks Frage nach der Kronenableitung: *"Warum haben wir ueberhaupt einen Warp an
+46?"* Die Antwort ist die Ursache des Fehlers.
+
+- **Ein Warp ist an JEDEM Zahn noetig**, nicht nur an 46: eine Vorlage traegt
+  rund zweihundert klinische Ebenen — Karies, Fuellungen, Endo, Implantat,
+  Zyste, Zahnstein. Gezeichnet werden Umriss und Pulpa. Alles andere kommt aus
+  dem Spender und muss der neuen Kontur FOLGEN; dieses Folgen ist der Warp.
+- **Was an 46 anders war, ist eine einzige Zahl:** `STUFEN["46"] = 65` gegen 40
+  ueberall sonst — die Zahl der Hoehenzeilen, aus denen das Feld seine
+  Stuetzstellen nimmt.
+- **Sie stammt aus einer Zeit, die vorbei ist.** Die 65 wurden eingestellt, als
+  der UMRISS noch gewarpt wurde; sie brachten 46 auf jener Messung von 6,56 auf
+  2,80 herunter. Seit Dirks Frage vom 17.08.2026 (*"46 Kontur, warum
+  nachgezeichnet, warum nicht die blaue Linie nutzen"*) wird der Umriss
+  EINGESETZT, und die Pulpa ebenso. Die Groesse, fuer die die 65 einmal
+  eingestellt wurden, haengt gar nicht mehr am Feld. Geblieben ist nur ihre
+  Nebenwirkung.
+- **Und die ist gemessen** — je mehr Zeilen, desto weiter treibt das Feld alles
+  hinaus, was nicht eingesetzt wird:
+
+      Stufen    Ebenen mehr als 3 Einheiten neben der Kontur    groesster
+          20                                                0        0,00
+          25                                                0        0,00
+          30                                               25        5,21
+          40                                               41        7,22
+          50                                               44        8,79
+          65                                               45       10,05
+
+- **`STUFEN["46"]` steht jetzt auf 25.** Keine einzige Ebene steht mehr neben
+  dem Zahn; Umriss, Lumen, Zahnfleischband, Okklusionsebene und Ebenenbestand
+  sind unveraendert, weil sie alle nicht am Feld haengen.
+- **Die neue Pruefung hat sich dabei selbst bewaehrt:** `BEKANNTE_UEBERSTAENDE`
+  ist von 42 auf 19 Eintraege geschrumpft, und zwar nicht weil jemand daran
+  gedacht haette — `verify_redraw.py` hat die 23 Eintraege an 46 selbst zum
+  Streichen angemeldet, weil sie sauber geworden sind.
+
+Damit ist odontogram-8i5 behoben, nicht umgangen. Die 24 Ebenen, die die
+Kronenableitung nicht loesen konnte (Bruchvarianten, Fissurenversiegelung,
+Abrieb, Inlay, Veneer), sitzen jetzt im Zahn. Payload, FHIR und
+SVG-Fingerabdruecke sind unberuehrt.
+
 ## 2.31.0 - 2026-08-21
 
 ### Die Krone kommt aus dem Zahn (Bead odontogram-5hm)

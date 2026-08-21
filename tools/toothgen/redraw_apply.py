@@ -555,12 +555,32 @@ def szg(zahn: str) -> float:
 
 
 # Zeilenzahl der Zuordnung, je Template gemessen. EINE Zahl passt nicht fuer
-# alle: 65 Zeilen bringen den Sechsundvierziger von 6,56 auf 2,80 herunter und
-# treiben den Sechser von 2,63 auf 7,73 mit zwei Ordnungspruengen hoch. Das
-# haengt daran, wie die Zeilen auf die Zweigstruktur des jeweiligen Zahns
-# fallen. Statt einen Mittelwert zu waehlen, der beiden schadet, steht hier je
-# Template der gemessene Wert.
-STUFEN = {"46": 65}
+# alle - es haengt daran, wie die Zeilen auf die Zweigstruktur des jeweiligen
+# Zahns fallen. 65 Zeilen brachten den Sechsundvierziger auf der damaligen
+# Messung von 6,56 auf 2,80 herunter und trieben den Sechser von 2,63 auf 7,73
+# hoch, deshalb je Template ein eigener Wert.
+#
+# 46 STAND DESHALB AUF 65 UND WAR DAMIT DIE URSACHE VON odontogram-8i5.
+#
+# Jene Messung galt dem UMRISS, und den gibt es so nicht mehr: seit Dirks Frage
+# vom 17.08.2026 - "46 Kontur, warum nachgezeichnet, warum nicht die blaue
+# Linie nutzen" - wird er EINGESETZT, und die Pulpa ebenso. Die Groesse, fuer
+# die die 65 eingestellt wurden, haengt also gar nicht mehr am Feld. Geblieben
+# ist nur ihre Nebenwirkung, und die ist gemessen: je mehr Zeilen, desto weiter
+# treibt das Feld alles hinaus, was NICHT eingesetzt wird.
+#
+#     Stufen    Ebenen mehr als 3 Einheiten neben der Kontur    groesster
+#         20                                                0        0,00
+#         25                                                0        0,00
+#         30                                               25        5,21
+#         40                                               41        7,22
+#         50                                               44        8,79
+#         65                                               45       10,05
+#
+# Bei 25 steht keine einzige Ebene mehr neben dem Zahn, und keine andere
+# Pruefung verschlechtert sich dabei - Umriss, Lumen, Zahnfleischband,
+# Okklusionsebene und Ebenenbestand haengen alle nicht am Feld. Deshalb 25.
+STUFEN = {"46": 25}
 
 
 def _neigen(P, grad: float):
