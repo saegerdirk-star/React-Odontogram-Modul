@@ -7,6 +7,11 @@ name: Publish to npm
 # NPM_TOKEN secret with publish rights in the repository settings. `npm publish`
 # runs the `prepublishOnly` script, which rebuilds the library, so the tarball
 # always reflects the source.
+#
+# Do not set setup-node registry-url to npm.cognovis.de. That rewrites the
+# whole job (including `npm ci`) onto Verdaccio with always-auth, so an
+# invalid NPM_TOKEN fails the public lockfile install with E401 before
+# publish runs. Auth is applied only to the publish step.
 on:
   push:
     tags:
@@ -23,7 +28,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          registry-url: 'https://npm.cognovis.de'
           cache: npm
       - run: npm ci
       - name: Verify build + tests before publishing
@@ -31,6 +35,13 @@ jobs:
           npx tsc -b --noEmit
           npm test
       - name: Publish
-        run: npm publish --registry=https://npm.cognovis.de/
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if test -z "$NODE_AUTH_TOKEN"; then
+            echo "NPM_TOKEN secret is empty" >&2
+            exit 1
+          fi
+          userconfig="${RUNNER_TEMP}/npmrc-publish"
+          printf '%s\n' "//npm.cognovis.de/:_authToken=${NODE_AUTH_TOKEN}" > "$userconfig"
+          npm publish --registry=https://npm.cognovis.de/ --userconfig "$userconfig"
