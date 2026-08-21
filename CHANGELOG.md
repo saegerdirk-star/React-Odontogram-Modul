@@ -1,5 +1,44 @@
 # Changelog
 
+## 2.31.2 - 2026-08-21
+
+### Ein Symbol ist keine Anatomie (Bead odontogram-7xl)
+
+Dirk, 21.08.2026, am Extraktionskreuz von 36: *"Das ist komplett verzogen."* Es
+lief als zwei wellige Baender an den Wurzeln entlang statt als Kreuz.
+
+- **Es war nicht nur das X.** Nachgemessen ueber alle 26 Seitenansichten, als
+  Abweichung eines Striches von der Geraden zwischen seinen Endpunkten, bei
+  Zaehnen um die 30 Einheiten Breite:
+
+      extraction-plan     bis 49,13 (44)      tooth-mobility-2   bis 29,60 (44)
+      crown-replace       bis 37,01 (16)      crown-needed-path  bis 25,33 (16)
+      tooth-mobility-1    bis 27,76 (44)      crown-leakage      bis 28,10 (47)
+
+- **Der Grund ist derselbe wie beim Implantatkoerper und beim Stift:** ein
+  Thin-Plate-Spline biegt Geraden. Der Zahn DARF sich biegen, ein Symbol nicht —
+  es bedeutet etwas, es stellt nichts dar. Beide anderen Faelle waren laengst
+  ausgenommen (`starr_aus`), die Symbole nie.
+- **`starr_im_rahmen`** bildet sie jetzt ab: gleichmaessige Skalierung und
+  Verschiebung vom Kasten des Spenderumrisses auf den des eingesetzten,
+  **ohne Drehung**. Zwei Zwischenstaende sind dabei verworfen worden, beide am
+  Bild erkannt: `starr_aus` am Symbol selbst genommen leitet seine Drehung aus
+  dessen eigener Laengsachse ab, und beim Kreuz ist das eine seiner Diagonalen —
+  es kam gerade heraus, aber schief und halb aus der Kachel. An der Kontur
+  genommen nahm es die Neigung des Zahns mit, und ein mitgeneigtes Kreuz ist
+  kein Kreuz mehr.
+- **Die gestern gebaute Pruefung hat einen eigenen Fehler von mir gefangen:**
+  `crown-replace` stand zuerst als GRUPPE in der Symbolliste. Sie enthaelt aber
+  nur `crown-replace-shape`, also genau die Kronen-Silhouette, die ich ausnehmen
+  wollte — die stand danach an neun Vorlagen bis zu 5,9 Einheiten neben dem
+  Zahn. Gefunden hat das nicht das Nachdenken, sondern `bleibt_im_zahn`, im
+  ersten Lauf nach der Aenderung.
+- Ausgenommen bleiben `crown-needed-shape`, `crown-replace-shape` und
+  `crown-leakage`: die ersten beiden sind Kronen-Silhouetten, die dritte laeuft
+  am Kronenrand entlang. Sie STELLEN etwas dar und gehoeren ans Zahnfeld.
+
+Nutzlast, FHIR und SVG-Fingerabdruecke unberuehrt.
+
 ## 2.31.1 - 2026-08-21
 
 ### Warum es an 46 ueberhaupt einen Warp gab (Bead odontogram-8i5, behoben)

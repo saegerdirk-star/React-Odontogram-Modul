@@ -452,6 +452,40 @@ def anker(datei: Path):
 # soll, wenn sie an einem Zahn vorliegt.
 STIFT_MUSTER = re.compile(r"pin", re.I)
 
+# EIN SYMBOL IST KEINE ANATOMIE.
+#
+# Dirk, 21.08.2026, am Extraktionskreuz von 36: "Das ist komplett verzogen."
+# Nachgemessen ueber alle 26 Seitenansichten - Abweichung eines Striches von der
+# Geraden zwischen seinen Endpunkten, in Zeicheneinheiten, bei Zaehnen um die 30
+# Einheiten Breite:
+#
+#     extraction-plan     bis 49,13 (44)      tooth-mobility-2   bis 29,60 (44)
+#     crown-replace       bis 37,01 (16)      crown-needed-path  bis 25,33 (16)
+#     tooth-mobility-1    bis 27,76 (44)
+#
+# Das Kreuz lief als zwei wellige Baender an den Wurzeln entlang, die
+# Lockerungsgrade als Stachelreihe. Der Grund ist derselbe wie beim Implantat
+# und beim Stift: ein Thin-Plate-Spline biegt Geraden. Der Zahn DARF sich biegen,
+# ein Symbol nicht - es bedeutet etwas, es stellt nichts dar.
+#
+# Also dieselbe Behandlung, die Implantatkoerper und Stift laengst haben:
+# `starr_aus` - Drehung, gleichmaessige Skalierung, Verschiebung. Das Symbol
+# folgt dem Zahn, bleibt aber, was es ist.
+#
+# NICHT dabei: `crown-needed-shape`, `crown-replace-shape` und `crown-leakage`.
+# Die ersten beiden sind Kronen-Silhouetten und die dritte laeuft am Kronenrand
+# entlang - sie STELLEN etwas dar und gehoeren ans Zahnfeld.
+#
+# UND DESHALB STEHT HIER KEINE GRUPPE, WO EIN PFAD GEMEINT IST. `crown-replace`
+# stand hier zuerst als Gruppe drin - sie enthaelt aber NUR `crown-replace-shape`,
+# also genau die Silhouette, die ich ausnehmen wollte, und die stand danach an
+# neun Vorlagen bis zu 5,9 Einheiten neben dem Zahn. Gefunden hat das nicht das
+# Nachdenken, sondern `bleibt_im_zahn` - im ersten Lauf nach der Aenderung.
+# `crown-needed` ist aus demselben Grund nicht dabei: die Gruppe traegt die
+# Silhouette UND das Symbol, gemeint ist nur `crown-needed-path`.
+SYMBOL_EBENEN = ("extraction-plan", "crown-needed-path",
+                 "tooth-mobility-1", "tooth-mobility-2", "tooth-mobility-3")
+
 PULPA_MUSTER = re.compile(r"(pulp|endo)", re.I)
 # Parapulpaer heisst NEBEN der Pulpa - im Dentin, nicht im Kanal. Die Ebene
 # folgt deshalb dem Zahn und nicht der Pulpa.
@@ -499,6 +533,30 @@ def starr_aus(feld, P):
         d = np.array([x, y]) - a0
         return (float(b0[0] + c * d[0] - s_ * d[1]),
                 float(b0[1] + s_ * d[0] + c * d[1]))
+    return f
+
+
+def starr_im_rahmen(alt_pts, neu_pts):
+    """Gleichmaessige Skalierung und Verschiebung - KEINE Drehung.
+
+    Fuer Symbole. `starr_aus` daneben leitet seine Drehung aus einer Laengsachse
+    ab; das ist beim Implantatkoerper richtig (er STECKT im Zahn und kippt mit
+    ihm) und beim Symbol falsch: ein Extraktionskreuz, das sich mit der Neigung
+    des Zahns mitdreht, ist kein Kreuz mehr, sondern ein schiefes Kreuz. Ein
+    Symbol steht aufrecht im Rahmen, sitzt in der Mitte des Zahns und ist so
+    gross wie er.
+
+    Der Faktor ist der KLEINERE der beiden Kastenverhaeltnisse: ein Symbol darf
+    aus dem Zahn herausragen, aber nicht aus der Kachel.
+    """
+    a0, a1 = alt_pts.min(0), alt_pts.max(0)
+    b0, b1 = neu_pts.min(0), neu_pts.max(0)
+    sa, sb = a1 - a0, b1 - b0
+    k = float(min(sb[0] / sa[0], sb[1] / sa[1])) if sa[0] > 1e-9 and sa[1] > 1e-9 else 1.0
+    ac, bc = (a0 + a1) / 2.0, (b0 + b1) / 2.0
+
+    def f(x, y):
+        return (float(bc[0] + k * (x - ac[0])), float(bc[1] + k * (y - ac[1])))
     return f
 
 
@@ -829,6 +887,18 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = 
         basis = (lambda x, y: pulpa_feld(x, y)) if im_kanal else (lambda x, y: zahn_feld(x, y))
         stift_feld[i] = starr_aus(basis, np.vstack([redraw.polygon(d) for d in ds]))
 
+    # Die Symbole: starr, aus demselben Grund wie der Stift daneben.
+    #
+    # EINE gemeinsame Abbildung fuer alle, vom KASTEN des Spenderumrisses auf den
+    # Kasten des eingesetzten - gleichmaessig skaliert, verschoben, NICHT
+    # gedreht. Zwei Zwischenstaende, beide verworfen und beide am Bild erkannt:
+    # `starr_aus` am Symbol selbst genommen leitet die Drehung aus dessen eigener
+    # Laengsachse ab, und beim Kreuz ist das eine seiner Diagonalen - es kam
+    # gerade, aber schief und halb aus der Kachel. An der Kontur genommen nahm es
+    # die Neigung des Zahns mit, und ein mitgeneigtes Kreuz ist kein Kreuz mehr.
+    symbol_basis = starr_im_rahmen(alt, redraw.polygon(umriss_d))
+    symbol_feld = {i: symbol_basis for i in SYMBOL_EBENEN if pfade_von(txt, i)}
+
     # Ein Implantat ist ein Fabrikteil und dehnt sich nicht mit der Wurzel, in
     # die es gesetzt wird - derselbe Satz wie beim Stift, nur groesser. Gemessen
     # am Sechser: das Zahnfeld zog den Koerper von 47 auf 96 Einheiten Laenge,
@@ -854,6 +924,8 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = 
         for k in kette:
             if k in stift_feld:
                 return stift_feld[k]         # gerade bleiben, siehe STIFT_MUSTER
+            if k in symbol_feld:
+                return symbol_feld[k]        # ein Symbol ist keine Anatomie
         if implantat_feld is not None and any(k in implantat_ebenen for k in kette):
             return implantat_feld
         if p_ids and any(k in p_ids for k in kette):
