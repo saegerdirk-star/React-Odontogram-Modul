@@ -2760,17 +2760,54 @@ body.odon-dragging{ cursor: cell; }
 .tooth-tile.tpl-44-occl{ --occl-scale: 1.15; }
 .tooth-tile.tpl-45-occl{ --occl-scale: 1.15; }
 
-/* Molaren und Milchmolaren: etwas kleiner. */
+/* Molaren: etwas kleiner. */
 .tooth-tile.tpl-16-occl{ --occl-scale: 0.85; }
 .tooth-tile.tpl-17-occl{ --occl-scale: 0.85; }
 .tooth-tile.tpl-18-occl{ --occl-scale: 0.85; }
 .tooth-tile.tpl-46-occl{ --occl-scale: 0.85; }
 .tooth-tile.tpl-47-occl{ --occl-scale: 0.85; }
 .tooth-tile.tpl-48-occl{ --occl-scale: 0.85; }
-.tooth-tile.tpl-54-occl{ --occl-scale: 0.85; }
-.tooth-tile.tpl-55-occl{ --occl-scale: 0.85; }
-.tooth-tile.tpl-84-occl{ --occl-scale: 0.85; }
-.tooth-tile.tpl-85-occl{ --occl-scale: 0.85; }
+
+/* MILCHMOLAREN: eigene Zahlen, und zwar deutlich groessere.
+   -------------------------------------------------------------------------
+   Dirk, 21.08.2026, am Milchgebiss: "Milchmolaren-Kauflaechen sind im
+   Vergleich zu Eck und Schneidezaehnen zu klein."
+
+   Der Grund ist kein Zeichenfehler, sondern das Spaltenmodell: ein Milchzahn
+   steht auf dem PLATZ SEINES NACHFOLGERS, und ein zweiter Milchmolar ist
+   deutlich breiter als der Praemolar, dessen Spalte er einnimmt (85 misst
+   41,6 Einheiten in einer 41-px-Spalte, 84 sogar 37,6 in 34). Die Kauflaeche
+   fuellt aber die Kachel - also wird gerade der breiteste Milchzahn am
+   staerksten zusammengestaucht, waehrend der schmale Milchschneidezahn in
+   seiner Spalte Luft hat.
+
+   Nachgemessen im Bild, gemalte Tischbreite geteilt durch die wahre:
+
+       bleibende Front      0,89 - 1,01
+       bleibende Molaren    0,70 - 0,83
+       Milchfront           1,01 - 1,18
+       MILCHMOLAREN         0,34 - 0,44     <- ein Drittel der Milchfront
+
+   Die Zahlen unten heben sie auf 0,69 bis 0,75 - die Hoehe der bleibenden
+   Molaren. Weiter geht es nicht: bei glatt 0,75 fuer alle vier ueberlappten
+   sich 84 und 85 im Bild um sieben Bildpunkte (gemessen), weil beide in den
+   engsten Spalten des Bogens stehen. Die beiden sind deshalb um genau diese
+   sieben Punkte zurueckgenommen und beruehren sich nun. Oben reicht der Platz;
+   dort bleiben 54 und 55 auf 0,75 und stehen einen Punkt auseinander.
+
+   Die Kacheln richten sich nach der HOEHE, die Breite folgt dem
+   Seitenverhaeltnis - eine Skalenzahl laesst sich also nicht aus der
+   Spaltenbreite ausrechnen. Sie sind am Bild gemessen und nachgestellt.
+
+   IM WECHSELGEBISS STIMMT DAS VON SELBST. Die Klasse haengt an der VORLAGE,
+   und die Vorlage haengt daran, was an der Position wirklich gechartet ist -
+   nicht an einem Gebissmodus. Steht auf 84 ein Milchmolar, greift `tpl-84-occl`;
+   steht dort der bleibende Praemolar, greift `tpl-44-occl`. Es gibt keinen
+   Schalter, der falsch stehen koennte. */
+.tooth-tile.tpl-54-occl{ --occl-scale: 1.45; }
+.tooth-tile.tpl-55-occl{ --occl-scale: 1.60; }
+.tooth-tile.tpl-84-occl{ --occl-scale: 1.71; }
+.tooth-tile.tpl-85-occl{ --occl-scale: 1.49; }
 
 /* Tiefenreiz an der Zahnsubstanz (Dirks Frage vom 20.08.2026: "Koennte man
    ueber optische Tricks an den Wurzeln und den anderen Flaechen die Illusion

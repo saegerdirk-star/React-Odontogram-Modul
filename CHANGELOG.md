@@ -1,5 +1,43 @@
 # Changelog
 
+## 2.28.3 - 2026-08-21
+
+### Milchmolaren-Kauflaechen waren ein Drittel so gross wie die Milchfront
+
+Dirk am Milchgebiss: *"Milchmolaren-Kauflaechen sind im Vergleich zu Eck und
+Schneidezaehnen zu klein. Da muessen wir fuer die Milchzaehne ein anderes css
+verwenden, wenn das moeglich ist. Das muss dann aber auch im Wechselgebiss
+korrekt funktionieren."*
+
+- **Der Grund ist das Spaltenmodell, kein Zeichenfehler.** Ein Milchzahn steht
+  auf dem Platz seines Nachfolgers, und ein Milchmolar ist deutlich breiter als
+  der Praemolar, dessen Spalte er einnimmt (85 misst 41,6 Einheiten in einer
+  41-px-Spalte, 84 sogar 37,6 in 34). Die Kauflaeche fuellt aber die Kachel —
+  also wird ausgerechnet der breiteste Milchzahn am staerksten gestaucht,
+  waehrend der schmale Milchschneidezahn in seiner Spalte Luft hat. Gemessen,
+  gemalte Tischbreite geteilt durch die wahre:
+
+      bleibende Front      0,89 - 1,01
+      bleibende Molaren    0,70 - 0,83
+      Milchfront           1,01 - 1,18
+      MILCHMOLAREN         0,34 - 0,44
+
+- Die vier Zahlen heben sie auf **0,69 bis 0,75**, die Hoehe der bleibenden
+  Molaren. Weiter geht es nicht: bei glatt 0,75 fuer alle vier ueberlappten
+  sich 84 und 85 im Bild um sieben Bildpunkte, weil beide in den engsten
+  Spalten des Bogens stehen; sie sind um genau diese sieben zurueckgenommen und
+  beruehren sich nun. Oben reicht der Platz.
+- **Im Wechselgebiss stimmt es von selbst**, und das ist keine zweite Regel: die
+  Klasse haengt an der VORLAGE, und die Vorlage daran, was an der Position
+  wirklich gechartet ist — nicht an einem Gebissmodus. Steht auf 84 ein
+  Milchmolar, greift `tpl-84-occl`; steht dort der bleibende Praemolar, greift
+  `tpl-44-occl`. Es gibt keinen Schalter, der falsch stehen koennte.
+  Nachgemessen am Wechselgebiss-Preset: jede Position zieht die Vorlage ihres
+  tatsaechlichen Zahns.
+- Vier Zahlen in `src/index.css`, sonst nichts. Kein Generatorlauf, kein
+  Fingerabdruck, keine Geometrie.
+
+
 ## 2.28.2 - 2026-08-21
 
 ### Milchfrontzaehne trugen in der Draufsicht das Relief eines Praemolaren
