@@ -191,6 +191,40 @@ describe("getToothBaseGroupFromCache", () => {
     expect(rightMirror!.getAttribute("transform") || "").toMatch(/matrix\(-1 0 0 1 /);
   });
 
+  it("der UNTERKIEFER wird andersherum gespiegelt als der Oberkiefer", () => {
+    // Dirk, 21.08.2026: "In der PAR-Ansicht sind die Kauflaechen der UK Molaren
+    // zwischen 3/4 Quadranten vertauscht."
+    //
+    // Die Tabelle steht hier AUSGESCHRIEBEN und nicht als Regel, weil die Regel
+    // genau das war, was schiefging: `map.mirror` allein gelesen, obwohl eine
+    // Drehung um 180 Grad BEIDE Achsen kippt. Im Oberkiefer faellt das nicht
+    // auf (dort ist rot=0), im Unterkiefer dreht es beide Haelften auf einmal um
+    // - weshalb jeder einzelne Zahn plausibel aussah und erst das PAAR als
+    // vertauscht zu lesen war.
+    const gespiegelt = (toothNo: number) =>
+      getToothBaseGroupFromCache(cache, toothNo).querySelector('[data-perio-mirror="1"]') !== null;
+
+    for(const t of [11, 12, 13, 14, 15, 16, 17, 18]) expect(gespiegelt(t), `${t}`).toBe(false);
+    for(const t of [21, 22, 23, 24, 25, 26, 27, 28]) expect(gespiegelt(t), `${t}`).toBe(true);
+    // Dirks untere Zeichnungen SIND Quadrant 4 - sie stehen, wie sie gezeichnet
+    // sind, und die Spiegelung macht aus 41 die 31.
+    for(const t of [41, 42, 43, 44, 45, 46, 47, 48]) expect(gespiegelt(t), `${t}`).toBe(false);
+    for(const t of [31, 32, 33, 34, 35, 36, 37, 38]) expect(gespiegelt(t), `${t}`).toBe(true);
+  });
+
+  it("und die beiden Molaren eines Paares sind Spiegelbilder, nicht Kopien", () => {
+    // 46 und 36 kommen aus DERSELBEN Vorlage. Genau einer von beiden traegt die
+    // Spiegelung - traegt sie keiner oder tragen sie beide, zeigen die beiden
+    // Kieferhaelften dieselbe Hand.
+    for(const [rechts, links] of [[46, 36], [47, 37], [44, 34], [41, 31]] as const){
+      const a = getToothBaseGroupFromCache(cache, rechts);
+      const b = getToothBaseGroupFromCache(cache, links);
+      expect(a.getAttribute("data-tpl")).toBe(b.getAttribute("data-tpl"));
+      const zahl = (g: SVGGElement) => (g.querySelector('[data-perio-mirror="1"]') ? 1 : 0);
+      expect(zahl(a) + zahl(b), `${rechts}/${links}`).toBe(1);
+    }
+  });
+
   it("throws for a tooth number absent from TOOTH_TEMPLATE", () => {
     expect(() => getToothBaseGroupFromCache(cache, 99)).toThrow();
   });

@@ -330,12 +330,19 @@ function stripExcludedLayers(root: Element): void {
  * (horizontal mirror only) and size-transformed for its FDI position.
  *
  * Orientation: `TOOTH_TEMPLATE.get(toothNo)` gives `{tpl, rot, mirror}`.
- * This deliberately reads only `tpl`/`mirror` and IGNORES `rot` — using the
- * odontogram's own per-tooth `.rot` (0 for the upper-arch-mapped entries,
- * 180 for the lower-arch-mapped entries in the SAME `tpl`) would make the
- * upper and lower halves of one perio row end up with OPPOSITE vertical
- * orientation (since a 180 rotation flips both axes) — wrong for a perio
- * chart, which wants every tooth crown-up, uniformly, in both arches.
+ * `rot` is SPLIT, not ignored — a 180 rotation flips both axes, and the two
+ * halves belong in different places here:
+ *
+ *   VERTICAL: dropped. Using the odontogram's per-tooth `.rot` (0 for the
+ *   upper-arch-mapped entries, 180 for the lower-arch-mapped ones in the SAME
+ *   `tpl`) would give the upper and lower halves of one perio row OPPOSITE
+ *   vertical orientation — wrong for a perio chart, which wants every tooth
+ *   crown-up, uniformly, in both arches. Step 1 below applies one fixed flip
+ *   to every tooth alike instead.
+ *
+ *   HORIZONTAL: kept, as `mirror XOR rot180` — see step 2. Reading `mirror`
+ *   alone put quadrants 3 and 4 the wrong way round in the lower jaw until
+ *   Dirk saw it on 21.08.2026 (odontogram-ryn).
  *
  * Every template's raw/un-rotated artwork is actually root-up / crown-down
  * (verified from 11.svg's own geometry — see the comment at
@@ -394,8 +401,30 @@ export function getToothBaseGroupFromCache(
 
   // 2) Horizontal mirror for left/right mesial-distal correctness.
   //    matrix(-1 0 0 1 w 0): x' = -x + w = w - x; y unchanged.
+  //
+  // `map.mirror` ALONE IS NOT THE ANSWER, and reading it as such put quadrants
+  // 3 and 4 the wrong way round in the lower jaw (Dirk, 21.08.2026: "In der
+  // PAR-Ansicht sind die Kauflaechen der UK Molaren zwischen 3/4 Quadranten
+  // vertauscht"). A `rot` of 180 is a rotation, so it flips BOTH axes — the
+  // horizontal half of it belongs here even though the vertical half is
+  // deliberately dropped (see the doc comment above). The odontogram's own net
+  // left/right flip is therefore `mirror XOR rot180`, and the lower arch is
+  // exactly where the two disagree:
+  //
+  //     11-18   mirror false, rot   0  ->  not mirrored
+  //     21-28   mirror true,  rot   0  ->  mirrored
+  //     41-48   mirror true,  rot 180  ->  NOT mirrored (the drawing as drawn)
+  //     31-38   mirror false, rot 180  ->  MIRRORED
+  //
+  // The lower entries carry that pairing because Dirk's lower drawings ARE
+  // quadrant 4 and `rahmen_dreher` rotates them into the template frame; the
+  // `rot:180` undoes the rotation, and the mirror on top of it turns 41 into
+  // 31 (see the comment on TOOTH_TEMPLATE). Taking `mirror` on its own
+  // reversed both halves of the lower jaw at once — which is why every lower
+  // tooth looked plausible on its own and only the pair read as swapped.
+  const spiegeln = map.mirror !== (map.rot === 180);
   const mirrorGroup = document.createElementNS(SVG_NS, "g") as unknown as SVGGElement;
-  if (map.mirror) {
+  if (spiegeln) {
     mirrorGroup.setAttribute("data-perio-mirror", "1");
     mirrorGroup.setAttribute("transform", `matrix(-1 0 0 1 ${fmt(w)} 0)`);
   }

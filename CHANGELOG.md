@@ -1,5 +1,49 @@
 # Changelog
 
+## 2.29.2 - 2026-08-21
+
+### Die Unterkiefer-Molaren standen in der PAR-Ansicht seitenverkehrt (Bead odontogram-ryn)
+
+Dirk, 21.08.2026: *"In der PAR-Ansicht sind die Kauflaechen der UK Molaren
+zwischen 3/4 Quadranten vertauscht."*
+
+- **Die Ursache ist eine halb gelesene Angabe.** `TOOTH_TEMPLATE` beschreibt die
+  Lage eines Zahns mit ZWEI Feldern, `rot` und `mirror`, und
+  `getToothBaseGroupFromCache` las nur `mirror`. Eine Drehung um 180 Grad kippt
+  aber BEIDE Achsen — ihre waagerechte Haelfte gehoert zur Spiegelung. Die
+  tatsaechliche Seitigkeit ist `mirror XOR rot180`, und im Oberkiefer stimmen
+  beide ueberein (dort ist `rot` gleich 0), im Unterkiefer nie:
+
+  | | mirror | rot | gespiegelt |
+  |---|---|---|---|
+  | 11–18 | nein | 0 | nein |
+  | 21–28 | ja | 0 | ja |
+  | 41–48 | ja | 180 | **nein** |
+  | 31–38 | nein | 180 | **ja** |
+
+  Der Unterkiefer traegt diese Paarung, seit jede Position ihre eigene Zeichnung
+  hat: Dirks untere Zeichnungen SIND Quadrant 4, `rahmen_dreher` dreht sie in den
+  Rahmen, und `rot:180` nimmt die Drehung zurueck.
+- **Beide Haelften waren auf einmal umgedreht** — deshalb sah jeder einzelne Zahn
+  fuer sich plausibel aus, und erst das PAAR las sich als vertauscht.
+- **Nachgemessen im laufenden Programm**, nicht aus dem Quelltext geschlossen: am
+  unteren Molaren ist die mesiale Wurzel die laengere, also sagt die tiefere
+  Haelfte, wo mesial liegt. Odontogramm (unbeanstandet) gegen PAR-Ansicht:
+
+      Odontogramm   46/47 rechts   36/37 links
+      PAR vorher    46/47 links    36/37 rechts     <- genau umgekehrt
+      PAR nachher   46/47 rechts   36/37 links      <- deckungsgleich
+
+- **Der bestehende Test deckte nur den Oberkiefer ab** (11 gegen 21) — dort, wo
+  die falsche Regel zufaellig richtig liegt. Jetzt steht die Tabelle
+  ausgeschrieben fuer alle 32 Positionen im Test, und ein zweiter haelt fest,
+  dass die beiden Zaehne eines Paares Spiegelbilder sind und nicht Kopien.
+- Gilt genauso fuer den SVG-/PDF-Export des Parodontalstatus — er baut ueber
+  dieselbe Funktion. Keine Nutzlast-, FHIR- oder Fingerabdruck-Aenderung.
+- Ausserdem: `package-lock.json` traegt wieder dieselbe Version wie
+  `package.json`. Der Hygienetest `odontogram-z4y` haengt genau daran, und er war
+  nach dem Sprung auf 2.29.1 rot.
+
 ## 2.29.1 - 2026-08-21
 
 ### Der PDF-Bericht erfindet kein Geburtsdatum mehr (Bead odontogram-in2)
