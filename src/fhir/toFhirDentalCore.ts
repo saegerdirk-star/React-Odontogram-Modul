@@ -101,7 +101,7 @@ const CARIES_FIELDS = new Set<keyof ToothRecord>(["caries", "cariesSeverity", "r
 const PERIODONTAL_FIELDS = new Set<keyof ToothRecord>(["calculus", "mobility", "perio", "furcation", "plaque", "pi", "gi", "kg"]);
 const PERI_IMPLANT_FIELDS = new Set<keyof ToothRecord>(["periImplant", "mpi", "mbi"]);
 const IMPLANT_FIELDS = new Set<keyof ToothRecord>(["implantProduct"]);
-const RESTORATION_PRODUCT_FIELDS = new Set<keyof ToothRecord>(["restorationProduct"]);
+const RESTORATION_PRODUCT_FIELDS = new Set<keyof ToothRecord>(["restorationProduct", "fillingProducts"]);
 const RECESSION_FIELDS = new Set<keyof ToothRecord>(["millerClass"]);
 const ADDITIONAL_FINDING_FIELDS = new Set<keyof ToothRecord>(["pulpDx", "apicalDx", "radiographicDepth", "cervicalSurfaces", "assessment", "note"]);
 const SERVICE_REQUEST_FIELDS = new Set<keyof ToothRecord>(["extractionPlan", "crownReplace", "crownNeeded"]);
@@ -207,6 +207,14 @@ function validProfileField(field: keyof ToothRecord, value: unknown): boolean {
     return Object.entries(product).every(([key, item]) => allowed.has(key) && (key === "diameterMm" || key === "lengthMm"
       ? typeof item === "number" && Number.isFinite(item) && item > 0
       : typeof item === "string"));
+  }
+  if (field === "fillingProducts") {
+    // Je Material ein Satz, jeder wie `restorationProduct` gebaut. Der
+    // SCHLUESSEL muss ein bekanntes Fuellmaterial sein - ein fremder wuerde im
+    // Bundle als Device ohne Klasse landen.
+    if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+    return Object.entries(value as Record<string, unknown>).every(([mat, satz]) =>
+      Boolean(LOCAL_VALUE_MAPS.fillingMaterial?.[mat]) && validProfileField("restorationProduct", satz));
   }
   if (field === "restorationProduct") {
     // Bead odontogram-99h, gebaut wie `implantProduct` daneben: JEDES Feld ist
@@ -639,6 +647,37 @@ function restorationDevice(record: ToothRecord, fdi: string, options: FhirExport
   } as Device;
 }
 
+/** Bead odontogram-99h: je Fuellmaterial ein `Device`, aus denselben Gruenden
+ *  wie bei der Laborarbeit. `type` ist das Fuellmaterial mit demselben lokalen
+ *  Code wie im Befund, die Charge steht in `lotNumber`. */
+function fillingDevices(record: ToothRecord, fdi: string, options: FhirExportOptions, identity: DentalCoreIdentityResolver): Array<[string, Device]> {
+  const out: Array<[string, Device]> = [];
+  for (const [material, product] of Object.entries(record.fillingProducts ?? {})) {
+    const identifiers = [
+      product.deviceIdentifier ? { system: "urn:oid:2.51.1.1", value: product.deviceIdentifier } : undefined,
+      product.udi ? { system: LOCAL_SYSTEM, value: product.udi } : undefined,
+      !product.deviceIdentifier && !product.udi
+        ? { system: "urn:ietf:rfc:3986", value: identity.reference(`Device/filling/${fdi}/${material}`) } : undefined,
+    ].filter((value): value is { system: string; value: string } => Boolean(value));
+    const properties = [
+      product.shade ? { type: localConcept("restoration-shade"), valueCode: [localConcept(product.shade)] } : undefined,
+    ].filter(Boolean) as NonNullable<Device["property"]>;
+    out.push([`Device/filling/${fdi}/${material}`, {
+      resourceType: "Device", status: "active", identifier: identifiers,
+      type: localConcept(material),
+      patient: { reference: subjectReference(options, identity) },
+      extension: [{ url: DENTAL_CORE_PROFILES["tooth-position"], valueCoding: coding(FDI_SYSTEM, fdi) }],
+      ...(product.manufacturer ? { manufacturer: product.manufacturer } : {}),
+      ...(product.product ? { deviceName: [{ name: product.product, type: "model-name" }] } : {}),
+      ...(product.lot ? { lotNumber: product.lot } : {}),
+      ...(product.serial ? { serialNumber: product.serial } : {}),
+      ...(product.expiry ? { expirationDate: product.expiry } : {}),
+      ...(properties.length ? { property: properties } : {}),
+    } as Device]);
+  }
+  return out;
+}
+
 function periImplantFinding(record: ToothRecord, fdi: string, payload: OdontogramExportPayload, options: FhirExportOptions, identity: DentalCoreIdentityResolver): Observation | undefined {
   const components: NonNullable<Observation["component"]> = [];
   if (record.periImplant && record.periImplant !== "none") components.push({ code: { coding: [coding(LOCAL_SYSTEM, "peri-implant-status")] }, valueCodeableConcept: localConcept(record.periImplant) });
@@ -680,6 +719,7 @@ function clinicalProfileResources(record: ToothRecord, fdi: string, payload: Odo
     if (implant) resources.push([`Device/implant/${fdi}`, implant]);
     const werkstueck = restorationDevice(record, fdi, options, identity);
     if (werkstueck) resources.push([`Device/restoration/${fdi}`, werkstueck]);
+    resources.push(...fillingDevices(record, fdi, options, identity));
     const periImplant = periImplantFinding(record, fdi, payload, options, identity);
     if (periImplant) resources.push([`Observation/peri-implant/${fdi}`, periImplant]);
   }

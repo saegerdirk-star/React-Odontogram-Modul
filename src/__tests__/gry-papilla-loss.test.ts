@@ -7,6 +7,7 @@
 // beiden - und die Regel, unter der eine tolerant importierte Angabe zwar
 // gespeichert, aber nirgends angezeigt wird, wo die Bedienung sie verweigert.
 
+import { PAYLOAD_VERSION } from "../document";
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   papillaSites, papillaLossAllowed, setPapillaLoss, getToothPapillaLoss,
@@ -121,7 +122,7 @@ describe("Nutzlast", () => {
     __setToothStateForTest(11, {});
     setPapillaLoss(11, "mesial", 2);
     const p = __collectExportPayloadForTest() as Record<string, unknown>;
-    expect(p.version).toBe("2.31");
+    expect(p.version).toBe(PAYLOAD_VERSION);
     expect((p.teeth as Record<string, Record<string, unknown>>)["11"].papillaLoss).toEqual({ mesial: 2 });
     __resetChartStateForTest();
     __hydrateImportedChartsForTest(p);

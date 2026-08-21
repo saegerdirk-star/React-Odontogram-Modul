@@ -11,6 +11,7 @@
 // Geprueft wird beides: dass die Pruefung die drei Faelle auseinanderhaelt, und
 // dass sie NICHTS verhindert - der Overlay zeichnet weiter, was gechartet ist.
 
+import { PAYLOAD_VERSION } from "../document";
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   checkBridgeSpans, bridgeSpanNeedsAttention, detectBridgeSpans,
@@ -198,7 +199,7 @@ describe("Nutzlast", () => {
     __setToothStateForTest(14, { toothSelection: "none", restorationType: "bridge" });
     setCantilever(14, true);
     const p = __collectExportPayloadForTest() as Record<string, unknown>;
-    expect(p.version).toBe("2.31");
+    expect(p.version).toBe(PAYLOAD_VERSION);
     expect((p.teeth as Record<string, Record<string, unknown>>)["14"].cantilever).toBe(true);
     __resetChartStateForTest();
     __hydrateImportedChartsForTest(p);

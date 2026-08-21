@@ -17,6 +17,8 @@ import {
   setRestorationProduct, getRestorationProduct, restorationProductAllowed,
   getChartedRestorationProducts, isRestorationProductGap,
   captureExamination, resetExaminations,
+  setFillingProduct, getFillingProduct, getFillingProducts, fillingProductAllowed,
+  fillingMaterialsOn, getChartedFillingProducts, __getToothStateForTest,
   __setToothStateForTest, __resetChartStateForTest,
   __collectExportPayloadForTest, __hydrateImportedChartsForTest,
 } from "../odontogram";
@@ -173,5 +175,104 @@ describe("FHIR", () => {
     const geraete = (bundle.entry ?? []).map((e) => e.resource as unknown as Record<string, unknown>)
       .filter((r) => r?.resourceType === "Device");
     expect(geraete).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Zweiter Teil, Dirk am 21.08.2026: "Ja, beim Komposit machen wir es der
+// Vollstaendigkeit halber mit dazu, erlauben aber, dass es fehlt."
+
+describe("Das Produkt einer direkten Fuellung", () => {
+  // Roh wie eine Nutzlast - `__setToothStateForTest` hydratisiert, nimmt also
+  // Objekte und keine Maps.
+  const MIT_KOMPOSIT = {
+    fillingSurfaces: ["mesial", "occlusal"],
+    fillingSurfaceMaterials: { mesial: "composite", occlusal: "composite" },
+  };
+
+  it("JE MATERIAL, nicht je Flaeche - eine Spritze fuellt mehrere Flaechen", () => {
+    // `mod` ist EINE Fuellung, nicht drei. Je Flaeche zu speichern hiesse,
+    // dieselbe Charge dreimal zu fuehren und dreimal auseinanderlaufen zu
+    // lassen.
+    __setToothStateForTest(16, MIT_KOMPOSIT as never);
+    setFillingProduct(16, "composite", { product: "Tetric EvoCeram", lot: "K-2231" });
+    expect(getFillingProduct(16, "composite")?.lot).toBe("K-2231");
+    expect(getFillingProducts(16)).toEqual({ composite: { product: "Tetric EvoCeram", lot: "K-2231" } });
+  });
+
+  it("aber EIN Satz je Zahn genuegt nicht - zwei Materialien, zwei Produkte", () => {
+    __setToothStateForTest(16, {
+      fillingSurfaces: ["mesial", "distal"],
+      fillingSurfaceMaterials: { mesial: "composite", distal: "gic" },
+    } as never);
+    setFillingProduct(16, "composite", { product: "Tetric EvoCeram" });
+    setFillingProduct(16, "gic", { product: "Fuji IX" });
+    expect(fillingMaterialsOn(16)).toEqual(["composite", "gic"]);
+    expect(getFillingProduct(16, "gic")?.product).toBe("Fuji IX");
+  });
+
+  it("nur fuer ein Material, das an diesem Zahn wirklich liegt", () => {
+    __setToothStateForTest(16, MIT_KOMPOSIT as never);
+    expect(fillingProductAllowed(__getToothStateForTest(16), "composite")).toBe(true);
+    expect(fillingProductAllowed(__getToothStateForTest(16), "amalgam")).toBe(false);
+    setFillingProduct(16, "amalgam", { product: "irgendwas" });
+    expect(getFillingProduct(16, "amalgam")).toBeNull();
+  });
+
+  it("die UDI wird auch hier gelesen", () => {
+    __setToothStateForTest(16, MIT_KOMPOSIT as never);
+    setFillingProduct(16, "composite", { udi: UDI });
+    expect(getFillingProduct(16, "composite")?.lot).toBe("LOT4711");
+  });
+
+  it("ES DARF FEHLEN - kein Hinweis, nirgends", () => {
+    // Der Unterschied zur Laborarbeit: dort meldet isRestorationProductGap, was
+    // diese Praxis eingegliedert hat, ohne dass etwas notiert ist. Eine
+    // Fuellung ohne Produktangabe ist nie ein Mangel.
+    __setToothStateForTest(16, MIT_KOMPOSIT as never);
+    captureExamination({ effectiveDateTime: "2026-01-10" });
+    __setToothStateForTest(16, MIT_KOMPOSIT as never);
+    expect(getFillingProducts(16)).toEqual({});
+    // Es gibt schlicht kein Praedikat, das hier etwas melden koennte:
+    expect(isRestorationProductGap(16)).toBe(false);
+  });
+
+  it("die Vorschlagsliste ist EINE, nicht zwei", () => {
+    __setToothStateForTest(16, MIT_KOMPOSIT as never);
+    __setToothStateForTest(26, { toothSelection: "tooth-base", restorationType: "crown", restorationMaterial: "emax" });
+    setFillingProduct(16, "composite", { product: "Tetric EvoCeram" });
+    setRestorationProduct(26, { product: "IPS e.max CAD" });
+    expect(knownProducts([...getChartedFillingProducts(), ...getChartedRestorationProducts()]))
+      .toEqual(["IPS e.max CAD", "Tetric EvoCeram"]);
+  });
+
+  it("faehrt hin und zurueck, und ein fremdes Material faellt beim Import weg", () => {
+    __setToothStateForTest(16, MIT_KOMPOSIT as never);
+    setFillingProduct(16, "composite", { product: "Tetric EvoCeram", lot: "K-2231" });
+    const p = __collectExportPayloadForTest() as Record<string, unknown>;
+    expect((p.teeth as Record<string, Record<string, unknown>>)["16"].fillingProducts)
+      .toEqual({ composite: { product: "Tetric EvoCeram", lot: "K-2231" } });
+    __resetChartStateForTest();
+    __hydrateImportedChartsForTest(p);
+    expect(getFillingProduct(16, "composite")?.lot).toBe("K-2231");
+
+    __resetChartStateForTest();
+    __hydrateImportedChartsForTest({
+      version: PAYLOAD_VERSION,
+      teeth: { "16": { ...p.teeth ? {} : {}, fillingProducts: { zement: { lot: "X" }, composite: { lot: "Y" } } } },
+    });
+    expect(getFillingProducts(16)).toEqual({ composite: { lot: "Y" } });
+  });
+
+  it("FHIR: ein Device je Material, mit der Charge in lotNumber", () => {
+    __setToothStateForTest(16, MIT_KOMPOSIT as never);
+    setFillingProduct(16, "composite", { manufacturer: "Ivoclar Vivadent", product: "Tetric EvoCeram", shade: "A3", lot: "K-2231" });
+    const bundle = buildFhirBundle(__collectExportPayloadForTest() as never, { dialect: "dental-core", effectiveDateTime: "2026-08-21T09:00:00Z" } as never);
+    const geraete = (bundle.entry ?? []).map((e) => e.resource as unknown as Record<string, unknown>)
+      .filter((r) => r?.resourceType === "Device");
+    expect(geraete).toHaveLength(1);
+    expect(geraete[0].lotNumber).toBe("K-2231");
+    expect(JSON.stringify(geraete[0])).toContain("composite");
+    expect(JSON.stringify(geraete[0])).toContain("A3");
   });
 });

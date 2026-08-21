@@ -12,6 +12,7 @@
 // P2b furcation/plaque tests (__setToothStateForTest operates on the ACTIVE
 // chart; __resetChartStateForTest clears both charts + planInitialized +
 // mode before every test so module state never leaks).
+import { PAYLOAD_VERSION } from "../document";
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   setPlaqueIndex, getPlaqueIndex, setGingivalIndex, getGingivalIndex,
@@ -48,7 +49,7 @@ describe("PI/GI per-surface graded axes", () => {
   it("serializes omit-when-empty and roundtrips at version 2.16", () => {
     __setToothStateForTest(11, {});
     const empty = __collectExportPayloadForTest();
-    expect(empty.version).toBe("2.31");
+    expect(empty.version).toBe(PAYLOAD_VERSION);
     expect(Object.prototype.hasOwnProperty.call(empty.teeth["11"], "pi")).toBe(false);
     setPlaqueIndex(11, "buccal", 2);
     setGingivalIndex(11, "buccal", 1);

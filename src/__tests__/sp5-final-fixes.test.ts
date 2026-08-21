@@ -16,6 +16,7 @@
 // the exact per-tooth `hydrateState(raw, isLegacyPayloadVersion(version))` call
 // that importStatus makes for a whole payload — no live DOM/SVG grid required
 // (established seam; see payload-2-3-roundtrip.test.ts).
+import { PAYLOAD_VERSION } from "../document";
 import { describe, it, expect } from "vitest";
 import {
   __setToothStateForTest,
@@ -48,7 +49,7 @@ describe("FIX 1: legacy caries∩filling severity inference is version-gated", (
   it("export -> reimport is IDEMPOTENT: no severity is injected on the round-trip", () => {
     __setToothStateForTest(16, { ...cariedAndFilled }, "2.4");
     const payload = __collectExportPayloadForTest();
-    expect(payload.version).toBe("2.31");
+    expect(payload.version).toBe(PAYLOAD_VERSION);
     const raw16 = payload.teeth[16];
     // Serialized empty map is {} — not a stored severity.
     expect(raw16.cariesSeverity).toEqual({});

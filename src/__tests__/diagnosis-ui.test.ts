@@ -5,6 +5,7 @@
 // subtypes, apical picker, resorption picker). No full-DOM harness exists, so
 // these tests target the pure option/mapping builders and the registry
 // feature-flag read path (mirroring how prior SP tasks tested their builders).
+import { PAYLOAD_VERSION } from "../document";
 import { describe, it, expect, afterEach } from "vitest";
 import {
   pulpSelectOptionValues,
@@ -187,7 +188,7 @@ describe("SP4 Task 6: combined legacy migration (pulpInflam + rootResorption + i
     expect(s).not.toHaveProperty("rootResorption");
 
     const payload = __collectExportPayloadForTest();
-    expect(payload.version).toBe("2.31");
+    expect(payload.version).toBe(PAYLOAD_VERSION);
     const tooth14 = payload.teeth[14];
     expect(tooth14).not.toHaveProperty("pulpInflam");
     expect(tooth14).not.toHaveProperty("rootResorption");

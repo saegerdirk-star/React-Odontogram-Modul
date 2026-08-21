@@ -13,6 +13,7 @@
 // sp5-final-fixes.test.ts) — the tag is otherwise informational. Exercised via
 // `__setToothStateForTest`, the exact per-tooth `hydrateState(raw)` call
 // `importStatus` makes, without a live DOM/SVG grid.
+import { PAYLOAD_VERSION } from "../document";
 import { describe, it, expect } from "vitest";
 import { __setToothStateForTest, __getToothStateForTest, __collectExportPayloadForTest } from "../odontogram";
 import { buildFhirBundle } from "../fhir/toFhir";
@@ -34,13 +35,13 @@ describe("SP6 Task 1: payload version 2.4", () => {
     // for the dedicated version-bump test) while the historical describe/it
     // titles are left as-is, matching the existing convention (e.g. diagnosis-ui.test.ts).
     const payload = __collectExportPayloadForTest();
-    expect(payload.version).toBe("2.31");
+    expect(payload.version).toBe(PAYLOAD_VERSION);
   });
 
   it("parseFhirBundle (fromFhir) emits version 2.4, independent of the input payload's own version tag", () => {
     const bundle = buildFhirBundle({ version: "1.4", teeth: {} } as never, { dialect: "dental-core" });
     const out = parseFhirBundle(bundle);
-    expect(out.version).toBe("2.31");
+    expect(out.version).toBe(PAYLOAD_VERSION);
   });
 
   it("rootCaries/cariesSeverity/radiographicDepth survive a JSON export(2.4) -> import round-trip", () => {
@@ -52,7 +53,7 @@ describe("SP6 Task 1: payload version 2.4", () => {
       radiographicDepth: { mesial: "D2", occlusal: "E1" },
     });
     const payload = __collectExportPayloadForTest();
-    expect(payload.version).toBe("2.31");
+    expect(payload.version).toBe(PAYLOAD_VERSION);
     const raw17 = payload.teeth[17];
     expect(raw17.rootCaries).toBe("active-cavitated");
     expect(raw17.cariesSeverity).toEqual({ mesial: 5, occlusal: 2 });

@@ -9,6 +9,7 @@
 // behaviors using the real hydrate (via __renderActiveLayers, the only exported
 // seam that runs hydrateState) and FHIR-export entry points (same as
 // render-seam.test.ts / fhir.test.ts).
+import { PAYLOAD_VERSION } from "../../document";
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath, URL as NodeURL } from "node:url";
@@ -159,7 +160,7 @@ describe("restoration behavior: Task 4 — crownMaterial/bridgeUnit retirement +
     expect(pontic).not.toHaveProperty("bridgeUnit");
 
     const payload = __collectExportPayloadForTest();
-    expect(payload.version).toBe("2.31");
+    expect(payload.version).toBe(PAYLOAD_VERSION);
     for (const tooth of Object.values(payload.teeth) as Record<string, unknown>[]) {
       expect(tooth).not.toHaveProperty("crownMaterial");
       expect(tooth).not.toHaveProperty("bridgeUnit");

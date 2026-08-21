@@ -12,6 +12,7 @@
 // directly (not via <App/>) — the same precedent as perio-p2-grid.test.ts and
 // ui2-row-visibility.test.ts; the tooth-row graphic's template fetch fails
 // harmlessly in jsdom and is caught.
+import { PAYLOAD_VERSION } from "../document";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createElement } from "react";
 import { render, cleanup, act } from "@testing-library/react";
@@ -118,7 +119,7 @@ describe("odontogram-vnt AC1: authoring each status through the UI", () => {
     click(assessBtn(16, "pd", "DB")!); // unmeasurable
 
     const payload = __collectExportPayloadForTest();
-    expect(payload.version).toBe("2.31");
+    expect(payload.version).toBe(PAYLOAD_VERSION);
     expect(payload.teeth["16"].assessment).toEqual({
       "bop:MB": "assessed",
       "pd:DB": "unmeasurable",

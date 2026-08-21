@@ -1,6 +1,7 @@
 // Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
 // Created by Zoltan Dul (https://github.com/ZoliQua) 2025-2026
 
+import { PAYLOAD_VERSION } from "../document";
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   getPeriImplantPlaque, setPeriImplantPlaque, getPeriImplantBleeding, setPeriImplantBleeding,
@@ -44,7 +45,7 @@ describe("peri-implant mPI/mBI (implant-gated per-surface graded)", () => {
   it("serializes omit-when-empty and roundtrips at version 2.16", () => {
     __setToothStateForTest(11, { toothSelection: "implant" });
     const empty = __collectExportPayloadForTest();
-    expect(empty.version).toBe("2.31");
+    expect(empty.version).toBe(PAYLOAD_VERSION);
     expect(Object.prototype.hasOwnProperty.call(empty.teeth["11"], "mpi")).toBe(false);
     setPeriImplantPlaque(11, "buccal", 2);
     setPeriImplantBleeding(11, "buccal", 1);

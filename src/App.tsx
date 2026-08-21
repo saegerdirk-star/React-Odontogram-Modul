@@ -1533,6 +1533,42 @@ export default function App({
                   <div id="restProdReadout" className="hint implant-product-readout"></div>
                   <div id="restorationProductGap" className="hint implant-product-gap hidden"></div>
                 </div>
+                {/* odontogram-99h, zweiter Teil. Dirk, 21.08.2026: "Ja, beim
+                    Komposit machen wir es der Vollstaendigkeit halber mit dazu,
+                    erlauben aber, dass es fehlt." KEIN Lueckenhinweis also -
+                    das ist der Unterschied zur Laborarbeit darueber.
+
+                    Ein Block mit Materialwahl statt einem Block je Material:
+                    ein Zahn traegt fast immer ein Material, und wo er zwei
+                    traegt, waeren zwei gleich aussehende Bloecke uebereinander
+                    schwerer zu lesen als eine Auswahl. */}
+                <div id="fillingProductBlock" className="implant-product hidden">
+                  <div className="implant-product-head">
+                    <span>{t("fillingProduct.legend")}</span>
+                    <span className="hint">{t("restorationProduct.optional")}</span>
+                  </div>
+                  <div className="row">
+                    <span>{t("fillingProduct.material")}</span>
+                    <select id="fillProdMaterial"></select>
+                  </div>
+                  <div className="row">
+                    <span>{t("restorationProduct.manufacturer")}</span>
+                    <input id="fillProdManufacturer" type="text" list="restProdManufacturerList" autoComplete="off" />
+                  </div>
+                  <div className="row">
+                    <span>{t("restorationProduct.product")}</span>
+                    <input id="fillProdProduct" type="text" list="restProdProductList" autoComplete="off" />
+                  </div>
+                  <div className="row">
+                    <span>{t("restorationProduct.shade")}</span>
+                    <input id="fillProdShade" type="text" autoComplete="off" />
+                  </div>
+                  <div className="row">
+                    <span>{t("restorationProduct.udi")}</span>
+                    <input id="fillProdUdi" type="text" autoComplete="off" />
+                  </div>
+                  <div id="fillProdReadout" className="hint implant-product-readout"></div>
+                </div>
               </div>
             </section>
 

@@ -648,6 +648,8 @@ function defaultState(){
     implantProduct: null as ImplantProduct | null,
     // Bead odontogram-99h: WELCHES Produkt, nicht nur welche Klasse.
     restorationProduct: null as RestorationProduct | null,
+    // Je Fuellmaterial ein Produkt (odontogram-99h).
+    fillingProducts: new Map<string, RestorationProduct>(),
     // Bead odontogram-2vd: explicit ASSESSMENT status per periodontal axis (and
     // measurement point), for the cases the value itself cannot express —
     // assessed-normal (probed, did not bleed), unmeasurable (the point exists
@@ -5662,6 +5664,7 @@ function syncControlsFromState(state: Any){
   syncPeriImplantVisibility($("#periImplantRow"), $("#modsChecks"), state.toothSelection);
   syncImplantProduct(state);
   syncRestorationProduct(state);   // Bead odontogram-99h
+  syncFillingProduct(activeTooth);  // Bead odontogram-99h, zweiter Teil
   // SP7 Task 5 (extended by SP15 Task 3 / B4): the periapical-inflammation mod
   // is retired as an authoring control on a PRESENT tooth (apicalDx drives the
   // glyph) AND on an implant (periImplant covers implant inflammation). It
@@ -7908,6 +7911,7 @@ function serializeState(s: Any){
     // from the version field.
     ...(!isEmptyImplantProduct(s.implantProduct) ? { implantProduct: s.implantProduct } : {}),
     ...(!isEmptyRestorationProduct(s.restorationProduct) ? { restorationProduct: s.restorationProduct } : {}),
+    ...(s.fillingProducts?.size ? { fillingProducts: Object.fromEntries(s.fillingProducts) } : {}),
     // SP-perio PG-C Task 2: cejVisibility/rootConcavity are emitted ONLY when set
     // (!== "none"), like the omit-when-empty perio fields above — a default tooth
     // stays byte-identical (payload bumped to 2.14). Both round-trip via
@@ -8645,6 +8649,18 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   s.restorationProduct = raw.restorationProduct && typeof raw.restorationProduct === "object"
     ? normalizeRestorationProduct(raw.restorationProduct as RestorationProduct)
     : null;
+  // Je Material ein Satz, und jeder einzeln geradegerueckt: ein unlesbarer
+  // Eintrag faellt weg, statt die uebrigen mitzureissen.
+  s.fillingProducts = new Map<string, RestorationProduct>();
+  const rohFP = raw.fillingProducts;
+  if(rohFP && typeof rohFP === "object" && !Array.isArray(rohFP)){
+    for(const [mat, wert] of Object.entries(rohFP as Record<string, unknown>)){
+      if(!VALID_FILLING_MATERIALS.has(mat)) continue;
+      const norm = wert && typeof wert === "object"
+        ? normalizeRestorationProduct(wert as RestorationProduct) : null;
+      if(norm) s.fillingProducts.set(mat, norm);
+    }
+  }
   // Restore note
   if(typeof raw.note === "string") s.note = raw.note;
   // Restore plugin custom states (only for registered plugin IDs)
@@ -9931,6 +9947,11 @@ export function bridgeSupportGap(toothNo: number): "unsupported" | "cantilever" 
   return null;
 }
 
+/** Die vier Fuellmaterialien, die dieses Programm kennt. Eigene Konstante statt
+ *  einer Liste im Import: sie wird von der Hydration und vom Produktsetter
+ *  gelesen, und zwei Listen ueber dieselbe Frage sind eine zu viel. */
+const VALID_FILLING_MATERIALS = new Set(["amalgam", "composite", "gic", "temporary"]);
+
 // ---- odontogram-99h: WELCHES Produkt in der Restauration steckt -----------
 //
 // Die zweite Haelfte dessen, was odontogram-im1 fuer das Implantat gebaut hat.
@@ -10006,6 +10027,84 @@ export function getChartedRestorationProducts(): RestorationProduct[] {
  * waere die Warnung geraten. Genau Dirks Fall - "bei einem Eingangsbefund wird
  * sie sowieso nicht zu ermitteln sein".
  */
+/**
+ * Bead odontogram-99h, zweiter Teil: das Produkt einer DIREKTEN Fuellung.
+ *
+ * Dirk, 21.08.2026: *"Ja, beim Komposit machen wir es der Vollstaendigkeit
+ * halber mit dazu, erlauben aber, dass es fehlt."*
+ *
+ * JE MATERIAL, NICHT JE FLAECHE. Eine Spritze fuellt mehrere Flaechen, und ihre
+ * Charge gilt fuer alle davon - `mod` ist EINE Fuellung, nicht drei. Je Flaeche
+ * zu speichern hiesse, dieselbe Chargennummer dreimal zu fuehren und sie
+ * dreimal auseinanderlaufen zu lassen. Umgekehrt genuegt EIN Satz je Zahn
+ * nicht: ein Zahn kann mesial Komposit und distal Glasionomer tragen, und das
+ * sind zwei Produkte.
+ *
+ * UND ES GIBT KEINEN LUECKENHINWEIS. Das ist der Unterschied zur Laborarbeit:
+ * dort meldet `isRestorationProductGap`, was diese Praxis eingegliedert hat,
+ * ohne etwas zu notieren. Eine Fuellung ohne Produktangabe ist dagegen nie ein
+ * Mangel - "erlauben, dass es fehlt" heisst, dass niemand daran erinnert wird.
+ */
+export function getFillingProduct(toothNo: number, material: string): RestorationProduct | null {
+  const p = toothState.get(toothNo)?.fillingProducts?.get(material);
+  return p ? { ...p } : null;
+}
+
+/** Alle Produkte eines Zahns, nach Material. */
+export function getFillingProducts(toothNo: number): Record<string, RestorationProduct> {
+  return Object.fromEntries(toothState.get(toothNo)?.fillingProducts ?? []);
+}
+
+/** Wo ein Fuellungsprodukt ueberhaupt angegeben werden kann: das Material muss
+ *  an diesem Zahn auch wirklich auf einer Flaeche liegen. */
+export function fillingProductAllowed(state: Any, material: string): boolean {
+  if(!VALID_FILLING_MATERIALS.has(material)) return false;
+  // Nimmt die LEBENDE Form (Map) wie die serialisierte (Objekt): das Praedikat
+  // ist oeffentlich, und ein Aufrufer, der eine exportierte Nutzlast in der Hand
+  // hat, soll dieselbe Frage stellen duerfen wie die Bedienung.
+  const fsm = state?.fillingSurfaceMaterials;
+  if(!fsm) return false;
+  const werte = fsm instanceof Map ? [...fsm.values()] : Object.values(fsm as Record<string, string>);
+  return werte.some((mat) => mat === material);
+}
+
+/** Die Fuellmaterialien, die an diesem Zahn wirklich liegen - in fester
+ *  Reihenfolge, damit die Bedienung nicht springt. */
+export function fillingMaterialsOn(toothNo: number): string[] {
+  const fsm = toothState.get(toothNo)?.fillingSurfaceMaterials as Map<string, string> | undefined;
+  if(!fsm) return [];
+  const da = new Set(fsm.values());
+  return ["composite", "gic", "amalgam", "temporary"].filter((m) => da.has(m));
+}
+
+/** Setzen oder loeschen. Wache VOR dem DS-1-Gatter, wie ueberall hier. */
+export function setFillingProduct(toothNo: number, material: string, product: RestorationProduct | null): void {
+  const cur = toothState.get(toothNo);
+  if(!fillingProductAllowed(cur ?? defaultState(), material)) return;
+  let s = cur;
+  if(!s){ s = defaultState(); toothState.set(toothNo, s); }
+  const next = normalizeRestorationProduct(product);
+  gateToothEdit(toothNo, () => {
+    const vorher = s.fillingProducts?.get(material) ?? null;
+    if(JSON.stringify(vorher) === JSON.stringify(next)) return false;
+    if(!s.fillingProducts) s.fillingProducts = new Map<string, RestorationProduct>();
+    if(next) s.fillingProducts.set(material, next); else s.fillingProducts.delete(material);
+    notifyStateChange();
+    return true;
+  });
+}
+
+/** Jedes Fuellungsprodukt im aktiven Chart - dieselbe Quelle fuer
+ *  `knownProducts`/`knownLabs` wie bei der Laborarbeit, damit die Vorschlaege
+ *  einer Praxis EINE Liste sind und nicht zwei. */
+export function getChartedFillingProducts(): RestorationProduct[] {
+  const out: RestorationProduct[] = [];
+  for(const st of toothState.values()){
+    for(const p of (st?.fillingProducts ?? new Map<string, RestorationProduct>()).values()) out.push(p);
+  }
+  return out;
+}
+
 export function isRestorationProductGap(toothNo: number): boolean {
   if(!getBaselineExamination()) return false;
   const s = toothState.get(toothNo);
@@ -10129,6 +10228,65 @@ function commitRestorationProduct(): void {
   for(const toothNo of selectedTeeth) setRestorationProduct(Number(toothNo), product);
   const active = activeTooth ?? [...selectedTeeth][0];
   if(active != null) syncRestorationProduct(toothState.get(active));
+}
+
+/** Welches Material der Fuellungs-Produktblock gerade bearbeitet. Reiner
+ *  Bedienzustand - er gehoert keinem Zahn und wird nie gespeichert. */
+let fillProdMaterial = "";
+
+/** Bead odontogram-99h, zweiter Teil: den Produktblock der Fuellung fuellen. */
+function syncFillingProduct(toothNo: number | null): void {
+  const block = $("#fillingProductBlock");
+  if(!block) return;
+  const materialien = toothNo == null ? [] : fillingMaterialsOn(toothNo);
+  block.classList.toggle("hidden", materialien.length === 0);
+  if(materialien.length === 0 || toothNo == null){ fillProdMaterial = ""; return; }
+  if(!materialien.includes(fillProdMaterial)) fillProdMaterial = materialien[0];
+
+  const sel = $("#fillProdMaterial") as HTMLSelectElement | null;
+  if(sel){
+    const soll = materialien.join("|");
+    if(sel.dataset.built !== soll){
+      sel.innerHTML = "";
+      for(const m of materialien) sel.appendChild(el("option", { value: m, text: t("filling.option." + m) }));
+      sel.dataset.built = soll;
+    }
+    if(sel.value !== fillProdMaterial) sel.value = fillProdMaterial;
+  }
+
+  const p: RestorationProduct = getFillingProduct(toothNo, fillProdMaterial) ?? {};
+  const put = (s2: string, v: unknown) => {
+    const elx = $(s2) as HTMLInputElement | null;
+    if(!elx) return;
+    const next = v == null ? "" : String(v);
+    if(document.activeElement !== elx && elx.value !== next) elx.value = next;
+  };
+  put("#fillProdManufacturer", p.manufacturer);
+  put("#fillProdProduct", p.product);
+  put("#fillProdShade", p.shade);
+  put("#fillProdUdi", p.udi);
+
+  const bits: string[] = [];
+  if(p.lot) bits.push(`${t("restorationProduct.lot")}: ${p.lot}`);
+  if(p.expiry) bits.push(`${t("restorationProduct.expiry")}: ${p.expiry}`);
+  const readout = $("#fillProdReadout");
+  if(readout) readout.textContent = bits.join("  ·  ");
+}
+
+/** Den Block auf jeden ausgewaehlten Zahn zurueckschreiben - aber nur dort, wo
+ *  das gewaehlte Material wirklich liegt; `setFillingProduct` weist den Rest ab. */
+function commitFillingProduct(): void {
+  if(!fillProdMaterial) return;
+  const val = (sel: string) => ((($(sel) as HTMLInputElement | null)?.value) ?? "").trim();
+  const product: RestorationProduct = {
+    manufacturer: val("#fillProdManufacturer") || undefined,
+    product: val("#fillProdProduct") || undefined,
+    shade: val("#fillProdShade") || undefined,
+    udi: val("#fillProdUdi") || undefined,
+  };
+  for(const toothNo of selectedTeeth) setFillingProduct(Number(toothNo), fillProdMaterial, product);
+  const active = activeTooth ?? [...selectedTeeth][0];
+  if(active != null) syncFillingProduct(Number(active));
 }
 
 // ---- Bead odontogram-2vd: explicit assessment status --------------------
@@ -13088,6 +13246,18 @@ function wireControls(){
     elx.addEventListener("change", ()=>commitRestorationProduct());
     elx.addEventListener("blur", ()=>commitRestorationProduct());
   }
+
+  for(const id of ["#fillProdManufacturer","#fillProdProduct","#fillProdShade","#fillProdUdi"]){
+    const elx = $(id) as HTMLInputElement | null;
+    if(!elx) continue;
+    elx.addEventListener("change", ()=>commitFillingProduct());
+    elx.addEventListener("blur", ()=>commitFillingProduct());
+  }
+  const fpm = $("#fillProdMaterial") as HTMLSelectElement | null;
+  if(fpm) fpm.addEventListener("change", ()=>{
+    fillProdMaterial = fpm.value;
+    syncFillingProduct(activeTooth);
+  });
 
   buildSelect($("#periImplantSelect"), getPeriImplantOptions(), (value)=>{
     applyToSelected((s)=>{ applyPeriImplantSelection(s, value); });

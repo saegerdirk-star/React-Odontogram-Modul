@@ -9,6 +9,7 @@
 // r2a-dual-state.test.ts / r2b-plan-diff.test.ts (__setToothStateForTest
 // operates on the ACTIVE chart; __resetChartStateForTest clears both charts +
 // planInitialized + mode before every test so module state never leaks).
+import { PAYLOAD_VERSION } from "../document";
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   PERIO_SITES,
@@ -233,7 +234,7 @@ describe("payload round-trip (version 2.12)", () => {
     setPerioSite(16, "B", { pd: 6 });
 
     const payload = __collectExportPayloadForTest();
-    expect(payload.version).toBe("2.31");
+    expect(payload.version).toBe(PAYLOAD_VERSION);
     expect(payload.teeth["16"].perio).toEqual({
       pd: { MB: 5, B: 6 }, gm: { MB: 1 }, bop: ["MB"], sup: [],
     });

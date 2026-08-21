@@ -1,5 +1,45 @@
 # Changelog
 
+## 2.34.0 - 2026-08-21
+
+### Auch die Fuellung darf ihr Produkt nennen (Bead odontogram-99h, zweiter Teil)
+
+Dirk, 21.08.2026: *"Ja, beim Komposit machen wir es der Vollstaendigkeit halber
+mit dazu, erlauben aber, dass es fehlt."*
+
+- **JE MATERIAL, nicht je Flaeche.** Eine Spritze fuellt mehrere Flaechen, und
+  ihre Charge gilt fuer alle davon — `mod` ist EINE Fuellung, nicht drei. Je
+  Flaeche zu speichern hiesse, dieselbe Chargennummer dreimal zu fuehren und
+  dreimal auseinanderlaufen zu lassen. **Ein** Satz je Zahn genuegt aber auch
+  nicht: ein Zahn kann mesial Komposit und distal Glasionomer tragen, und das
+  sind zwei Produkte. Also `fillingProducts: Record<material, Produkt>`.
+- **Derselbe Satz wie bei der Laborarbeit** (`RestorationProduct`), damit es
+  nicht zwei Formen fuer dieselbe Sache gibt — nur `lab` bleibt hier leer, eine
+  direkte Fuellung entsteht am Stuhl.
+- **UND ES GIBT KEINEN LUECKENHINWEIS.** Das ist der Unterschied zur
+  Laborarbeit: dort meldet `isRestorationProductGap`, was diese Praxis
+  eingegliedert hat, ohne dass etwas notiert ist. Eine Fuellung ohne
+  Produktangabe ist dagegen nie ein Mangel — *"erlauben, dass es fehlt"* heisst,
+  dass niemand daran erinnert wird. Es gibt schlicht kein Praedikat, das hier
+  etwas melden koennte.
+- **Die Vorschlagsliste ist EINE**: `knownProducts`/`knownLabs` lesen
+  Laborarbeit und Fuellung aus demselben Chart, eine Praxis hat eine Liste und
+  nicht zwei.
+- FHIR: ein `Device` je Material, `type` das Fuellmaterial mit demselben lokalen
+  Code wie im Befund, die Charge in `lotNumber`.
+- Ein Block mit Materialwahl statt einem Block je Material: ein Zahn traegt fast
+  immer eines, und wo er zwei traegt, waeren zwei gleich aussehende Bloecke
+  uebereinander schwerer zu lesen als eine Auswahl.
+- Nutzlast **2.31 → 2.32**, omit-when-empty, toleranter Import (ein fremdes
+  Material faellt weg, ohne die uebrigen mitzureissen). Kein `svgLayer` →
+  Fingerabdruecke byte-identisch.
+
+**Nebenbei aufgeraeumt:** neunzehn Testdateien banden die Nutzlastversion als
+Zeichenkette und mussten bei jeder Anhebung von Hand nachgezogen werden. Sie
+lesen jetzt `PAYLOAD_VERSION`. Was eine solche Zusicherung sagen soll, ist "der
+Export traegt die aktuelle Version" — und genau das sagt sie jetzt, statt eine
+Zahl zu wiederholen, die anderswo steht.
+
 ## 2.33.0 - 2026-08-21
 
 ### WELCHES Produkt in der Restauration steckt (Bead odontogram-99h)

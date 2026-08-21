@@ -8,6 +8,7 @@
 // authoring surface changes nothing about hydration/import tolerance, which
 // deliberately stays permissive (the matrix is enforced at the EDIT boundary,
 // never at the document boundary).
+import { PAYLOAD_VERSION } from "../document";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createElement } from "react";
 import { render, cleanup, act } from "@testing-library/react";
@@ -166,7 +167,7 @@ describe("odontogram-vnt AC2: hydration/import tolerance is unchanged", () => {
     expect(getToothAssessments(16)).toEqual({ "pd:MB": "unmeasurable" });
 
     const payload = __collectExportPayloadForTest();
-    expect(payload.version).toBe("2.31");
+    expect(payload.version).toBe(PAYLOAD_VERSION);
     expect(payload.teeth["21"].assessment).toEqual({ "pd:MB": "unmeasurable" });
   });
 });

@@ -9,6 +9,7 @@
 // beiden ueberschneiden sich nicht, und genau das ist die Bedingung, unter der
 // zwei Werte fuer eine Frage nicht auseinanderlaufen.
 
+import { PAYLOAD_VERSION } from "../document";
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   eruptionAllowed, setEruptionStage, getEruptionStage, getPlanChanges, setChartMode,
@@ -81,7 +82,7 @@ describe("Nutzlast", () => {
     __setToothStateForTest(14, {});
     setEruptionStage(14, "half-crown");
     const p = __collectExportPayloadForTest() as Record<string, unknown>;
-    expect(p.version).toBe("2.31");
+    expect(p.version).toBe(PAYLOAD_VERSION);
     expect((p.teeth as Record<string, Record<string, unknown>>)["14"].eruptionStage).toBe("half-crown");
     __resetChartStateForTest();
     __hydrateImportedChartsForTest(p);

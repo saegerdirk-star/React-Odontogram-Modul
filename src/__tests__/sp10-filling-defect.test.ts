@@ -1,6 +1,7 @@
 // Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
 // Created by Zoltan Dul (https://github.com/ZoliQua) 2025-2026
 
+import { PAYLOAD_VERSION } from "../document";
 import { describe, it, expect, beforeEach } from "vitest";
 import { __setToothStateForTest, __getToothStateForTest, __collectExportPayloadForTest, VALID_FILLING_DEFECT, applyFillingDefect } from "../odontogram";
 import { buildFhirBundle } from "../fhir/toFhir";
@@ -21,7 +22,7 @@ describe("SP10 Task 1: fillingDefect field + round-trip", () => {
   it("JSON export stamps 2.7 and round-trips fillingDefect", () => {
     __setToothStateForTest(16, { toothSelection: "tooth-base", fillingSurfaceMaterials: { occlusal: "composite" }, fillingDefect: { occlusal: "fracture" } });
     const payload = __collectExportPayloadForTest();
-    expect(payload.version).toBe("2.31");
+    expect(payload.version).toBe(PAYLOAD_VERSION);
     expect(payload.teeth[16].fillingDefect).toEqual({ occlusal: "fracture" });
   });
   it("hydrate reads fillingDefect back, drops invalid", () => {

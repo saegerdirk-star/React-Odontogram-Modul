@@ -7,6 +7,7 @@
 // the previous examination — while a legacy document (no `examination` key at
 // all) still hydrates successfully.
 
+import { PAYLOAD_VERSION } from "../document";
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   getExaminationContext,
@@ -69,7 +70,7 @@ describe("examination context", () => {
 
   it("serializes omit-when-empty under the top-level `examination` key at payload 2.21", () => {
     const empty = __collectExportPayloadForTest();
-    expect(empty.version).toBe("2.31");
+    expect(empty.version).toBe(PAYLOAD_VERSION);
     expect(Object.prototype.hasOwnProperty.call(empty, "examination")).toBe(false);
     setExaminationContext({ id: "exam-1", effectiveDateTime: "2026-03-01" });
     const p = __collectExportPayloadForTest();

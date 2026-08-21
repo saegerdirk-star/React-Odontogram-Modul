@@ -27,6 +27,7 @@
 // scope for this task, so the seam targets exactly the new status-primary +
 // conditional-plan-restore logic this task introduces, same as every other
 // module-state test file avoiding importStatus() itself.
+import { PAYLOAD_VERSION } from "../document";
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   setChartMode,
@@ -52,7 +53,7 @@ describe("collectExportPayload — version 2.12, status-primary, conditional pla
     expect(getChartMode()).toBe("status");
 
     const payload = __collectExportPayloadForTest();
-    expect(payload.version).toBe("2.31");
+    expect(payload.version).toBe(PAYLOAD_VERSION);
     expect(payload.teeth[16].restorationType).toBe("crown");
     expect(payload).not.toHaveProperty("plan");
   });
@@ -63,7 +64,7 @@ describe("collectExportPayload — version 2.12, status-primary, conditional pla
     setChartMode("status");
 
     const payload = __collectExportPayloadForTest();
-    expect(payload.version).toBe("2.31");
+    expect(payload.version).toBe(PAYLOAD_VERSION);
     expect(payload).not.toHaveProperty("plan");
   });
 
@@ -74,7 +75,7 @@ describe("collectExportPayload — version 2.12, status-primary, conditional pla
     setChartMode("status");
 
     const payload = __collectExportPayloadForTest();
-    expect(payload.version).toBe("2.31");
+    expect(payload.version).toBe(PAYLOAD_VERSION);
     expect(payload.teeth[16].restorationType).toBe("crown");
     expect(payload.plan).toBeDefined();
     expect(payload.plan[16].restorationType).toBe("inlay");
@@ -104,8 +105,8 @@ describe("getStatusChart / getPlanChart / setPlanChart — per-state API", () =>
 
     const statusPayload = getStatusChart();
     const planPayload = getPlanChart();
-    expect(statusPayload.version).toBe("2.31");
-    expect(planPayload.version).toBe("2.31");
+    expect(statusPayload.version).toBe(PAYLOAD_VERSION);
+    expect(planPayload.version).toBe(PAYLOAD_VERSION);
     expect(statusPayload.teeth[11].discoloration).toBe("tetracycline");
     expect(planPayload.teeth[11].discoloration).toBe("fluorosis");
     // getStatusChart() is exactly the status-primary export (same shape/rules).
