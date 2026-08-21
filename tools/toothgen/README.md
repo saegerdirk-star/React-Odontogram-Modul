@@ -190,6 +190,29 @@ Koordinaten um bis zu 0,02 Einheiten (gemessen: 208 Zahlen an 26 Dateien).
 Genau deshalb sind die Flaechenanteile mit einer Toleranz von drei Prozentpunkten
 eingefroren und nicht auf die Stelle.
 
+## Der zweite Zweig im Spender
+
+Die Kauflächen-Vorlagen der Frontzähne kommen vom oberen ersten Prämolaren, und
+der bringt **zwei** Zeichnungen mit: `tooth-base` mit `background-cusp` und
+`fissure`, und daneben einen Milchzahn-Zweig `milktooth-base` mit
+`background-cusp1` und `fissure1`. Welchen man sieht, entscheidet der Zustand
+des Zahns.
+
+Bis zum 21.08.2026 wurde Dirks Zeichnung nur in den ERSTEN eingesetzt; der
+zweite lief bloß durch das Verformungsfeld mit. An einem bleibenden Frontzahn
+fällt das nicht auf, weil sein Milchzahn-Zweig totes Gewicht ist — seit dem
+17.08.2026 hat jeder Milchzahn seine eigene Vorlage. An 51, 52, 53, 81, 82, 83
+ist dieser Zweig aber genau das, was gezeichnet wird, und dort stand deshalb
+das Fissurenmuster eines Prämolaren auf einem Schneidezahn. Dirk hat es im
+Milchgebiss gesehen.
+
+Der Umriss war ebenso betroffen und kam gemessen rund 15 % zu breit heraus (an
+`11_occl` 24,46 gegen 21,33 Einheiten), weil er als andere Form startet.
+`redraw_occl.py` setzt jetzt beides in beide Zweige ein.
+
+Die Milchmolaren waren nie betroffen: sie nehmen den Molaren als Spender, und
+der bringt keinen Milchzahn-Zweig mit.
+
 ## Fallstricke
 
 - **`npm run toothgen:build` baut die Kauflächen NICHT mit.** Sie haben ein

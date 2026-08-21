@@ -1,5 +1,43 @@
 # Changelog
 
+## 2.28.2 - 2026-08-21
+
+### Milchfrontzaehne trugen in der Draufsicht das Relief eines Praemolaren
+
+Dirk schaltet auf das Milchgebiss und zeigt, was er sieht: die Draufsichten der
+Milchschneidezaehne und -eckzaehne mit einem verzweigten Fissurenmuster, wie es
+ein Praemolar hat. Nachgemessen war es genau das.
+
+- **Die Ursache ist ein ZWEITER Zweig im Spender.** Die Kauflaechenvorlagen der
+  Frontzaehne kommen vom oberen ersten Praemolaren, und der bringt neben
+  `tooth-base`/`fissure` auch einen Milchzahn-Zweig mit: `milktooth-base` mit
+  `background-cusp1` und `fissure1`. Eingesetzt wurde Dirks Zeichnung nur in
+  den ERSTEN. Der zweite wurde bloss mitgewarpt — und genau er ist es, den ein
+  MILCHZAHN zeichnet.
+- Bei den bleibenden Frontzaehnen faellt das nicht auf: dort ist der
+  Milchzahn-Zweig totes Gewicht, weil ein Milchzahn seit dem 17.08.2026 seine
+  eigene Vorlage hat. Bei 51, 52, 53, 81, 82, 83 ist er das Bild.
+- **Nicht nur die Fissuren, auch der Umriss.** Gemessen kam
+  `background-cusp1` durchweg rund 15 % zu breit heraus (an `11_occl` 24,46
+  gegen 21,33 Einheiten), weil er als andere Form startet und vom Feld nur
+  mitgezogen wird. Jetzt wird er EINGESETZT — dieselbe Regel wie ueberall in
+  dieser Kette: *was gezeichnet ist, wird eingesetzt; gewarpt wird nur, was
+  niemand zeichnet.*
+- Die Milchmolaren waren nie betroffen: sie nehmen den Molaren als Spender, und
+  der bringt gar keinen Milchzahn-Zweig mit.
+- Nur `d`-Attribute aendern sich, keine id, keine Deckung, keine Klasse —
+  **Parity byte-gleich**, `toothgen:verify` gruen.
+
+### Ein Test hatte eine zu knappe Frist, nicht ein Problem
+
+`shorthand-tastatur > Totalprothese` fiel unter der Last des vollen Laufs mit
+42,4 s gegen eine Frist von 40 s. Nachgeprueft am Stand OHNE die Aenderung
+dieses Tages faellt er genauso — die Grenze war zu knapp gesetzt, nicht der
+Test langsamer geworden. Er klickt achtundzwanzig Kacheln einzeln durch `act()`;
+90 s. Und sein Nachbar prueft die "verstanden, aber ohne Achse"-Meldung jetzt an
+`z` statt an `D`: `D` hat seit 2.28.0 ein Ziel.
+
+
 ## 2.28.1 - 2026-08-21
 
 ### Die Durchbruchszeile stand in der falschen Karte

@@ -157,19 +157,26 @@ describe("Kurzschrift auf der Tastatur", () => {
       expect(zahn(t).prosthesis, `${t}`).toBe("removable-full");
       expect(zahn(t).toothSelection, `${t}`).toBe("none");
     }
-  }, 40000);
+    // 90 Sekunden, nicht 40. Der Test klickt achtundzwanzig Kacheln EINZELN
+    // durch `act()` und rendert danach das ganze Raster neu; allein braucht er
+    // rund 42 Sekunden, unter der Last des vollen Laufs mehr. Gemessen am
+    // 21.08.2026 faellt er bei 40 Sekunden auch OHNE jede Aenderung - die
+    // Grenze war zu knapp gesetzt, nicht der Test zu langsam geworden.
+  }, 90000);
 
   it("sagt es, wenn eine Taste nichts bewirkt hat", async () => {
     await raster();
     await act(async () => { kachel(16).dispatchEvent(new MouseEvent("click", { bubbles: true })); });
     kachel(16).focus();
-    // D ist das Durchbruchstadium - verstanden, aber noch ohne Achse
-    // (odontogram-0n8). Bis zum 20.08.2026 stand hier `p` fuer die Perkussion;
-    // die hat seit odontogram-fu1 ein Ziel und taugt als Beispiel nicht mehr.
-    await tippe("D");
+    // `z` ist charlys zervikale Flaeche - verstanden, aber unser Flaechensatz
+    // hat sie nicht. Vorher stand hier `p` (bis odontogram-fu1) und dann `D`
+    // (bis odontogram-0n8); beide haben inzwischen ein Ziel und taugen als
+    // Beispiel nicht mehr. `z` und `R` sind die letzten zwei, und sie tragen
+    // absichtlich keinen Bead.
+    await tippe("z");
     await taste("Enter");
     expect(anzeige()?.classList.contains("notice")).toBe(true);
-    expect(anzeige()?.textContent ?? "").toContain("D");
+    expect(anzeige()?.textContent ?? "").toContain("z");
     expect(anzeige()?.classList.contains("empty")).toBe(false);
   }, 30000);
 

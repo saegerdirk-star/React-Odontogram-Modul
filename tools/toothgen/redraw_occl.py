@@ -159,6 +159,20 @@ def umzeichnen(zahn: str, spender: str, ziel: str | None = None) -> str:
         return lambda x, y: feld(x, y)
 
     out = redraw_apply.verforme_je_element(txt, feld_fuer)
+    # Der Umriss des MILCHZAHN-Zweiges, aus demselben Grund wie `fissure1`
+    # unten. Er ist eine ZWEITE Kontur im Spender und wird vom Feld nur
+    # mitgezogen: gemessen kam er dabei durchweg rund 15 % zu breit heraus
+    # (an 11_occl 24,46 gegen 21,33 Einheiten), weil er als andere Form
+    # startet. Eingesetzt statt gewarpt - dieselbe Regel wie ueberall hier.
+    # Nicht jedes Kauflaechen-Template hat den Zweig: die Milchmolaren nehmen
+    # den Molaren als Spender, und der bringt keinen mit.
+    try:
+        milch_id = redraw_apply.umriss_id(out, "milktooth-base")
+    except ValueError:
+        milch_id = ""
+    if milch_id:
+        out = re.sub(r'(<path[^>]*\sid="' + re.escape(milch_id) + r'"[^>]*\sd=")[^"]+(")',
+                     lambda m: m.group(1) + umriss_d + m.group(2), out, count=1)
     fis = offene_pfade(ebene)
     if dr:
         fis = [svgpath.warp_path_d(d, dr) for d in fis]
@@ -227,7 +241,13 @@ def setze_fissuren(txt: str, ds: list[str]) -> str:
     # mehr zu tun. Dirk, 18.08.2026, beim Anblick des Ergebnisses: "was machst
     # du mit meinen Fissuren?"
     zusammen = " ".join(svgpath.warp_path_d(d, lambda x, y: (x, y)) for d in ds)
-    for gid in ("fissure", "fissure-sealing-occlusal"):
+    # `fissure1` gehoert dem MILCHZAHN-Zweig, und der ist an den
+    # Frontzahn-Draufsichten kein totes Gewicht: 51, 52, 53, 81, 82, 83 werden
+    # als Milchzahn gezeichnet, also ist er genau das, was man sieht. Bis zum
+    # 21.08.2026 stand er nicht in dieser Liste - die Milchfrontzaehne trugen
+    # damit das gewarpte Praemolaren-Relief des Spenders statt Dirks
+    # Schneidekante. Dirk hat es im Milchgebiss gesehen.
+    for gid in ("fissure", "fissure-sealing-occlusal", "fissure1"):
         m = re.search(rf'(<g[^>]*\sid="{gid}"[^>]*>)(.*?)(</g>)', txt, re.S)
         if not m:
             continue
