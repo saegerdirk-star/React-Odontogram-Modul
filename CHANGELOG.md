@@ -1,5 +1,36 @@
 # Changelog
 
+## 2.34.1 - 2026-08-21
+
+### Was die Form der Krone IST, kommt aus der Krone (Bead odontogram-7xl)
+
+Der Rest dessen, was beim Extraktionskreuz aufgefallen war. Drei Ebenen stellen
+die Krone dar und wurden trotzdem gewarpt:
+
+- **`crown-needed-shape`** — die rote Flaeche ueber der Krone. Sie stand an 46
+  bis zu 9,1 Einheiten neben dem Zahn und lief ueber das Zahnfleisch. Jetzt IST
+  sie die abgeleitete Krone.
+- **`crown-replace-shape`** — dieselbe Form als blosse Linie. Sie war die letzte
+  Ebene, die nach der Reparatur des Verformungsfelds noch an neun Vorlagen bis
+  5,9 Einheiten neben dem Zahn stand. Jetzt umfaehrt sie die Krone.
+- **`crown-leakage`** — der Randbefund. Gewarpt lag er ueberall anders: an 16
+  ueber die Zervikallinie gelegt und 12,5 Einheiten hoch, an 41 zehn Einheiten
+  davon entfernt und nur 3 hoch, an 46 fast ganz in der Krone. Ein Randbefund
+  gehoert an den Rand, und der ist seit `kronen.py` eine bekannte Gerade — er
+  wird jetzt als BALKEN darauf gezeichnet, etwas mehr nach koronal, denn eine
+  Undichtigkeit laeuft an der Krone entlang und nicht in die Wurzel. Dieselbe
+  Ueberlegung wie bei `halsbaender.py`.
+
+Farben, Strichstaerken und der Ebenenbestand bleiben unangetastet — ersetzt wird
+nur das `d`. `verify_redraw.py` gruen, Fingerabdruecke byte-identisch.
+
+**Was uebrig bleibt** und in odontogram-7xl steht: die neunzehn eingefrorenen
+Ueberstaende sind jetzt AUSNAHMSLOS Ebenen am PULPAFELD — Stifte,
+Wurzelfuellungen, Pulpitis, die Wurzelspitzenresektion. Das ist ein anderes Feld
+und eine andere Frage. Und die Lockerungsgrade sehen weiterhin wie eine
+Stachelreihe neben der Wurzel aus; ob das die beabsichtigte Darstellung ist,
+muss Dirk am Bild sagen.
+
 ## 2.34.0 - 2026-08-21
 
 ### Auch die Fuellung darf ihr Produkt nennen (Bead odontogram-99h, zweiter Teil)

@@ -63,6 +63,31 @@ VOLLE_KRONE = tuple(f"{m}-crown" for m in MATERIALIEN) + (
     "prosthesis-implant-crown",
 )
 
+# WAS SONST NOCH DIE FORM DER KRONE IST (Bead odontogram-7xl).
+#
+# `crown-needed-shape` und `crown-replace-shape` sind Kronen-SILHOUETTEN - die
+# eine als rote Flaeche, die andere als blosse Linie. Sie stellen dieselbe Form
+# dar wie die Kappe und wurden trotzdem gewarpt: an 46 stand die eine bis zu
+# 9,1 Einheiten neben dem Zahn, die andere an neun Vorlagen bis 5,9. Sie kommen
+# jetzt aus derselben Ableitung. Ihre Farben und ihre Strichstaerke bleiben, was
+# sie waren - nur das `d` wird ersetzt.
+SILHOUETTEN = ("crown-needed-shape", "crown-replace-shape")
+
+# Die Kronenrand-Undichtigkeit sitzt AM RAND, und der Rand ist der Schnitt.
+#
+# Gewarpt lag sie ueberall anders: an 16 ueber die Zervikallinie gelegt (12,5
+# Einheiten hoch), an 41 zehn Einheiten davon entfernt und nur 3 hoch, an 46
+# fast ganz in der Krone. Ein Randbefund gehoert an den Rand, und der ist seit
+# `kronen.py` eine bekannte Gerade. Sie wird deshalb als BALKEN darauf gezeichnet
+# - dieselbe Ueberlegung wie bei `halsbaender.py`, das die Halsbaender rechnet
+# statt sie zu verformen.
+LECK = "crown-leakage"
+# Wie hoch der Balken ist und wie er auf der Linie sitzt: etwas mehr nach
+# koronal, denn eine Undichtigkeit zeigt sich am Kronenrand und laeuft an der
+# Krone entlang, nicht in die Wurzel.
+LECK_APIKAL = 0.8
+LECK_KORONAL = 2.6
+
 # Die INNERE Teleskopkrone: dieselbe Form, nach innen versetzt - der doppelte
 # Umriss IST die Aussage dieser Restauration. Kein echter Parallelversatz,
 # sondern eine Streckung um den Mittelpunkt der Zervikallinie: damit bleibt der
@@ -203,6 +228,31 @@ def krone(zahn: str) -> tuple[str, str] | None:
     return als_d(k, y), als_d(k, y, s)
 
 
+def leck_d(zahn: str, k) -> str | None:
+    """Der Balken am Kronenrand, in den Grenzen der Krone an dieser Hoehe."""
+    if zahn.endswith("_occl"):
+        return None                      # eine Kautafel hat keinen Rand in dieser Ansicht
+    txt = (TEMPLATES / f"{zahn}.svg").read_text()
+    d = _d_von(txt, "tooth-base")
+    if not d:
+        return None
+    pts = polygon(d)
+    y = zervikal_y(pts, int(zahn))
+    if y is None or not k:
+        return None
+    xs = [p[0] for p in k]
+    x0, x1 = min(xs), max(xs)
+    unten, oben = y - LECK_APIKAL, y + LECK_KORONAL
+    return (f"M{_f(x0)},{_f(unten)}L{_f(x1)},{_f(unten)}"
+            f"L{_f(x1)},{_f(oben)}L{_f(x0)},{_f(oben)}Z")
+
+
+def txt_kette(zahn: str) -> str:
+    """Der Vorlagentext - eigene Funktion nur, damit `einsetzen` ihn nicht
+    zweimal von der Platte holt."""
+    return (TEMPLATES / f"{zahn}.svg").read_text()
+
+
 def einsetzen(zahn: str) -> dict[str, int]:
     """Die abgeleitete Krone in alle Kronenebenen einer Vorlage schreiben."""
     formen = krone(zahn)
@@ -211,8 +261,19 @@ def einsetzen(zahn: str) -> dict[str, int]:
     voll, innen = formen
     datei = TEMPLATES / f"{zahn}.svg"
     txt = datei.read_text()
+    # Bead odontogram-7xl: die Silhouetten und der Randbalken kommen aus
+    # derselben Ableitung.
+    paare = [(i, voll) for i in VOLLE_KRONE] + [(TELESKOP_INNEN, innen)]
+    paare += [(i, voll) for i in SILHOUETTEN]
+    if not zahn.endswith("_occl"):
+        pts = polygon(_d_von(txt_kette(zahn), "tooth-base") or "M0 0")
+        y = zervikal_y(pts, int(zahn))
+        kette_ = kette(pts, y) if y is not None else None
+        balken = leck_d(zahn, kette_)
+        if balken:
+            paare.append((LECK, balken))
     n = 0
-    for ident, neu in [(i, voll) for i in VOLLE_KRONE] + [(TELESKOP_INNEN, innen)]:
+    for ident, neu in paare:
         m = re.search(r'<path\b(?:(?!/>).)*?id="' + re.escape(ident) + r'"(?:(?!/>).)*?/>',
                       txt, re.S)
         if not m:
