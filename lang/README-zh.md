@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.29.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.29.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -800,7 +800,7 @@ npm run docs           # 在 docs/ 目录生成 TypeDoc 文档
 ### 🖨️ 导出
 除了牙位图自身的状态 JSON / FHIR / PNG / JPG / SVG 导出外，**牙周图表**还拥有自己的一套导出路径：
 - **牙周图 SVG/PNG/JPG：** `exportPerioSvg()` / `exportPerioImage("png"|"jpg")` 将完整的牙周图表（牙齿图形 + 数值行 + 2017 年分类结果）渲染为一份独立的矢量 SVG（`buildPerioSvg()`），不依赖已挂载的 `PerioChart` DOM。只要 `hasAnyPerioData()` 为 false（空白图表没有可导出的牙周数据），这三个导出菜单项就会被禁用。
-- **PDF 报告：** 导出菜单中的“PDF report…”（PDF 报告……）项会先打开 `ExportOptionsModal`——一个设置弹窗（患者姓名 + 出生日期 + 检查日期字段，直接绑定到病例元数据，检查日期默认为当天；区块复选框：患者数据、牙位图、牙位图说明、个别备注——未有任何牙齿记录备注时禁用——牙周状态、牙周描述），然后再调用 `exportPdf(opts)`。身份信息字段留空时会回退为占位符（“John Doe” / “1980-01-01”），确保导出始终成功。该 PDF 采用 jsPDF 原生方式组装——矢量文字通过 `.text()`，栅格化的牙齿/牙周图表图像通过 `.addImage()`——**不依赖 svg2pdf.js**。当没有任何牙齿记录备注时，“个别备注”区块会自动跳过；只要 `hasAnyPerioData()` 为 false，两个牙周区块也会自动跳过，二者均与弹窗中的复选框状态无关。
+- **PDF 报告：** 导出菜单中的“PDF report…”（PDF 报告……）项会先打开 `ExportOptionsModal`——一个设置弹窗（患者姓名 + 出生日期 + 检查日期字段，直接绑定到病例元数据，检查日期默认为当天；区块复选框：患者数据、牙位图、牙位图说明、个别备注——未有任何牙齿记录备注时禁用——牙周状态、牙周描述），然后再调用 `exportPdf(opts)`。身份信息字段留空时打印为**“未填写”**，绝不填入编造的值（`odontogram-in2`）：一份*看起来*完整、却带着编造出生日期的报告不是不完整的记录，而是错误的记录——拿到这张纸的人无从判断这个日期并非来自患者。该行保留而不是删除：缺行读作“这里什么都没有”，有标签的空行读作“未记录”。**检查日期**是唯一的例外，仍然回退为今天——报告是今天写的，这并不是对患者的断言。该 PDF 采用 jsPDF 原生方式组装——矢量文字通过 `.text()`，栅格化的牙齿/牙周图表图像通过 `.addImage()`——**不依赖 svg2pdf.js**。当没有任何牙齿记录备注时，“个别备注”区块会自动跳过；只要 `hasAnyPerioData()` 为 false，两个牙周区块也会自动跳过，二者均与弹窗中的复选框状态无关。
 - **mPI/mBI 种植体限定：** 种植体周 Mombelli 指数（mPI/mBI）仅在包含至少一颗种植牙的牙弓中作为行渲染——无论是在实时牙周图表还是 SVG/PDF 导出中均如此。
 - 患者姓名、出生日期与检查日期仅为图表身份标识元数据（数据版本 `2.20`，附加字段）——**不**属于 FHIR 导出的一部分。
 

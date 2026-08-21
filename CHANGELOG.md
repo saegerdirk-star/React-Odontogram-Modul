@@ -1,5 +1,32 @@
 # Changelog
 
+## 2.29.1 - 2026-08-21
+
+### Der PDF-Bericht erfindet kein Geburtsdatum mehr (Bead odontogram-in2)
+
+`assemblePdf` setzte bei leeren Identitaetsfeldern Ersatzwerte ein und DRUCKTE
+sie: `"John Doe"` und `"1980-01-01"`. Der Kommentar daneben nannte den Grund —
+der Bericht solle "always read like a complete document".
+
+- **Genau das ist der Fehler.** Ein Bericht, der wie ein vollstaendiges Dokument
+  aussieht und ein erfundenes Geburtsdatum traegt, ist kein unvollstaendiger
+  Befund, sondern ein falscher: wer ihn in die Hand bekommt, hat keine
+  Moeglichkeit zu erkennen, dass das Datum nicht vom Patienten stammt. Bei
+  `"John Doe"` faellt es noch auf, bei einem Datum nicht.
+- Ein leeres Feld druckt jetzt `pdf.field.notSpecified` — "nicht angegeben" in
+  der Sprache des Berichts. Der Schluessel lag in allen zwoelf Sprachen bereits
+  vor und war nie benutzt worden.
+- **Die Zeile bleibt stehen**, statt wegzufallen: eine fehlende Zeile liest sich
+  als "hier ist nichts", eine beschriftete leere als "nicht erhoben".
+- **Das UNTERSUCHUNGSDATUM ist die Ausnahme** und faellt weiterhin auf heute
+  zurueck. Ein Bericht wird heute erstellt; das ist keine Erfindung ueber den
+  Patienten.
+- Das Geburtsdatum ist seit `odontogram-iqj` ausserdem kein reines Berichtsfeld
+  mehr — der Gebissvorschlag liest es. Ein Ersatzwert von 1980 waere dort ein
+  sechsundvierzigjaehriges Kind gewesen.
+- Der Export gelingt unveraendert; Nutzlast, FHIR-Bundle und die
+  SVG-Fingerabdruecke sind unberuehrt.
+
 ## 2.29.0 - 2026-08-21
 
 ### Die Dentition aus dem Alter VORSCHLAGEN (Bead odontogram-iqj)

@@ -8,6 +8,7 @@
 // sections get added (headings/images/save), never pixel output.
 import { describe, it, expect } from "vitest";
 import { assemblePdf } from "../perioPdf";
+import { t } from "../i18n/useI18n";
 
 function fakeDoc() {
   const calls: string[] = [];
@@ -84,11 +85,32 @@ describe("UI-3b T6 / 2.2.1: assemblePdf section gating", () => {
     expect(doc.calls.some((c:string)=>c.includes("1980-05-05"))).toBe(true);
   });
 
-  it("2.2.1: empty identity fields fall back to placeholder name/DOB", () => {
+  it("odontogram-in2: ein leeres Identitaetsfeld druckt 'nicht angegeben', KEINEN erfundenen Wert", () => {
+    // Ein Bericht, der wie ein vollstaendiges Dokument aussieht und ein
+    // erfundenes Geburtsdatum traegt, ist kein unvollstaendiger Befund,
+    // sondern ein falscher: dem Blatt ist nicht anzusehen, dass das Datum
+    // nicht vom Patienten stammt. Beim Namen faellt es auf, beim Datum nicht.
     const doc = fakeDoc();
     assemblePdf({ ...ALL_ON, perioStatus: false, perioDescription: false },
       { ...baseData, caseMeta: { patientName: null, patientDob: null, examDate: null } as any }, () => doc);
-    expect(doc.calls.some((c:string)=>c.startsWith("text:") && c.includes("John Doe"))).toBe(true);
-    expect(doc.calls.some((c:string)=>c.includes("1980-01-01"))).toBe(true);
+    const zeilen = doc.calls.filter((c:string)=>c.startsWith("text:"));
+    expect(zeilen.some((c:string)=>c.includes("John Doe"))).toBe(false);
+    expect(zeilen.some((c:string)=>c.includes("1980-01-01"))).toBe(false);
+    expect(zeilen.some((c:string)=>c.includes("1980"))).toBe(false);
+    // Die Zeile bleibt stehen - eine fehlende Zeile liest sich als "hier ist
+    // nichts", eine beschriftete leere als "nicht erhoben".
+    const nichts = t("pdf.field.notSpecified");
+    expect(zeilen.filter((c:string)=>c.includes(nichts)).length).toBe(2);
+    expect(zeilen.some((c:string)=>c.startsWith(`text:${t("pdf.field.patientDob")}: ${nichts}`))).toBe(true);
+  });
+
+  it("odontogram-in2: das UNTERSUCHUNGSDATUM darf auf heute fallen", () => {
+    // Das ist keine Erfindung ueber den Patienten - ein Bericht wird heute
+    // erstellt.
+    const doc = fakeDoc();
+    assemblePdf({ ...ALL_ON, perioStatus: false, perioDescription: false },
+      { ...baseData, caseMeta: { patientName: null, patientDob: null, examDate: null } as any }, () => doc);
+    const heute = new Date().toISOString().slice(0, 10);
+    expect(doc.calls.some((c:string)=>c.startsWith(`text:${t("pdf.field.examDate")}: ${heute}`))).toBe(true);
   });
 });

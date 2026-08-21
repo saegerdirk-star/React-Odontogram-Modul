@@ -151,8 +151,9 @@ function todayIso(): string {
  * no I/O, no rasterization; `docFactory` defaults to a real `new jsPDF()`
  * but tests always inject a fake (see the jsdom note above).
  *
- * Section order: (1) header (patient name + DOB + exam date, with
- * placeholder fallbacks) when `opts.patientData`; (2) odontogram — chart image
+ * Section order: (1) header (patient name + DOB + exam date; an empty field
+ * prints as "not specified", never as an invented value — odontogram-in2) when
+ * `opts.patientData`; (2) odontogram — chart image
  * (`opts.odontogramChart`) and/or summary prose (`opts.odontogramDescription`),
  * independently selectable under one heading; (3) per-tooth notes when
  * `opts.individualNotes` AND `data.individualNotesText` is non-empty; (4) perio
@@ -221,11 +222,17 @@ export function assemblePdf(
 
   if(opts.patientData){
     heading(t("pdf.section.patientData"));
-    // 2.2.1: export must succeed even with empty identity fields — fall back to
-    // placeholder name/DOB (and today's date) rather than a "not specified"
-    // note, so the report always reads like a complete document.
-    const name = data.caseMeta.patientName ?? "John Doe";
-    const dob = data.caseMeta.patientDob ?? "1980-01-01";
+    // odontogram-in2: an empty identity field prints as "not specified", NEVER
+    // as an invented value. A report that LOOKS complete and carries a
+    // fabricated date of birth is not an incomplete finding, it is a wrong one
+    // — nobody holding the sheet can tell that the date did not come from the
+    // patient. The line stays (rather than being dropped) because a missing
+    // line reads as "nothing here" while a labelled empty one reads as "not
+    // recorded". The EXAM date is the one exception and still falls back to
+    // today: a report is written today, and that is no claim about the patient.
+    const nichts = t("pdf.field.notSpecified");
+    const name = data.caseMeta.patientName ?? nichts;
+    const dob = data.caseMeta.patientDob ?? nichts;
     const examDate = data.caseMeta.examDate ?? todayIso();
     paragraph(`${t("pdf.field.patientName")}: ${name}`);
     paragraph(`${t("pdf.field.patientDob")}: ${dob}`);
