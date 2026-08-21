@@ -4,6 +4,7 @@
 // Dirk Saeger, Malte Sussdorff 2026
 
 import type { ImplantProduct } from "./implantProduct";
+import type { RestorationProduct } from "./restorationProduct";
 
 /** Per-tooth record as produced by the engine's serializeState(). */
 export interface ToothRecord {
@@ -131,6 +132,8 @@ export interface ToothRecord {
   mpi?: Record<string, number>;
   mbi?: Record<string, number>;
   implantProduct?: ImplantProduct;
+  // Bead odontogram-99h: WELCHES Produkt, nicht nur welche Klasse.
+  restorationProduct?: RestorationProduct;
   assessment?: Record<string, "assessed" | "not-assessed" | "unmeasurable" | "not-applicable">;
   customStates?: Record<string, unknown>;
   note?: string;
@@ -246,7 +249,7 @@ export interface DentalCoreIdentity {
 // filling or caries lesion extends into the cervical region. Omitted entirely
 // when empty, so a document that never records it is byte-identical apart from
 // this version string, and an older document needs no migration.
-export const PAYLOAD_VERSION = "2.30";
+export const PAYLOAD_VERSION = "2.31";
 
 /**
  * The UI-domain document (bead odontogram-3l1, AC2/AC4): a versioned,

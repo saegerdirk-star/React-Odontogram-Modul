@@ -1,5 +1,50 @@
 # Changelog
 
+## 2.33.0 - 2026-08-21
+
+### WELCHES Produkt in der Restauration steckt (Bead odontogram-99h)
+
+Die zweite Haelfte dessen, was `odontogram-im1` fuer das Implantat gebaut hat.
+Dirk, 11.08.2026, gefragt, ob ein Befund die Klasse oder das Produkt tragen
+soll: *"Die reine Klasse. Das Material ist eine separate Aussage."* — und am
+21.08.2026, was daraus folgt: *"eine derartige Versorgung muss auch gueltig
+sein, wenn sie nicht erhoben wird. Bei einem Eingangsbefund wird sie mit grosser
+Wahrscheinlichkeit sowieso nicht zu ermitteln sein."*
+
+- **`src/restorationProduct.ts`**, DOM-frei wie `implantProduct.ts` daneben, und
+  es LEIHT dessen UDI-Leser statt ihn zu wiederholen. Felder: Hersteller,
+  Produktname, **Zahnfarbe**, **Labor**, UDI, GTIN, Charge, Seriennummer,
+  Verfall — jedes freiwillig.
+- **Die Zahnfarbe steht bei der ARBEIT und nicht beim Zahn**: was bestellt und
+  geliefert wurde. Und sie steht da, weil sie in der Praxis oft das Einzige ist,
+  was ueberhaupt notiert wird — ein Feld, das haeufig gefuellt wird, traegt den
+  Rest mit.
+- **Die CHARGE ist der Grund fuer das Ganze.** Der Pruefstein aus dem Bead: wer
+  *"welche Patienten tragen Los X"* nicht beantworten kann, hat das Problem
+  nicht geloest, das dieses Feld rechtfertigt. Eine getippte Charge kann der UDI
+  nicht widersprechen — der Traeger wird beim Speichern neu gelesen —, aber ohne
+  Traeger bleibt sie stehen, denn nicht jedes Produkt bringt einen Barcode mit.
+- **Eine Krone ohne Produktangabe ist ein VOLLSTAENDIGER Befund.**
+  `isRestorationProductGap` zieht die Grenze wie `isImplantProductGap`: sie
+  schweigt, solange es keine Eingangsuntersuchung gibt (ohne Vergleichspunkt
+  waere die Warnung geraten), sie schweigt an Arbeit, die beim Eingang schon da
+  war (der Patient hat sie mitgebracht), und sie meldet nur, was diese Praxis
+  selbst eingegliedert hat. Abgeleitet aus dem Archiv (odontogram-ap7), nie ein
+  zweites Kennzeichen daneben.
+- **Kein Katalog.** `knownProducts` und `knownLabs` sammeln die Liste aus den
+  eigenen Charts — derselbe Einwand wie beim Implantat, und er gilt hier
+  genauso: es gibt hunderte Produkte, niemand traegt einen Katalog ein, also
+  wird nichts eingetragen.
+- **FHIR: ein eigenes `Device`**, nie eine Aufweitung des Materialcodes. Der
+  Materialkatalog, in den wir exportieren, fuehrt KLASSEN und nennt Produkte nur
+  als Beispiel innerhalb einer Klasse — er hat also genau Dirks Position
+  eingenommen und hat kein Feld fuer das Produkt. Die Charge steht in
+  `lotNumber`, dort wo ein Rueckruf sie sucht; `type` bleibt die Materialklasse
+  mit demselben lokalen Code wie im Befund.
+- Setter durch das DS-1-Gatter, Wache davor (`restorationProductAllowed`);
+  omit-when-empty; toleranter Import. Nutzlast **2.30 → 2.31**.
+- Kein `svgLayer` → SVG-Fingerabdruecke byte-identisch.
+
 ## 2.32.1 - 2026-08-21
 
 ### Die Schneidekante gehoert auch in die Draufsicht (Bead odontogram-qvr)

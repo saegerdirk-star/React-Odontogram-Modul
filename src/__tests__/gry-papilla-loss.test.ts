@@ -121,7 +121,7 @@ describe("Nutzlast", () => {
     __setToothStateForTest(11, {});
     setPapillaLoss(11, "mesial", 2);
     const p = __collectExportPayloadForTest() as Record<string, unknown>;
-    expect(p.version).toBe("2.30");
+    expect(p.version).toBe("2.31");
     expect((p.teeth as Record<string, Record<string, unknown>>)["11"].papillaLoss).toEqual({ mesial: 2 });
     __resetChartStateForTest();
     __hydrateImportedChartsForTest(p);

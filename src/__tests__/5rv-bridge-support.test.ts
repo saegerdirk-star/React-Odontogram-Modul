@@ -198,7 +198,7 @@ describe("Nutzlast", () => {
     __setToothStateForTest(14, { toothSelection: "none", restorationType: "bridge" });
     setCantilever(14, true);
     const p = __collectExportPayloadForTest() as Record<string, unknown>;
-    expect(p.version).toBe("2.30");
+    expect(p.version).toBe("2.31");
     expect((p.teeth as Record<string, Record<string, unknown>>)["14"].cantilever).toBe(true);
     __resetChartStateForTest();
     __hydrateImportedChartsForTest(p);

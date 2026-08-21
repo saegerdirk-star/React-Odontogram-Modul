@@ -17,6 +17,8 @@ import type { OdontogramDocument, ExaminationSnapshotRecord } from "./document";
 import { PAYLOAD_VERSION } from "./document";
 export type { OdontogramDocument } from "./document";
 import { type ImplantProduct, normalizeImplantProduct, isEmptyImplantProduct } from "./implantProduct";
+import { type RestorationProduct, normalizeRestorationProduct,
+         isEmptyRestorationProduct } from "./restorationProduct";
 import { allClearLayers } from "./registry/svgLayers";
 import { applyFlagLayers, buildFlagCtx } from "./registry/svgActivate";
 import { validValues, validSurfaces } from "./registry/validate";
@@ -644,6 +646,8 @@ function defaultState(){
     // every patient carries an implant passport. So nothing here is ever
     // required, and an empty record is a legitimate, complete state.
     implantProduct: null as ImplantProduct | null,
+    // Bead odontogram-99h: WELCHES Produkt, nicht nur welche Klasse.
+    restorationProduct: null as RestorationProduct | null,
     // Bead odontogram-2vd: explicit ASSESSMENT status per periodontal axis (and
     // measurement point), for the cases the value itself cannot express —
     // assessed-normal (probed, did not bleed), unmeasurable (the point exists
@@ -5657,6 +5661,7 @@ function syncControlsFromState(state: Any){
   }
   syncPeriImplantVisibility($("#periImplantRow"), $("#modsChecks"), state.toothSelection);
   syncImplantProduct(state);
+  syncRestorationProduct(state);   // Bead odontogram-99h
   // SP7 Task 5 (extended by SP15 Task 3 / B4): the periapical-inflammation mod
   // is retired as an authoring control on a PRESENT tooth (apicalDx drives the
   // glyph) AND on an implant (periImplant covers implant inflammation). It
@@ -7902,6 +7907,7 @@ function serializeState(s: Any){
     // - a chart that never names an implant stays byte-identical apart
     // from the version field.
     ...(!isEmptyImplantProduct(s.implantProduct) ? { implantProduct: s.implantProduct } : {}),
+    ...(!isEmptyRestorationProduct(s.restorationProduct) ? { restorationProduct: s.restorationProduct } : {}),
     // SP-perio PG-C Task 2: cejVisibility/rootConcavity are emitted ONLY when set
     // (!== "none"), like the omit-when-empty perio fields above — a default tooth
     // stays byte-identical (payload bumped to 2.14). Both round-trip via
@@ -8632,6 +8638,12 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   // disagrees with the carrier it came from.
   s.implantProduct = raw.implantProduct && typeof raw.implantProduct === "object"
     ? normalizeImplantProduct(raw.implantProduct as ImplantProduct)
+    : null;
+  // Dasselbe fuer das Restaurationsprodukt (odontogram-99h). Tolerant wie
+  // ueberall beim Import: was nicht lesbar ist, faellt weg, statt den Zahn
+  // mitzureissen.
+  s.restorationProduct = raw.restorationProduct && typeof raw.restorationProduct === "object"
+    ? normalizeRestorationProduct(raw.restorationProduct as RestorationProduct)
     : null;
   // Restore note
   if(typeof raw.note === "string") s.note = raw.note;
@@ -9919,6 +9931,90 @@ export function bridgeSupportGap(toothNo: number): "unsupported" | "cantilever" 
   return null;
 }
 
+// ---- odontogram-99h: WELCHES Produkt in der Restauration steckt -----------
+//
+// Die zweite Haelfte dessen, was odontogram-im1 fuer das Implantat gebaut hat.
+// `restorationMaterial` sagt die KLASSE, dieses Feld das PRODUKT - siehe
+// src/restorationProduct.ts fuer den Satz und die UDI-Lesung.
+//
+// NICHTS DAVON IST PFLICHT. Dirk, 21.08.2026: "eine derartige Versorgung muss
+// auch gueltig sein, wenn sie nicht erhoben wird. Bei einem Eingangsbefund wird
+// sie mit grosser Wahrscheinlichkeit sowieso nicht zu ermitteln sein." Eine
+// Krone ohne Produktangabe ist deshalb ein VOLLSTAENDIGER Befund, und die
+// Ableitung unten sagt, wann das trotzdem eine Luecke ist.
+
+/** Das Produkt eines Zahns aus dem aktiven Chart. `null` heisst, es ist nichts
+ *  darueber bekannt - eine gueltige Antwort, keine fehlende. */
+export function getRestorationProduct(toothNo: number): RestorationProduct | null {
+  const p = toothState.get(toothNo)?.restorationProduct;
+  return p ? { ...p } : null;
+}
+
+/** Ob an diesem Zahn ueberhaupt etwas steht, dem ein Produkt zugeordnet werden
+ *  kann. Eigenes Praedikat statt einer Bedingung im Setter, damit Bedienung,
+ *  Setter und Zusammenfassung dieselbe Frage stellen - wie bei `retentionAllowed`
+ *  daneben. */
+export function restorationProductAllowed(state: Any): boolean {
+  const typ = String(state?.restorationType ?? "none");
+  const material = String(state?.restorationMaterial ?? "none");
+  return typ !== "none" && material !== "none" && !restorationRowHidden(state);
+}
+
+/**
+ * Produkt setzen oder loeschen, im aktiven Chart.
+ *
+ * Leerlauf, solange keine Restauration dasteht - die Wache laeuft VOR dem
+ * DS-1-Gatter, wie bei `setRetention` und den Mombelli-Indizes, damit ein
+ * abgewiesener Aufruf nichts markiert und keine Benachrichtigung ausloest.
+ *
+ * `null` loescht. Der Satz wird beim Hereinkommen geradegerueckt: Leerraum weg,
+ * leere Felder weg, und die UDI neu gelesen, damit Charge und Verfall nie etwas
+ * anderes sagen als ihr Traeger.
+ */
+export function setRestorationProduct(toothNo: number, product: RestorationProduct | null): void {
+  const cur = toothState.get(toothNo);
+  if(!restorationProductAllowed(cur ?? defaultState())) return;
+  let s = cur;
+  if(!s){ s = defaultState(); toothState.set(toothNo, s); }
+  const next = normalizeRestorationProduct(product);
+  gateToothEdit(toothNo, () => {
+    if(JSON.stringify(s.restorationProduct ?? null) === JSON.stringify(next)) return false;
+    s.restorationProduct = next; notifyStateChange(); return true;
+  });
+}
+
+/** Jedes Restaurationsprodukt im aktiven Chart, fuer `knownProducts`/`knownLabs` -
+ *  die Liste, die einen Katalog ersetzt, den niemand pflegen wuerde. */
+export function getChartedRestorationProducts(): RestorationProduct[] {
+  const out: RestorationProduct[] = [];
+  for(const st of toothState.values()){
+    if(st?.restorationProduct) out.push(st.restorationProduct);
+  }
+  return out;
+}
+
+/**
+ * Fehlt die Produktangabe an Arbeit, die DIESE Praxis gemacht hat?
+ *
+ * Wortgleich zur Ueberlegung hinter `isImplantProductGap`, und aus demselben
+ * Grund abgeleitet statt gespeichert: "wir haben es eingegliedert, nichts
+ * notiert" ist unvollstaendig, "es kam mit dem Patienten" ist vollstaendig -
+ * und welches von beiden gilt, weiss das dazu angelegte Archiv (odontogram-ap7),
+ * nicht ein zweites Kennzeichen hier.
+ *
+ * `false`, solange es keine Eingangsuntersuchung gibt: ohne Vergleichspunkt
+ * waere die Warnung geraten. Genau Dirks Fall - "bei einem Eingangsbefund wird
+ * sie sowieso nicht zu ermitteln sein".
+ */
+export function isRestorationProductGap(toothNo: number): boolean {
+  if(!getBaselineExamination()) return false;
+  const s = toothState.get(toothNo);
+  if(!restorationProductAllowed(s ?? defaultState())) return false;
+  if(!isEmptyRestorationProduct(s?.restorationProduct)) return false;
+  // Schon beim Eingang da => der Patient hat sie mitgebracht => vollstaendig.
+  return !getPreExistingAxes(toothNo).includes("restoration");
+}
+
 export function isImplantProductGap(toothNo: number): boolean {
   if(!getBaselineExamination()) return false;         // provenance unknown
   const s = toothState.get(toothNo);
@@ -9961,6 +10057,78 @@ function commitImplantProduct(): void {
   for(const toothNo of selectedTeeth) setImplantProduct(Number(toothNo), product);
   const active = activeTooth ?? [...selectedTeeth][0];
   if(active != null) syncImplantProduct(toothState.get(active));
+}
+
+/** Bead odontogram-99h: den Produktblock der Restauration fuellen.
+ *
+ *  Wortgleich zu `syncImplantProduct` gebaut, und das ist Absicht - es ist
+ *  dieselbe Aufgabe an einer anderen Achse, und zwei verschiedene Bauweisen
+ *  fuer dieselbe Sache waeren zwei Stellen, an denen sie auseinanderlaufen. */
+function syncRestorationProduct(state: Any): void {
+  const block = $("#restorationProductBlock");
+  if(!block) return;
+  const erlaubt = restorationProductAllowed(state ?? defaultState());
+  block.classList.toggle("hidden", !erlaubt);
+  if(!erlaubt) return;
+
+  const p: RestorationProduct = state.restorationProduct ?? {};
+  const put = (sel: string, v: unknown) => {
+    const elx = $(sel) as HTMLInputElement | null;
+    if(!elx) return;
+    const next = v == null ? "" : String(v);
+    if(document.activeElement !== elx && elx.value !== next) elx.value = next;
+  };
+  put("#restProdManufacturer", p.manufacturer);
+  put("#restProdProduct", p.product);
+  put("#restProdShade", p.shade);
+  put("#restProdLab", p.lab);
+  put("#restProdUdi", p.udi);
+
+  // Was der Traeger hergegeben hat, angezeigt, damit ein Scan sichtbar etwas tut.
+  const bits: string[] = [];
+  if(p.lot) bits.push(`${t("restorationProduct.lot")}: ${p.lot}`);
+  if(p.expiry) bits.push(`${t("restorationProduct.expiry")}: ${p.expiry}`);
+  const readout = $("#restProdReadout");
+  if(readout) readout.textContent = bits.join("  ·  ");
+
+  const gapEl = $("#restorationProductGap");
+  if(gapEl){
+    const gap = activeTooth != null && isRestorationProductGap(activeTooth);
+    gapEl.classList.toggle("hidden", !gap);
+    if(gap) gapEl.textContent = t("restorationProduct.gapHint");
+  }
+
+  const liste = (sel: string, pick: (x: RestorationProduct)=>string | undefined) => {
+    const el2 = $(sel);
+    if(!el2) return;
+    const seen = new Map<string, string>();
+    for(const x of getChartedRestorationProducts()){
+      const v = pick(x);
+      if(v && !seen.has(v.toLowerCase())) seen.set(v.toLowerCase(), v);
+    }
+    el2.innerHTML = "";
+    for(const v of [...seen.values()].sort((a, b)=>a.localeCompare(b))){
+      el2.appendChild(el("option", { value: v }));
+    }
+  };
+  liste("#restProdManufacturerList", (x)=>x.manufacturer);
+  liste("#restProdProductList", (x)=>x.product);
+  liste("#restProdLabList", (x)=>x.lab);
+}
+
+/** Den Block auf jede ausgewaehlte Restauration zurueckschreiben. */
+function commitRestorationProduct(): void {
+  const val = (sel: string) => ((($(sel) as HTMLInputElement | null)?.value) ?? "").trim();
+  const product: RestorationProduct = {
+    manufacturer: val("#restProdManufacturer") || undefined,
+    product: val("#restProdProduct") || undefined,
+    shade: val("#restProdShade") || undefined,
+    lab: val("#restProdLab") || undefined,
+    udi: val("#restProdUdi") || undefined,
+  };
+  for(const toothNo of selectedTeeth) setRestorationProduct(Number(toothNo), product);
+  const active = activeTooth ?? [...selectedTeeth][0];
+  if(active != null) syncRestorationProduct(toothState.get(active));
 }
 
 // ---- Bead odontogram-2vd: explicit assessment status --------------------
@@ -12910,6 +13078,15 @@ function wireControls(){
     // plan-edited tooth, raise the blocking confirm once per character.
     elx.addEventListener("change", ()=>commitImplantProduct());
     elx.addEventListener("blur", ()=>commitImplantProduct());
+  }
+
+  // odontogram-99h: derselbe Block fuer die Restauration, dieselbe Begruendung
+  // fuer `change` statt `input`.
+  for(const id of ["#restProdManufacturer","#restProdProduct","#restProdShade","#restProdLab","#restProdUdi"]){
+    const elx = $(id) as HTMLInputElement | null;
+    if(!elx) continue;
+    elx.addEventListener("change", ()=>commitRestorationProduct());
+    elx.addEventListener("blur", ()=>commitRestorationProduct());
   }
 
   buildSelect($("#periImplantSelect"), getPeriImplantOptions(), (value)=>{

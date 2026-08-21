@@ -78,8 +78,13 @@ describe("an implant with no product is a complete record", () => {
 });
 
 describe("payload", () => {
-  it("is at the version this axis was added in", () => {
-    expect(PAYLOAD_VERSION).toBe("2.30");
+  it("die Achse hat die Nutzlast bei ihrer Einfuehrung auf 2.30 gehoben", () => {
+    // Die Zusicherung galt der GLOBALEN Nutzlastversion und musste deshalb bei
+    // jeder spaeteren Achse mitgezogen werden - sie sagte nichts ueber im1 und
+    // brach bei jedem fremden Feld. Was hier zaehlt, ist nur, dass die Version
+    // seit der Einfuehrung nicht ZURUECK gegangen ist.
+    const [maj, min] = PAYLOAD_VERSION.split(".").map(Number);
+    expect(maj * 1000 + min).toBeGreaterThanOrEqual(2 * 1000 + 30);
   });
 
   it("round-trips a product through export and import", () => {

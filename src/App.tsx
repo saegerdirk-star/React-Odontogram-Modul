@@ -1495,6 +1495,44 @@ export default function App({
                       arrived with is a complete record without any of it. */}
                   <div id="implantProductGap" className="hint implant-product-gap hidden"></div>
                 </div>
+                {/* Bead odontogram-99h: WELCHES Produkt in der Restauration
+                    steckt. Gebaut wie der Implantatblock darueber, aus
+                    demselben Grund und mit derselben Regel: Dirk, 21.08.2026,
+                    "eine derartige Versorgung muss auch gueltig sein, wenn sie
+                    nicht erhoben wird. Bei einem Eingangsbefund wird sie mit
+                    grosser Wahrscheinlichkeit sowieso nicht zu ermitteln sein."
+                    Der Hinweis unten erscheint deshalb NUR, wo ein leeres Feld
+                    wirklich eine Luecke ist - an Arbeit, die diese Praxis
+                    gemacht hat. */}
+                <div id="restorationProductBlock" className="implant-product hidden">
+                  <div className="implant-product-head">
+                    <span>{t("restorationProduct.legend")}</span>
+                    <span className="hint">{t("restorationProduct.optional")}</span>
+                  </div>
+                  <div className="row">
+                    <span>{t("restorationProduct.manufacturer")}</span>
+                    <input id="restProdManufacturer" type="text" list="restProdManufacturerList" autoComplete="off" />
+                    <datalist id="restProdManufacturerList"></datalist>
+                  </div>
+                  <div className="row">
+                    <span>{t("restorationProduct.product")}</span>
+                    <input id="restProdProduct" type="text" list="restProdProductList" autoComplete="off" />
+                    <datalist id="restProdProductList"></datalist>
+                  </div>
+                  <div className="row">
+                    <span>{t("restorationProduct.shade")}</span>
+                    <input id="restProdShade" type="text" autoComplete="off" />
+                    <span>{t("restorationProduct.lab")}</span>
+                    <input id="restProdLab" type="text" list="restProdLabList" autoComplete="off" />
+                    <datalist id="restProdLabList"></datalist>
+                  </div>
+                  <div className="row">
+                    <span>{t("restorationProduct.udi")}</span>
+                    <input id="restProdUdi" type="text" autoComplete="off" />
+                  </div>
+                  <div id="restProdReadout" className="hint implant-product-readout"></div>
+                  <div id="restorationProductGap" className="hint implant-product-gap hidden"></div>
+                </div>
               </div>
             </section>
 

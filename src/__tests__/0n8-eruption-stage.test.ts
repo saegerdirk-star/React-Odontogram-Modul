@@ -81,7 +81,7 @@ describe("Nutzlast", () => {
     __setToothStateForTest(14, {});
     setEruptionStage(14, "half-crown");
     const p = __collectExportPayloadForTest() as Record<string, unknown>;
-    expect(p.version).toBe("2.30");
+    expect(p.version).toBe("2.31");
     expect((p.teeth as Record<string, Record<string, unknown>>)["14"].eruptionStage).toBe("half-crown");
     __resetChartStateForTest();
     __hydrateImportedChartsForTest(p);

@@ -118,7 +118,7 @@ describe("odontogram-vnt AC1: authoring each status through the UI", () => {
     click(assessBtn(16, "pd", "DB")!); // unmeasurable
 
     const payload = __collectExportPayloadForTest();
-    expect(payload.version).toBe("2.30");
+    expect(payload.version).toBe("2.31");
     expect(payload.teeth["16"].assessment).toEqual({
       "bop:MB": "assessed",
       "pd:DB": "unmeasurable",
