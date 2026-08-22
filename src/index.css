@@ -2671,6 +2671,21 @@ select:focus{
 .ceph-findings{display:grid; gap:12px; grid-template-columns:1fr}
 @media (min-width:720px){ .ceph-findings{grid-template-columns:1fr 1fr} }
 .ceph-findings section{border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:var(--panel)}
+
+/* Skelettalter (Bead odontogram-c51.4) - eine eigene Sektion unter den
+   Befunden, gleiche Kartenoptik wie die Findings-Sektionen. */
+.ceph-skeletal{border:1px solid var(--line); border-radius:8px; padding:8px 10px;
+  background:var(--panel); margin-top:12px}
+.ceph-skeletal h4{margin:0 0 6px; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted)}
+.ceph-skeletal-inputs{display:flex; flex-wrap:wrap; gap:12px; font-size:12px; margin-bottom:6px}
+.ceph-skeletal-inputs label{display:flex; align-items:center; gap:6px}
+.ceph-skeletal-inputs select{font:inherit; font-size:12px; padding:3px 6px;
+  border:1px solid var(--line); border-radius:6px; background:var(--card); color:inherit}
+.ceph-skeletal dl{display:grid; grid-template-columns:auto 1fr; gap:2px 10px; margin:0; font-size:12px}
+.ceph-skeletal dt{color:var(--muted)}
+.ceph-skeletal dd{margin:0; font-weight:600; font-variant-numeric:tabular-nums}
+.ceph-skeletal dd small{font-weight:400; color:var(--muted); font-size:10px}
+.ceph-skeletal-disagree{margin:6px 0 0; font-size:11px; color:#b9770e}
 .ceph-findings h4{margin:0 0 6px; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted)}
 .ceph-findings dl{display:grid; grid-template-columns:auto 1fr; gap:2px 10px; margin:0; font-size:12px}
 .ceph-findings dt{color:var(--muted)}

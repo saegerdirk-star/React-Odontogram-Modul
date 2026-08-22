@@ -19,12 +19,17 @@ import {
   getCephFavourites, getCephProfileId, getCephValue, getCephValues, getReadOnly,
   isCephProfileChosen, onStateChange, setCephFavourite, setCephProfileId,
   setDefaultCephProfile, setCephValue,
+  getCvmStage, setCvmStage, getHandSmiStage, setHandSmiStage,
 } from "./odontogram";
 import {
   assess, normFor, orderProfiles, profileMeasures,
   type CephAssessment, type CephMeasure, type GrowthIndicator,
 } from "./cephalometry";
 import { parseCephText, type ParsedValue } from "./cephImport";
+import {
+  deriveSkeletalMaturity, CVM_STAGES, SMI_STAGES,
+  type CvmStage, type SmiStage,
+} from "./skeletalAge";
 
 function locale(): string {
   const lang = getI18nLanguage();
@@ -183,6 +188,70 @@ function Findings({ a }: { a: CephAssessment }) {
   );
 }
 
+/**
+ * Skelettales Alter — wie viel Wachstum uebrig ist (Bead odontogram-c51.4).
+ *
+ * Steht NEBEN dem Wachstumsmuster, nicht darin: das Muster sagt die RICHTUNG,
+ * das hier sagt, WIE VIEL. Zwei Quellen derselben Antwort - CVM am
+ * Fernroentgenbild, Fishman SMI am Handroentgen -, getrennt gefuehrt, damit
+ * der Datensatz sagt, woher ein Wert stammt. Weichen beide voneinander ab,
+ * wird das gesagt statt aufgeloest (wie die sagittale Klasse in c51.2).
+ */
+const CVM_PHASE = ["initiation", "acceleration", "transition", "deceleration", "maturation", "completion"];
+function SkeletalAge({ cvm, smi, readOnly }: { cvm: CvmStage; smi: SmiStage; readOnly: boolean }) {
+  const m = deriveSkeletalMaturity({ cvm, smi });
+  const band = m.remaining === null ? "\u2014"
+    : m.remaining.low === m.remaining.high ? `${m.remaining.low}\u2009%`
+      : `${m.remaining.low}\u2013${m.remaining.high}\u2009%`;
+  return (
+    <section className="ceph-skeletal" id="cephSkeletalAge">
+      <h4>{t("skeletal.title")}</h4>
+      <div className="ceph-skeletal-inputs">
+        <label>
+          {t("skeletal.cvm")}{" "}
+          <select
+            id="skeletalCvm"
+            value={cvm}
+            disabled={readOnly}
+            onChange={e => setCvmStage(e.currentTarget.value as CvmStage)}
+          >
+            <option value="none">{t("skeletal.none")}</option>
+            {CVM_STAGES.map((st, i) => (
+              <option key={st} value={st}>{`CVMI ${i + 1} \u2013 ${t("skeletal.phase." + CVM_PHASE[i])}`}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          {t("skeletal.smi")}{" "}
+          <select
+            id="skeletalSmi"
+            value={smi}
+            disabled={readOnly}
+            onChange={e => setHandSmiStage(e.currentTarget.value as SmiStage)}
+          >
+            <option value="none">{t("skeletal.none")}</option>
+            {SMI_STAGES.map((st, i) => (
+              <option key={st} value={st}>{`SMI ${i + 1} \u2013 ${t("skeletal.smi." + (i + 1))}`}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <dl>
+        <dt>{t("skeletal.remaining")}</dt>
+        <dd>
+          {band}
+          {m.phaseKey && <small> {t(m.phaseKey)}</small>}
+        </dd>
+        <dt>{t("skeletal.peak")}</dt>
+        <dd>{m.peak === null ? "\u2014" : t("skeletal.peak." + m.peak)}</dd>
+      </dl>
+      {m.disagree && (
+        <p className="ceph-skeletal-disagree">{t("skeletal.disagree")}</p>
+      )}
+    </section>
+  );
+}
+
 /** The paste-and-confirm importer. Nothing lands until the reader says so. */
 function ImportPanel({ onClose, readOnly }: { onClose: () => void; readOnly: boolean }) {
   const [text, setText] = useState("");
@@ -261,12 +330,16 @@ export function CephalometryCard() {
   const [readOnly, setReadOnly] = useState<boolean>(() => getReadOnly());
   const [importing, setImporting] = useState(false);
   const [favourites, setFavourites] = useState<string[]>(() => getCephFavourites());
+  const [cvm, setCvm] = useState<CvmStage>(() => getCvmStage());
+  const [smi, setSmi] = useState<SmiStage>(() => getHandSmiStage());
 
   useEffect(() => onStateChange(() => {
     setValues(getCephValues());
     setProfile(getCephProfileId());
     setReadOnly(getReadOnly());
     setFavourites(getCephFavourites());
+    setCvm(getCvmStage());
+    setSmi(getHandSmiStage());
   }), []);
 
   // Favoriten oben, beide Gruppen alphabetisch — nach der UEBERSETZTEN
@@ -380,6 +453,7 @@ export function CephalometryCard() {
       </div>
 
       <Findings a={assessment} />
+      <SkeletalAge cvm={cvm} smi={smi} readOnly={readOnly} />
     </section>
   );
 }

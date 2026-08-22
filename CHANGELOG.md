@@ -1,5 +1,35 @@
 # Changelog
 
+## 2.44.0 - 2026-08-22
+
+### Skelettales Alter: CVM und Fishman SMI (Bead odontogram-c51.4)
+
+Dirk fragte "was ist mit der Handwurzelaufnahme?" - zu Recht: das Handroentgen
+ist der Goldstandard (die Muenster-Arbeit sagt es woertlich), CVM am
+Fernroentgenbild nur der bequeme Stellvertreter. Also beide.
+
+- **Zwei Quellen, eine Antwort ("wie viel Wachstum ist uebrig").** CVM
+  (Hassel & Farman, sechs Stadien) am selben Fernroentgenbild, das die
+  Kephalometrie ohnehin auswertet; Fishman SMI (elf Stadien, Dirks Wahl fuer
+  die Hand) am Handroentgen. Getrennt gefuehrt, damit der Datensatz sagt, woher
+  ein Wert stammt - dieselbe Regel wie bei Film vs. Foto in c51.3.
+- **Beide sprechen dieselbe Sprache**, weil Fishmans elf SMIs sich auf die
+  sechs CVM-Stadien in festen Paaren abbilden (SMI 1-2 -> CVMI 1, ... SMI 11 ->
+  CVMI 6). Ein Handstadium loest damit auf ein CVM-Stadium auf und liefert
+  dasselbe Restwachstums-Band.
+- **Der direkt abgelesene CVM schlaegt den aus der Hand abgeleiteten** - ein
+  gemessener Wert wird nicht von einer Abbildung ueberstimmt. Weichen beide
+  voneinander ab, wird das GEMELDET statt aufgeloest, wie die sagittale Klasse
+  in c51.2.
+- Steht als eigene Sektion neben dem Wachstumsmuster in der Kephalometrie-Karte
+  (das Muster sagt die RICHTUNG, das Skelettalter WIE VIEL). Restwachstum in %,
+  Gipfel bevorstehend/erreicht/vorbei.
+- Reines Modul `src/skeletalAge.ts` (abhaengigkeitsfrei wie `cephalometry.ts`).
+  Sitzungszustand wie die uebrigen KFO-Werte - kein Payload, kein FHIR. Quelle:
+  Erdmann 2007 (Muenster, Kap. 2.2) nach Hassel & Farman; das Original nicht
+  gelesen, und die Quellenangabe sagt es. Beschriftungen in zwoelf Sprachen.
+  Payload weiterhin 2.32, SVG-Fingerabdruecke byte-identisch.
+
 ## 2.43.1 - 2026-08-22
 
 ### Das erste Profil heisst "Segner/Hasund" (Bead odontogram-c51.2)

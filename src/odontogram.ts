@@ -14,6 +14,7 @@ import { buildFhirBundle } from "./fhir/toFhir";
 import { parseFhirBundle } from "./fhir/fromFhir";
 import { resolveFhirDialect, type Bundle, type FhirDialect, type FhirExportOptions } from "./fhir/types";
 import type { OdontogramDocument, ExaminationSnapshotRecord } from "./document";
+import type { CvmStage, SmiStage } from "./skeletalAge";
 import { PAYLOAD_VERSION } from "./document";
 export type { OdontogramDocument } from "./document";
 import { type ImplantProduct, normalizeImplantProduct, isEmptyImplantProduct } from "./implantProduct";
@@ -4616,6 +4617,7 @@ export function __resetChartStateForTest(): void {
   resetToothWidths(); // measured crown widths are session state, cleared with everything else
   resetOcclusalMeasurements();
   resetCephValues();
+  resetSkeletalAge();
   resetExaminationContext();
   resetExaminations();
   // Bead odontogram-3l1: hand the engine back to the default session and drop
@@ -11835,6 +11837,46 @@ export function resetCephValues(): void {
   notifyStateChange();
 }
 
+// ---- Bead odontogram-c51.4: skeletal age (CVM + Fishman SMI) ----
+// Session state on the same terms as the cephalometric values above: no
+// published Dental Core carrier, so it stays out of the payload. Two readings
+// of the same "how much growth is left" — CVM off the ceph film, Fishman SMI
+// off the hand film — kept separate so the record says which one a value came
+// from (bead odontogram-c51.4). Absent = "none", never a stored default.
+let cvmStage: CvmStage = "none";
+let handSmiStage: SmiStage = "none";
+const VALID_CVM = new Set<CvmStage>(["none", "cvm-1", "cvm-2", "cvm-3", "cvm-4", "cvm-5", "cvm-6"]);
+const VALID_SMI = new Set<SmiStage>([
+  "none", "smi-1", "smi-2", "smi-3", "smi-4", "smi-5", "smi-6",
+  "smi-7", "smi-8", "smi-9", "smi-10", "smi-11",
+]);
+
+/** The charted cervical-vertebral-maturation stage (read off the ceph film). */
+export function getCvmStage(): CvmStage { return cvmStage; }
+/** The charted Fishman SMI stage (read off the hand-wrist film). */
+export function getHandSmiStage(): SmiStage { return handSmiStage; }
+
+/** Record the CVM stage; an invalid value is ignored. */
+export function setCvmStage(stage: CvmStage): void {
+  if (!VALID_CVM.has(stage) || stage === cvmStage) return;
+  cvmStage = stage;
+  notifyStateChange();
+}
+/** Record the Fishman SMI stage; an invalid value is ignored. */
+export function setHandSmiStage(stage: SmiStage): void {
+  if (!VALID_SMI.has(stage) || stage === handSmiStage) return;
+  handSmiStage = stage;
+  notifyStateChange();
+}
+
+/** Drop both skeletal-age stages — part of the blank-slate reset. */
+export function resetSkeletalAge(): void {
+  if (cvmStage === "none" && handSmiStage === "none") return;
+  cvmStage = "none";
+  handSmiStage = "none";
+  notifyStateChange();
+}
+
 /** Which cephalometric profile the UI is presenting. Session state. */
 let cephProfileId = "hasund";
 export function getCephProfileId(): string { return cephProfileId; }
@@ -13727,6 +13769,7 @@ function wireControls(){
     resetToothWidths(); // ... as are the measured crown widths (bead odontogram-c51.1)
     resetOcclusalMeasurements();
     resetCephValues();
+  resetSkeletalAge();
     resetExaminationContext(); // ... as is the examination identity it was recorded under
     resetExaminations();
     for(const toothNo of ALL_TEETH){
@@ -14046,6 +14089,7 @@ export function destroyOdontogram(){
   resetToothWidths(); // measured crown widths are session state, cleared with everything else
   resetOcclusalMeasurements();
   resetCephValues();
+  resetSkeletalAge();
   resetExaminationContext();
   resetExaminations();
   toothSvgRoot.clear();
