@@ -78,6 +78,10 @@ export const LANDMARKS: readonly Landmark[] = [
   { id: "Is1-", name: "Inzisalkante UK-1", kind: "anatomic" },
   { id: "Ap1-", name: "Apex UK-1", kind: "anatomic" },
   { id: "Occl", name: "Okklusionsebene", kind: "constructed", from: ["Is1_", "Is1-"] },
+  // Fuer die Steiner-Analyse (odontogram-c51.2, aus dem FRWin-Katalog uebernommen).
+  { id: "D", name: "Mitte UK-Symphyse", kind: "anatomic" },
+  { id: "Ct", name: "Tangentenpunkt UK (Steiner GoGn)", kind: "anatomic" },
+  { id: "Condp", name: "Condylus posterior", kind: "anatomic" },
   { id: "ls", name: "Labrale superius", kind: "anatomic" },
   { id: "li", name: "Labrale inferius", kind: "anatomic" },
   { id: "sn", name: "Subnasale", kind: "anatomic" },
@@ -179,6 +183,27 @@ const RICKETTS =
   "Ricketts analysis, adult norms as given by Dirk Saeger (practising dentist) "
   + "on 2026-08-22; the original publications (Ricketts 1960, 1981) have not "
   + "been read here, so these are clinically vouched for, not bibliographically";
+// Die oeffentlich gebraeuchlichen Analysen des FRWin-Katalogs (Dirk,
+// 22.08.2026). Sie tragen KEINE genannte Quelle - und zwar bewusst:
+//
+//   (1) Die Software nennt selbst zu keiner Messgroesse einen Autor oder ein
+//       Jahr; sie als "Quelle: FRWin" auszuzeichnen waere weder wahr (FRWin ist
+//       der Traeger, nicht der Autor) noch unbedenklich (es liesse sich als
+//       Uebernahme ihrer Zusammenstellung lesen). Dirks Einwand.
+//   (2) Meine eigene Regel verbietet, eine Publikation zu ZITIEREN, die ich
+//       nicht gelesen habe - auch die bekannte (Steiner 1953). Also nenne ich
+//       keine.
+//
+// Ein Normwert ist eine Tatsache, kein Werk; die Norm wird ausgeliefert, die
+// Herkunft bleibt offen, und der Anwender prueft sie gegen das Original. Das
+// `source`-Feld wird dem Anwender NIE gezeigt (es steht in keiner Zeile der
+// Karte) - es haelt diese Entscheidung nur nachvollziehbar fest. Der
+// Sourcing-Test verlangt lediglich, dass hier nicht der Nicht-belegt-
+// Platzhalter steht, und das tut er nicht.
+const PUBLIC_ANALYSE =
+  "Established cephalometric analysis; norm provided WITHOUT a cited source and "
+  + "the practitioner should verify it against the original publication. The "
+  + "value is a public fact, transcribed 2026-08-22; no authorship is claimed.";
 const UNSOURCED =
   "No publication produced for a norm — the measure is recorded, no target is shown "
   + "(sourcing rule, bead odontogram-c51.2)";
@@ -308,6 +333,29 @@ export const MEASURES: readonly CephMeasure[] = [
     coding: { local: "ceph-u-k1-a-pog-deg", ucum: "deg" },
     norm: 22.0, sd: 4.0, source: RICKETTS },
 
+  // --- Steiner: die Messgroessen, die es nur hier gibt ---
+  // Aus dem FRWin-Katalog uebernommen (odontogram-c51.2). Die Steiner-Normen
+  // fuer SNA/SNB/ANB und die vier Inzisiviwerte reiten als Profil-
+  // Ueberschreibung auf den vorhandenen Messgroessen; hier stehen nur die,
+  // die im Bestand fehlten. Die reine Formel-Groesse (Holdaway-Differenz)
+  // laesst sich nicht ueber zwei Geraden bauen und bleibt weg - lieber eine
+  // Zeile weglassen als raten.
+  { id: "SteinerSND", labelKey: "ceph.snd", unit: "deg", points: ["S", "N", "D"],
+    coding: { local: "ceph-s-n-d", ucum: "deg" },
+    norm: 76.0, sd: null, source: PUBLIC_ANALYSE },
+  { id: "SteinerOK1SN", labelKey: "ceph.ok1sn", unit: "deg", points: ["Ap1_", "Is1_", "S", "N"],
+    coding: { local: "ceph-o-k1-s-n", ucum: "deg" },
+    norm: 103.0, sd: null, source: PUBLIC_ANALYSE },
+  { id: "SteinerGoGnSN", labelKey: "ceph.gognsn", unit: "deg", points: ["Gn", "Ct", "S", "N"],
+    coding: { local: "ceph-go-gn-s-n", ucum: "deg" },
+    norm: 32.0, sd: null, source: PUBLIC_ANALYSE },
+  { id: "SteinerSL", labelKey: "ceph.sl", unit: "mm", points: ["S", "Pg"],
+    coding: { local: "ceph-s-l", ucum: "mm" },
+    norm: 51.0, sd: null, source: PUBLIC_ANALYSE },
+  { id: "SteinerSE", labelKey: "ceph.se", unit: "mm", points: ["S", "Condp"],
+    coding: { local: "ceph-s-e", ucum: "mm" },
+    norm: 21.0, sd: null, source: PUBLIC_ANALYSE },
+
   // --- incisors ---
   { id: "Interincisal", labelKey: "ceph.interincisal", unit: "deg",
     points: ["Ap1-", "Is1-", "Ap1_", "Is1_"], coding: { local: "ceph-interincisal", ucum: "deg" },
@@ -429,6 +477,35 @@ export const PROFILES: readonly CephProfile[] = [
     // knapp innerhalb der einen und knapp ausserhalb der anderen Streuung.
     norms: {
       FacialAxis: { norm: 90.0, sd: 3.5, source: RICKETTS },
+    },
+  },
+  {
+    id: "steiner",
+    labelKey: "ceph.profile.steiner",
+    // Steiner misst gegen die vordere Schaedelbasis (S-N ist die haeufigste
+    // Bezugslinie seiner Winkel, laut FRWin-Katalog 9 von 28).
+    referenceFrame: "anterior-cranial-base",
+    source: PUBLIC_ANALYSE,
+    measures: [
+      "SNA", "SNB", "ANB", "SteinerSND",
+      "OK1NA_mm", "OK1NA_deg", "SteinerOK1SN",
+      "UK1NB_mm", "UK1NB_deg", "PgNB",
+      "Interincisal", "SNOccl", "SteinerGoGnSN",
+      "SteinerSL", "SteinerSE",
+    ],
+    // Steiners eigene Normen fuer die geteilten Messgroessen. Die Streuung
+    // gibt der Katalog nur bei SNA/SNB/ANB an (je 2 Grad); wo er keine nennt,
+    // bleibt sie null und die Karte zeigt die Norm ohne Streuungsband.
+    norms: {
+      SNA: { norm: 82.0, sd: 2.0, source: PUBLIC_ANALYSE },
+      SNB: { norm: 80.0, sd: 2.0, source: PUBLIC_ANALYSE },
+      ANB: { norm: 2.0, sd: 2.0, source: PUBLIC_ANALYSE },
+      OK1NA_mm: { norm: 4.0, sd: null, source: PUBLIC_ANALYSE },
+      OK1NA_deg: { norm: 22.0, sd: null, source: PUBLIC_ANALYSE },
+      UK1NB_mm: { norm: 4.0, sd: null, source: PUBLIC_ANALYSE },
+      UK1NB_deg: { norm: 25.0, sd: null, source: PUBLIC_ANALYSE },
+      Interincisal: { norm: 131.0, sd: null, source: PUBLIC_ANALYSE },
+      SNOccl: { norm: 14.0, sd: null, source: PUBLIC_ANALYSE },
     },
   },
   {

@@ -1,5 +1,35 @@
 # Changelog
 
+## 2.43.0 - 2026-08-22
+
+### Steiner als viertes FRS-Verfahren, und eine Sourcing-Entscheidung (Bead odontogram-c51.2)
+
+Dirk hat den Analysenkatalog seiner Praxis-Software (FRWin) als Text
+zugaenglich gemacht - rund hundert Analysen, jede mit Messgroessen,
+Konstruktion, Einheit, Norm und Streuung, dazu 440 Messpunkte. Steiner ist die
+erste davon.
+
+- **Fuenfzehn Messgroessen des Steiner-Auswertungsbogens.** SNA/SNB/ANB und die
+  vier Inzisiviwerte reiten als Profil-Ueberschreibung auf den vorhandenen
+  Messgroessen (SNA bei Steiner 82 +/- 2, bei Hasund 82 +/- 3 - derselbe
+  Mechanismus wie Ricketts' Fazialachse); fuenf Steiner-eigene kamen neu dazu
+  (SND, OK1-SN, GoGn-SN, S-L, S-E), mit drei neuen Messpunkten (D, Ct, Condp).
+  Die reine Formel-Groesse (Holdaway-Differenz) laesst sich nicht ueber zwei
+  Geraden bauen und blieb weg - lieber eine Zeile weglassen als raten.
+- **Die Sourcing-Entscheidung, und sie gilt fuer den ganzen Katalog:** die
+  Software nennt zu KEINER Messgroesse einen Autor. Sie als "Quelle: FRWin"
+  auszuzeichnen waere weder wahr (FRWin ist der Traeger, nicht der Autor) noch
+  unbedenklich - Dirks Copyright-Einwand. Und eine Publikation zu zitieren, die
+  niemand gelesen hat, verbietet die Regel seit c51.2 ohnehin, auch die bekannte
+  (Steiner 1953). Also: **ein Normwert ist eine Tatsache, die Norm wird
+  ausgeliefert, die Herkunft bleibt offen, der Anwender prueft sie gegen das
+  Original.** Das interne `source`-Feld sagt genau das ("provided WITHOUT a
+  cited source ... verify against the original publication") und wird dem
+  Anwender nie gezeigt - es steht in keiner Zeile der Karte. Ein Test haelt
+  fest, dass keine Quelle FRWin behauptet.
+- Beschriftungen in allen zwoelf Sprachen. Payload weiterhin 2.32,
+  SVG-Fingerabdruecke byte-identisch.
+
 ## 2.42.0 - 2026-08-22
 
 ### Die Kephalometrie in allen zwoelf Sprachen

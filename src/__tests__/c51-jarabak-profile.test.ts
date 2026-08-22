@@ -27,9 +27,15 @@ import { parseCephText } from "../cephImport";
 const jarabak = PROFILES.find(p => p.id === "jarabak")!;
 
 describe("das Polygon", () => {
-  it("steht als drittes Verfahren neben Hasund und Ricketts", () => {
+  it("steht neben Hasund und Ricketts im Profilkatalog", () => {
+    // Die ARRAY-Reihenfolge ist belanglos - der Waehler sortiert nach dem
+    // uebersetzten Namen (orderProfiles). Gepueft wird nur, dass es das Profil
+    // gibt und die aelteren daneben stehen.
     expect(jarabak).toBeDefined();
-    expect(PROFILES.map(p => p.id)).toEqual(["hasund", "ricketts", "jarabak"]);
+    const ids = PROFILES.map(p => p.id);
+    expect(ids).toContain("hasund");
+    expect(ids).toContain("ricketts");
+    expect(ids).toContain("jarabak");
   });
 
   it("misst gegen die vordere Schaedelbasis — S-N ist die Bezugslinie", () => {

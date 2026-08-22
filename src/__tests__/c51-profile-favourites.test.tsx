@@ -38,20 +38,32 @@ describe("orderProfiles: rein, und nach dem angezeigten Wort", () => {
   it("ohne Favoriten steht alles in einer Gruppe, alphabetisch", () => {
     const { favourites, others } = orderProfiles(p => p.id);
     expect(favourites).toEqual([]);
-    expect(others.map(p => p.id)).toEqual(["hasund", "jarabak", "ricketts"]);
+    // Gegen den tatsaechlichen Bestand pruefen, nicht gegen eine feste Liste:
+    // aus dem FRWin-Katalog kommen laufend weitere Verfahren dazu, und ein
+    // ID-fester Test waere bei jedem neuen rot.
+    const alleIds = PROFILES.map(p => p.id);
+    expect(others.map(p => p.id)).toEqual([...alleIds].sort((a, b) => a.localeCompare(b)));
+    expect(others).toHaveLength(PROFILES.length);
   });
 
   it("sortiert nach dem AUFGELOESTEN Namen, nicht nach der id", () => {
-    // Ein Aufloeser, der die Namen umdreht, muss die Reihenfolge umdrehen —
-    // sonst haengt die Sortierung heimlich doch an der id.
-    const rueckwaerts = orderProfiles(p => ({ hasund: "C", jarabak: "B", ricketts: "A" })[p.id]!);
-    expect(rueckwaerts.others.map(p => p.id)).toEqual(["ricketts", "jarabak", "hasund"]);
+    // Ein Aufloeser, der die Namen GEGEN die id-Ordnung stellt, muss die
+    // Ausgabe entsprechend drehen — sonst haengt die Sortierung heimlich doch
+    // an der id. Jedem Profil ein Label geben, das der id-Reihenfolge
+    // entgegenlaeuft (Index von hinten als Buchstabe), und pruefen, dass die
+    // Ausgabe die umgekehrte id-Reihenfolge ist.
+    const ids = PROFILES.map(p => p.id).sort((a, b) => a.localeCompare(b));
+    const label = (id: string) => String.fromCharCode(90 - ids.indexOf(id)); // Z, Y, X, ...
+    const gedreht = orderProfiles(p => label(p.id));
+    expect(gedreht.others.map(p => p.id)).toEqual([...ids].reverse());
   });
 
   it("Favoriten kommen in eine eigene Gruppe, auch dort alphabetisch", () => {
     const { favourites, others } = orderProfiles(p => p.id, ["ricketts", "hasund"]);
     expect(favourites.map(p => p.id)).toEqual(["hasund", "ricketts"]);
-    expect(others.map(p => p.id)).toEqual(["jarabak"]);
+    // die anderen sind alle uebrigen Verfahren, alphabetisch
+    const uebrig = PROFILES.map(p => p.id).filter(id => id !== "hasund" && id !== "ricketts");
+    expect(others.map(p => p.id)).toEqual(uebrig.sort((a, b) => a.localeCompare(b)));
   });
 
   it("kennt keine unbekannte id und verliert kein Profil", () => {
@@ -120,7 +132,8 @@ describe("die Auswahlliste in der Karte", () => {
     render(<CephalometryCard />);
     const sel = document.getElementById("cephProfile") as HTMLSelectElement;
     expect(sel.querySelectorAll("optgroup")).toHaveLength(0);
-    expect([...sel.options].map(o => o.value)).toEqual(["hasund", "jarabak", "ricketts"]);
+    const alleIds = PROFILES.map(p => p.id).sort((a, b) => a.localeCompare(b));
+    expect([...sel.options].map(o => o.value)).toEqual(alleIds);
   });
 
   it("mit Favorit zwei Gruppen, der Favorit oben", () => {
@@ -130,7 +143,8 @@ describe("die Auswahlliste in der Karte", () => {
     const gruppen = [...sel.querySelectorAll("optgroup")];
     expect(gruppen).toHaveLength(2);
     expect([...gruppen[0].querySelectorAll("option")].map(o => o.value)).toEqual(["ricketts"]);
-    expect([...gruppen[1].querySelectorAll("option")].map(o => o.value)).toEqual(["hasund", "jarabak"]);
+    const uebrig = PROFILES.map(p => p.id).filter(id => id !== "ricketts").sort((a, b) => a.localeCompare(b));
+    expect([...gruppen[1].querySelectorAll("option")].map(o => o.value)).toEqual(uebrig);
   });
 
   it("sind ALLE Verfahren Favoriten, entfaellt die zweite Gruppe", () => {
