@@ -1818,6 +1818,7 @@ function updateBridgeOverlay(){
   renderGumOverlay(grid);
   renderBridgeOverlay({ grid, getState: bridgeStateFor, materialColor: defaultMaterialColor });
   updateRetentionBarOverlay(grid);
+  updateOrthoOverlay(grid);
 }
 
 /** Bead odontogram-dma: (re)draw the derived bar (Steg) over `#toothGrid`.
@@ -1873,6 +1874,118 @@ function updateRetentionBarOverlay(grid: HTMLElement | null){
     rect.setAttribute("rx", String(r));
     rect.setAttribute("ry", String(r));
     overlay.appendChild(rect);
+  }
+}
+
+// ---- KFO: Bracket, Bogen und Band im Gitter-Overlay (Etappe 2) ----
+// Konstruiert in Endkoordinaten, wie Zahnfleisch und Retentionsbuegel - nicht
+// aus den Donor-Ebenen gewarpt. Die Seitenansicht-Ebenen `ortho-bracket`/
+// `ortho-ring` sind dort per CSS ausgeblendet (der Fingerabdruck liest
+// `data-active`, nicht die Anzeige - Paritaet byte-identisch), die
+// Kauflaechenansicht behaelt sie.
+//
+// Der Bogen ist EINE durchgehende Linie je Kiefer ueber alle BUKKALEN
+// Brackets, auf Slot-Hoehe - deckungsgleich mit jedem Bracket, so wie ein Bogen
+// in echt durch die Slots laeuft. Lingual: das Bracket blass hinter dem Zahn,
+// der Bogen wird NICHT gezeichnet (Dirk, 22.08.2026).
+const ORTHO_BRACKET_Y_UPPER = 0.72;   // Anteil der Kachelhoehe: Mitte der Krone
+const ORTHO_BRACKET_Y_LOWER = 0.28;
+const ORTHO_BAND_Y_UPPER = 0.64;      // zervikales Drittel der Krone
+const ORTHO_BAND_Y_LOWER = 0.36;
+const ORTHO_CROWN_W = 0.60;           // Kronenbreite als Anteil der Kachelbreite
+const ORTHO_BRACKET_W = 0.30;
+const ORTHO_BRACKET_H = 0.055;        // Anteil der Kachelhoehe
+const ORTHO_BAND_H = 0.11;
+
+function updateOrthoOverlay(grid: HTMLElement | null){
+  if(!grid) return;
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  let overlay = grid.querySelector(":scope > svg.ortho-overlay") as SVGSVGElement | null;
+  const gridRect = grid.getBoundingClientRect();
+  const rectFor = (tn: number) => tileRectFor(grid, gridRect, tn);
+
+  type Shape = { kind: "bracket" | "band"; tn: number; side: string };
+  const shapes: Shape[] = [];
+  for(const tn of ALL_TEETH as number[]){
+    const st = toothState.get(tn);
+    if(!st || !orthoAllowed(st)) continue;
+    if(st.orthoAppliance === "bracket") shapes.push({ kind:"bracket", tn, side: st.orthoBracketSide ?? "buccal" });
+    else if(st.orthoAppliance === "band") shapes.push({ kind:"band", tn, side:"" });
+  }
+  if(shapes.length === 0){
+    if(overlay){ while(overlay.firstChild) overlay.removeChild(overlay.firstChild); }
+    return;
+  }
+  if(!overlay){
+    overlay = document.createElementNS(SVG_NS, "svg");
+    overlay.setAttribute("class", "ortho-overlay");
+    overlay.setAttribute("aria-hidden", "true");
+    grid.appendChild(overlay);
+  }
+  while(overlay.firstChild) overlay.removeChild(overlay.firstChild);
+  const W = Math.max(1, Math.round(gridRect.width));
+  const H = Math.max(1, Math.round(gridRect.height));
+  overlay.setAttribute("width", String(W));
+  overlay.setAttribute("height", String(H));
+  overlay.setAttribute("viewBox", `0 0 ${W} ${H}`);
+
+  const bracketY = (tn: number, r: {y:number;height:number}) =>
+    r.y + r.height * (isUpperTooth(tn) ? ORTHO_BRACKET_Y_UPPER : ORTHO_BRACKET_Y_LOWER);
+
+  // 1) Der durchgehende Bogen je Kiefer - nur ueber bukkalen Brackets.
+  for(const arch of [UPPER_ARCH, LOWER_ARCH]){
+    const pts: { x:number; y:number }[] = [];
+    for(const tn of arch as number[]){
+      const s2 = shapes.find(sh => sh.tn === tn && sh.kind === "bracket" && sh.side === "buccal");
+      if(!s2) continue;
+      const r = rectFor(tn); if(!r) continue;
+      pts.push({ x: r.x + r.width/2, y: bracketY(tn, r) });
+    }
+    if(pts.length >= 2){
+      const wire = document.createElementNS(SVG_NS, "polyline");
+      wire.setAttribute("class", "ortho-overlay-wire");
+      wire.setAttribute("points", pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" "));
+      overlay.appendChild(wire);
+    }
+  }
+
+  // 2) Brackets und Baender je Zahn.
+  for(const sh of shapes){
+    const r = rectFor(sh.tn); if(!r) continue;
+    const cx = r.x + r.width/2;
+    if(sh.kind === "bracket"){
+      const y = bracketY(sh.tn, r);
+      const bw = r.width * ORTHO_BRACKET_W, bh = r.height * ORTHO_BRACKET_H;
+      const g = document.createElementNS(SVG_NS, "g");
+      g.setAttribute("class", "ortho-overlay-bracket" + (sh.side === "lingual" ? " is-lingual" : ""));
+      const body = document.createElementNS(SVG_NS, "rect");
+      body.setAttribute("x", (cx - bw/2).toFixed(1));
+      body.setAttribute("y", (y - bh/2).toFixed(1));
+      body.setAttribute("width", bw.toFixed(1));
+      body.setAttribute("height", bh.toFixed(1));
+      body.setAttribute("rx", (bh*0.3).toFixed(1));
+      g.appendChild(body);
+      // Slot: eine waagerechte Linie mittig, so laeuft der Bogen sichtbar durch.
+      const slot = document.createElementNS(SVG_NS, "line");
+      slot.setAttribute("x1", (cx - bw/2).toFixed(1));
+      slot.setAttribute("x2", (cx + bw/2).toFixed(1));
+      slot.setAttribute("y1", y.toFixed(1));
+      slot.setAttribute("y2", y.toFixed(1));
+      slot.setAttribute("class", "ortho-overlay-slot");
+      g.appendChild(slot);
+      overlay.appendChild(g);
+    } else {
+      // Band: waagerechter Metallguertel ueber die Kronenbreite, im zervikalen Drittel.
+      const y = r.y + r.height * (isUpperTooth(sh.tn) ? ORTHO_BAND_Y_UPPER : ORTHO_BAND_Y_LOWER);
+      const cw = r.width * ORTHO_CROWN_W, ch = r.height * ORTHO_BAND_H;
+      const band = document.createElementNS(SVG_NS, "rect");
+      band.setAttribute("class", "ortho-overlay-band");
+      band.setAttribute("x", (cx - cw/2).toFixed(1));
+      band.setAttribute("y", (y - ch/2).toFixed(1));
+      band.setAttribute("width", cw.toFixed(1));
+      band.setAttribute("height", ch.toFixed(1));
+      overlay.appendChild(band);
+    }
   }
 }
 

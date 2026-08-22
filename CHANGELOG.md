@@ -1,5 +1,34 @@
 # Changelog
 
+## 2.46.0 - 2026-08-22
+
+### Bracket, Bogen und Band im Overlay (Etappe 2)
+
+Die Fortsetzung von 2.45.0. Die Ortho-Apparatur wird jetzt im Gitter-Overlay
+KONSTRUIERT, statt die Donor-Ebenen zu warpen - wie Zahnfleisch,
+Retentionsbuegel und Extraktionskreuz.
+
+- **Der Bogen ist EINE durchgehende Linie je Kiefer** ueber alle bukkalen
+  Brackets, auf Slot-Hoehe - deckungsgleich mit jedem Bracket, so wie er in echt
+  durch die Slots laeuft (Dirk: "Bau A"). Vorher schwebte je Zahn ein "≡"
+  versetzt ueber dem Bracket.
+- **Das Band in der Seitenansicht** ist ein waagerechter Metallguertel ueber der
+  Kronenbreite im zervikalen Drittel, aus der Kachelgeometrie konstruiert -
+  statt der falschen Bracket-Ecken, die die Donor-Ebene dort zeichnete.
+- **Buccal/lingual (der Schalter aus 2.45.0) wirkt jetzt:** ein linguales
+  Bracket steht blass und gestrichelt hinter dem Zahn, und sein Bogen wird NICHT
+  gezeichnet (Dirk: lingual ist der Bogen lingual, aber er muss nicht gezeichnet
+  werden).
+- **Umgesetzt ohne Paritaetsbruch und ohne Generatorlauf:** die
+  Seitenansicht-Ebenen `ortho-bracket`/`ortho-ring` werden per CSS ausgeblendet
+  (`display:none`), das Overlay zeichnet die konstruierten Formen. Der
+  SVG-Fingerabdruck liest `data-active`, nicht die Anzeige - also byte-identisch,
+  und die `sp14-ortho-render`-Tests laufen unveraendert. Die
+  KAUFLAECHENANSICHT behaelt Bracket und Ring der Vorlage.
+- Offen als kleine Nacharbeit: die Kauflaechenansicht spiegelt ein linguales
+  Bracket noch nicht auf die linguale Kante (zeigt es weiter bukkal).
+- Payload weiterhin 2.33, SVG-Fingerabdruecke byte-identisch.
+
 ## 2.45.0 - 2026-08-22
 
 ### Bracket buccal/lingual — der Schalter (Etappe 1)

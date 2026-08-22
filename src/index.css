@@ -2493,6 +2493,28 @@ select:focus{
    a stroke has one width from end to end. */
 .retention-overlay-clasp{fill:#1a1a1a; stroke:none}
 
+/* KFO-Overlay (Etappe 2): Bracket, Bogen, Band in Endkoordinaten konstruiert.
+   Ueber den Kacheln, unter der Retention/Fraktur-Ebene ist egal - es ueber-
+   deckt nichts Klinisches. */
+#toothGrid > svg.ortho-overlay{position:absolute; inset:0; pointer-events:none; z-index:3}
+/* Der durchgehende Bogen: eine feine Metalllinie auf Slot-Hoehe. */
+.ortho-overlay-wire{fill:none; stroke:#5b6472; stroke-width:1.6; stroke-linejoin:round; stroke-linecap:round}
+/* Das Bracket: Koerper plus Slotlinie, damit der Bogen sichtbar durchlaeuft. */
+.ortho-overlay-bracket rect{fill:#c9ced6; stroke:#5b6472; stroke-width:.9}
+.ortho-overlay-slot{stroke:#3c434e; stroke-width:1}
+/* Lingual: blass, weil es hinter dem Zahn steht. */
+.ortho-overlay-bracket.is-lingual{opacity:.4}
+.ortho-overlay-bracket.is-lingual rect{stroke-dasharray:2 1.5}
+/* Das Band: waagerechter Metallguertel. */
+.ortho-overlay-band{fill:#c9ced6; stroke:#5b6472; stroke-width:1; opacity:.9}
+
+/* Die Donor-Ebenen der Ortho-Apparatur in der SEITENANSICHT ausblenden - das
+   Overlay zeichnet sie dort konstruiert. Die Kauflaechenansicht behaelt Bracket
+   und Ring. Rein visuell (display): der Fingerabdruck liest `data-active`, also
+   Paritaet byte-identisch. */
+.tooth-tile.side-view svg #ortho-bracket,
+.tooth-tile.side-view svg #ortho-ring{display:none !important}
+
 /* Bead odontogram-im1: an empty implant product is only a GAP where the
    practice placed the implant. One the patient arrived with is complete. */
 .implant-product-gap{color:#b9770e; font-weight:600}
