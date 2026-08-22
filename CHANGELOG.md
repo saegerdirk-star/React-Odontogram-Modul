@@ -1,5 +1,37 @@
 # Changelog
 
+## 2.40.0 - 2026-08-22
+
+### Jarabak als drittes FRS-Verfahren (Bead odontogram-c51.2)
+
+Dirk, 22.08.2026: *"Und ja, bitte auch Jarabak."*
+
+- **Das Polygon S-N-Ar-Go-Me, sieben Zeilen:** Sattelwinkel 123 +/- 5,
+  Gelenkwinkel 143 +/- 6, Kieferwinkel 130 +/- 7, seine beiden Teilwinkel, die
+  Summe der drei hinteren Winkel 396 +/- 6 und das Hoehenverhaeltnis, das es
+  seit c51.2 schon gab. Ein Test prueft, dass die drei Einzelnormen auf die
+  Normsumme aufgehen — 123 + 143 + 130 = 396.
+- **Der Kieferwinkel steht jetzt ZWEIMAL, und das ist Absicht.** `GnTgoAr` ist
+  ueber Gnathion und Tangentengonion konstruiert, Jarabaks ueber Ar-Go-Me. Zwei
+  Konstruktionen sind zwei Messgroessen, keine mit zwei Normen: sonst muesste
+  die Summe der beiden Teilwinkel auf einen Winkel passen, der ueber anderen
+  Punkten liegt. Nur wo dieselbe Messgroesse zwei Normen traegt, greift die
+  Ueberschreibung am Profil (so wie bei Ricketts' Fazialachse).
+- **Die beiden Teilwinkel bekommen KEINEN Zielwert**, obwohl die Literatur
+  Zahlen nennt: sie nennt BEREICHE (52-55 und 70-75 Grad), keinen Mittelwert
+  mit Streuung. Einen Bereich in eine Standardabweichung umzurechnen behauptet
+  eine Genauigkeit, die die Quelle nicht hergibt. Die Messgroesse wird also
+  erfasst und ohne Ziel gezeigt, und die Quellenangabe sagt genau das — ein
+  Test verlangt den Wortlaut. Ohne Norm stimmen sie auch beim Wachstumsmuster
+  nicht mit ab.
+- **Im Importer steht das Polygon VOR `GnTgoAr`**, und darin liegt die ganze
+  Pointe: dessen Muster `/kieferwinkel/i` haette "Kieferwinkel, oberer Teil"
+  sonst geschluckt, denn das erste Muster gewinnt. Der ungeteilte Kieferwinkel
+  bleibt, wo er seit c51.2 steht.
+- Quellenangabe wie bei den schon vorhandenen Jarabak-Baendern: zweithand aus
+  der kieferorthopaedischen Literatur, das Original nicht gelesen. Payload
+  weiterhin 2.32, SVG-Fingerabdruecke byte-identisch.
+
 ## 2.39.0 - 2026-08-22
 
 ### Ricketts als zweites FRS-Verfahren (Bead odontogram-c51.2)

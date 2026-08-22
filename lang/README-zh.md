@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.39.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.40.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -157,7 +157,7 @@ export default function OdontogramClient() {
 - 💾 JSON 格式的状态导出/导入（版本 2.20；导入仍接受旧版 1.4 及 2.0 至 2.19 版本，并自动迁移，包含插件自定义状态及每颗牙齿的备注）
 - 🧭 **正畸是第三个临床视图**（`odontogram-c51`）：`Odontogram | 牙周状态 | 正畸` 切换器（`#appViewToggle`）承载下面两张卡片。切换时牙位图从不卸载，只是隐藏，因此换视图不会扰乱记录。正畸视图没有自己的弹窗形态，所以即使牙周图被配置为弹窗，它仍是切换器的一段——消失的只是牙周那一段。
 - 📐 **模型分析**（`odontogram-c51.1`）：由近远中牙冠宽度计算 Tonn 与 Bolton 比值，给出目标切牙总和、牙量不调以及哪一牙弓存在多余牙体。宽度可在牙弓图上或以列表录入——同一份记录的两种视图。模型上缺失的牙（未萌出、已丧失、龈下）沿用对侧同名牙的宽度，并明确标记为推定值。此外还包括覆盖、覆𬌗与各牙弓的牙性中线偏移
-- 🩻 **头影测量**（`odontogram-c51.2`）：共用一套测量点，其上是测量项，再其上是作为配置档的各家分析方法——新增学派即新增配置档，测量点不变。每个测量项都带有出处与 FHIR 编码；没有出版物支持的标准值不予发布，该测量项仅记录而不显示目标值。可推导出颌骨相对颅底的位置（Björk 面型分类、协调性、相对于群体标准值**与**个体标准值的矢状分类）以及生长型——由所有具备出处标准值的指标共同投票得出。数值可通过粘贴文本从其他程序的打印报告中导入——未经确认不会写入任何数据 内置两种分析：**Hasund**（以前颅底为基准）与 **Ricketts**（以眶耳平面为基准，成人常模）。面轴恰好说明了这种分层的用处——Ricketts 给出 90 ± 3,5，Paddenberg 给出 90 ± 3,0，因此 93,3° 在一个离散范围之内、在另一个之外；覆盖值挂在分析上，测量项保留自己的常模。
+- 🩻 **头影测量**（`odontogram-c51.2`）：共用一套测量点，其上是测量项，再其上是作为配置档的各家分析方法——新增学派即新增配置档，测量点不变。每个测量项都带有出处与 FHIR 编码；没有出版物支持的标准值不予发布，该测量项仅记录而不显示目标值。可推导出颌骨相对颅底的位置（Björk 面型分类、协调性、相对于群体标准值**与**个体标准值的矢状分类）以及生长型——由所有具备出处标准值的指标共同投票得出。数值可通过粘贴文本从其他程序的打印报告中导入——未经确认不会写入任何数据 内置三种分析：**Hasund**（以前颅底为基准）、**Ricketts**（以眶耳平面为基准，成人常模）与 **Jarabak**（S-N-Ar-Go-Me 多边形）。面轴恰好说明了这种分层的用处——Ricketts 给出 90 ± 3,5，Paddenberg 给出 90 ± 3,0，因此 93,3° 在一个离散范围之内、在另一个之外；覆盖值挂在分析上，测量项保留自己的常模。
 - ⚠️ 两者目前均为**会话状态**：尚无已发布的 Dental Core profile，因此它们不进入导出负载，而不是自行发明一个本地载体
 - 🔗 HL7 FHIR R4 导出（每颗牙齿一个 Observation 组成的 collection Bundle，恒牙列采用 ISO 3950 牙位编码，使用本地代码系统——SNOMED CT 映射计划中）
 - ✚ 十字/加号式牙面选择界面（B/M/O/D/L）用于龋齿和充填记录

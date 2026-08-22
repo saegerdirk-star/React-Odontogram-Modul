@@ -149,6 +149,24 @@ const JARABAK_BANDS =
   "Jarabak & Fizzell, Technique and treatment with light-wire edgewise appliances — "
   + "the published growth bands, quoted second-hand from the orthodontic literature; "
   + "the original has not been read";
+// Die Winkel des Jarabak-Polygons und ihre Normen. Wortgleich behandelt wie
+// JARABAK_BANDS gleich darueber, und aus demselben Grund: das Original ist hier
+// nicht gelesen worden. Die Beleg-Regel verlangt nicht die gelesene
+// Publikation, sondern die Angabe, woher der Wert stammt.
+const JARABAK_NORMS =
+  "Jarabak & Fizzell, Technique and treatment with light-wire edgewise appliances — "
+  + "the angles of the polygon and their norms, quoted second-hand from the "
+  + "orthodontic literature; the original has not been read";
+// Der obere und der untere Teilwinkel des Kieferwinkels. Die Literatur gibt
+// BEREICHE an (52-55 Grad und 70-75 Grad), keinen Mittelwert mit Streuung. Ein
+// Bereich ist keine Standardabweichung, und ihn in eine umzurechnen hiesse,
+// eine Genauigkeit zu behaupten, die die Quelle nicht hergibt - also wird die
+// Messgroesse ohne Zielwert gefuehrt, wie die Beleg-Regel es vorsieht.
+const GONION_GETEILT =
+  "Jarabak's split gonial angle — the literature states a RANGE (52-55 deg upper, "
+  + "70-75 deg lower), not a mean with a standard deviation. Converting a range "
+  + "into a scatter it is not would assert a precision the source does not give, "
+  + "so the measure is recorded with no target (sourcing rule, bead odontogram-c51.2)";
 const HASUND =
   "Habersack & Hasund, Klinische Anwendung der individualisierten Kephalometrie, "
   + "SAM Präzisionstechnik 2013";
@@ -233,6 +251,34 @@ export const MEASURES: readonly CephMeasure[] = [
     coding: { local: "ceph-gn-tgo-ar", ucum: "deg" },
     norm: 126.0, sd: 6.0, source: SEGNER + " (tabulated there as ArGoMe)",
     growth: "higher-is-vertical" },
+
+  // --- Jarabak: die vier Winkel des Polygons S-N-Ar-Go-Me ---
+  // Der Kieferwinkel steht hier ein ZWEITES Mal, und das ist kein Versehen:
+  // `GnTgoAr` ist ueber Gnathion und Tangentengonion konstruiert, Jarabak misst
+  // Ar-Go-Me. Zwei Konstruktionen sind zwei Messgroessen, nicht eine mit zwei
+  // Normen - sonst muesste die Summe der Teilwinkel auf einen Winkel passen,
+  // der ueber anderen Punkten liegt.
+  { id: "SaddleAngle", labelKey: "ceph.saddle", unit: "deg", points: ["N", "S", "S", "Ar"],
+    coding: { local: "ceph-saddle-angle", ucum: "deg" },
+    norm: 123.0, sd: 5.0, source: JARABAK_NORMS, growth: "higher-is-vertical" },
+  { id: "ArticularAngle", labelKey: "ceph.articular", unit: "deg", points: ["S", "Ar", "Ar", "Go"],
+    coding: { local: "ceph-articular-angle", ucum: "deg" },
+    norm: 143.0, sd: 6.0, source: JARABAK_NORMS, growth: "higher-is-vertical" },
+  { id: "GonialJarabak", labelKey: "ceph.gonial", unit: "deg", points: ["Ar", "Go", "Go", "Me"],
+    coding: { local: "ceph-ar-go-me", ucum: "deg" },
+    norm: 130.0, sd: 7.0, source: JARABAK_NORMS, growth: "higher-is-vertical" },
+  { id: "GonialUpper", labelKey: "ceph.gonial.upper", unit: "deg", points: ["Ar", "Go", "Go", "N"],
+    coding: { local: "ceph-gonial-upper", ucum: "deg" },
+    norm: null, sd: null, source: GONION_GETEILT },
+  { id: "GonialLower", labelKey: "ceph.gonial.lower", unit: "deg", points: ["N", "Go", "Go", "Me"],
+    coding: { local: "ceph-gonial-lower", ucum: "deg" },
+    norm: null, sd: null, source: GONION_GETEILT },
+  // Die Summe der drei hinteren Winkel. Sie ist ueber dem ganzen Polygon
+  // definiert, nicht ueber zwei Linien - deshalb fuenf Punkte.
+  { id: "PosteriorSum", labelKey: "ceph.posteriorsum", unit: "deg",
+    points: ["N", "S", "Ar", "Go", "Me"],
+    coding: { local: "ceph-posterior-sum", ucum: "deg" },
+    norm: 396.0, sd: 6.0, source: JARABAK_NORMS, growth: "higher-is-vertical" },
   { id: "FacialAxis", labelKey: "ceph.facialaxis", unit: "deg", points: ["N", "Ba", "Pt", "Gn"],
     coding: { local: "ceph-facial-axis", ucum: "deg" },
     norm: 90.0, sd: 3.0, source: PADDENBERG + " (Ricketts' facial axis, N-Ba against Pt-Gn)",
@@ -384,6 +430,21 @@ export const PROFILES: readonly CephProfile[] = [
     norms: {
       FacialAxis: { norm: 90.0, sd: 3.5, source: RICKETTS },
     },
+  },
+  {
+    id: "jarabak",
+    labelKey: "ceph.profile.jarabak",
+    // S-N ist die Bezugslinie des Polygons, also die vordere Schaedelbasis -
+    // Jarabak teilt sie mit Hasund und unterscheidet sich in der AUSWAHL.
+    referenceFrame: "anterior-cranial-base",
+    source: JARABAK_NORMS,
+    // Die Reihenfolge ist die des Polygons: von der Schaedelbasis um den
+    // Kieferwinkel herum, dann die Summe, dann das Verhaeltnis der Hoehen.
+    measures: [
+      "SaddleAngle", "ArticularAngle", "GonialJarabak",
+      "GonialUpper", "GonialLower", "PosteriorSum",
+      "JarabakIndex",
+    ],
   },
 ];
 

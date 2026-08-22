@@ -70,6 +70,23 @@ const PATTERNS: { measureId: string; patterns: RegExp[] }[] = [
   { measureId: "PgNB", patterns: [/pg\s*-\s*nb\s*-?\s*strecke/i] },
   { measureId: "SNPg", patterns: [/snpg\s*-?\s*winkel/i] },
   { measureId: "NSBa", patterns: [/nsba\s*-?\s*winkel/i, /sch[äa]delbasiswinkel/i] },
+  // Jarabak-Polygon. Es steht VOR `GnTgoAr`, und das ist die ganze Pointe:
+  // dessen Muster `/kieferwinkel/i` wuerde "Kieferwinkel, oberer Teil" sonst
+  // schlucken - das erste Muster gewinnt (`matchMeasure`). Der ungeteilte
+  // Kieferwinkel bleibt danach bei GnTgoAr, wo er seit c51.2 steht; hier wird
+  // nur getroffen, was sich als Teilwinkel oder ausdruecklich als Ar-Go-Me
+  // ausweist.
+  { measureId: "GonialUpper", patterns: [/kieferwinkel\s*[,(]?\s*ober/i,
+    /\bar\s*-\s*go\s*-\s*n\b/i, /upper\s+gonial/i] },
+  { measureId: "GonialLower", patterns: [/kieferwinkel\s*[,(]?\s*unter/i,
+    /\bn\s*-\s*go\s*-\s*me\b/i, /lower\s+gonial/i] },
+  { measureId: "GonialJarabak", patterns: [/\bar\s*-\s*go\s*-\s*me\b/i] },
+  { measureId: "SaddleAngle", patterns: [/sattelwinkel/i, /saddle\s*angle/i,
+    /\bn\s*-\s*s\s*-\s*ar\b/i] },
+  { measureId: "ArticularAngle", patterns: [/gelenkwinkel/i, /articular\s*angle/i,
+    /\bs\s*-\s*ar\s*-\s*go\b/i] },
+  { measureId: "PosteriorSum", patterns: [/summe\s+der\s+(?:hinteren|posterioren)/i,
+    /winkelsumme/i, /sum\s+of\s+the\s+posterior/i] },
   { measureId: "GnTgoAr", patterns: [/gngoar\s*-?\s*winkel/i, /gn\s*-\s*tgo\s*-\s*ar/i, /argome/i, /kieferwinkel/i] },
   { measureId: "MLNSL", patterns: [/ml\s*-\s*nsl\s*-?\s*winkel/i] },
   { measureId: "NLNSL", patterns: [/nl\s*-\s*nsl\s*-?\s*winkel/i] },
