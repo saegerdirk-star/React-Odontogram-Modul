@@ -70,6 +70,14 @@ Kontur steht:
   auf die Seitenansicht
 - `halsbaender.py` zeichnet `caries-root` und `caries-subcrown` als
   rechnerische waagerechte Bänder am Zahnhals, statt sie zu warpen
+- `crownprep.py` schneidet den beschliffenen Zahn (`tooth-crownprep`) AUS der
+  Kontur, an einer pro Zahn aus der eingesetzten Pulpa abgeleiteten Linie:
+  `max(Kronenspitze − 2 mm, Pulpadach + 1,2 mm)`, sodass die Präparation die
+  Pulpa nie erreicht (die Kronenwände laufen leicht konvergent zur flachen
+  Kappe, die Wurzel bleibt voll). Vorher war es eine gewarpte Spender-
+  Silhouette, die an acht Vorlagen bis 2,7 Einheiten apikal des Pulpadachs lag
+  — `verify_redraw.py` prüft es jetzt (`TOL_PULPADACH`). Läuft NACH der Pulpa,
+  wie `endo.py`, und bleibt nach einer Neuzeichnung der Pulpen automatisch richtig
 - `draufsicht.py` liest eine Frontzahn-Draufsicht NACH INHALT (größter
   geschlossener Pfad = Umriss, offene Pfade = Linien), prüft Dirks `v`/`m`-
   Marken gegen die dokumentierte Ausrichtung und normiert sie auf die

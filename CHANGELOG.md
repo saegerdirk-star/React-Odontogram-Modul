@@ -1,5 +1,33 @@
 # Changelog
 
+## 2.47.1 - 2026-08-22
+
+### Der beschliffene Zahn schneidet die Pulpa nicht mehr an
+
+Dirk, 22.08.2026: "die Darstellung eines beschliffenen Zahnes fuer eine Krone
+darf nicht die Pulpa anschneiden, wie es schon war." Gemessen stimmte das an
+acht Vorlagen.
+
+- **Ursache.** `tooth-crownprep` war eine feste Spender-Silhouette, die die
+  Common-Transform auf die Kontur warpte - blind dafuer, wo bei DIESEM Zahn die
+  Pulpa liegt. An 12, 13, 14, 15, 43, 45, 53 und 83 lag die Praep-Flaeche bis
+  2,7 Einheiten APIKAL des Pulpadachs; der Laufzeit-Clip kappte die Pulpa dann
+  buendig, und das liest sich als eroeffnete Pulpa.
+- **Loesung (`tools/toothgen/crownprep.py`, neue dritte Stufe).** Der Stumpf
+  wird jetzt wie die Krone (`kronen.py`) AUS der Kontur geschnitten, an einer
+  pro Zahn abgeleiteten Linie: `max(Kronenspitze - 2 mm, Pulpadach + 1,2 mm)`.
+  Wo die Pulpa hoch steht, reduziert er automatisch weniger - klinisch genau
+  richtig. Die Kronenwaende laufen leicht konvergent zur flachen Kappe zusammen
+  (Dirks Wahl), die Wurzel bleibt voll.
+- **Bleibt richtig, wenn die Pulpen neu gezeichnet werden.** Die Ableitung
+  liest die eingesetzte Pulpa; wandert das Dach (etwa bei der geplanten
+  Junge-Erwachsenen-Neuzeichnung), wandert die Praep-Linie mit.
+- **Vertrag.** `verify_redraw.py` prueft neu, dass die Praep-Flaeche ueber dem
+  Pulpadach steht (`TOL_PULPADACH`); die Pruefung faengt den alten Anschnitt
+  nachweislich. Nur die 26 Seitenansichten sind betroffen, je genau eine Zeile
+  (`tooth-crownprep`). Kein Payload/FHIR, SVG-Fingerabdruck byte-identisch
+  (id/opacity/class unveraendert), Parity-Fixtures unberuehrt.
+
 ## 2.47.0 - 2026-08-22
 
 ### Fotostat nach Powell (Bead odontogram-c51.3)

@@ -53,6 +53,13 @@ ZEICHNUNGEN = Path.home() / "dev" / "Odontogram-Anatomie"
 # heisst, dass ein Feld ausserhalb seiner Stuetzstellen extrapoliert hat.
 TOL_UEBERSTAND = 15.0
 
+# Wieviel Dentin zwischen Praep-Flaeche und Pulpadach mindestens nachweisbar
+# sein muss, damit der beschliffene Zahn die Pulpa nicht anschneidet. Gebaut
+# wird mit `crownprep.DENTIN` = 3,5; hier steht ein loser Wert, der jeden echten
+# Anschnitt faengt (frueher lag die Spender-Flaeche bis 2,7 Einheiten APIKAL des
+# Pulpadachs an 13/14/43/53/83) und das 0,02-Kettenrauschen durchlaesst.
+TOL_PULPADACH = 1.0
+
 # Wie weit der Implantatkoerper gegenueber dem Spender wachsen darf. Eine
 # Aehnlichkeitsabbildung skaliert ihn um wenige Prozent; das volle Zahnfeld
 # zog ihn am Sechser auf das Doppelte.
@@ -213,6 +220,21 @@ def _x_bereich(d: str):
         for i in range(0, len(v) - 1, 2):
             xs.append(v[i])
     return (min(xs), max(xs)) if xs else None
+
+
+def _y_max(txt: str, pid: str) -> float | None:
+    """Groesstes y (okklusal-naechster Endpunkt) aller Pfade einer Ebene - am
+    Molaren traegt die Pulpa mehrere Kanaele als `-1`/`-2`."""
+    ys = []
+    for m in re.finditer(
+        r'<path\b[^>]*\bid="' + re.escape(pid) + r'(?:-\d+)?"[^>]*\bd="([^"]+)"', txt
+    ):
+        for cmd, a in svgpath.to_absolute(m.group(1)):
+            if cmd in ("M", "L") and len(a) >= 2:
+                ys.append(a[1])
+            elif cmd == "C" and len(a) >= 6:
+                ys.append(a[5])
+    return max(ys) if ys else None
 
 
 def bleibt_im_zahn(txt: str, key: str, failures: list) -> set[tuple[str, str]]:
@@ -376,6 +398,20 @@ def main() -> int:
                     f"{key}: Krone {krone:.1f} px breit, Spalte plus Spalt minus "
                     f"Zuschlag aber {hat + GRID_GAP - ZUSCHLAG:.1f} px; dieser Zahn "
                     f"steht anders zu seinen Nachbarn als alle uebrigen")
+
+        # Der beschliffene Zahn (`tooth-crownprep`) darf die Pulpa nicht
+        # anschneiden. In der Rohvorlage liegt die Krone bei GROESSEREM y, die
+        # Praep-Flaeche ist also das groesste y des Stumpfes und muss ueber dem
+        # Pulpadach (groesstes y der Pulpa) stehen. `crownprep.py` leitet genau
+        # das ab; ohne diese Pruefung sass der Anschnitt an 13/14/43/53/83
+        # lautlos in einer gueltigen Silhouette.
+        prep_y = _y_max(txt, "tooth-crownprep")
+        pulp_y = _y_max(txt, "tooth-healthy-pulp") or _y_max(txt, "milktooth-healthy-pulp")
+        if prep_y is not None and pulp_y is not None and prep_y < pulp_y + TOL_PULPADACH:
+            failures.append(
+                f"{key}: die Praep-Flaeche steht {pulp_y - prep_y:.2f} Einheiten "
+                f"apikal des Pulpadachs; der beschliffene Zahn schneidet die "
+                f"Pulpa an")
 
         mark = lambda b: "OK" if b else "!!"  # noqa: E731
         gut_impl = streckung is None or 1 / TOL_IMPLANTAT <= streckung <= TOL_IMPLANTAT

@@ -28,6 +28,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import crownprep as cp             # noqa: E402
 import fuellflaechen as ff          # noqa: E402
 import fuellflaechen_einsetzen as fe  # noqa: E402
 import halsbaender as hb            # noqa: E402
@@ -65,6 +66,12 @@ def main() -> int:
     # der Pulpa, die der Redraw eingesetzt hat.
     endos = sum(en.einsetzen(z)["endo"] for z in vorlagen)
     print(f"Endo-Ebenen: {endos} in {len(vorlagen)} Vorlagen")
+
+    # Der beschliffene Zahn wird an einer Linie aus der Kontur geschnitten, die
+    # die eingesetzte Pulpa nie erreicht - also NACH der Pulpa, wie das Endo.
+    seiten_prep = cp.seitenzaehne()
+    preps = sum(cp.einsetzen(z)["crownprep"] for z in seiten_prep)
+    print(f"Beschliffene Zaehne: {preps} in {len(seiten_prep)} Seitenansichten")
 
     print(f"Kauflaechen: {len(rp.PLAN_OCCL)}")
     for ziel in rp.PLAN_OCCL:
