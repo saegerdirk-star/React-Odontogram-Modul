@@ -16,11 +16,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { t, getI18nLanguage } from "./i18n/useI18n";
 import {
-  getCephProfileId, getCephValue, getCephValues, getReadOnly,
-  onStateChange, setCephProfileId, setCephValue,
+  getCephFavourites, getCephProfileId, getCephValue, getCephValues, getReadOnly,
+  isCephProfileChosen, onStateChange, setCephFavourite, setCephProfileId,
+  setDefaultCephProfile, setCephValue,
 } from "./odontogram";
 import {
-  PROFILES, assess, normFor, profileMeasures,
+  assess, normFor, orderProfiles, profileMeasures,
   type CephAssessment, type CephMeasure, type GrowthIndicator,
 } from "./cephalometry";
 import { parseCephText, type ParsedValue } from "./cephImport";
@@ -259,13 +260,37 @@ export function CephalometryCard() {
   const [profileId, setProfile] = useState<string>(() => getCephProfileId());
   const [readOnly, setReadOnly] = useState<boolean>(() => getReadOnly());
   const [importing, setImporting] = useState(false);
+  const [favourites, setFavourites] = useState<string[]>(() => getCephFavourites());
 
   useEffect(() => onStateChange(() => {
     setValues(getCephValues());
     setProfile(getCephProfileId());
     setReadOnly(getReadOnly());
+    setFavourites(getCephFavourites());
   }), []);
 
+  // Favoriten oben, beide Gruppen alphabetisch — nach der UEBERSETZTEN
+  // Beschriftung, weshalb `orderProfiles` den Aufloeser bekommt statt `t` zu
+  // importieren (siehe dort). Die aktive Sprache gehoert deshalb in die
+  // Abhaengigkeiten: ein Sprachwechsel ordnet die Liste neu.
+  const lang = getI18nLanguage();
+  const gruppen = useMemo(
+    () => orderProfiles(p => t(p.labelKey), favourites),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [favourites, lang],
+  );
+
+  // Solange niemand AUSDRUECKLICH gewaehlt hat, zieht der erste Favorit die
+  // Karte auf sich — sonst waere ein Favorit bloss eine Umsortierung. Nach
+  // einer ausdruecklichen Wahl passiert das nie wieder, und zwar auch dann
+  // nicht, wenn spaeter ein Favorit dazukommt: eine Wahl, die sich unter der
+  // Hand aendert, ist schlimmer als gar keine Voreinstellung.
+  const ersterFavorit = gruppen.favourites[0]?.id;
+  useEffect(() => {
+    if (ersterFavorit && !isCephProfileChosen()) setDefaultCephProfile(ersterFavorit);
+  }, [ersterFavorit]);
+
+  const istFavorit = favourites.includes(profileId);
   const measures = useMemo(() => profileMeasures(profileId), [profileId]);
   const assessment = useMemo(() => assess(values, profileId), [values, profileId]);
 
@@ -281,11 +306,42 @@ export function CephalometryCard() {
               value={profileId}
               onChange={e => setCephProfileId(e.currentTarget.value)}
             >
-              {PROFILES.map(p => (
-                <option key={p.id} value={p.id}>{t(p.labelKey)}</option>
-              ))}
+              {/* Die Gruppen erscheinen nur, wenn es ueberhaupt Favoriten gibt
+                  — eine Ueberschrift "Alle" ueber der einzigen Gruppe waere
+                  eine Auskunft ueber nichts. */}
+              {gruppen.favourites.length === 0
+                ? gruppen.others.map(p => (
+                  <option key={p.id} value={p.id}>{t(p.labelKey)}</option>
+                ))
+                : (
+                  <>
+                    <optgroup label={t("ceph.group.favourites")}>
+                      {gruppen.favourites.map(p => (
+                        <option key={p.id} value={p.id}>{t(p.labelKey)}</option>
+                      ))}
+                    </optgroup>
+                    {gruppen.others.length > 0 && (
+                      <optgroup label={t("ceph.group.all")}>
+                        {gruppen.others.map(p => (
+                          <option key={p.id} value={p.id}>{t(p.labelKey)}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </>
+                )}
             </select>
           </label>
+          <button
+            type="button"
+            id="cephFavourite"
+            className={"ceph-fav" + (istFavorit ? " is-on" : "")}
+            aria-pressed={istFavorit}
+            title={t(istFavorit ? "ceph.favourite.remove" : "ceph.favourite.add")}
+            aria-label={t(istFavorit ? "ceph.favourite.remove" : "ceph.favourite.add")}
+            onClick={() => setCephFavourite(profileId, !istFavorit)}
+          >
+            <span aria-hidden="true">{istFavorit ? "★" : "☆"}</span>
+          </button>
           <button type="button" id="cephImportToggle" onClick={() => setImporting(v => !v)}>
             {t("ceph.import.open")}
           </button>

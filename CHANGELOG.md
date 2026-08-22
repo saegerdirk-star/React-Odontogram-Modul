@@ -1,5 +1,43 @@
 # Changelog
 
+## 2.41.0 - 2026-08-22
+
+### Verfahren alphabetisch, mit Favoriten (Bead odontogram-c51.2)
+
+Dirk, 22.08.2026: *"Sollten wir die nicht alphabetisch ordnen und dem Anwender
+die Moeglichkeit geben, Favoriten festzulegen?"* Bei drei Verfahren faellt es
+kaum auf; die Liste waechst.
+
+- **Sortiert wird nach der ANGEZEIGTEN Beschriftung, nicht nach der id.**
+  Alphabetisch ist eine Aussage ueber das Wort, das der Leser sieht, und das
+  ist in zwoelf Sprachen zwoelfmal ein anderes. `orderProfiles` nimmt deshalb
+  einen Aufloeser entgegen, statt `t` zu importieren — `cephalometry.ts` bleibt
+  abhaengigkeitsfrei, und ein Test mit einem umdrehenden Aufloeser beweist, dass
+  die Sortierung nicht heimlich doch an der id haengt. Die Reihenfolge INNERHALB
+  eines Verfahrens bleibt unangetastet: Jarabaks Polygon laeuft um den
+  Kieferwinkel herum, alphabetisch waere dort Unsinn.
+- **Favoriten stehen oben, in einer eigenen Gruppe** — aber die Gruppen
+  erscheinen nur, wenn es ueberhaupt Favoriten gibt, und die zweite entfaellt,
+  wenn alle markiert sind. Eine Ueberschrift ueber der einzigen Gruppe ist eine
+  Auskunft ueber nichts.
+- **Der erste Favorit zieht die Karte auf sich** — sonst waere ein Favorit
+  bloss eine Umsortierung. "Erster" heisst alphabetisch erster, nicht zuerst
+  markierter: die Markierreihenfolge sieht niemand. Nach einer AUSDRUECKLICHEN
+  Wahl passiert das nie wieder, auch dann nicht, wenn spaeter ein Favorit
+  dazukommt (`isCephProfileChosen`) — eine Wahl, die sich unter der Hand
+  aendert, ist schlimmer als gar keine Voreinstellung.
+- **Sitzungszustand, nie Payload**, auf denselben Bedingungen wie die
+  Restaurationsfarben: eine Vorliebe der PRAXIS, kein Patientendatum. Und
+  ebenso wie diese ausdruecklich NICHT Teil des Blank-Slate-Zuruecksetzens —
+  wer "alles zuruecksetzen" drueckt, will einen leeren Befund und nicht seine
+  Lieblingsanalyse verlieren. `resetCephProfilePreferences()` steht fuer den,
+  der genau das doch will.
+- Neue API: `getCephFavourites`, `setCephFavourite`, `isCephFavourite`,
+  `isCephProfileChosen`, `setDefaultCephProfile`,
+  `resetCephProfilePreferences`, und `orderProfiles` in `cephalometry.ts`.
+  Ein Stern neben der Verfahrenswahl schaltet die Markierung um. Payload
+  weiterhin 2.32, SVG-Fingerabdruecke byte-identisch.
+
 ## 2.40.0 - 2026-08-22
 
 ### Jarabak als drittes FRS-Verfahren (Bead odontogram-c51.2)

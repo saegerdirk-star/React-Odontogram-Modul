@@ -2606,6 +2606,14 @@ select:focus{
 .ceph-head-controls select, .ceph-head-controls button{font:inherit; font-size:12px; padding:3px 8px;
   border:1px solid var(--line); border-radius:6px; background:var(--panel); color:var(--text)}
 .ceph-head-controls button{cursor:pointer}
+/* Der Favoritenstern neben der Verfahrenswahl (Dirk, 22.08.2026). Kein
+   Rahmen und kein Hintergrund: er steht neben einem Auswahlfeld und einem
+   Knopf und soll keine dritte Schaltflaeche daneben sein, sondern eine
+   Markierung am Feld. */
+.ceph-fav{border:0 !important; background:none !important; padding:2px 4px !important;
+  font-size:16px; line-height:1; color:var(--muted); cursor:pointer}
+.ceph-fav.is-on{color:#e0a800}
+.ceph-fav:focus-visible{outline:2px solid var(--accent); outline-offset:1px; border-radius:4px}
 .ceph-progress{margin:0; font-size:11px; color:var(--muted)}
 
 .ceph-scroll{overflow-x:auto}

@@ -11841,6 +11841,70 @@ export function getCephProfileId(): string { return cephProfileId; }
 export function setCephProfileId(id: string): void {
   if (!id || id === cephProfileId) return;
   cephProfileId = id;
+  cephProfileChosen = true;
+  notifyStateChange();
+}
+
+// ---- Bevorzugte FRS-Verfahren (Dirk, 22.08.2026) ----
+// Eine Praxis benutzt ein oder zwei Analysen, nicht alle. Sitzungszustand auf
+// denselben Bedingungen wie die Restaurationsfarben: eine PRAXIS-Vorliebe, kein
+// Patientendatum, also nie Teil des Export-Payloads.
+//
+// Die Reihenfolge ist die des MARKIERENS und nicht die der Anzeige - die
+// Anzeige sortiert alphabetisch, und zwar nach der uebersetzten Beschriftung,
+// was hier niemand wissen kann (`orderProfiles` in `cephalometry.ts` nimmt den
+// Aufloeser entgegen). Gespeichert wird deshalb nur, WAS markiert ist.
+const cephFavourites = new Set<string>();
+
+/** Die markierten Verfahren, in der Reihenfolge des Markierens. */
+export function getCephFavourites(): string[] { return [...cephFavourites]; }
+
+/** Ein Verfahren als Favorit markieren oder die Markierung nehmen. */
+export function setCephFavourite(id: string, on: boolean): void {
+  if (!id) return;
+  const vorher = cephFavourites.has(id);
+  if (vorher === on) return;
+  if (on) cephFavourites.add(id); else cephFavourites.delete(id);
+  notifyStateChange();
+}
+
+export function isCephFavourite(id: string): boolean { return cephFavourites.has(id); }
+
+/**
+ * Ob jemand ein Verfahren AUSDRUECKLICH gewaehlt hat.
+ *
+ * Das ist der Unterschied zwischen "steht auf Hasund, weil das der Anfangswert
+ * ist" und "steht auf Hasund, weil ich es angeklickt habe" - und nur im ersten
+ * Fall darf ein Favorit die Karte beim naechsten Aufbau auf sich ziehen. Ohne
+ * dieses Bit muesste man raten, und eine Wahl, die sich unter der Hand wieder
+ * aendert, ist schlimmer als gar keine Voreinstellung.
+ */
+let cephProfileChosen = false;
+export function isCephProfileChosen(): boolean { return cephProfileChosen; }
+
+/** Fuer die Karte: einen Favoriten als Anfangsverfahren setzen, OHNE ihn damit
+ *  zur ausdruecklichen Wahl zu erklaeren. */
+export function setDefaultCephProfile(id: string): void {
+  if (!id || cephProfileChosen || id === cephProfileId) return;
+  cephProfileId = id;
+  notifyStateChange();
+}
+
+/**
+ * Markierungen und Wahl zuruecksetzen.
+ *
+ * AUSDRUECKLICH NICHT Teil des Blank-Slate-Zuruecksetzens, und aus demselben
+ * Grund, aus dem `resetRestorationColours` dort auch nicht steht: das
+ * Zuruecksetzen leert den FALL, nicht die Vorlieben der Praxis. Wer "alles
+ * zuruecksetzen" drueckt, will einen leeren Befund und nicht seine
+ * Lieblingsanalyse verlieren. Die Funktion steht fuer einen Anwender, der
+ * genau das doch will.
+ */
+export function resetCephProfilePreferences(): void {
+  if (cephFavourites.size === 0 && !cephProfileChosen && cephProfileId === "hasund") return;
+  cephFavourites.clear();
+  cephProfileChosen = false;
+  cephProfileId = "hasund";
   notifyStateChange();
 }
 

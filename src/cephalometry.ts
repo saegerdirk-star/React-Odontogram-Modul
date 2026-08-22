@@ -448,6 +448,34 @@ export const PROFILES: readonly CephProfile[] = [
   },
 ];
 
+/**
+ * Die Verfahren fuer die Auswahlliste ordnen: Favoriten oben, beide Gruppen
+ * alphabetisch. Dirk, 22.08.2026: *"Sollten wir die nicht alphabetisch ordnen
+ * und dem Anwender die Moeglichkeit geben, Favoriten festzulegen?"*
+ *
+ * SORTIERT WIRD NACH DER ANGEZEIGTEN BESCHRIFTUNG, nicht nach der id - und
+ * deshalb nimmt diese Funktion einen Aufloeser entgegen, statt `t` zu
+ * importieren. Alphabetisch ist eine Aussage ueber das Wort, das der Leser
+ * sieht, und das ist in zwoelf Sprachen zwoelfmal ein anderes. So bleibt die
+ * Datei abhaengigkeitsfrei und die Ordnung trotzdem pruefbar.
+ *
+ * Die REIHENFOLGE INNERHALB eines Profils bleibt unangetastet: `measures` ist
+ * klinisch geordnet (Jarabaks Polygon laeuft um den Kieferwinkel herum), und
+ * alphabetisch waere dort Unsinn.
+ */
+export function orderProfiles(
+  labelOf: (profile: CephProfile) => string,
+  favourites: readonly string[] = [],
+): { favourites: CephProfile[]; others: CephProfile[] } {
+  const markiert = new Set(favourites);
+  const nachNamen = (a: CephProfile, b: CephProfile) =>
+    labelOf(a).localeCompare(labelOf(b));
+  return {
+    favourites: PROFILES.filter(p => markiert.has(p.id)).sort(nachNamen),
+    others: PROFILES.filter(p => !markiert.has(p.id)).sort(nachNamen),
+  };
+}
+
 /** Every measure a profile presents, resolved and in its declared order. */
 export function profileMeasures(profileId: string): CephMeasure[] {
   const profile = PROFILES.find(p => p.id === profileId);
