@@ -47,7 +47,7 @@ jobs:
           }
 
           mkdir "$probe_dir/dummy"
-          printf '%s\n' '{"name":"odontogram-acl-probe","version":"0.0.0-acl.0"}' > "$probe_dir/dummy/package.json"
+          printf '%s\n' '{"name":"odontogram-acl-probe","version":"0.0.0"}' > "$probe_dir/dummy/package.json"
           set +e
           dummy_out=$( ( cd "$probe_dir/dummy" && publish_cwd ) 2>&1 )
           dummy_rc=$?
