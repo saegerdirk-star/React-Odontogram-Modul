@@ -1,5 +1,34 @@
 # Changelog
 
+## 2.42.0 - 2026-08-22
+
+### Die Kephalometrie in allen zwoelf Sprachen
+
+Dirk, 22.08.2026: *"Dann mach die Uebersetzungen, wenn das moeglich ist."* Der
+ganze `ceph.*`-Block stand ausserhalb von Englisch und Deutsch woertlich auf
+Englisch — 88 Schluessel in zehn Sprachen. Das fiel nicht auf, solange die
+Karten nirgends montiert waren; seit die KFO eine eigene Ansicht hat, ist es
+das Erste, was ein spanischer oder russischer Anwender sieht.
+
+- **880 Zeichenketten uebersetzt**, alle zwoelf Sprachen jetzt vollstaendig.
+  Woertlich gleich geblieben ist nur, was gleich bleiben MUSS: Eigennamen
+  (Hasund, Wits) und international gleiche Woerter (Index, horizontal, distal).
+  In den Sprachen mit eigener Schrift sind auch die Verfahrensnamen
+  transliteriert — russisch Джарабак/Рикеттс/Хасунд, arabisch
+  جارابك/ريكيتس/هاسوند —, was die alphabetische Ordnung aus 2.41.0 gleich
+  vorfuehrt: dort steht Jarabak vorn, weil sein NAME dort vorn steht.
+- **Und dabei ein echter Fehler gefunden, am laufenden Bild.** Auf Arabisch
+  las sich die Norm "82,0 ± 3,0" als **"3.0 ± 82.0"** und "74,0 %" als
+  "% 74,0". Kein Uebersetzungsfehler, sondern der Bidi-Algorithmus: eine Folge
+  aus Zahl, Zeichen und Zahl ist als Ganzes richtungsneutral und uebernimmt
+  die Richtung des Absatzes. Eine Norm, die verkehrt herum gelesen wird, ist
+  eine FALSCHE Norm. Die Zahlenzellen beider KFO-Karten sind jetzt mit
+  `direction:ltr` + `unicode-bidi:isolate` aus dem umgebenden Lauf
+  herausgekappt — dieselbe Ueberlegung, aus der das Zahnschema und das
+  Parodontalgitter schon per `dir="ltr"` festgenagelt sind, nur ein Feld
+  weiter innen. Die Ausrichtung der Zellen im arabischen Bogen bleibt rechts.
+- Payload weiterhin 2.32, SVG-Fingerabdruecke byte-identisch.
+
 ## 2.41.0 - 2026-08-22
 
 ### Verfahren alphabetisch, mit Favoriten (Bead odontogram-c51.2)

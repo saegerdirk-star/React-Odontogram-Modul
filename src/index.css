@@ -2614,6 +2614,30 @@ select:focus{
   font-size:16px; line-height:1; color:var(--muted); cursor:pointer}
 .ceph-fav.is-on{color:#e0a800}
 .ceph-fav:focus-visible{outline:2px solid var(--accent); outline-offset:1px; border-radius:4px}
+
+/* ZAHLEN BLEIBEN LTR, auch im arabischen Bogen.
+   ------------------------------------------------------------------------
+   Am laufenden Bild gefunden, als der ceph-Block uebersetzt war: "82,0 ± 3,0"
+   erschien auf Arabisch als "3.0 ± 82.0", und "74,0 %" als "% 74,0". Das ist
+   kein Uebersetzungsfehler, sondern der Bidi-Algorithmus: eine Folge aus Zahl,
+   Zeichen und Zahl ist als Ganzes richtungsneutral und uebernimmt deshalb die
+   Richtung des Absatzes. Eine Norm, die verkehrt herum gelesen wird, ist eine
+   FALSCHE Norm - hier steht mehr auf dem Spiel als Kosmetik.
+   `isolate` kappt die Zelle aus dem umgebenden Lauf heraus, `ltr` gibt ihr die
+   Richtung, die eine Zahlenreihe in jeder Sprache hat. Die AUSRICHTUNG der
+   Zelle bleibt davon unberuehrt (sie kommt aus `text-align`), der Bogen und
+   das Zahlengitter sind ohnehin schon per `dir="ltr"` festgenagelt - dieselbe
+   Ueberlegung, ein Feld weiter innen. */
+.ceph-norm, .ceph-delta, .ceph-entry,
+.ma-num, .ma-sum-value, .ma-occl-entry{
+  direction:ltr; unicode-bidi:isolate;
+}
+/* In einem RTL-Bogen sollen diese Zellen weiterhin an der Leseseite beginnen;
+   `direction:ltr` wuerde `text-align:start` sonst nach links kippen. */
+[dir="rtl"] .ceph-norm, [dir="rtl"] .ceph-delta, [dir="rtl"] .ceph-entry,
+[dir="rtl"] .ma-num, [dir="rtl"] .ma-sum-value, [dir="rtl"] .ma-occl-entry{
+  text-align:right;
+}
 .ceph-progress{margin:0; font-size:11px; color:var(--muted)}
 
 .ceph-scroll{overflow-x:auto}
