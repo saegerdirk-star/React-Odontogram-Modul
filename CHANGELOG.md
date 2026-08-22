@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.36.2 - 2026-08-22
+
+### Die Kurzschrift-Tests fallen nicht mehr aus Zeitmangel um
+
+- Jeder dieser Tests montiert die volle Schale und tippt wirklich — allein
+  braucht der schnellste 5 und der langsamste 43 Sekunden. Unter der Last der
+  vollen Suite wird daraus ein Vielfaches: *"k wirkt sofort auf einer
+  Mehrfachauswahl"* ist bei 30 s abgelaufen, allein gemessen 11 s.
+- Ein Fehlschlag aus Zeitmangel sagt nichts ueber die Sache aus, sondern nur
+  ueber die Auslastung der Maschine — und er kostet mehr, als er einbringt: die
+  Suite wird rot, und wer das oft sieht, liest "1 failed" als normal (siehe
+  odontogram-xtj). Alle sieben Fristen stehen jetzt auf 90 Sekunden, dreifach
+  ueber dem gemessenen Bedarf unter Last.
+
 ## 2.36.1 - 2026-08-22
 
 ### Das Dreieck des Papillenverlusts lag NEBEN der Papille (Bead odontogram-gry)

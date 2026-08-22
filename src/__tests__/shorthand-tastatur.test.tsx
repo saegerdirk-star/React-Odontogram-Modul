@@ -84,6 +84,19 @@ function anzeige(): HTMLElement | null {
   return document.getElementById("shorthandBuffer");
 }
 
+// FRISTEN, und warum sie so grosszuegig sind.
+//
+// Jeder dieser Tests montiert die volle Schale und tippt wirklich - allein
+// braucht der schnellste 5 und der langsamste 43 Sekunden. Unter der Last der
+// vollen Suite wird daraus ein Vielfaches: am 22.08.2026 ist "k wirkt sofort
+// auf einer Mehrfachauswahl" bei 30 s abgelaufen, allein gemessen 11 s.
+//
+// Ein Fehlschlag aus Zeitmangel sagt nichts ueber die Sache aus, sondern nur
+// ueber die Auslastung der Maschine - und er kostet mehr, als er einbringt:
+// die Suite wird rot, und wer das oft sieht, liest "1 failed" als normal
+// (siehe odontogram-xtj). Deshalb 90 Sekunden fuer alle, dreifach ueber dem
+// gemessenen Bedarf unter Last.
+
 describe("Kurzschrift auf der Tastatur", () => {
   it("k wirkt sofort auf einer Mehrfachauswahl - Dirks sechs Frontzaehne", async () => {
     await raster();
@@ -102,7 +115,7 @@ describe("Kurzschrift auf der Tastatur", () => {
     }
     // Ein nicht markierter Zahn bleibt unberuehrt.
     expect(zahn(24).restorationType ?? "none").toBe("none");
-  }, 30000);
+  }, 90000);
 
   it("Tabulator geht zum naechsten Zahn und nimmt die Auswahl mit", async () => {
     await raster();
@@ -113,7 +126,7 @@ describe("Kurzschrift auf der Tastatur", () => {
     expect(kachel(16).classList.contains("active")).toBe(false);
     await taste("Tab", { shift: true });
     expect(kachel(16).classList.contains("active")).toBe(true);
-  }, 30000);
+  }, 90000);
 
   it("k, Tabulator, b - Krone und Brueckenglied am Nachbarn", async () => {
     await raster();
@@ -126,7 +139,7 @@ describe("Kurzschrift auf der Tastatur", () => {
     expect(zahn(16).restorationMaterial).toBe("gold");
     expect(zahn(15).toothSelection).toBe("none");
     expect(zahn(15).restorationType).toBe("bridge");
-  }, 30000);
+  }, 90000);
 
   it("eine Flaechenkette wird erst mit dem Tabulator wirksam, dann als EINE Fuellung", async () => {
     await raster();
@@ -138,7 +151,7 @@ describe("Kurzschrift auf der Tastatur", () => {
     await taste("Tab");
     const flaechen = zahn(36).fillingSurfaces as string[];
     expect(new Set(flaechen)).toEqual(new Set(["mesial", "occlusal", "distal"]));
-  }, 30000);
+  }, 90000);
 
   it("Totalprothese: alles markiert, ein e", async () => {
     await raster();
@@ -178,7 +191,7 @@ describe("Kurzschrift auf der Tastatur", () => {
     expect(anzeige()?.classList.contains("notice")).toBe(true);
     expect(anzeige()?.textContent ?? "").toContain("z");
     expect(anzeige()?.classList.contains("empty")).toBe(false);
-  }, 30000);
+  }, 90000);
 
   it("meldet einen Tippfehler getrennt vom noch Fehlenden", async () => {
     await raster();
@@ -192,7 +205,7 @@ describe("Kurzschrift auf der Tastatur", () => {
     // (Die Testumgebung laeuft auf Englisch.)
     expect(text).toContain("Unknown");
     expect(text).not.toContain("Not chartable");
-  }, 30000);
+  }, 90000);
 
   it("Escape raeumt den Puffer, bevor es die Auswahl raeumt", async () => {
     await raster();
@@ -203,5 +216,5 @@ describe("Kurzschrift auf der Tastatur", () => {
     expect(kachel(16).classList.contains("active")).toBe(true);
     await taste("Escape");
     expect(kachel(16).classList.contains("active")).toBe(false);
-  }, 30000);
+  }, 90000);
 });
