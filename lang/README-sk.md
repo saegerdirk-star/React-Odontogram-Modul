@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.37.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.38.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -153,6 +153,7 @@ Alebo ho načítajte pomocou dynamického importu iba na strane klienta: `dynami
 - 📊 Preddefinované stavové predvoľby (obnoviť, mliečny chrup, zmiešaný chrup, bezzubý)
 - 📦 34 preddefinovaných šablón reštaurácií (mostíky, snímateľné protézy, stegové protézy s implantátmi)
 - 💾 Export/import stavu v JSON (verzia 2.20; import stále akceptuje staršie verzie 1.4 a 2.0 až 2.19 a automaticky ich migruje, s vlastnými stavmi pluginov a poznámkami ku každému zubu)
+- 🧭 **Ortodoncia je tretí klinický pohľad** (`odontogram-c51`): prepínač `Odontogram | Parodontálny stav | Ortodoncia` (`#appViewToggle`) nesie dve nasledujúce karty. Odontogram sa nikdy neodpojí, iba skryje, takže zmena pohľadu nemôže narušiť nález. Ortodontický pohľad nemá vlastné okno, preto zostáva segmentom prepínača aj tam, kde je parodontálny stav nastavený ako vyskakovacie okno — vtedy zmizne iba jeho segment.
 - 📐 **Vyhodnotenie modelu** (`odontogram-c51.1`): Tonn a Bolton z meziodistálnych šírok zubov, s cieľovým súčtom rezákov, rozdielom šírky zubov a tým, ktorá čeľusť nesie prebytok. Šírky sa zadávajú na zubnom oblúku alebo v zozname — dva pohľady na jeden záznam. Zub, ktorý na modeli nie je (neprerezaný, stratený, pod ďasnom), preberá šírku kontralaterálneho zuba, viditeľne označenú ako predpoklad. K tomu horizontálny a vertikálny prekryt a odchýlka stredovej čiary na čeľusť
 - 🩻 **Kefalometria** (`odontogram-c51.2`): jeden spoločný súbor meracích bodov, nad ním merané veličiny a nad nimi metódy ako profily — nová škola je nový profil, body sa nemenia. Každá veličina nesie svoj zdroj a svoje FHIR kódovanie; norma bez publikácie sa nedodáva. Odvodené: poloha čeľustí voči lebke (typ tváre podľa Björka, harmónia, sagitálna trieda voči populačnej **aj** individuálnej norme) a rastový vzorec ako hlasovanie medzi všetkými indikátormi s doloženou normou. Hodnoty možno prevziať z tlačeného vyhodnotenia iného programu vložením textu — nič sa neuplatní bez potvrdenia
 - ⚠️ Oboje je zatiaľ **stav relácie**: neexistuje publikovaný Dental Core profile, preto nie sú súčasťou exportného payloadu namiesto vymýšľania lokálneho

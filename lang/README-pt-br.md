@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.37.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.38.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -156,6 +156,7 @@ Ou carregue-o com um import dinâmico somente client-side: `dynamic(() => import
 - 📊 Predefinições de estado prontas (redefinir, dentição decídua, dentição mista, edêntulo)
 - 📦 34 modelos de restauração predefinidos (pontes, próteses removíveis, próteses sobre barra com implantes)
 - 💾 Exportação/importação de estado em JSON (versão 2.10; as importações continuam aceitando as versões legadas 1.4, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8 e 2.9 e são migradas automaticamente, com estados personalizados de plugins e anotações por dente)
+- 🧭 **A ortodontia é a terceira visão clínica** (`odontogram-c51`): um seletor `Odontogram | Estado periodontal | Ortodontia` (`#appViewToggle`) abriga os dois cartões seguintes. O odontograma nunca é desmontado, apenas oculto, de modo que trocar de visão não pode perturbar o registro. A visão ortodôntica não tem janela própria e por isso continua sendo um segmento do seletor mesmo onde o estado periodontal está configurado como popup — apenas o segmento periodontal desaparece.
 - 📐 **Análise de modelos** (`odontogram-c51.1`): Tonn e Bolton a partir das larguras mesiodistais, com a soma incisiva alvo, a discrepância de tamanho dentário e qual arco carrega o excesso. As larguras são inseridas em um arco ou como lista — duas visões do mesmo registro. Um dente ausente do modelo (não irrompido, perdido, sob a gengiva) assume a largura do contralateral, marcada visivelmente como suposição. Além disso sobressaliência, sobremordida e desvio da linha média dentária por arco
 - 🩻 **Cefalometria** (`odontogram-c51.2`): um repertório de pontos comum, as medidas definidas sobre ele e as análises como perfis acima — uma escola nova é um perfil novo, os pontos não mudam. Cada medida carrega sua fonte e sua codificação FHIR; uma norma sem publicação não é entregue. Derivados: a posição dos maxilares em relação ao crânio (tipo facial segundo Björk, harmonia, classe sagital frente à norma populacional **e** à individual) e o padrão de crescimento como votação entre todos os indicadores com norma documentada. Os valores podem ser trazidos da avaliação impressa de outro programa colando seu texto — nada é aplicado sem confirmação
 - ⚠️ Ambos são por ora **estado de sessão**: não existe perfil Dental Core publicado, portanto não fazem parte do payload de exportação em vez de inventar um local

@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.37.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.38.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -153,6 +153,7 @@ Vagy töltsd be egy kizárólag kliensoldali dinamikus importtal: `dynamic(() =>
 - 📊 Előre definiált státusz minták (alaphelyzet, tejfogazat, vegyes fogazat, fogatlan)
 - 📦 34 előre definiált restaurációs sablon (hidak, kivehető protézisek, bár protézisek implantátumokkal)
 - 💾 Állapot export/import JSON formátumban (2.20 verzió; az importálás továbbra is elfogadja a korábbi 1.4 és 2.0–2.19 verziókat, és automatikusan migrálja, plugin egyedi állapotokkal és fogankénti megjegyzésekkel)
+- 🧭 **Az ortodoncia a harmadik klinikai nézet** (`odontogram-c51`): az `Odontogram | Parodontális Státusz | Ortodoncia` váltó (`#appViewToggle`) tartalmazza az alábbi két kártyát. Az odontogram sosem kerül lecsatolásra, csak elrejtésre, így a nézetváltás nem zavarhatja meg a leletet. Az ortodonciai nézetnek nincs saját ablaka, ezért ott is a váltó egyik szelvénye marad, ahol a parodontális státusz felugró ablakként van beállítva — ilyenkor csak annak a szelvénye tűnik el.
 - 📐 **Modellkiértékelés** (`odontogram-c51.1`): Tonn és Bolton a meziodisztális fogszélességekből, cél metszőösszeggel, fogméret-eltéréssel és azzal, melyik állcsont hordozza a többletet. A szélességek fogívre vagy listába vihetők be — ugyanannak a rekordnak két nézete. A modellen nem szereplő fog (nem tört elő, elveszett, íny alatt) a kontralaterális párja szélességét veszi át, láthatóan feltételezésként jelölve. Ezen felül horizontális és vertikális lépcső, valamint állcsontonkénti középvonal-eltérés
 - 🩻 **Kefalometria** (`odontogram-c51.2`): egyetlen közös mérőpont-készlet, fölötte a mérőszámok, azok fölött az eljárások profilként — új iskola új profil, a pontok nem mozdulnak. Minden mérőszám hordozza a forrását és a FHIR-kódolását; publikáció nélküli norma nem kerül kiadásra. Levezetve: az állcsontok helyzete a koponyához (Björk szerinti arctípus, harmónia, szagittális osztály a populációs **és** az egyéni normához mérve) és a növekedési minta szavazásként az összes forrásolt normájú indikátor között. Az értékek másik program nyomtatott kiértékeléséből is átvehetők a szöveg beillesztésével — semmi nem kerül alkalmazásra megerősítés nélkül
 - ⚠️ Mindkettő egyelőre **munkamenet-állapot**: nincs publikált Dental Core profil, ezért nem részei az exportált payloadnak ahelyett, hogy helyit találnánk ki

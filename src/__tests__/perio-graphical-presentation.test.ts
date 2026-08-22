@@ -192,11 +192,19 @@ describe("Task 1: toggle mode housing (default)", () => {
 });
 
 describe("Task 1: popup mode housing (perioViewMode === \"popup\")", () => {
-  it("no #appViewToggle in popup mode", async () => {
+  // Until bead odontogram-c51 there were two views and the switcher itself was
+  // gated on the housing, so popup mode had none at all. There are three now,
+  // and the orthodontic one has no popup housing — the switcher therefore
+  // stays, carrying Odontogram | Orthodontics, and only the PERIODONTAL
+  // segment is gone (that view is reached through the launch button beside it).
+  it("no Dental Chart segment in popup mode — the switcher carries the other two", async () => {
     setPerioViewMode("popup");
     render(createElement(App));
     await Promise.resolve();
-    expect(document.getElementById("appViewToggle")).toBeNull();
+    expect(document.getElementById("appViewDentalChart")).toBeNull();
+    expect(document.getElementById("appViewToggle")).toBeTruthy();
+    expect(document.getElementById("appViewOdontogram")).toBeTruthy();
+    expect(document.getElementById("appViewOrtho")).toBeTruthy();
   });
 
   it("P2's launch button is present and openPerioOverlay() still opens the modal", async () => {

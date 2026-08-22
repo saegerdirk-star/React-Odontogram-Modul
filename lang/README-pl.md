@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.37.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.38.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -153,6 +153,7 @@ Ewentualnie załaduj go za pomocą dynamicznego importu tylko po stronie klienta
 - 📊 Predefiniowane presety statusu (reset, uzębienie mleczne, uzębienie mieszane, bezzębny)
 - 📦 34 predefiniowane szablony uzupełnień (mosty, protezy ruchome, protezy na belce z implantami)
 - 💾 Eksport/import statusu w formacie JSON (wersja 2.20; import nadal akceptuje starsze wersje 1.4 oraz 2.0 do 2.19 i migruje je automatycznie, wraz z niestandardowymi stanami wtyczek i notatkami do zębów)
+- 🧭 **Ortodoncja jest trzecim widokiem klinicznym** (`odontogram-c51`): przełącznik `Odontogram | Stan przyzębia | Ortodoncja` (`#appViewToggle`) mieści dwie poniższe karty. Odontogram nigdy nie jest odmontowywany, tylko ukrywany, więc zmiana widoku nie może zaburzyć zapisu. Widok ortodontyczny nie ma własnego okna, dlatego pozostaje segmentem przełącznika także tam, gdzie stan przyzębia skonfigurowano jako okno wyskakujące — znika wtedy tylko jego segment.
 - 📐 **Analiza modeli** (`odontogram-c51.1`): Tonn i Bolton z szerokości mezjodystalnych, z docelową sumą siekaczy, rozbieżnością szerokości zębów i wskazaniem, który łuk niesie nadmiar. Szerokości wprowadza się na łuku lub jako listę — dwa widoki jednego rekordu. Ząb nieobecny na modelu (niewyrznięty, utracony, pod dziąsłem) przejmuje szerokość zęba przeciwstronnego, widocznie oznaczoną jako założenie. Do tego nagryz poziomy i pionowy oraz odchylenie linii pośrodkowej dla każdego łuku
 - 🩻 **Cefalometria** (`odontogram-c51.2`): jeden wspólny zasób punktów pomiarowych, nad nim wielkości mierzone, a nad nimi metody jako profile — nowa szkoła to nowy profil, punkty pozostają. Każda wielkość niesie swoje źródło i kodowanie FHIR; norma bez publikacji nie jest dostarczana. Wyprowadzane: położenie szczęk względem czaszki (typ twarzy wg Björka, harmonia, klasa strzałkowa wobec normy populacyjnej **i** indywidualnej) oraz wzorzec wzrostu jako głosowanie wszystkich wskaźników z udokumentowaną normą. Wartości można przejąć z wydrukowanej oceny innego programu przez wklejenie tekstu — nic nie zostaje zastosowane bez potwierdzenia
 - ⚠️ Oba są na razie **stanem sesji**: nie istnieje opublikowany profil Dental Core, więc nie są częścią eksportowanego payloadu zamiast wymyślania lokalnego

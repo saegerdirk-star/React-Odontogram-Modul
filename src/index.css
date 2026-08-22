@@ -155,7 +155,11 @@ select:focus{
    specific tooth/chart UI. */
 .perio-launch-bar{
   grid-column: 1 / -1;
-  display:flex; justify-content:flex-end;
+  /* Seit odontogram-c51 stehen hier zwei Dinge nebeneinander, sobald der
+     Parodontalstatus als Dialog eingestellt ist: der Ansichtsumschalter
+     (Odontogram | KFO) und der Knopf, der den Dialog oeffnet. Ohne Abstand
+     stossen sie aneinander. */
+  display:flex; justify-content:flex-end; align-items:center; gap:10px;
 }
 .chart{
   background: rgba(255,255,255,.9);
@@ -269,6 +273,7 @@ select:focus{
 .tooth-grid,
 .chart-column,
 .dental-chart-column,
+.ma-arch,
 .perio-fullgrid-scroll,
 [data-perio-arch]{
   direction: ltr;
@@ -934,7 +939,7 @@ select:focus{
   /* Single-column layout: reset the explicit column pin (Task 1) so .panel
      stacks below .chart-column/.dental-chart-column via `order` instead of
      forming a second implicit grid column. */
-  .chart-column, .dental-chart-column{grid-column:auto}
+  .chart-column, .dental-chart-column, .ortho-column{grid-column:auto}
   .panel{grid-column:auto; order:2}
 }
 
@@ -1392,6 +1397,29 @@ select:focus{
    column as .chart-column (see the .panel comment above for why the pin is
    needed at all). */
 .dental-chart-column{grid-column:1; display:flex; flex-direction:column; min-width:0}
+
+/* Bead odontogram-c51: die kieferorthopaedische Ansicht. Anders als die beiden
+   anderen nimmt sie BEIDE Rasterspalten - das rechte Bedienfeld ist daneben
+   ausgeblendet, weil keine der beiden Karten am einzelnen Zahn haengt. Die
+   Modellanalyse zeichnet einen ganzen Bogen, die Fernroentgenanalyse eine
+   fuenfspaltige Tabelle; beide lesen sich in 360 Pixel Restbreite schlecht. */
+/* ZWEI Karten NEBENEINANDER, sobald Platz ist - nicht eine ueber die volle
+   Breite. Gemessen bei 1900 Pixeln Fensterbreite: eine Karte ueber beide
+   Spalten legt in der Modellanalyse zwischen "Norm" und "Gemessen" 900 Pixel
+   Leerraum, und der Balken steht am anderen Ende des Bildschirms als die Zahl,
+   die er zeigt. Eine Zahlenreihe braucht Naehe, nicht Weite. Nebeneinander
+   bekommt jede Karte rund 930 Pixel - genug fuer den Bogen 16..26 (660) und
+   fuer die fuenfspaltige Fernroentgentabelle - und beide sind gleichzeitig zu
+   sehen, was dem Ablauf entspricht: Modell messen, dann das Fernroentgenbild.
+   Die Grenze liegt bei 1400, weil darunter die zweite Spalte den Bogen
+   umbrechen wuerde. `align-items:start` haelt die kurze Karte kurz, statt sie
+   auf die Hoehe der langen zu ziehen. */
+.ortho-column{grid-column:1 / -1; display:grid; grid-template-columns:minmax(0,1fr);
+  align-items:start; gap:14px; min-width:0; max-inline-size:1800px; margin-inline:auto;
+  inline-size:100%}
+@media (min-width:1400px){
+  .ortho-column{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+}
 .perio-inline-panel{min-height:480px}
 
 /* Tooth information panel — its own card below (outside) the dental chart box */

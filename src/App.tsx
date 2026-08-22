@@ -42,6 +42,8 @@ import { useI18n } from "./i18n/useI18n";
 import SettingsModal, { type SettingsState } from "./SettingsModal";
 import PerioChart from "./PerioChart";
 import PerioSidebar from "./PerioSidebar";
+import ModelAnalysisCard from "./ModelAnalysisCard";
+import CephalometryCard from "./CephalometryCard";
 // Bead odontogram-ap7: capture/correct the initial examination.
 import ExaminationCard from "./ExaminationCard";
 import DualStateConfirm from "./DualStateConfirm";
@@ -253,6 +255,17 @@ const LANGUAGE_OPTIONS: { value: Language; labelKey: string }[] = [
  * />
  * ```
  */
+/**
+ * Which clinical workspace the switcher is showing.
+ *
+ * Three since bead odontogram-c51, whose own title says it: *"Orthodontics is
+ * the third clinical odontogram view."* The odontogram is NEVER unmounted for
+ * any of them — a view change only hides its column with CSS, which is what
+ * keeps the SVG-fingerprint parity byte-identical and what keeps
+ * `wireControls()`'s one-time listeners attached.
+ */
+type AppView = "odontogram" | "dentalChart" | "ortho";
+
 export default function App({
   language,
   onLanguageChange,
@@ -317,10 +330,12 @@ export default function App({
   // `perioOpen` above, kept in sync via onStateChange so a host calling
   // setPerioViewMode() directly (e.g. from the Settings modal) re-renders the
   // housing without a dedicated local setter. `activeView` is purely local UI
-  // state (never exposed to a host) — which of the toggle's two segments is
-  // showing, only meaningful while `viewMode === "toggle"`.
+  // state (never exposed to a host) — which of the switcher's segments is
+  // showing. Since bead odontogram-c51 there are THREE views, and only the
+  // periodontal one depends on `viewMode`: in popup mode it lives in its own
+  // dialog and the switcher carries Odontogram | Orthodontics alone.
   const [viewMode, setViewMode] = useState<PerioViewMode>(() => getPerioViewMode());
-  const [activeView, setActiveView] = useState<"odontogram" | "dentalChart">("odontogram");
+  const [activeView, setActiveView] = useState<AppView>("odontogram");
   // UI-2 Task 1: mirror the two Settings -> Periodontal tab module flags into
   // React state, same precedent as `viewMode` mirroring `perioViewMode` above
   // — kept in sync via the shared `onStateChange` subscription so a host
@@ -337,6 +352,11 @@ export default function App({
   // in its own body, see PerioChart.tsx). Drives which content the shared
   // right `<aside className="panel">` below renders.
   const isPerioView = viewMode === "toggle" && activeView === "dentalChart";
+  // Bead odontogram-c51: the orthodontic workspace, Dirk's "dritte Ansicht"
+  // (22.08.2026). Unlike the periodontal view it has no popup housing, so it
+  // is reachable in BOTH perio view modes — the switcher exists for it alone
+  // when the periodontal chart lives in a dialog.
+  const isOrthoView = activeView === "ortho";
   // DS-1 Task 2: mirror the module-level "a status edit on a planned tooth is
   // awaiting confirmation" flag into React state via the existing onStateChange
   // subscription (requestDualStateConfirm / accept / cancel all notify), so the
@@ -789,19 +809,28 @@ export default function App({
       </header>
 
       <main className="layout">
+        {/* ONE switcher for every clinical view (bead odontogram-c51).
+            ------------------------------------------------------------------
+            The periodontal segment is the only one that depends on the
+            housing: with `perioViewMode === "popup"` the periodontal chart
+            lives in its own dialog and is reached through the launch button
+            beside it, so it has no segment here. The orthodontic view has no
+            popup housing at all and is therefore a segment in both modes —
+            which is why the switcher is no longer gated on the mode as a
+            whole, as it was while there were only two views. */}
         <div className="perio-launch-bar">
-          {viewMode === "toggle" ? (
-            <div id="appViewToggle" className="chart-mode-toggle" role="tablist">
-              <button
-                id="appViewOdontogram"
-                type="button"
-                className={"chart-mode-btn" + (activeView === "odontogram" ? " is-active" : "")}
-                role="tab"
-                aria-selected={activeView === "odontogram"}
-                onClick={() => setActiveView("odontogram")}
-              >
-                {t("view.odontogram")}
-              </button>
+          <div id="appViewToggle" className="chart-mode-toggle" role="tablist">
+            <button
+              id="appViewOdontogram"
+              type="button"
+              className={"chart-mode-btn" + (activeView === "odontogram" ? " is-active" : "")}
+              role="tab"
+              aria-selected={activeView === "odontogram"}
+              onClick={() => setActiveView("odontogram")}
+            >
+              {t("view.odontogram")}
+            </button>
+            {viewMode === "toggle" && (
               <button
                 id="appViewDentalChart"
                 type="button"
@@ -812,8 +841,19 @@ export default function App({
               >
                 {t("view.dentalChart")}
               </button>
-            </div>
-          ) : (
+            )}
+            <button
+              id="appViewOrtho"
+              type="button"
+              className={"chart-mode-btn" + (isOrthoView ? " is-active" : "")}
+              role="tab"
+              aria-selected={isOrthoView}
+              onClick={() => setActiveView("ortho")}
+            >
+              {t("view.ortho")}
+            </button>
+          </div>
+          {viewMode === "popup" && (
             <button
               type="button"
               id="openPerioOverlayBtn"
@@ -828,7 +868,7 @@ export default function App({
         </div>
         <div
           className="chart-column"
-          style={viewMode === "toggle" && activeView === "dentalChart" ? { display: "none" } : undefined}
+          style={isPerioView || isOrthoView ? { display: "none" } : undefined}
         >
         {/* Tiefenreiz: Verlaufsdefinitionen fuer die Zahnsubstanz.
             ------------------------------------------------------------------
@@ -1095,12 +1135,24 @@ export default function App({
           </section>
         )}
         </div>
-        {viewMode === "toggle" && activeView === "dentalChart" && (
+        {isPerioView && (
           <div className="dental-chart-column" dir="ltr">
             <PerioChart inline />
           </div>
         )}
-        <aside className="panel">
+        {/* The orthodontic workspace spans BOTH grid columns and the right
+            control panel is hidden beside it: neither card is per-tooth, so
+            the tooth selection the panel operates on has nothing to say here,
+            and both the arch of measured widths and the cephalometric table
+            want the full width. The panel itself is only hidden, never
+            unmounted — same reason as the perio view above. */}
+        {isOrthoView && (
+          <div className="ortho-column">
+            <ModelAnalysisCard />
+            <CephalometryCard />
+          </div>
+        )}
+        <aside className="panel" style={isOrthoView ? { display: "none" } : undefined}>
           {/* Keep the odontogram control panel ALWAYS mounted, toggling only
               its visibility with CSS. Unmounting it on the perio toggle
               produced fresh DOM nodes whose one-time wireControls() listeners

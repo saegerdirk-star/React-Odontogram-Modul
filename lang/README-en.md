@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.37.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.38.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -153,6 +153,7 @@ Or load it with a client-only dynamic import: `dynamic(() => import("./Odontogra
 - 📊 Predefined status presets (reset, primary dentition, mixed dentition, edentulous)
 - 📦 34 predefined restoration templates (bridges, removable dentures, bar dentures with implants)
 - 💾 Status export/import in JSON (version 2.20; imports still accept legacy 1.4 and 2.0 through 2.19 and migrate automatically, with plugin custom states and per-tooth notes)
+- 🧭 **Orthodontics is the third clinical view** (`odontogram-c51`): an `Odontogram | Periodontal Status | Orthodontics` switcher (`#appViewToggle`) houses the two cards below. The odontogram is never unmounted, only hidden, so a change of view cannot disturb the chart. The orthodontic view has no dialog housing of its own and therefore stays a segment of the switcher even where the periodontal chart is configured as a popup — only the periodontal segment goes.
 - 📐 **Model analysis** (`odontogram-c51.1`): Tonn and Bolton from the mesiodistal crown widths, with the target incisor sum, the tooth-size discrepancy and which arch carries the surplus. Widths are entered on an arch or as a list — two views of one record. A tooth that is not on the model (not erupted, lost, under the gum) borrows its contralateral partner's width, visibly marked as an assumption. Plus overjet, overbite and the dental midline deviation per arch
 - 🩻 **Cephalometry** (`odontogram-c51.2`): one shared landmark stock, measures defined over it, and the analyses as profiles above those — a new school is a new profile, the landmarks do not move. Every measure carries its source and its FHIR coding; a norm without a publication is not shipped, and the measure is recorded with no target instead. Derived: where the jaws sit against the skull (facial type after Björk, harmony, sagittal class against the population norm **and** the individual one, which disagree exactly where individualisation earns its keep) and the growth pattern as a vote across every indicator with a sourced norm. Values can be taken from another program's printed evaluation by pasting its text — nothing is applied without confirmation, because a printed sheet has three number columns and some rows carry only a norm
 - ⚠️ Both are **session state** for now: the generated Dental Core package has related profile families, but this adapter does not project these module-specific records until their mappings are deliberately supported

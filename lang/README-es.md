@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.37.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.38.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -153,6 +153,7 @@ O cárgalo con un import dinámico solo de cliente: `dynamic(() => import("./Odo
 - 📊 Estados predefinidos (restablecer, dentición primaria, dentición mixta, edéntulo)
 - 📦 34 plantillas de restauración predefinidas (puentes, prótesis removibles, prótesis con barra e implantes)
 - 💾 Exportación/importación de estado en JSON (versión 2.20; las importaciones siguen aceptando las versiones heredadas 1.4 y 2.0 a 2.19, y se migran automáticamente, con estados personalizados de plugins y notas por diente)
+- 🧭 **La ortodoncia es la tercera vista clínica** (`odontogram-c51`): un selector `Odontogram | Estado periodontal | Ortodoncia` (`#appViewToggle`) alberga las dos tarjetas siguientes. El odontograma nunca se desmonta, solo se oculta, de modo que cambiar de vista no puede alterar el registro. La vista de ortodoncia no tiene ventana propia, por lo que sigue siendo un segmento del selector incluso donde el estado periodontal está configurado como ventana emergente: entonces solo desaparece ese segmento.
 - 📐 **Análisis de modelos** (`odontogram-c51.1`): Tonn y Bolton a partir de las anchuras mesiodistales, con la suma incisiva objetivo, la discrepancia dentaria y qué arcada lleva el exceso. Las anchuras se introducen en una arcada o como lista — dos vistas de un mismo registro. Un diente que no está en el modelo (no erupcionado, perdido, bajo la encía) toma la anchura de su homólogo contralateral, marcada visiblemente como suposición. Además resalte, sobremordida y desviación de la línea media dentaria por arcada
 - 🩻 **Cefalometría** (`odontogram-c51.2`): un único repertorio de puntos, las medidas definidas sobre él y los análisis como perfiles por encima — una escuela nueva es un perfil nuevo, los puntos no se mueven. Cada medida lleva su fuente y su codificación FHIR; una norma sin publicación no se entrega, la medida se registra sin objetivo. Se derivan la posición de los maxilares respecto al cráneo (tipo facial según Björk, armonía, clase sagital frente a la norma poblacional **y** a la individual) y el patrón de crecimiento como votación entre todos los indicadores con norma documentada. Los valores pueden tomarse de la evaluación impresa de otro programa pegando su texto — nada se aplica sin confirmación
 - ⚠️ Ambos son de momento **estado de sesión**: no existe perfil Dental Core publicado para ellos, por lo que no forman parte del payload de exportación en lugar de inventar uno local

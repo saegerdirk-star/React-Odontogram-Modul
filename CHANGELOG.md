@@ -1,5 +1,45 @@
 # Changelog
 
+## 2.38.0 - 2026-08-22
+
+### Die Kieferorthopaedie wird die dritte Ansicht (Bead odontogram-c51)
+
+Dirk, 22.08.2026, auf die Frage, wo die beiden KFO-Karten wohnen sollen:
+*"wir machen eine dritte Ansicht / Knopf fuer Deutsch = KFO."* Damit sagt der
+Titel des Beads endlich, was der Bau tut: *"Orthodontics is the third clinical
+odontogram view."*
+
+- **`ModelAnalysisCard` und `CephalometryCard` sind eingehaengt.** Beide waren
+  seit c51.1 und c51.2 gebaut und geprueft, aber absichtlich nirgends montiert:
+  wo sie wohnen, war eine Entscheidung und keine Aufgabe. Jetzt tragen sie eine
+  eigene Ansicht.
+- **Der Umschalter ueberlebt den Popup-Modus.** Er war bisher als GANZES an
+  `perioViewMode` gehaengt, weil beide Felder vom Parodontalstatus handelten.
+  Die KFO-Ansicht hat aber kein Dialogfenster, also bleibt der Umschalter
+  stehen und nur das PARODONTALE Feld faellt weg; daneben steht dort weiterhin
+  der Knopf, der den Parodontalstatus als Dialog oeffnet. Der Test, der
+  frueher die Abwesenheit des ganzen Umschalters festhielt, prueft jetzt die
+  Abwesenheit dieses einen Feldes.
+- **Das Odontogramm wird nie ausgehaengt, nur ausgeblendet** — dieselbe
+  Konstruktion wie beim Parodontalstatus und aus denselben zwei Gruenden: die
+  einmalig gesetzten Zuhoerer aus `wireControls()`, und die Parität der
+  SVG-Fingerabdruecke, die ein Neuaufbau in Frage stellen wuerde. Ebenso das
+  rechte Bedienfeld: es ist neben der KFO-Ansicht ausgeblendet, nicht entfernt.
+- **Zwei Karten nebeneinander, nicht eine ueber die volle Breite.** Gemessen
+  bei 1900 Pixeln: eine Karte ueber beide Rasterspalten legt in der
+  Modellauswertung 900 Pixel Leerraum zwischen "Norm" und "Ist", und der Balken
+  steht am anderen Ende des Bildschirms als die Zahl, die er zeigt. Ab 1400
+  Pixeln stehen sie deshalb nebeneinander (je rund 930), darunter gestapelt.
+  Nachgemessen bei 1440, 1300, 1000 und 800 Pixeln: kein waagerechter
+  Seitenueberlauf, und der Zahnbogen 16..26 passt bei 1440 gerade ohne eigenes
+  Scrollen in seine Spalte.
+- Der Knopf heisst auf Deutsch **KFO**, in den uebrigen elf Sprachen der
+  ausgeschriebene Fachbegriff (`view.ortho`).
+- Nichts am Zustand, an der Serialisierung oder am FHIR-Bundle: die
+  Modellauswertung und die Kephalometrie bleiben Sitzungszustand, weil c51 fuer
+  sie keinen veroeffentlichten Dental-Core-Traeger belegen konnte. Payload
+  weiterhin 2.32, SVG-Fingerabdruecke byte-identisch.
+
 ## 2.37.0 - 2026-08-22
 
 ### Das Onlay bekommt eine Seitenansicht (Bead odontogram-bbd)
