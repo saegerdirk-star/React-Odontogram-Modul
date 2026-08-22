@@ -445,6 +445,12 @@ export function normFor(measureId: string, profileId?: string):
 
 export const PROFILES: readonly CephProfile[] = [
   {
+    // Angezeigt als "Segner/Hasund" (Dirk, 22.08.2026). Die id bleibt `hasund`
+    // - sie ist der interne Schluessel (Sitzungszustand, kein Payload) und aus
+    // Tests heraus angesprochen. Der Name traegt jetzt beide, weil das Profil
+    // Segners Normen fliegt (ML-NSL 32 statt Hasunds 28), waehrend Auswahl und
+    // Klassifikationsregeln aus Hasunds Handbuch stammen - genau der Punkt, an
+    // dem eine Norm am PROFIL haengt und nicht an der Messgroesse.
     id: "hasund",
     labelKey: "ceph.profile.hasund",
     referenceFrame: "anterior-cranial-base",

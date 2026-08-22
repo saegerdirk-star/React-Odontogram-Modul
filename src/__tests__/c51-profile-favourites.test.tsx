@@ -22,6 +22,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { render, cleanup, fireEvent } from "@testing-library/react";
 import { CephalometryCard } from "../CephalometryCard";
 import { orderProfiles, PROFILES } from "../cephalometry";
+import { t } from "../i18n/useI18n";
 import {
   getCephFavourites, setCephFavourite, isCephFavourite,
   getCephProfileId, setCephProfileId, isCephProfileChosen,
@@ -132,8 +133,12 @@ describe("die Auswahlliste in der Karte", () => {
     render(<CephalometryCard />);
     const sel = document.getElementById("cephProfile") as HTMLSelectElement;
     expect(sel.querySelectorAll("optgroup")).toHaveLength(0);
-    const alleIds = PROFILES.map(p => p.id).sort((a, b) => a.localeCompare(b));
-    expect([...sel.options].map(o => o.value)).toEqual(alleIds);
+    // Sortiert nach dem angezeigten LABEL, nicht nach der id: seit "hasund"
+    // als "Segner/Hasund" erscheint, weichen die beiden auseinander, und das
+    // Label gewinnt. Erwartung deshalb ueber dieselbe Ordnung, die die Karte
+    // fliegt (orderProfiles mit dem echten Label-Aufloeser).
+    const erwartet = orderProfiles(pr => t(pr.labelKey)).others.map(pr => pr.id);
+    expect([...sel.options].map(o => o.value)).toEqual(erwartet);
   });
 
   it("mit Favorit zwei Gruppen, der Favorit oben", () => {
@@ -143,7 +148,7 @@ describe("die Auswahlliste in der Karte", () => {
     const gruppen = [...sel.querySelectorAll("optgroup")];
     expect(gruppen).toHaveLength(2);
     expect([...gruppen[0].querySelectorAll("option")].map(o => o.value)).toEqual(["ricketts"]);
-    const uebrig = PROFILES.map(p => p.id).filter(id => id !== "ricketts").sort((a, b) => a.localeCompare(b));
+    const uebrig = orderProfiles(pr => t(pr.labelKey), ["ricketts"]).others.map(pr => pr.id);
     expect([...gruppen[1].querySelectorAll("option")].map(o => o.value)).toEqual(uebrig);
   });
 

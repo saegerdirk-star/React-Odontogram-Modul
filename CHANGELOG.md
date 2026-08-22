@@ -1,5 +1,23 @@
 # Changelog
 
+## 2.43.1 - 2026-08-22
+
+### Das erste Profil heisst "Segner/Hasund" (Bead odontogram-c51.2)
+
+Dirk, 22.08.2026. Das Profil hiess "Hasund", fliegt aber Segners Normen
+(ML-NSL 32 statt Hasunds 28) - Auswahl und Klassifikationsregeln aus Hasunds
+Handbuch, die Zahlen von Segner. Genau der Punkt, an dem eine Norm am PROFIL
+haengt und nicht an der Messgroesse. Der Name traegt jetzt beide.
+
+- Nur das angezeigte Label in allen zwoelf Sprachen; die interne id bleibt
+  `hasund` (Sitzungszustand, kein Payload, aus Tests angesprochen).
+- Die alphabetische Ordnung der Verfahrenswahl sortiert nach dem uebersetzten
+  LABEL - "Segner/Hasund" faellt jetzt unter S statt H, und der Waehler zeigt
+  Jarabak, Ricketts, Segner/Hasund, Steiner. Zwei Karten-Tests pruefen die
+  Liste deshalb gegen dieselbe Label-Ordnung, die die Karte fliegt, statt gegen
+  die id-Ordnung, die frueher zufaellig damit uebereinstimmte.
+- Payload weiterhin 2.32, SVG-Fingerabdruecke byte-identisch.
+
 ## 2.43.0 - 2026-08-22
 
 ### Steiner als viertes FRS-Verfahren, und eine Sourcing-Entscheidung (Bead odontogram-c51.2)
