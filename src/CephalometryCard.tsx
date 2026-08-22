@@ -22,8 +22,8 @@ import {
   getCvmStage, setCvmStage, getHandSmiStage, setHandSmiStage,
 } from "./odontogram";
 import {
-  assess, normFor, orderProfiles, profileMeasures,
-  type CephAssessment, type CephMeasure, type GrowthIndicator,
+  assess, normFor, orderProfiles, profileMeasures, PROFILES,
+  type CephAssessment, type CephMeasure, type GrowthIndicator, type CephProfile,
 } from "./cephalometry";
 import { parseCephText, type ParsedValue } from "./cephImport";
 import {
@@ -352,6 +352,24 @@ export function CephalometryCard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [favourites, lang],
   );
+  // Nach MEDIUM gruppieren (Bead odontogram-c51.3): Fernroentgen vs. Fotostat.
+  // Innerhalb jeder Gruppe die Favoriten oben, dann alphabetisch - dieselbe
+  // Ordnung wie sonst, nur je Medium. Der Datensatz sagt ueber `medium` an der
+  // Messgroesse, woher ein Wert stammt; hier trennt es nur die Auswahl.
+  const flatten = (g: { favourites: CephProfile[]; others: CephProfile[] }) =>
+    [...g.favourites, ...g.others];
+  const filmProfiles = useMemo(
+    () => flatten(orderProfiles(p => t(p.labelKey), favourites,
+      PROFILES.filter(p => (p.medium ?? "film") === "film"))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [favourites, lang],
+  );
+  const photoProfiles = useMemo(
+    () => flatten(orderProfiles(p => t(p.labelKey), favourites,
+      PROFILES.filter(p => p.medium === "photo"))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [favourites, lang],
+  );
 
   // Solange niemand AUSDRUECKLICH gewaehlt hat, zieht der erste Favorit die
   // Karte auf sich — sonst waere ein Favorit bloss eine Umsortierung. Nach
@@ -379,27 +397,26 @@ export function CephalometryCard() {
               value={profileId}
               onChange={e => setCephProfileId(e.currentTarget.value)}
             >
-              {/* Die Gruppen erscheinen nur, wenn es ueberhaupt Favoriten gibt
-                  — eine Ueberschrift "Alle" ueber der einzigen Gruppe waere
-                  eine Auskunft ueber nichts. */}
-              {gruppen.favourites.length === 0
-                ? gruppen.others.map(p => (
+              {/* Nach Medium gruppiert: Fernroentgen und Fotostat. Die
+                  Fotostat-Gruppe erscheint nur, wenn es ein Foto-Verfahren gibt
+                  — sonst ist die einzige Gruppe eine Ueberschrift ueber nichts,
+                  und die Liste laeuft flach. */}
+              {photoProfiles.length === 0
+                ? filmProfiles.map(p => (
                   <option key={p.id} value={p.id}>{t(p.labelKey)}</option>
                 ))
                 : (
                   <>
-                    <optgroup label={t("ceph.group.favourites")}>
-                      {gruppen.favourites.map(p => (
+                    <optgroup label={t("ceph.group.film")}>
+                      {filmProfiles.map(p => (
                         <option key={p.id} value={p.id}>{t(p.labelKey)}</option>
                       ))}
                     </optgroup>
-                    {gruppen.others.length > 0 && (
-                      <optgroup label={t("ceph.group.all")}>
-                        {gruppen.others.map(p => (
-                          <option key={p.id} value={p.id}>{t(p.labelKey)}</option>
-                        ))}
-                      </optgroup>
-                    )}
+                    <optgroup label={t("ceph.group.photo")}>
+                      {photoProfiles.map(p => (
+                        <option key={p.id} value={p.id}>{t(p.labelKey)}</option>
+                      ))}
+                    </optgroup>
                   </>
                 )}
             </select>

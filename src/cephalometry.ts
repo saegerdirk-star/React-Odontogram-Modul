@@ -87,6 +87,10 @@ export const LANDMARKS: readonly Landmark[] = [
   { id: "sn", name: "Subnasale", kind: "anatomic" },
   { id: "no", name: "Nasenspitze", kind: "anatomic" },
   { id: "pog", name: "Weichteil-Pogonion", kind: "anatomic" },
+  // Weichteilpunkte fuer die Fotostat-Analyse nach Powell (odontogram-c51.3).
+  { id: "gb", name: "Glabella (Weichteil)", kind: "anatomic" },
+  { id: "ce", name: "Zervikalpunkt (Weichteil)", kind: "anatomic" },
+  { id: "ctg", name: "Columella-Tangentenpunkt", kind: "anatomic" },
 ];
 
 // ---- Layer 2: measures ----------------------------------------------------
@@ -109,6 +113,14 @@ export interface CephMeasure {
   sd: number | null;
   /** Mandatory. Where the NORM comes from, or why there is none. */
   source: string;
+  /**
+   * WELCHES BILD gemessen wird (Bead odontogram-c51.3): das Fernroentgen
+   * (`film`, Standard) oder die Profilfotografie (`photo`). Dieselbe
+   * Weichteilgroesse kommt in beiden vor - der H-Winkel auf dem Film, Powells
+   * Winkel auf dem Foto -, und der Datensatz muss sagen, WOHER ein Wert stammt.
+   * Genau das leistet dieses Feld. Fehlt es, ist es Film.
+   */
+  medium?: "film" | "photo";
   /** Which way a value above the norm reads for the growth pattern. */
   growth?: "higher-is-vertical" | "higher-is-horizontal";
   /**
@@ -356,6 +368,36 @@ export const MEASURES: readonly CephMeasure[] = [
     coding: { local: "ceph-s-e", ucum: "mm" },
     norm: 21.0, sd: null, source: PUBLIC_ANALYSE },
 
+  // --- Fotostat nach Powell: gemessen am PROFILFOTO, nicht am Film ---
+  // odontogram-c51.3, aus dem FRWin-Katalog. Alle `medium: "photo"` - das ist
+  // der Datensatz, der sagt, dass der Wert vom Foto stammt. Die reinen
+  // Gesichtshoehen-Verhaeltnisse (Formeln) bleiben weg, wie Holdaway bei
+  // Steiner: lieber eine Zeile weglassen als raten.
+  { id: "PowellFacP", labelKey: "ceph.powell.facp", unit: "deg", points: ["pog", "gb", "Po", "Or"],
+    coding: { local: "ceph-powell-fac-p", ucum: "deg" },
+    norm: 90.0, sd: null, source: PUBLIC_ANALYSE, medium: "photo" },
+  { id: "PowellNFr", labelKey: "ceph.powell.nfr", unit: "deg", points: ["gb", "N", "no"],
+    coding: { local: "ceph-powell-nfr", ucum: "deg" },
+    norm: 122.5, sd: 7.5, source: PUBLIC_ANALYSE, medium: "photo" },
+  { id: "PowellNFa", labelKey: "ceph.powell.nfa", unit: "deg", points: ["no", "N", "pog"],
+    coding: { local: "ceph-powell-nfa", ucum: "deg" },
+    norm: 35.0, sd: 5.0, source: PUBLIC_ANALYSE, medium: "photo" },
+  { id: "PowellNM", labelKey: "ceph.powell.nm", unit: "deg", points: ["pog", "no", "N"],
+    coding: { local: "ceph-powell-nm", ucum: "deg" },
+    norm: 126.0, sd: 6.0, source: PUBLIC_ANALYSE, medium: "photo" },
+  { id: "PowellMC", labelKey: "ceph.powell.mc", unit: "deg", points: ["ce", "Me", "gb", "pog"],
+    coding: { local: "ceph-powell-mc", ucum: "deg" },
+    norm: 87.5, sd: 7.5, source: PUBLIC_ANALYSE, medium: "photo" },
+  { id: "PowellNasomental", labelKey: "ceph.powell.nasomental", unit: "mm", points: ["no", "pog"],
+    coding: { local: "ceph-powell-nasomental", ucum: "mm" },
+    norm: null, sd: null, source: PUBLIC_ANALYSE, medium: "photo" },
+  { id: "PowellNL", labelKey: "ceph.powell.nl", unit: "deg", points: ["ctg", "sn", "ls"],
+    coding: { local: "ceph-powell-nl", ucum: "deg" },
+    norm: 100.0, sd: 10.0, source: PUBLIC_ANALYSE, medium: "photo" },
+  { id: "PowellNeck", labelKey: "ceph.powell.neck", unit: "mm", points: ["ce", "Gn"],
+    coding: { local: "ceph-powell-neck", ucum: "mm" },
+    norm: 54.0, sd: 6.0, source: PUBLIC_ANALYSE, medium: "photo" },
+
   // --- incisors ---
   { id: "Interincisal", labelKey: "ceph.interincisal", unit: "deg",
     points: ["Ap1-", "Is1-", "Ap1_", "Is1_"], coding: { local: "ceph-interincisal", ucum: "deg" },
@@ -412,6 +454,9 @@ export interface CephProfile {
   measures: string[];
   /** What the profile measures AGAINST. Sato's carries none by design. */
   referenceFrame: "anterior-cranial-base" | "frankfurt" | "occlusal-plane" | "none";
+  /** Fernroentgen (`film`, Standard) oder Profilfoto (`photo`) - der Waehler
+   *  gruppiert danach (Bead odontogram-c51.3). */
+  medium?: "film" | "photo";
   source: string;
   /**
    * NORMS BELONG TO THE PROFILE, not to the measure. Schools disagree about
@@ -515,6 +560,20 @@ export const PROFILES: readonly CephProfile[] = [
     },
   },
   {
+    id: "powell",
+    labelKey: "ceph.profile.powell",
+    // Am PROFILFOTO gemessen, gegen die Frankfurter Horizontale (P-Or). Das
+    // Profil ist `photo` - der Waehler fuehrt es unter "Fotostat", getrennt von
+    // den Fernroentgen-Verfahren (odontogram-c51.3).
+    referenceFrame: "frankfurt",
+    medium: "photo",
+    source: PUBLIC_ANALYSE,
+    measures: [
+      "PowellFacP", "PowellNFr", "PowellNFa", "PowellNM", "PowellMC",
+      "PowellNasomental", "PowellNL", "PowellNeck",
+    ],
+  },
+  {
     id: "jarabak",
     labelKey: "ceph.profile.jarabak",
     // S-N ist die Bezugslinie des Polygons, also die vordere Schaedelbasis -
@@ -549,13 +608,14 @@ export const PROFILES: readonly CephProfile[] = [
 export function orderProfiles(
   labelOf: (profile: CephProfile) => string,
   favourites: readonly string[] = [],
+  profiles: readonly CephProfile[] = PROFILES,
 ): { favourites: CephProfile[]; others: CephProfile[] } {
   const markiert = new Set(favourites);
   const nachNamen = (a: CephProfile, b: CephProfile) =>
     labelOf(a).localeCompare(labelOf(b));
   return {
-    favourites: PROFILES.filter(p => markiert.has(p.id)).sort(nachNamen),
-    others: PROFILES.filter(p => !markiert.has(p.id)).sort(nachNamen),
+    favourites: profiles.filter(p => markiert.has(p.id)).sort(nachNamen),
+    others: profiles.filter(p => !markiert.has(p.id)).sort(nachNamen),
   };
 }
 

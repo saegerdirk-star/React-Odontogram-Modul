@@ -129,35 +129,40 @@ describe("wer die Karte auf sich zieht", () => {
 });
 
 describe("die Auswahlliste in der Karte", () => {
-  it("ohne Favoriten keine Gruppen — eine Ueberschrift ueber der einzigen Gruppe sagt nichts", () => {
-    render(<CephalometryCard />);
-    const sel = document.getElementById("cephProfile") as HTMLSelectElement;
-    expect(sel.querySelectorAll("optgroup")).toHaveLength(0);
-    // Sortiert nach dem angezeigten LABEL, nicht nach der id: seit "hasund"
-    // als "Segner/Hasund" erscheint, weichen die beiden auseinander, und das
-    // Label gewinnt. Erwartung deshalb ueber dieselbe Ordnung, die die Karte
-    // fliegt (orderProfiles mit dem echten Label-Aufloeser).
-    const erwartet = orderProfiles(pr => t(pr.labelKey)).others.map(pr => pr.id);
-    expect([...sel.options].map(o => o.value)).toEqual(erwartet);
-  });
+  // Seit odontogram-c51.3 (Powell) gruppiert der Waehler nach MEDIUM:
+  // Fernroentgen vs. Fotostat. Powell ist das Foto-Verfahren, alle anderen sind
+  // Film. Innerhalb jeder Gruppe stehen die Favoriten oben, dann alphabetisch.
+  const filmIds = () =>
+    orderProfiles(pr => t(pr.labelKey), [], PROFILES.filter(pr => (pr.medium ?? "film") === "film")).others.map(pr => pr.id);
+  const photoIds = () =>
+    orderProfiles(pr => t(pr.labelKey), [], PROFILES.filter(pr => pr.medium === "photo")).others.map(pr => pr.id);
 
-  it("mit Favorit zwei Gruppen, der Favorit oben", () => {
-    setCephFavourite("ricketts", true);
+  it("gruppiert nach Medium: Fernroentgen und Fotostat", () => {
     render(<CephalometryCard />);
     const sel = document.getElementById("cephProfile") as HTMLSelectElement;
     const gruppen = [...sel.querySelectorAll("optgroup")];
     expect(gruppen).toHaveLength(2);
-    expect([...gruppen[0].querySelectorAll("option")].map(o => o.value)).toEqual(["ricketts"]);
-    const uebrig = orderProfiles(pr => t(pr.labelKey), ["ricketts"]).others.map(pr => pr.id);
-    expect([...gruppen[1].querySelectorAll("option")].map(o => o.value)).toEqual(uebrig);
+    expect([...gruppen[0].querySelectorAll("option")].map(o => o.value)).toEqual(filmIds());
+    expect([...gruppen[1].querySelectorAll("option")].map(o => o.value)).toEqual(photoIds());
+    // Powell steht in der Foto-Gruppe, nicht bei den Film-Verfahren.
+    expect(photoIds()).toContain("powell");
+    expect(filmIds()).not.toContain("powell");
   });
 
-  it("sind ALLE Verfahren Favoriten, entfaellt die zweite Gruppe", () => {
-    for (const p of PROFILES) setCephFavourite(p.id, true);
+  it("ein Favorit steht INNERHALB seiner Medium-Gruppe oben", () => {
+    setCephFavourite("ricketts", true);   // Ricketts ist ein Film-Verfahren
     render(<CephalometryCard />);
     const sel = document.getElementById("cephProfile") as HTMLSelectElement;
-    expect(sel.querySelectorAll("optgroup")).toHaveLength(1);
+    const film = [...sel.querySelectorAll("optgroup")][0];
+    expect([...film.querySelectorAll("option")][0].getAttribute("value")).toBe("ricketts");
+  });
+
+  it("jedes Verfahren erscheint genau einmal, in seiner Medium-Gruppe", () => {
+    render(<CephalometryCard />);
+    const sel = document.getElementById("cephProfile") as HTMLSelectElement;
     expect(sel.options).toHaveLength(PROFILES.length);
+    expect([...sel.options].map(o => o.value).sort())
+      .toEqual([...filmIds(), ...photoIds()].sort());
   });
 });
 

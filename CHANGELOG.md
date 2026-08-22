@@ -1,5 +1,32 @@
 # Changelog
 
+## 2.47.0 - 2026-08-22
+
+### Fotostat nach Powell (Bead odontogram-c51.3)
+
+Die letzte offene KFO-Aufgabe. Dirk: "Bau A" - Powell in die Kephalometrie-
+Karte gefaltet, aber mit einer Medium-Marke.
+
+- **Powell wird am PROFILFOTO gemessen, nicht am Fernroentgenbild**, und der
+  Datensatz sagt das: jede Messgroesse und das Profil tragen `medium: "photo"`
+  (Standard `film`). Dieselbe Weichteilgroesse kommt in beiden Medien vor - der
+  H-Winkel auf dem Film, Powells Winkel auf dem Foto -, und das Bead verlangt,
+  dass der Datensatz sagt, WOHER ein Wert stammt. Genau das leistet die Marke.
+- **Der Waehler gruppiert danach:** "Fernroentgen" (Segner/Hasund, Ricketts,
+  Jarabak, Steiner) und "Fotostat" (Powell). Innerhalb jeder Gruppe stehen die
+  Favoriten oben, dann alphabetisch. Die Fotostat-Gruppe erscheint nur, wenn es
+  ein Foto-Verfahren gibt.
+- **Acht Messgroessen** aus dem FRWin-Katalog: Fazialebenen-Winkel 90,
+  Nasofrontal 122,5 +/- 7,5, Nasofazial 35 +/- 5, Nasomental 126 +/- 6,
+  Mentozervikal 87,5 +/- 7,5, Nasomentallinie, Nasolabial 100 +/- 10,
+  Halslaenge 54 +/- 6. Drei neue Weichteilpunkte (Glabella, Zervikalpunkt,
+  Columella-Tangentenpunkt). Die reinen Gesichtshoehen-Verhaeltnisse (Formeln)
+  bleiben weg, wie Holdaway bei Steiner.
+- Quelle wie beim uebrigen Katalog: keine genannt (FRWin nennt keine, Dirks
+  Copyright-Einwand), lokaler Kode, der Anwender prueft selbst. Beschriftungen
+  in zwoelf Sprachen. Sitzungszustand, kein Payload/FHIR. SVG-Fingerabdruecke
+  byte-identisch.
+
 ## 2.46.1 - 2026-08-22
 
 ### Bracket buccal/lingual auch in der Kauflaechenansicht (Bugfix)
