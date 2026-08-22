@@ -1,5 +1,33 @@
 # Changelog
 
+## 2.36.1 - 2026-08-22
+
+### Das Dreieck des Papillenverlusts lag NEBEN der Papille (Bead odontogram-gry)
+
+Dirk, 22.08.2026: *"das Dreieck wird mit dem Grad von 1 zu 3 groesser und soll
+die Papilla verdecken. Dazu muesste es nach meinem Verstaendnis aber tiefer
+sitzen, besonders bei Grad 3."*
+
+- **Gemessen war es schlimmer als es aussah.** Das Dreieck sass VOLLSTAENDIG
+  AUSSERHALB des Zahnfleischs, auf der Kronenseite, und beruehrte die
+  Papillenspitze nur mit seiner Basis — am Sechser spannte das Band y 119…139,
+  das Dreieck lief von 139 bis 151. Es verdeckte also nichts. Und je hoeher der
+  Grad, desto **weiter weg** vom Zahnfleisch reichte es: genau umgekehrt zu dem,
+  was ein Rueckgang ist.
+- **Richtig herum:** die Papille IST ein Dreieck mit der Spitze am Kontaktpunkt.
+  Faellt sie zurueck, verschwindet ihr KORONALER Teil — und der fehlende Teil ist
+  wieder ein Dreieck, Spitze koronal, nach apikal breiter, und umso tiefer, je
+  hoeher die Klasse. Das Mal liegt jetzt AUF dem Band, mit der Spitze an der
+  Papillenspitze und der Basis apikal davon.
+- **Die Tiefe ist ein Anteil der gemessenen Bandhoehe** (0,35 / 0,65 / 1,0),
+  keine feste Pixelzahl: seit 2.25.0 haengt das Band an der eigenen
+  Zervikallinie jedes Zahns, und eine feste Zahl waere am Einundvierziger etwas
+  anderes als am Dreier. Nordland & Tarnow III heisst "die Papille ist weg" —
+  also die volle Hoehe.
+- **Die Richtung war schon richtig** und bleibt: die Spitze zeigt zum
+  Kontaktpunkt, im Oberkiefer nach unten, im Unterkiefer nach oben. Nachgemessen
+  an 16 und 46, bevor etwas geaendert wurde.
+
 ## 2.36.0 - 2026-08-22
 
 ### Was im Kanal liegt, kommt aus dem Kanal (Bead odontogram-7xl, dritter Teil)

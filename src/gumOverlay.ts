@@ -181,18 +181,31 @@ function papillenluecken(grid: HTMLElement, band: SVGSVGElement, gridRect: DOMRe
   while(auflage.firstChild) auflage.removeChild(auflage.firstChild);
   auflage.setAttribute("viewBox", `0 0 ${gridRect.width} ${gridRect.height}`);
 
-  // Hoehe und halbe Breite je Klasse, in Bildpunkten. Beide wachsen mit, weil
-  // beide es im Mund tun.
+  // WIEVIEL DER PAPILLE FEHLT, und wie breit die Luecke dabei wird.
   //
-  // Dirk, 20.08.2026: "blende doch einfach ein graues Dreieck an die Stelle
-  // ein, wo die Papille fehlt, welches zwischen die Zaehne am Zahnhals passt."
-  // Also nach der LUECKE bemessen, nicht nach dem, was auf dem Schmelz noch
-  // Platz haette: am Zahnhals stehen die Nachbarn auseinander, am Kontaktpunkt
-  // beruehren sie sich. Deshalb bleibt die Basis schmal und die Spitze laeuft
-  // in die enger werdende Nische hinein.
-  const MASS: Record<string, [number, number]> = {
-    "1": [6, 3], "2": [9, 4], "3": [12, 5],
-  };
+  // Dirk, 22.08.2026: "das Dreieck wird mit dem Grad von 1 zu 3 groesser und
+  // soll die Papilla verdecken. Dazu muesste es nach meinem Verstaendnis aber
+  // tiefer sitzen, besonders bei Grad 3."
+  //
+  // Er hat recht, und gemessen war es schlimmer als es aussah: das Dreieck sass
+  // VOLLSTAENDIG AUSSERHALB des Zahnfleischs, auf der Kronenseite, und beruehrte
+  // die Papillenspitze nur mit seiner Basis (16: Band y 119..139, Dreieck 139
+  // bis 151). Es verdeckte also nichts - und je hoeher der Grad, desto weiter
+  // WEG vom Zahnfleisch reichte es. Genau umgekehrt zu dem, was ein Rueckgang
+  // ist.
+  //
+  // Richtig herum: die Papille IST ein Dreieck mit der Spitze am Kontaktpunkt.
+  // Faellt sie zurueck, verschwindet ihr KORONALER Teil, und der fehlende Teil
+  // ist wieder ein Dreieck - Spitze koronal, nach apikal breiter werdend, und
+  // umso tiefer, je hoeher die Klasse. Das Mal liegt deshalb AUF dem Band, mit
+  // der Spitze an der Papillenspitze.
+  //
+  // Die Tiefe ist ein ANTEIL der gemessenen Bandhoehe, keine feste Zahl - seit
+  // 2.25.0 haengt das Band an der eigenen Zervikallinie jedes Zahns, und eine
+  // feste Zahl waere am Einundvierziger etwas anderes als am Dreier. Nordland &
+  // Tarnow III heisst "die Papille ist weg", also die volle Hoehe.
+  const TIEFE: Record<string, number> = { "1": 0.35, "2": 0.65, "3": 1.0 };
+  const HALBBREITE: Record<string, number> = { "1": 3, "2": 4, "3": 5 };
   const GRID_GAP = 4;   // `gap` an `.tooth-arch` in src/index.css
 
   for(const kachel of betroffen){
@@ -206,13 +219,17 @@ function papillenluecken(grid: HTMLElement, band: SVGSVGElement, gridRect: DOMRe
     const klon = band.querySelector(
       `g[data-tooth="${el.dataset.tooth}"][data-layer="gum-base"]`) as SVGGElement | null;
     let rand = oberkante + r.height * (oben ? 0.46 : 0.54);   // Rueckfall ohne Layout
+    let bandhoehe = r.height * 0.13;                          // desgleichen
     // `getBoundingClientRect`, NICHT `getBBox`: letzteres misst im eigenen
     // Koordinatensystem des Elements, also VOR seiner eigenen Transformation -
     // und genau die setzt den Klon erst ins Raster. Gemessen kam damit
     // (3,3 | 42,7) heraus, wo (196 | 331) steht.
     const kasten = klon && typeof klon.getBoundingClientRect === "function"
       ? klon.getBoundingClientRect() : null;
-    if(kasten && kasten.height > 0) rand = (oben ? kasten.bottom : kasten.top) - gridRect.top;
+    if(kasten && kasten.height > 0){
+      rand = (oben ? kasten.bottom : kasten.top) - gridRect.top;
+      bandhoehe = kasten.height;
+    }
 
     for(const [seite, klasse] of [["links", el.dataset.papillaLeft ?? ""],
                                   ["rechts", el.dataset.papillaRight ?? ""]] as const){
@@ -220,13 +237,15 @@ function papillenluecken(grid: HTMLElement, band: SVGSVGElement, gridRect: DOMRe
       // Die Mitte des Gelenks liegt in der RASTERLUECKE zwischen zwei Kacheln,
       // nicht auf der Kachelkante - eine halbe Luecke daneben.
       const gelenk = seite === "links" ? x0 - GRID_GAP / 2 : x0 + r.width + GRID_GAP / 2;
-      const [hoehe, halb] = MASS[klasse] ?? MASS["1"];
-      // Die Spitze zeigt zum KONTAKTPUNKT, also nach okklusal - im Oberkiefer
-      // nach unten, im Unterkiefer nach oben.
-      const spitze = oben ? rand + hoehe : rand - hoehe;
+      const hoehe = bandhoehe * (TIEFE[klasse] ?? TIEFE["1"]);
+      const halb = HALBBREITE[klasse] ?? HALBBREITE["1"];
+      // Die SPITZE sitzt an der Papillenspitze und zeigt zum Kontaktpunkt - im
+      // Oberkiefer nach unten, im Unterkiefer nach oben. Die BASIS liegt so viel
+      // weiter apikal, wie die Klasse sagt, also IM Band.
+      const basis = oben ? rand - hoehe : rand + hoehe;
       const dreieck = document.createElementNS(SVG_NS, "path");
       dreieck.setAttribute("d",
-        `M${gelenk - halb},${rand}L${gelenk + halb},${rand}L${gelenk},${spitze}Z`);
+        `M${gelenk - halb},${basis}L${gelenk + halb},${basis}L${gelenk},${rand}Z`);
       // GRAU, nicht schwarz: der klinische Name ist zwar das schwarze Dreieck,
       // aber im Odontogramm ist Schwarz schon die Bruchlinie, und eine Farbe
       // traegt hier ueberall Bedeutung. Grau ist der Raum, der leer ist.
