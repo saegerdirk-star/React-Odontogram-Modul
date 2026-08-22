@@ -1,5 +1,35 @@
 # Changelog
 
+## 2.37.0 - 2026-08-22
+
+### Das Onlay bekommt eine Seitenansicht (Bead odontogram-bbd)
+
+Dirk, 21.08.2026: *"Onlay kann ueber 4 Flaechen gehen, z.B. modl, modv, odlv
+usw."* — ein `modv` hat einen vestibulaeren Anteil, den man von der Seite sieht.
+Und am 22.08.2026 die Groesse dazu: *"Das Onlay soll auf 2/3 der bukkalen
+Flaeche reichen. Ich denke, das ist ein guter Kompromiss."*
+
+- **`occlusalOnly` war nie eine Regel**, sondern die Beschreibung eines
+  Bestands: die Ebenen `*-onlay` gibt es ausschliesslich in den
+  Kauflaechenvorlagen. Das Gatter faellt weg.
+- **Ohne eine einzige neue Zeichnung.** Seit die Krone aus der Kontur
+  geschnitten wird (2.31.0), ist ein Onlay keine eigene FORM mehr, sondern die
+  Krone ohne ihr zervikales Drittel. In der Seitenansicht schaltet
+  `composeRestorationLayers` deshalb die KRONEN-Ebene ein, und der Schnitt kommt
+  als `clip-path` von der Kachel — dieselbe Aufgabenteilung wie bei der
+  Hemisektion, und aus demselben Grund: etwas wegzunehmen kann keine Auflage.
+  In der Kauflaechenansicht bleibt es die gezeichnete Onlay-Ebene, denn dort ist
+  die Form eine andere und sie EXISTIERT.
+- **Eine Falle, am Bild gefunden.** Der Unterkiefer traegt seine Kaukante oben,
+  das zervikale Drittel liegt dort also unten — man erwartet zwei
+  kieferabhaengige Fassungen. Es ist aber EINE: die Kachel wird als Ganzes um
+  180 Grad gedreht, mit einem transform-ATTRIBUT an einem Wrapper, und der
+  Schnitt rechnet im EIGENEN Koordinatensystem des Elements, also VOR der
+  Drehung. Dieselbe Falle wie beim Durchbruch, wo ein negatives `translateY`
+  deshalb in beiden Kiefern "nach apikal" heisst.
+- SVG-Fingerabdruecke unveraendert (die Kauflaechen-Aufnahmen sind es, die die
+  Onlay-Zeilen der Matrix tragen), Nutzlast und FHIR unberuehrt.
+
 ## 2.36.2 - 2026-08-22
 
 ### Die Kurzschrift-Tests fallen nicht mehr aus Zeitmangel um

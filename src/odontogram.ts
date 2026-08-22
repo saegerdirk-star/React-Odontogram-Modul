@@ -4320,6 +4320,7 @@ function applyStateToSvg(toothNo: Any){
   applyPluginOverlays(toothNo);
   updateToothRetentionMark(toothNo);
   updateToothMobilityMark(toothNo);   // Bead odontogram-7xl
+  updateToothOnlayClip(toothNo);      // Bead odontogram-bbd
   syncHemisectionClip(toothNo);   // Bead odontogram-ca0
   syncFractureMark(toothNo);      // Bead odontogram-t6y
   syncPapillaMark(toothNo);       // Bead odontogram-gry
@@ -4389,6 +4390,35 @@ function updateToothRetentionMark(toothNo: Any){
     if(!tile?.setAttribute) continue;
     if(mark) tile.setAttribute("data-retention", mark);
     else tile.removeAttribute("data-retention");
+  }
+}
+
+/** Bead odontogram-bbd: das Onlay in der Seitenansicht.
+ *
+ *  Dirk, 21.08.2026: "Onlay kann ueber 4 Flaechen gehen, z.B. modl, modv, odlv
+ *  usw." Ein modv hat einen vestibulaeren Anteil, den man von der Seite sieht -
+ *  dort fehlte dem Onlay bisher nur die FORM, nicht die Berechtigung.
+ *
+ *  Sie wird nicht gezeichnet, sondern GESCHNITTEN: ein Onlay ist die Krone ohne
+ *  ihr zervikales Drittel. Dirk, 22.08.2026: "Das Onlay soll auf 2/3 der
+ *  bukkalen Flaeche reichen. Ich denke, das ist ein guter Kompromiss."
+ *
+ *  `composeRestorationLayers` schaltet dafuer in der Seitenansicht die
+ *  KRONEN-Ebene ein; hier bekommt die Kachel `data-onlay`, und der Schnitt
+ *  steht in index.css - dieselbe Aufgabenteilung wie bei der Hemisektion, und
+ *  aus demselben Grund: etwas wegzunehmen kann keine Auflage, dafuer braucht es
+ *  einen Schnitt. */
+function updateToothOnlayClip(toothNo: Any){
+  const tiles = toothTile.get(toothNo);
+  if(!tiles) return;
+  const st = toothState.get(toothNo);
+  const onlay = st?.restorationType === "onlay"
+    && String(st?.restorationMaterial ?? "none") !== "none"
+    && !restorationRowHidden(st);
+  for(const tile of tiles){
+    if(!tile?.setAttribute) continue;
+    if(onlay && tile.classList?.contains("side-view")) tile.setAttribute("data-onlay", "1");
+    else tile.removeAttribute("data-onlay");
   }
 }
 

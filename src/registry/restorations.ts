@@ -12,7 +12,19 @@ export const RESTORATION_MATRIX: Record<Exclude<RestorationType, "none">,
   crown:  { materials: ["emax","gold","gradia","zircon","metal","metal-ceramic","telescope","temporary"] },
   bridge: { materials: ["emax","gold","gradia","zircon","metal","metal-ceramic","telescope","temporary"] },
   inlay:  { materials: ["emax","gold","gradia","zircon","temporary"] },
-  onlay:  { materials: ["emax","gold","gradia","zircon","temporary"], occlusalOnly: true },
+  // Bead odontogram-bbd: das Onlay ist auch in der SEITENANSICHT ein Befund.
+  //
+  // `occlusalOnly` war nie eine Regelung, sondern eine Beschreibung des
+  // Bestands: die Ebenen `*-onlay` gibt es ausschliesslich in den
+  // Kauflaechenvorlagen. Dirk, 21.08.2026: "Onlay kann ueber 4 Flaechen gehen,
+  // z.B. modl, modv, odlv usw." - ein modv hat einen vestibulaeren Anteil, den
+  // man von der Seite sieht.
+  //
+  // Die Form dafuer wird nicht gezeichnet, sondern GESCHNITTEN: ein Onlay ist
+  // die Krone ohne ihr zervikales Drittel. Dirk, 22.08.2026: "Das Onlay soll
+  // auf 2/3 der bukkalen Flaeche reichen." Siehe `composeRestorationLayers`
+  // unten und die Regeln zu `data-onlay` in index.css.
+  onlay:  { materials: ["emax","gold","gradia","zircon","temporary"] },
   veneer: { materials: ["emax","gold","gradia","zircon","temporary"] },
 };
 
@@ -53,6 +65,15 @@ export function composeRestorationLayers(type: RestorationType, material: Restor
   // (grepped teeth-svgs/11.svg).
   if (type === "bridge") return [...crownLayerIds(material), `${material}-bridge-connector`];
   if (type === "crown") return crownLayerIds(material);
+  // Bead odontogram-bbd: in der SEITENANSICHT gibt es keine eigene
+  // Onlay-Ebene, und sie waere auch keine eigene FORM - ein Onlay ist die
+  // Krone, der ihr zervikales Drittel fehlt. Also dieselbe Ebene, und der
+  // Schnitt kommt als `clip-path` von der Kachel (`data-onlay`), genau wie bei
+  // der Hemisektion: etwas wegzunehmen kann keine Auflage.
+  //
+  // In der Kauflaechenansicht bleibt es die gezeichnete Onlay-Ebene: dort ist
+  // die Form eine andere (die gezackte Tafel) und sie EXISTIERT.
+  if (type === "onlay" && view === "front") return crownLayerIds(material);
   return [`${material}-${type}`];
 }
 

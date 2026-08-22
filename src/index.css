@@ -2882,6 +2882,35 @@ body.odon-dragging{ cursor: cell; }
 #toothGrid .tooth-tile [id="prosthesis-implant-crown"]{ fill: url(#odonKroneProthBasis) !important; }
 
 
+/* Bead odontogram-bbd: das Onlay ist die Krone ohne ihr zervikales Drittel.
+   -------------------------------------------------------------------------
+   Dirk, 22.08.2026: "Das Onlay soll auf 2/3 der bukkalen Flaeche reichen. Ich
+   denke, das ist ein guter Kompromiss."
+
+   Geschnitten und nicht gezeichnet, aus demselben Grund wie bei der
+   Hemisektion: etwas wegzunehmen kann keine Auflage. Der Schnitt sitzt an der
+   KRONENEBENE selbst und nicht an der Kachel - anders als dort soll ja nur die
+   Kappe kuerzer werden, der Zahn darunter bleibt ganz.
+
+   `inset()` rechnet in Prozent des Elementkastens - und das ist hier genau die
+   Krone, weil die Kronenebene ihre eigene Form ist, seit sie aus der Kontur
+   geschnitten wird (kronen.py). Vor dieser Ableitung waere derselbe Schnitt
+   schief gelaufen.
+
+   BEIDE FASSUNGEN SCHNEIDEN OBEN, und das sieht falsch aus, bis man es
+   nachmisst. Der Unterkiefer traegt seine Kaukante oben, das zervikale Drittel
+   liegt dort also UNTEN - man erwartet `inset(0 0 33.3% 0)`. Die Kachel wird
+   aber als Ganzes um 180 Grad gedreht, und zwar mit einem transform-ATTRIBUT
+   an einem Wrapper; der Schnitt rechnet im EIGENEN Koordinatensystem des
+   Elements, also VOR dieser Drehung. Oben und unten sind dort vertauscht.
+   Dieselbe Falle wie beim Durchbruch, wo ein negatives `translateY` deshalb in
+   BEIDEN Kiefern "nach apikal" heisst. Am Bild gefunden, nicht im Quelltext. */
+.tooth-tile[data-onlay] .tooth-svg svg [id$="-crown"],
+.tooth-tile[data-onlay] .tooth-svg svg [id="telescope-crown-inside"]{
+  clip-path: inset(33.3% 0 0 0);
+}
+
+
 /* Bead odontogram-7xl: der Lockerungsgrad als roemische Ziffer.
    -------------------------------------------------------------------------
    Dirk, 22.08.2026: "Wir schreiben eine roemische Ziffer I - III in das

@@ -17,19 +17,29 @@ describe("restoration matrix", () => {
     expect(composeRestorationLayers("crown", "telescope", "front"))
       .toEqual(["telescope-crown", "telescope-crown-inside", "telescope-crown-outside"]);
     expect(composeRestorationLayers("onlay", "gold", "occlusal")).toEqual(["gold-onlay"]);
+    // odontogram-bbd: in der Seitenansicht gibt es keine Onlay-Zeichnung, und es
+    // waere auch keine eigene FORM - also die KRONE, die die Kachel per
+    // clip-path auf zwei Drittel kuerzt.
+    expect(composeRestorationLayers("onlay", "gold", "front")).toEqual(["gold-crown"]);
     expect(composeRestorationLayers("none", "none", "front")).toEqual([]);
   });
-  it("validity follows the artwork matrix (onlay occlusal-only; metal crown/bridge-only; onlay materials incl. zircon)", () => {
-    expect(isValidRestoration("onlay", "gold", "front")).toBe(false);
+  it("validity follows the artwork matrix (metal crown/bridge-only; onlay materials incl. zircon)", () => {
+    // odontogram-bbd: das Onlay gilt seit 2.37.0 in BEIDEN Ansichten. Die alte
+    // Zusicherung ("onlay occlusal-only") beschrieb keine Regel, sondern den
+    // Bestand an Zeichnungen - `*-onlay` gab es nur in den Kauflaechenvorlagen.
+    // Seit die Krone aus der Kontur geschnitten wird, braucht die Seitenansicht
+    // keine eigene Zeichnung mehr: ein Onlay IST die Krone ohne ihr zervikales
+    // Drittel, und der Schnitt kommt als clip-path von der Kachel.
+    expect(isValidRestoration("onlay", "gold", "front")).toBe(true);
     expect(isValidRestoration("onlay", "gold", "occlusal")).toBe(true);
     expect(isValidRestoration("inlay", "metal", "front")).toBe(false);
     expect(isValidRestoration("crown", "metal", "front")).toBe(true);
     expect(isValidRestoration("onlay", "zircon", "occlusal")).toBe(true);
     expect(isValidRestoration("veneer", "zircon", "front")).toBe(true);
   });
-  it("options list is view-filtered and prefixed", () => {
+  it("options list is prefixed, and das Onlay steht in BEIDEN Ansichten", () => {
     const front = restorationOptions("front", {});
-    expect(front.some(o => o.restorationType === "onlay")).toBe(false);
+    expect(front.some(o => o.restorationType === "onlay")).toBe(true);
     expect(front[0]).toEqual({ restorationType: "none", restorationMaterial: "none", labelKey: "restoration.none" });
     const occl = restorationOptions("occlusal", {});
     expect(occl.some(o => o.restorationType === "onlay")).toBe(true);
