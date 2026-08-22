@@ -1,5 +1,33 @@
 # Changelog
 
+## 2.35.0 - 2026-08-22
+
+### Der Lockerungsgrad als roemische Ziffer (Bead odontogram-7xl)
+
+Dirk, 22.08.2026: *"Wir schreiben eine roemische Ziffer I - III in das Kaestchen
+des Zahnes, unten in eine Ecke. Mir faellt nichts ein, wie man Lockerung sonst
+graphisch darstellen koennte."*
+
+- **Beim Bauen kam der eigentliche Grund dazu:** die Gruppe `mobility` hat GENAU
+  ZWEI Kinder, `tooth-mobility-1` und `-2`, und beide standen immer auf aktiv.
+  Eingeschaltet wurde die Gruppe als GANZES, unabhaengig vom Grad — **M1, M2 und
+  M3 haben also seit jeher dasselbe Bild gezeichnet.** Der Grad war nie zu sehen.
+  Die Ziffer ist damit nicht nur die huebschere Loesung, sondern die einzige, die
+  ueberhaupt zeigt, was gemeint ist.
+- `updateToothMobilityMark` schreibt `data-mobility` mit `I`/`II`/`III` an das
+  DIV der Kachel; CSS zeichnet es unten links. **`::before`, weil die
+  Retentionsmarke daneben `::after` benutzt** — beide sitzen an derselben Kachel
+  und duerfen sich nicht verdraengen; jene steht mittig, diese in der Ecke.
+- Nicht in der Kauflaechenansicht, wie die Retentionsmarke: die Kachel ist klein,
+  und die Lockerung gehoert zum Zahn und nicht zu einer Ansicht.
+- **Dieselbe Bedingung wie vorher die Ebene**: kein Implantat (osseointegriert,
+  kein Desmodont), keine Luecke, keine frische Extraktionswunde.
+- Der Regressionsschutz von SP15 stand vorher andersherum ("still renders the
+  mobility glyph"). Er bleibt sinnvoll, nur ist sein Bezugspunkt ein anderer: es
+  gibt keinen Glyphen mehr, den ein Implantat faelschlich zeigen koennte.
+- Nutzlast, FHIR und Zusammenfassung unveraendert; die Marke steht ausserhalb des
+  SVG, der Fingerabdruck sieht sie nicht.
+
 ## 2.34.1 - 2026-08-21
 
 ### Was die Form der Krone IST, kommt aus der Krone (Bead odontogram-7xl)

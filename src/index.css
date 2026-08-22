@@ -2882,6 +2882,32 @@ body.odon-dragging{ cursor: cell; }
 #toothGrid .tooth-tile [id="prosthesis-implant-crown"]{ fill: url(#odonKroneProthBasis) !important; }
 
 
+/* Bead odontogram-7xl: der Lockerungsgrad als roemische Ziffer.
+   -------------------------------------------------------------------------
+   Dirk, 22.08.2026: "Wir schreiben eine roemische Ziffer I - III in das
+   Kaestchen des Zahnes, unten in eine Ecke."
+
+   Nicht nur huebscher, sondern die einzige Darstellung, die den GRAD zeigt: die
+   gezeichnete Gruppe wurde als Ganzes eingeschaltet, M1, M2 und M3 sahen
+   deshalb gleich aus.
+
+   `::before`, weil die Retentionsmarke daneben `::after` benutzt - beide sitzen
+   an derselben Kachel und duerfen sich nicht verdraengen. Unten LINKS, waehrend
+   jene mittig sitzt; damit koennen sie nebeneinander stehen.
+
+   Nur in der Seitenansicht, wie die Retentionsmarke: eine Kaukachel ist klein,
+   und die Lockerung gehoert zum Zahn, nicht zu einer Ansicht. */
+.tooth-tile[data-mobility]::before{
+  content: attr(data-mobility);
+  position: absolute; left: 3px; bottom: 2px;
+  font-size: 10px; font-weight: 700; line-height: 1;
+  letter-spacing: .02em;
+  color: #b3261e;
+  pointer-events: none;
+}
+.tooth-tile.occl-view[data-mobility]::before{ display: none }
+
+
 /* Bead odontogram-qvr: Fissuren und Hoecker unter der Restauration.
    -------------------------------------------------------------------------
    Dirk, 21.08.2026: "Bei Kronen und Onlays auf Praemolaren und Molaren sollte

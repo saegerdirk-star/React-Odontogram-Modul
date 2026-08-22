@@ -107,9 +107,23 @@ describe("SP15 wholebranch fix — Finding 2: stale mobility glyph on an implant
     expect(ids(l)).not.toContain("mobility");
   });
 
-  it("regression guard: the SAME mobility on a tooth-base still renders the mobility glyph", () => {
-    const l = render({ toothSelection: "tooth-base", mobility: "m2" });
-    expect(ids(l)).toContain("mobility");
+  it("odontogram-7xl: die Lockerung wird gar nicht mehr GEZEICHNET", () => {
+    // Dirk, 22.08.2026: "Wir schreiben eine roemische Ziffer I - III in das
+    // Kaestchen des Zahnes, unten in eine Ecke."
+    //
+    // Diese Zusicherung stand vorher andersherum ("still renders the mobility
+    // glyph") und war der Regressionsschutz zur Implantat-Ausnahme. Der Schutz
+    // bleibt sinnvoll, nur ist sein Bezugspunkt ein anderer geworden: es gibt
+    // keinen Glyphen mehr, den ein Implantat faelschlich zeigen koennte.
+    //
+    // Der Grund ist beim Nachsehen dazugekommen: die Gruppe `mobility` hat
+    // GENAU ZWEI Kinder, beide immer aktiv, und wurde als Ganzes eingeschaltet -
+    // M1, M2 und M3 zeichneten also dasselbe Bild. Der Grad war nie zu sehen.
+    // Eine Ziffer kann, was die Zeichnung nicht konnte.
+    for(const grad of ["m1", "m2", "m3"]){
+      expect(ids(render({ toothSelection: "tooth-base", mobility: grad })), grad)
+        .not.toContain("mobility");
+    }
   });
 
   it("stored value is left untouched by hydrate (T1's preserve-value choice)", () => {

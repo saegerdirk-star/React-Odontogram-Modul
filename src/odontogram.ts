@@ -3584,9 +3584,17 @@ function applyStateToSvgSingle(toothNo: Any, svg: Any, state: Any = toothState.g
   // on an implant (osseointegrated, no PDL) — gate the render the same way.
   // The stored value is deliberately left untouched (T1's choice), just not
   // drawn/summarized on an implant.
-  if(state.mobility !== "none" && state.toothSelection !== "none" && !extraction && !isImplant){
-    setActive(svgGetById(svg, "mobility"), true);
-  }
+  // Bead odontogram-7xl: die Lockerung wird NICHT MEHR GEZEICHNET, sondern als
+  // roemische Ziffer an die Kachel geschrieben - siehe `updateToothMobilityMark`.
+  //
+  // Der Anlass war Dirks Frage nach der Darstellung ("Mir faellt nichts ein, wie
+  // man Lockerung sonst graphisch darstellen koennte"), der Grund ist beim
+  // Nachsehen dazugekommen: die Gruppe `mobility` hat GENAU ZWEI Kinder,
+  // `tooth-mobility-1` und `-2`, und beide standen immer auf aktiv. Die Gruppe
+  // wurde als Ganzes eingeschaltet, unabhaengig vom Grad - M1, M2 und M3 haben
+  // also seit jeher DASSELBE Bild gezeichnet. Der Grad war nie zu sehen.
+  //
+  // Eine Ziffer kann, was die Zeichnung nicht konnte.
 
   // 3) Endo exclusivity (only if tooth present)
   if(isToothPresent(state.toothSelection) && !underGum && !extraction){
@@ -4311,6 +4319,7 @@ function applyStateToSvg(toothNo: Any){
   }
   applyPluginOverlays(toothNo);
   updateToothRetentionMark(toothNo);
+  updateToothMobilityMark(toothNo);   // Bead odontogram-7xl
   syncHemisectionClip(toothNo);   // Bead odontogram-ca0
   syncFractureMark(toothNo);      // Bead odontogram-t6y
   syncPapillaMark(toothNo);       // Bead odontogram-gry
@@ -4381,6 +4390,46 @@ function updateToothRetentionMark(toothNo: Any){
     if(mark) tile.setAttribute("data-retention", mark);
     else tile.removeAttribute("data-retention");
   }
+}
+
+/** Bead odontogram-7xl: der Lockerungsgrad als roemische Ziffer an der Kachel.
+ *
+ *  Dirk, 22.08.2026: "Wir schreiben eine roemische Ziffer I - III in das
+ *  Kaestchen des Zahnes, unten in eine Ecke. Mir faellt nichts ein, wie man
+ *  Lockerung sonst graphisch darstellen koennte."
+ *
+ *  Es ist nicht nur die huebschere Loesung, sondern die einzige, die den GRAD
+ *  zeigt: die gezeichnete Gruppe hatte zwei Kinder, beide immer aktiv, und wurde
+ *  als Ganzes eingeschaltet - M1, M2 und M3 sahen gleich aus.
+ *
+ *  Gebaut wie `updateToothRetentionMark` daneben: ein data-Attribut am DIV der
+ *  Kachel, von CSS gezeichnet. Damit steht es ausserhalb des SVG, und der
+ *  Fingerabdruck sieht es nicht.
+ *
+ *  DIESELBE BEDINGUNG wie vorher die Ebene: kein Implantat (osseointegriert,
+ *  kein Desmodont), keine Luecke, keine frische Extraktionswunde. */
+const MOBILITAETSZIFFER: Record<string, string> = { m1: "I", m2: "II", m3: "III" };
+
+function updateToothMobilityMark(toothNo: Any){
+  const tiles = toothTile.get(toothNo);
+  if(!tiles) return;
+  const st = toothState.get(toothNo);
+  const ziffer = MOBILITAETSZIFFER[String(st?.mobility ?? "none")] ?? "";
+  const zeigen = !!ziffer
+    && st?.toothSelection !== "none"
+    && st?.toothSelection !== "implant"
+    && !isExtraction(st?.toothSelection)
+    && !st?.extractionWound;
+  for(const tile of tiles){
+    if(!tile?.setAttribute) continue;
+    if(zeigen) tile.setAttribute("data-mobility", ziffer);
+    else tile.removeAttribute("data-mobility");
+  }
+}
+
+/** TEST-ONLY seam over updateToothMobilityMark. Not part of the public API. */
+export function __updateToothMobilityMarkForTest(toothNo: number): void {
+  updateToothMobilityMark(toothNo);
 }
 
 /** TEST-ONLY seam over {@link updateToothRetentionMark}. Not part of the
