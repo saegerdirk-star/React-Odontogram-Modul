@@ -1,5 +1,46 @@
 # Changelog
 
+## 2.36.0 - 2026-08-22
+
+### Was im Kanal liegt, kommt aus dem Kanal (Bead odontogram-7xl, dritter Teil)
+
+Dirk, 22.08.2026: *"Das muessen wir unbedingt richtig machen."*
+
+- **Was es war.** Die Pulpa wird EINGESETZT — Dirk zeichnet sie —, alles was in
+  ihr liegt wurde dagegen GEWARPT, mit einem eigenen Feld, dessen Stuetzstellen
+  auf der Pulpakontur sitzen. Eine Wurzelfuellung ist aber etwas breiter als das
+  Lumen und reicht bis an den Apex; ihre Punkte liegen teils AUSSERHALB der
+  Stuetzstellen, und dort geht der Spline in die Affinabbildung ueber und
+  driftet.
+- **Gemessen am Sechser** stand die Wurzelfuellung 12,4 Einheiten rechts und
+  18,1 unten ueber die Pulpa hinaus — im Bild ein blaues Gewirr quer ueber die
+  Krone, das links aus der Kachel lief. Am Fuenfer fuellte der Glasstift die
+  Krone aus und schickte einen Dorn unten aus dem Rahmen. **Und es war nicht
+  neu:** byte-genau gegen den Stand von gestern Abend verglichen, identisch. Die
+  neue Ueberstandspruefung hat es gefunden, nicht verursacht.
+- **`tools/toothgen/endo.py`** leitet jetzt ab, was abzuleiten ist — dieselbe
+  Bewegung wie bei der Krone, nur ein Feld weiter innen:
+
+      endo-filling              das Lumen selbst
+      endo-medical-filling      dasselbe (die Farbe unterscheidet sie)
+      endo-filling-incomplete   das Lumen, apikal um 18 % verkuerzt
+      endo-glass-pin            der koronale Teil des Kanals (45 %)
+      endo-metal-pin            derselbe
+      endo-resection            der abgetrennte Apex, aus der KONTUR
+
+- **Jedes Stueck, nicht das laengste:** anders als beim Kronenschnitt werden
+  beim Lumen ALLE zusammenhaengenden Teile behalten. Ein mehrwurzeliges Lumen
+  faellt apikal in mehrere Kanaele auseinander, und eines wegzulassen hiesse,
+  einen Kanal ungefuellt zu lassen. Sie stehen als Teilpfade in EINEM `d` — der
+  Sechser hat drei Kanaele und trotzdem eine Wurzelfuellung.
+- **`BEKANNTE_UEBERSTAENDE` schrumpft von 19 auf 5**, und keiner der fuenf ist
+  mehr eine Endo-Ebene. Die Pruefung hat die vierzehn selbst zum Streichen
+  angemeldet.
+
+Nicht angefasst: der parapulpaere Stift steckt neben der Pulpa im Dentin und ist
+aus ihr nicht zu schneiden; die Entzuendungsebenen sind eine Textur und keine
+Form; die Resorptionen liegen an der Wurzelwand.
+
 ## 2.35.0 - 2026-08-22
 
 ### Der Lockerungsgrad als roemische Ziffer (Bead odontogram-7xl)

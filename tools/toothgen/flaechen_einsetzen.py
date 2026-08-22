@@ -32,6 +32,7 @@ import fuellflaechen as ff          # noqa: E402
 import fuellflaechen_einsetzen as fe  # noqa: E402
 import halsbaender as hb            # noqa: E402
 import kauflaechen as kf            # noqa: E402
+import endo as en                  # noqa: E402
 import kronen as kr                 # noqa: E402
 import redraw_plan as rp            # noqa: E402
 import symbole as sy                # noqa: E402
@@ -59,6 +60,11 @@ def main() -> int:
     # abgebildet - zwei Diagonalen des Zahnkastens.
     kreuze = sum(sy.einsetzen(z)["kreuz"] for z in vorlagen)
     print(f"Extraktionskreuze: {kreuze // 2} Vorlagen")
+
+    # Bead odontogram-7xl: was im Kanal liegt, kommt AUS dem Kanal - also nach
+    # der Pulpa, die der Redraw eingesetzt hat.
+    endos = sum(en.einsetzen(z)["endo"] for z in vorlagen)
+    print(f"Endo-Ebenen: {endos} in {len(vorlagen)} Vorlagen")
 
     print(f"Kauflaechen: {len(rp.PLAN_OCCL)}")
     for ziel in rp.PLAN_OCCL:

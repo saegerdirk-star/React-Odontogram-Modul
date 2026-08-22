@@ -190,29 +190,18 @@ TOL_INNERHALB = 3.0
 # wird, was darin steht und inzwischen sauber ist, damit die Liste nur kuerzer
 # werden kann.
 #
+# SEIT 2.36.0 stehen hier nur noch fuenf Eintraege, und keiner davon ist mehr
+# eine Endo-Ebene: was im Kanal liegt, kommt seit `endo.py` AUS dem Kanal.
+#
 # 46 STEHT NICHT MEHR DARIN. odontogram-8i5 ist behoben, nicht umgangen: die
 # Ursache war `STUFEN["46"] = 65` (siehe redraw_apply.py). Genau diese Pruefung
 # hat es gezeigt - sie meldet auch, was hier steht und sauber geworden ist, und
 # hat die 23 Eintraege selbst zum Streichen angemeldet.
 BEKANNTE_UEBERSTAENDE: set[tuple[str, str]] = {
-    ("11", "endo-glass-pin"),   # 5.24
-    ("11", "endo-metal-pin"),   # 5.24
-    ("12", "endo-glass-pin"),   # 3.28
-    ("12", "endo-metal-pin"),   # 3.28
-    ("15", "endo-glass-pin"),   # 3.52
-    ("15", "endo-metal-pin"),   # 3.57
-    ("16", "endo-filling"),   # 8.14
-    ("16", "endo-medical-filling"),   # 8.14
     ("16", "tooth-under-gum"),   # 5.63
     ("18", "tooth-under-gum"),   # 3.64
-    ("44", "endo-glass-pin"),   # 4.63
-    ("55", "endo-filling"),   # 8.54
-    ("55", "endo-medical-filling"),   # 8.54
     ("55", "pulp-inflam-path-1"),   # 9.64
     ("55", "tooth-inflam-pulp-base-2"),   # 4.32
-    ("83", "endo-glass-pin"),   # 3.77
-    ("83", "endo-metal-pin"),   # 3.77
-    ("84", "endo-resection"),   # 3.14
     ("85", "tooth-inflam-pulp-base-2"),   # 6.4
 }
 
