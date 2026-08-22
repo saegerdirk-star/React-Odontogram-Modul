@@ -2515,6 +2515,15 @@ select:focus{
 .tooth-tile.side-view svg #ortho-bracket,
 .tooth-tile.side-view svg #ortho-ring{display:none !important}
 
+/* KFO: linguales Bracket in der KAUFLAECHENANSICHT auf die andere bukkolinguale
+   Kante spiegeln. Der Transform sitzt im eigenen Rahmen der Vorlage (unter der
+   rotate180-Drehung des UK), scaleY um die viewBox-Mitte kippt buccal<->lingual.
+   Korrigiert zugleich den bestehenden UK-Fehler (Bracket stand dort gedreht auf
+   der falschen Seite). */
+.tooth-tile.occl-view[data-ortho-bracket-flip] svg #ortho-bracket{
+  transform-box: view-box; transform-origin: center; transform: scaleY(-1);
+}
+
 /* Bead odontogram-im1: an empty implant product is only a GAP where the
    practice placed the implant. One the patient arrived with is complete. */
 .implant-product-gap{color:#b9770e; font-weight:600}

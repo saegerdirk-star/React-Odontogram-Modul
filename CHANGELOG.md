@@ -1,5 +1,34 @@
 # Changelog
 
+## 2.46.1 - 2026-08-22
+
+### Bracket buccal/lingual auch in der Kauflaechenansicht (Bugfix)
+
+Dirk, 22.08.2026: der Schalter muss das Bracket auch in der Draufsicht auf die
+linguale/palatinale Kante wechseln - und "im UK ist es umgekehrt falsch".
+
+Beides mit einem Griff, rot-abhaengig: die Vorlage zeichnet das Bracket immer
+BUKKAL in ihrem eigenen Rahmen; der Unterkiefer wird per rotate180 gedreht,
+also erscheint es dort visuell LINGUAL - der Grund, warum es im UK schon fuer
+"buccal" auf der falschen Seite stand. `syncOcclBracketSide` spiegelt genau
+dann, wenn das ANGEZEIGTE (rot180 ? lingual : buccal) nicht der GEWUENSCHTEN
+Seite entspricht. Damit stimmen alle vier Faelle: OK buccal oben / lingual
+unten, UK buccal unten / lingual oben.
+
+Gespiegelt per CSS (scaleY um die viewBox-Mitte, unter dem rotate180-Transform,
+also im eigenen Rahmen der Vorlage - dieselbe Falle wie beim Onlay-Clip). Kein
+Fingerabdruck beruehrt (id/opacity/class unveraendert), Paritaet byte-identisch.
+Damit ist die in 2.46.0 vermerkte Nacharbeit erledigt.
+
+Dazu Dirks Feinschliff am Band und am Bogen:
+- **Das Molarenband sitzt jetzt auf Bogenhoehe** (weiter Richtung Kauflaeche
+  statt am Zahnhals) und traegt einen **Slot auf genau der Bogenhoehe**, sodass
+  der Bogen sichtbar hineinlaeuft.
+- **Der Bogen laeuft von der Bracket-Front durch bis zum Band:** grenzt ein
+  Molarenband in Bogenordnung an ein bukkales Bracket-Feld (15-25 / 35-45), wird
+  es Knoten des Bogens und der Bogen endet an seinem Slot. Nur fuer bukkale
+  Brackets - ein linguales traegt keinen Bogen.
+
 ## 2.46.0 - 2026-08-22
 
 ### Bracket, Bogen und Band im Overlay (Etappe 2)

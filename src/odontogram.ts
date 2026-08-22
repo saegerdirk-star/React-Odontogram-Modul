@@ -1890,12 +1890,13 @@ function updateRetentionBarOverlay(grid: HTMLElement | null){
 // der Bogen wird NICHT gezeichnet (Dirk, 22.08.2026).
 const ORTHO_BRACKET_Y_UPPER = 0.72;   // Anteil der Kachelhoehe: Mitte der Krone
 const ORTHO_BRACKET_Y_LOWER = 0.28;
-const ORTHO_BAND_Y_UPPER = 0.64;      // zervikales Drittel der Krone
-const ORTHO_BAND_Y_LOWER = 0.36;
 const ORTHO_CROWN_W = 0.60;           // Kronenbreite als Anteil der Kachelbreite
 const ORTHO_BRACKET_W = 0.30;
 const ORTHO_BRACKET_H = 0.055;        // Anteil der Kachelhoehe
-const ORTHO_BAND_H = 0.11;
+// Das Band sitzt auf DERSELBEN Hoehe wie der Bogen (Dirk, 22.08.2026: weiter
+// Richtung Kauflaeche), traegt einen Slot auf Bogenhoehe und ist hoeher als ein
+// Bracket - es umfasst die Krone.
+const ORTHO_BAND_H = 0.17;
 
 function updateOrthoOverlay(grid: HTMLElement | null){
   if(!grid) return;
@@ -1932,12 +1933,24 @@ function updateOrthoOverlay(grid: HTMLElement | null){
   const bracketY = (tn: number, r: {y:number;height:number}) =>
     r.y + r.height * (isUpperTooth(tn) ? ORTHO_BRACKET_Y_UPPER : ORTHO_BRACKET_Y_LOWER);
 
-  // 1) Der durchgehende Bogen je Kiefer - nur ueber bukkalen Brackets.
+  // 1) Der durchgehende Bogen je Kiefer. Knoten ist ein BUKKALES Bracket - und
+  //    ein BAND, das in Bogenordnung an ein bukkales Bracket grenzt (Dirk: der
+  //    Sechser hinter der Bracket-Front). Der Bogen laeuft dann durch bis zum
+  //    Band, auf dessen Slot (Bogenhoehe). Lingual traegt keinen Bogen.
+  const istBukkalesBracket = (tn: number) =>
+    !!shapes.find(sh => sh.tn === tn && sh.kind === "bracket" && sh.side === "buccal");
+  const istBand = (tn: number) => !!shapes.find(sh => sh.tn === tn && sh.kind === "band");
   for(const arch of [UPPER_ARCH, LOWER_ARCH]){
+    const a = arch as number[];
     const pts: { x:number; y:number }[] = [];
-    for(const tn of arch as number[]){
-      const s2 = shapes.find(sh => sh.tn === tn && sh.kind === "bracket" && sh.side === "buccal");
-      if(!s2) continue;
+    for(let i=0; i<a.length; i++){
+      const tn = a[i];
+      let knoten = istBukkalesBracket(tn);
+      if(!knoten && istBand(tn)){
+        const vor = a[i-1], nach = a[i+1];
+        if((vor != null && istBukkalesBracket(vor)) || (nach != null && istBukkalesBracket(nach))) knoten = true;
+      }
+      if(!knoten) continue;
       const r = rectFor(tn); if(!r) continue;
       pts.push({ x: r.x + r.width/2, y: bracketY(tn, r) });
     }
@@ -1975,8 +1988,10 @@ function updateOrthoOverlay(grid: HTMLElement | null){
       g.appendChild(slot);
       overlay.appendChild(g);
     } else {
-      // Band: waagerechter Metallguertel ueber die Kronenbreite, im zervikalen Drittel.
-      const y = r.y + r.height * (isUpperTooth(sh.tn) ? ORTHO_BAND_Y_UPPER : ORTHO_BAND_Y_LOWER);
+      // Band: waagerechter Metallguertel auf Bogenhoehe (Richtung Kauflaeche),
+      // mit einem Slot auf genau der Bogenhoehe, damit der Bogen sichtbar
+      // hineinlaeuft.
+      const y = bracketY(sh.tn, r);
       const cw = r.width * ORTHO_CROWN_W, ch = r.height * ORTHO_BAND_H;
       const band = document.createElementNS(SVG_NS, "rect");
       band.setAttribute("class", "ortho-overlay-band");
@@ -1984,7 +1999,15 @@ function updateOrthoOverlay(grid: HTMLElement | null){
       band.setAttribute("y", (y - ch/2).toFixed(1));
       band.setAttribute("width", cw.toFixed(1));
       band.setAttribute("height", ch.toFixed(1));
+      band.setAttribute("rx", (r.width*0.03).toFixed(1));
       overlay.appendChild(band);
+      const slot = document.createElementNS(SVG_NS, "line");
+      slot.setAttribute("class", "ortho-overlay-slot");
+      slot.setAttribute("x1", (cx - cw/2).toFixed(1));
+      slot.setAttribute("x2", (cx + cw/2).toFixed(1));
+      slot.setAttribute("y1", y.toFixed(1));
+      slot.setAttribute("y2", y.toFixed(1));
+      overlay.appendChild(slot);
     }
   }
 }
@@ -4444,6 +4467,7 @@ function applyStateToSvg(toothNo: Any){
   syncPapillaMark(toothNo);       // Bead odontogram-gry
   syncEruptionMark(toothNo);      // Bead odontogram-0n8
   syncOcclusalRelief(toothNo);    // Bead odontogram-qvr
+  syncOcclBracketSide(toothNo);   // KFO: Bracket in der Draufsicht buccal/lingual
   updateToothTooltip(toothNo);
 }
 
@@ -4490,6 +4514,37 @@ function syncOcclusalRelief(toothNo: number): void {
     }else{
       delete tile.dataset.occlResto;
     }
+  }
+}
+
+/**
+ * KFO: die Seite des Brackets in der KAUFLAECHENANSICHT (Dirk, 22.08.2026).
+ *
+ * Die Vorlage zeichnet das Bracket immer BUKKAL in ihrem eigenen Rahmen. Der
+ * Unterkiefer wird per `rotate180` gedreht (base.rot === 180), wodurch das
+ * Bracket dort visuell LINGUAL erscheint - das ist der Grund, warum es im UK
+ * schon fuer "buccal" auf der falschen Seite stand.
+ *
+ * Also: was ANGEZEIGT wird, ist ohne Drehung buccal, mit Drehung lingual. Wir
+ * spiegeln genau dann, wenn das Angezeigte nicht der GEWUENSCHTEN Seite
+ * entspricht. Ein `data`-Attribut auf der Kachel, gespiegelt per CSS (scaleY um
+ * die viewBox-Mitte, bukkolinguale Achse) - der CSS-Transform komponiert unter
+ * dem Attribut-Transform der Drehung, also im EIGENEN Rahmen der Vorlage, wie
+ * beim Onlay-Clip. Kein Fingerabdruck (id/opacity/class unveraendert).
+ */
+function syncOcclBracketSide(toothNo: number): void {
+  const tiles = toothTile.get(toothNo);
+  if(!tiles) return;
+  const st = toothState.get(toothNo);
+  const base = TOOTH_TEMPLATE.get(toothNo);
+  const istBracket = st?.orthoAppliance === "bracket" && orthoAllowed(st);
+  const gewuenscht = (st?.orthoBracketSide as string) ?? "buccal";
+  const angezeigt = base?.rot === 180 ? "lingual" : "buccal";
+  const spiegeln = istBracket && angezeigt !== gewuenscht;
+  for(const tile of tiles){
+    if(!tile.classList.contains("occl-view")) continue;
+    if(spiegeln) tile.dataset.orthoBracketFlip = "1";
+    else delete tile.dataset.orthoBracketFlip;
   }
 }
 
