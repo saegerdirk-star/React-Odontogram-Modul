@@ -58,6 +58,13 @@ const PATTERNS: { measureId: string; patterns: RegExp[] }[] = [
   { measureId: "UK1NB_deg", patterns: [/uk1\s*-\s*nb\s*-?\s*winkel/i] },
   { measureId: "OK1NA_mm", patterns: [/ok1\s*-\s*na\s*-?\s*strecke/i] },
   { measureId: "UK1NB_mm", patterns: [/uk1\s*-\s*nb\s*-?\s*strecke/i] },
+  // Ricketts. Winkel und Strecke tragen dieselbe Bezugslinie und sind nur am
+  // Suffix zu unterscheiden - deshalb steht es in BEIDEN Mustern, nie ein
+  // blosses "uk1-a-pog".
+  { measureId: "UK1APog_deg", patterns: [/uk1\s*-?\s*a\s*-\s*pog\s*-?\s*(?:winkel|inklination)/i,
+    /\bui\s*\/\s*a\s*-\s*pog\b/i] },
+  { measureId: "UK1APog_mm", patterns: [/uk1\s*-?\s*a\s*-\s*pog\s*-?\s*strecke/i,
+    /\bui\s*(?:to|zu)\s*a\s*-\s*pog\b/i] },
   { measureId: "OK1NL", patterns: [/ok1\s*-\s*nl\s*-?\s*winkel/i, /\boi\s*\/\s*nl\b/i] },
   { measureId: "UK1ML", patterns: [/uk1\s*-\s*ml\s*-?\s*winkel/i, /\bui\s*\/\s*ml\b/i] },
   { measureId: "PgNB", patterns: [/pg\s*-\s*nb\s*-?\s*strecke/i] },
@@ -72,6 +79,9 @@ const PATTERNS: { measureId: string; patterns: RegExp[] }[] = [
   { measureId: "HAngle", patterns: [/\bh\s*-\s*winkel/i] },
   { measureId: "Nasolabial", patterns: [/nasolabialwinkel/i] },
   { measureId: "FacialAxis", patterns: [/facislaxis/i, /fazialachse/i, /facial\s*axis/i] },
+  { measureId: "FacialDepth", patterns: [/fazialwinkel/i, /facial\s*depth/i, /gesichtswinkel/i] },
+  { measureId: "MandFH", patterns: [/ml\s*-\s*fh\s*-?\s*winkel/i, /mandibular(?:ebene|\s*plane)/i] },
+  { measureId: "Convexity", patterns: [/konvexit[äa]t/i, /\bconvexity\b/i] },
   { measureId: "JarabakIndex", patterns: [/jarabak/i, /^\s*ratio\b/i] },
   { measureId: "SNOccl", patterns: [/sn\s*-\s*occl/i, /okklusionsebene\s*-?\s*winkel/i] },
   { measureId: "Wits", patterns: [/\bwits\b/i] },

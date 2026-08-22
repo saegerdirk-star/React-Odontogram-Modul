@@ -1,5 +1,43 @@
 # Changelog
 
+## 2.39.0 - 2026-08-22
+
+### Ricketts als zweites FRS-Verfahren (Bead odontogram-c51.2)
+
+Dirk, 22.08.2026: *"Ich sehe bei der KFO nur Hasund als FRS Analyse. Wollten
+wir nicht mehr anbieten?"* Doch — der Bau war von Anfang an auf mehrere
+angelegt (*"ein neues Verfahren ist ein neues Profil, die Messpunkte bleiben"*),
+aber ausgeliefert war nur eines. Der Grund war die Beleg-Regel: einen zweiten
+Normensatz, den ich zitieren konnte, gab es nicht. Dirk hat die sechs
+Erwachsenennormen dann selbst geliefert.
+
+- **Zwei neue Messpunkte, und sie sind der eigentliche Punkt:** Porion und
+  Orbitale, also die FRANKFURTER HORIZONTALE. Hasund misst gegen die vordere
+  Schaedelbasis, Ricketts gegen Po-Or — vier der sechs Messgroessen brauchen
+  sie. Genau dafuer traegt ein Profil sein `referenceFrame` selbst.
+- **Fuenf neue Messgroessen:** Fazialwinkel 89 +/- 3, Mandibularebene ML-FH
+  24 +/- 4,5, Konvexitaet 0 +/- 2 mm, UK1 zu A-Pog 1 +/- 2 mm, UK1-Inklination
+  zu A-Pog 22 +/- 4. Die Fazialachse gab es schon.
+- **Die Fazialachse belegt, warum Normen am PROFIL haengen.** Ricketts gibt sie
+  mit 90 +/- 3,5 an, Paddenberg mit 90 +/- 3,0 — dieselbe Messgroesse, zwei
+  Streuungen. 93,3 Grad liegt innerhalb der einen und ausserhalb der anderen,
+  und ein Test haelt genau das fest. Ricketts bekommt eine Norm-Ueberschreibung,
+  der Bestand bleibt unangetastet.
+- **Die Beleg-Regel ist gewahrt, nicht umgangen.** Die Quellenangabe sagt in
+  genau diesen Worten, dass die Werte von Dirk stammen und die Originale
+  (Ricketts 1960, 1981) hier nicht gelesen wurden — klinisch belegt, nicht
+  bibliographisch. Dieselbe Behandlung wie bei `JARABAK_BANDS`. Ein Test
+  verlangt den Wortlaut, damit niemand die Angabe spaeter stillschweigend zu
+  einer gelesenen Publikation aufwertet.
+- **Der Importer kennt die neuen Zeilen** — Winkel und Strecke zur selben
+  Bezugslinie tragen das Suffix in BEIDEN Mustern, nie ein blosses
+  "uk1-a-pog"; und "Fazialachse" und "Fazialwinkel" sind zwei verschiedene
+  Messgroessen, was ein Test festhaelt.
+- Die Mandibularebene stimmt beim Wachstumsmuster mit ab (steiler als die Norm
+  liest vertikal). Kein neuer Zustand, keine Serialisierung, kein FHIR-Bundle:
+  die Kephalometrie bleibt Sitzungszustand. Payload weiterhin 2.32,
+  SVG-Fingerabdruecke byte-identisch.
+
 ## 2.38.0 - 2026-08-22
 
 ### Die Kieferorthopaedie wird die dritte Ansicht (Bead odontogram-c51)

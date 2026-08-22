@@ -58,6 +58,11 @@ export const LANDMARKS: readonly Landmark[] = [
   { id: "Ba", name: "Basion", kind: "anatomic" },
   { id: "Ar", name: "Articulare", kind: "radiographic" },
   { id: "Pt", name: "Pterygoid", kind: "radiographic" },
+  // Die Frankfurter Horizontale. Sie kam mit der Ricketts-Analyse dazu: Hasund
+  // misst gegen die vordere Schaedelbasis, Ricketts gegen Po-Or, und ein Profil
+  // deklariert seinen Bezugsrahmen genau deshalb selbst.
+  { id: "Po", name: "Porion", kind: "anatomic" },
+  { id: "Or", name: "Orbitale", kind: "anatomic" },
   { id: "A", name: "A-Punkt (Subspinale)", kind: "anatomic" },
   { id: "B", name: "B-Punkt (Supramentale)", kind: "anatomic" },
   { id: "Pg", name: "Pogonion", kind: "anatomic" },
@@ -147,6 +152,15 @@ const JARABAK_BANDS =
 const HASUND =
   "Habersack & Hasund, Klinische Anwendung der individualisierten Kephalometrie, "
   + "SAM Präzisionstechnik 2013";
+// Die Ricketts-Normen, wie Dirk sie am 22.08.2026 angegeben hat (Erwachsenen-
+// norm). Sie sind KLINISCH belegt und nicht bibliographisch: die Originale
+// (Ricketts 1960, 1981) sind hier nicht gelesen worden. Dieselbe Behandlung wie
+// bei JARABAK_BANDS - die Beleg-Regel verlangt nicht, dass eine Zahl aus einer
+// gelesenen Publikation stammt, sondern dass dasteht, woher sie stammt.
+const RICKETTS =
+  "Ricketts analysis, adult norms as given by Dirk Saeger (practising dentist) "
+  + "on 2026-08-22; the original publications (Ricketts 1960, 1981) have not "
+  + "been read here, so these are clinically vouched for, not bibliographically";
 const UNSOURCED =
   "No publication produced for a norm — the measure is recorded, no target is shown "
   + "(sourcing rule, bead odontogram-c51.2)";
@@ -226,6 +240,27 @@ export const MEASURES: readonly CephMeasure[] = [
   { id: "SNOccl", labelKey: "ceph.snoccl", unit: "deg", points: ["S", "N", "Occl"],
     coding: { local: "ceph-s-n-occl", ucum: "deg" },
     norm: 14.5, sd: 2.0, source: PADDENBERG },
+
+  // --- Ricketts: gegen die Frankfurter Horizontale und gegen A-Pog ---
+  // Die Fazialachse steht schon oben (N-Ba gegen Pt-Gn) und wird hier nicht
+  // ein zweites Mal angelegt - Ricketts weicht nur in der Streuung ab (3,5
+  // statt 3,0), und dafuer gibt es die Norm-Ueberschreibung am Profil.
+  { id: "FacialDepth", labelKey: "ceph.facialdepth", unit: "deg", points: ["N", "Pg", "Po", "Or"],
+    coding: { local: "ceph-facial-depth", ucum: "deg" },
+    norm: 89.0, sd: 3.0, source: RICKETTS },
+  { id: "MandFH", labelKey: "ceph.mandfh", unit: "deg", points: ["Go", "Me", "Po", "Or"],
+    coding: { local: "ceph-ml-fh", ucum: "deg" },
+    norm: 24.0, sd: 4.5, source: RICKETTS, growth: "higher-is-vertical" },
+  { id: "Convexity", labelKey: "ceph.convexity", unit: "mm", points: ["A", "N", "Pg"],
+    coding: { local: "ceph-convexity", ucum: "mm" },
+    norm: 0.0, sd: 2.0, source: RICKETTS },
+  { id: "UK1APog_mm", labelKey: "ceph.uk1apog.mm", unit: "mm", points: ["Is1-", "A", "Pg"],
+    coding: { local: "ceph-u-k1-a-pog-mm", ucum: "mm" },
+    norm: 1.0, sd: 2.0, source: RICKETTS },
+  { id: "UK1APog_deg", labelKey: "ceph.uk1apog.deg", unit: "deg",
+    points: ["Ap1-", "Is1-", "A", "Pg"],
+    coding: { local: "ceph-u-k1-a-pog-deg", ucum: "deg" },
+    norm: 22.0, sd: 4.0, source: RICKETTS },
 
   // --- incisors ---
   { id: "Interincisal", labelKey: "ceph.interincisal", unit: "deg",
@@ -328,6 +363,27 @@ export const PROFILES: readonly CephProfile[] = [
       "HAngle", "Nasolabial",
       "Interincisal", "OK1NA_deg", "UK1NB_deg", "OK1NA_mm", "UK1NB_mm",
     ],
+  },
+  {
+    id: "ricketts",
+    labelKey: "ceph.profile.ricketts",
+    // NICHT die vordere Schaedelbasis: vier der sechs Messgroessen laufen gegen
+    // die Frankfurter Horizontale oder gegen A-Pog. Genau dafuer gibt es dieses
+    // Feld - ein Modell mit fest eingebautem Bezug koennte Ricketts so wenig
+    // darstellen wie Satos Denture Frame Analysis.
+    referenceFrame: "frankfurt",
+    source: RICKETTS,
+    measures: [
+      "FacialAxis", "FacialDepth", "MandFH", "Convexity",
+      "UK1APog_mm", "UK1APog_deg",
+    ],
+    // Die EINZIGE Abweichung, und sie ist der Grund, warum Normen am Profil
+    // haengen und nicht an der Messgroesse: Ricketts gibt die Fazialachse mit
+    // 90 +/- 3,5 an, Paddenberg mit 90 +/- 3,0. Derselbe Messwert liest sich
+    // knapp innerhalb der einen und knapp ausserhalb der anderen Streuung.
+    norms: {
+      FacialAxis: { norm: 90.0, sd: 3.5, source: RICKETTS },
+    },
   },
 ];
 
