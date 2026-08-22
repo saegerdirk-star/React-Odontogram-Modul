@@ -35,6 +35,14 @@ odontogram view."*
   Scrollen in seine Spalte.
 - Der Knopf heisst auf Deutsch **KFO**, in den uebrigen elf Sprachen der
   ausgeschriebene Fachbegriff (`view.ortho`).
+- **Der erste Knopf heisst auf Deutsch jetzt "Odontogramm"** (Dirk, 22.08.2026).
+  Er trug das englische Wort, seit es ihn gibt. Der Produktname (`app.title`)
+  bleibt unangetastet - der heisst so. Mitgezogen: die deutsche Beschreibung des
+  Parodontal-Anzeigemodus in den Einstellungen, die den Umschalter noch als
+  "Odontogram | Zahnstatus" fuehrte - beide Haelften stimmten nicht mehr, denn
+  der Knopf heisst "Parodontalstatus" und es sind drei Felder. In den uebrigen
+  acht Sprachen, die das blosse "Odontogram" ebenfalls tragen, steht es noch (im
+  Ungarischen, Slowakischen und Polnischen ist es moeglicherweise richtig so).
 - Nichts am Zustand, an der Serialisierung oder am FHIR-Bundle: die
   Modellauswertung und die Kephalometrie bleiben Sitzungszustand, weil c51 fuer
   sie keinen veroeffentlichten Dental-Core-Traeger belegen konnte. Payload
