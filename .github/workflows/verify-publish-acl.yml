@@ -1,0 +1,80 @@
+name: Verify Verdaccio publish ACL
+
+# Confirms GitHub secret NPM_TOKEN (Verdaccio user ci-odontogram-github) can
+# publish react-advanced-odontogram via its dedicated package rule, and cannot
+# publish an unscoped dummy that falls through to the catch-all `**` list.
+# Dispatch-only; does not release a new library version.
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Probe dedicated vs catch-all publish ACL
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -eu
+          if test -z "$NODE_AUTH_TOKEN"; then
+            echo "NPM_TOKEN secret is empty" >&2
+            exit 1
+          fi
+          userconfig="${RUNNER_TEMP}/npmrc-publish"
+          printf '%s\n' "//npm.cognovis.de/:_authToken=${NODE_AUTH_TOKEN}" > "$userconfig"
+          who=$(npm whoami --registry=https://npm.cognovis.de/ --userconfig "$userconfig")
+          echo "authenticated as: ${who}"
+          if test "$who" != "ci-odontogram-github"; then
+            echo "expected ci-odontogram-github" >&2
+            exit 1
+          fi
+
+          probe_dir=$(mktemp -d)
+          cleanup() {
+            rm -rf "$probe_dir"
+            rm -f "$userconfig"
+          }
+          trap cleanup EXIT
+
+          publish_cwd() {
+            npm publish --registry=https://npm.cognovis.de/ --userconfig "$userconfig"
+          }
+
+          mkdir "$probe_dir/dummy"
+          printf '%s\n' '{"name":"odontogram-acl-probe","version":"0.0.0-acl.0"}' > "$probe_dir/dummy/package.json"
+          set +e
+          dummy_out=$( ( cd "$probe_dir/dummy" && publish_cwd ) 2>&1 )
+          dummy_rc=$?
+          set -e
+          printf '%s\n' "$dummy_out"
+          if test "$dummy_rc" -eq 0; then
+            echo "FAIL: catch-all allowed dummy package odontogram-acl-probe" >&2
+            exit 1
+          fi
+          printf '%s\n' "$dummy_out" | grep -q "not allowed to publish package odontogram-acl-probe"
+          echo "dummy unscoped package correctly denied (403)"
+
+          mkdir "$probe_dir/existing"
+          printf '%s\n' '{"name":"react-advanced-odontogram","version":"2.36.2"}' > "$probe_dir/existing/package.json"
+          set +e
+          exist_out=$( ( cd "$probe_dir/existing" && publish_cwd ) 2>&1 )
+          exist_rc=$?
+          set -e
+          printf '%s\n' "$exist_out"
+          if printf '%s\n' "$exist_out" | grep -q "not allowed to publish package react-advanced-odontogram"; then
+            echo "FAIL: dedicated rule denied react-advanced-odontogram" >&2
+            exit 1
+          fi
+          if test "$exist_rc" -eq 0; then
+            echo "FAIL: republish of 2.36.2 succeeded (expected 409)" >&2
+            exit 1
+          fi
+          printf '%s\n' "$exist_out" | grep -Eqi "E409|cannot publish|already exists|previously published"
+          echo "existing odontogram version correctly rejected as already published, not as ACL 403"
+          echo "ACL probe passed"
