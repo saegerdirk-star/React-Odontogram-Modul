@@ -234,6 +234,10 @@ export const LOCAL_VALUE_MAPS: Record<string, Record<string, CodeEntry>> = {
   //
   // Die Pruefung und die Benennung stehen also nebeneinander, jede fuer sich,
   // und der Zusammenhang wird gelesen statt gerechnet.
+  orthoBracketSide: {
+    "buccal": { code: "buccal", display: "Bracket on the buccal/labial surface" },
+    "lingual": { code: "lingual", display: "Bracket on the lingual/palatal surface" },
+  },
   sensibility: {
     "none": { code: "none", display: "Sensibility not tested" },
     "vital": { code: "vital", display: "Vital response" },

@@ -231,6 +231,14 @@ export const AXES: ClinicalAxis[] = [
     svgLayer: "arrow-up", appliesWhen: (c) => c.toothPresent },
   { id: "orthoRotation", field: "orthoRotation", kind: "boolean",
     finding: { local: "tooth-ortho-rotation", display: "Tooth rotation" } },
+  // Bead KFO (Bracket buccal/lingual). Qualifier des Brackets, keine eigene
+  // Ebene - die Seite steuert nur, WIE das Overlay Bracket und Bogen zeichnet.
+  // Kein `svgLayer` -> SVG-Fingerabdruck-Paritaet byte-identisch. Wie
+  // sensibility/percussion bewusst NICHT in `dentalCoreContract.ts`: kein
+  // verifiziertes Dental-Core-Merkmal, lokaler Kode genuegt.
+  { id: "orthoBracketSide", field: "orthoBracketSide", kind: "enum", valueGroup: "orthoBracketSide",
+    skipValue: "buccal", finding: { local: "tooth-ortho-bracket-side", display: "Bracket surface" },
+    values: valuesFrom("orthoBracketSide"), appliesWhen: (c) => c.toothPresent },
 
   // SP5 Task 1: caries fields foundation (additive scaffolding — registry/FHIR/i18n
   // only; render + migration land in later SP5 tasks). `rootCaries` is a normal enum

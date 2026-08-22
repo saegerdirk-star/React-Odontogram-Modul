@@ -1359,6 +1359,10 @@ export default function App({
                   <span>{t("ortho.appliance.label")}</span>
                   <select id="orthoApplianceSelect"></select>
                 </div>
+                <div id="orthoBracketSideRow" className="row">
+                  <span>{t("ortho.bracketSide.label")}</span>
+                  <select id="orthoBracketSideSelect"></select>
+                </div>
                 <div id="orthoDriftRow" className="row">
                   <span>{t("ortho.drift.label")}</span>
                   <select id="orthoDriftSelect"></select>

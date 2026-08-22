@@ -510,6 +510,7 @@ function defaultState(){
     orthoDrift: "none", // none | mesial | distal
     orthoVertical: "none", // none | extrusion | intrusion
     orthoRotation: false,
+    orthoBracketSide: "buccal", // KFO: buccal (Standard) | lingual (Lingualtechnik)
     brokenMesial: false,
     brokenIncisal: false,
     brokenDistal: false,
@@ -3079,6 +3080,9 @@ function getOrthoDriftOptions(): { value: string; label: string }[]{
 function getOrthoVerticalOptions(): { value: string; label: string }[]{
   return Array.from(VALID_ORTHO_VERTICAL).map(v => ({ value: v, label: t("ortho.vertical." + v) }));
 }
+function getOrthoBracketSideOptions(): { value: string; label: string }[]{
+  return Array.from(VALID_ORTHO_BRACKET_SIDE).map(v => ({ value: v, label: t("ortho.bracketSide." + v) }));
+}
 
 // SP11 Task 3: #bruxismRow visibility gate — aligned to the render gate
 // (__renderActiveLayers' wearAllowed, ~line 1355) by requiring
@@ -5633,6 +5637,10 @@ function syncControlsFromState(state: Any){
   if($("#orthoDriftSelect").value !== state.orthoDrift) state.orthoDrift = $("#orthoDriftSelect").value;
   setSelectOptions($("#orthoVerticalSelect"), getOrthoVerticalOptions(), state.orthoVertical);
   if($("#orthoVerticalSelect").value !== state.orthoVertical) state.orthoVertical = $("#orthoVerticalSelect").value;
+  setSelectOptions($("#orthoBracketSideSelect"), getOrthoBracketSideOptions(), state.orthoBracketSide ?? "buccal");
+  if($("#orthoBracketSideSelect").value !== (state.orthoBracketSide ?? "buccal")) state.orthoBracketSide = $("#orthoBracketSideSelect").value;
+  // Nur sichtbar, wenn ueberhaupt ein Bracket sitzt - ein Band hat keine Seite.
+  $("#orthoBracketSideRow").classList.toggle("hidden", !(orthoAllowed(state) && state.orthoAppliance === "bracket"));
   ($("#orthoRotationToggle") as HTMLInputElement).checked = state.orthoRotation === true;
   syncToothDetailControls(state);
   $("#brokenMesial").checked = !!state.brokenMesial;
@@ -7926,6 +7934,7 @@ function serializeState(s: Any){
     orthoDrift: s.orthoDrift,
     orthoVertical: s.orthoVertical,
     orthoRotation: !!s.orthoRotation,
+    orthoBracketSide: s.orthoBracketSide,
     brokenMesial: !!s.brokenMesial,
     brokenIncisal: !!s.brokenIncisal,
     brokenDistal: !!s.brokenDistal,
@@ -8050,6 +8059,7 @@ export const VALID_WEAR_CERVICAL = validValues("wearCervical");
 export const VALID_DISCOLORATION = validValues("discoloration");
 // SP14 Task 1: orthodontic axes foundation (additive; see registry/axes.ts).
 export const VALID_ORTHO_APPLIANCE = validValues("orthoAppliance");
+export const VALID_ORTHO_BRACKET_SIDE = validValues("orthoBracketSide");
 export const VALID_ORTHO_DRIFT = validValues("orthoDrift");
 export const VALID_ORTHO_VERTICAL = validValues("orthoVertical");
 const VALID_CARIES_DEPTH = new Set(["surface","dentin","deep"]);
@@ -8530,6 +8540,7 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   s.orthoDrift = validateEnum(raw.orthoDrift, VALID_ORTHO_DRIFT, "none");
   s.orthoVertical = validateEnum(raw.orthoVertical, VALID_ORTHO_VERTICAL, "none");
   s.orthoRotation = raw.orthoRotation === true;
+  s.orthoBracketSide = validateEnum(raw.orthoBracketSide, VALID_ORTHO_BRACKET_SIDE, "buccal");
   s.brokenMesial = !!raw.brokenMesial;
   s.brokenIncisal = !!raw.brokenIncisal;
   s.brokenDistal = !!raw.brokenDistal;
@@ -10875,6 +10886,31 @@ export function setSensibility(toothNo: number, value: string): void {
     notifyStateChange();
     return true;
   });
+}
+
+/** KFO: an welcher Flaeche das Bracket klebt. Nur sinnvoll mit Bracket. */
+export function orthoBracketSideAllowed(state: Any): boolean {
+  return orthoAllowed(state) && state?.orthoAppliance === "bracket";
+}
+
+/** Setzt die Bracket-Seite (buccal | lingual). Sperre VOR dem DS-1-Gate. */
+export function setOrthoBracketSide(toothNo: number, value: string): void {
+  if(!VALID_ORTHO_BRACKET_SIDE.has(value)) return;
+  let s = toothState.get(toothNo);
+  if(!s){ s = defaultState(); toothState.set(toothNo, s); }
+  if(value !== "buccal" && !orthoBracketSideAllowed(s)) return;
+  gateToothEdit(toothNo, () => {
+    if((s.orthoBracketSide ?? "buccal") === value) return false;
+    s.orthoBracketSide = value;
+    notifyStateChange();
+    return true;
+  });
+}
+
+/** Liest die Bracket-Seite aus dem aktiven Chart. */
+export function getOrthoBracketSide(toothNo: number): string {
+  const s = toothState.get(toothNo);
+  return (s?.orthoBracketSide as string) ?? "buccal";
 }
 
 /** Liest die Sensibilitaetspruefung aus dem aktiven Chart. */
@@ -13716,6 +13752,9 @@ function wireControls(){
   });
   buildSelect($("#orthoVerticalSelect"), getOrthoVerticalOptions(), (value)=>{
     applyToSelected((s)=>{ s.orthoVertical = value; });
+  });
+  buildSelect($("#orthoBracketSideSelect"), getOrthoBracketSideOptions(), (value)=>{
+    applyToSelected((s)=>{ s.orthoBracketSide = value; });
   });
   $("#orthoRotationToggle").addEventListener("change", (e)=>{
     const on = (e.target as HTMLInputElement).checked;

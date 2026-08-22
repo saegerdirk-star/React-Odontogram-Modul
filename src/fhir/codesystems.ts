@@ -305,6 +305,10 @@ export const LOCAL_VALUE_MAPS: Record<string, Record<string, CodeEntry>> = {
   // Bead odontogram-fu1. Lokale Kodes: fuer eine Sensibilitaets- oder
   // Perkussionspruefung ist hier kein SNOMED/LOINC nachgewiesen, und einen zu
   // erfinden waere schlimmer als keinen zu haben.
+  orthoBracketSide: {
+    "buccal": { code: "buccal", display: "Bracket on the buccal/labial surface" },
+    "lingual": { code: "lingual", display: "Bracket on the lingual/palatal surface" },
+  },
   sensibility: {
     "none": { code: "none", display: "Sensibility not tested" },
     "vital": { code: "vital", display: "Vital response" },

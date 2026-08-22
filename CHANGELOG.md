@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.45.0 - 2026-08-22
+
+### Bracket buccal/lingual — der Schalter (Etappe 1)
+
+Dirk, 22.08.2026: Brackets koennen buccal oder lingual sitzen (Lingualtechnik),
+also braucht es einen Schalter. Diese Etappe legt den Zustand; die Grafik
+(durchgehender Bogen im Overlay, Band-Seitenansicht, linguale Darstellung)
+folgt als Etappe 2.
+
+- **`orthoBracketSide`** (`buccal` Standard / `lingual`), pro Zahn. Neue Zeile
+  in der Kieferorthopaedie-Karte, sichtbar NUR wenn ein Bracket sitzt (ein Band
+  hat keine Seite). Setter `setOrthoBracketSide`, Waechter
+  `orthoBracketSideAllowed` VOR dem DS-1-Gate wie bei `setSensibility`.
+- **Kein eigener `svgLayer`** — die Seite steuert spaeter nur, WIE das Overlay
+  zeichnet, nicht ob eine Ebene an ist. SVG-Fingerabdruck-Paritaet
+  byte-identisch. Wie `sensibility`/`percussion` bewusst NICHT im
+  Dental-Core-Contract: kein verifiziertes Merkmal, lokaler Kode genuegt;
+  `buccal` ist der Leerwert, damit ein Standardzahn den Dental-Core-Export
+  nicht stolpern laesst.
+- Registry-Achse (`orthoBracketSide`), Wertkatalog, Codesystem, Beschriftungen
+  in zwoelf Sprachen. Payload **2.32 -> 2.33** (additiv, omit-when-buccal).
+
 ## 2.44.0 - 2026-08-22
 
 ### Skelettales Alter: CVM und Fishman SMI (Bead odontogram-c51.4)

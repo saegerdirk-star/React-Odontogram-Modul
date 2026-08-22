@@ -167,7 +167,12 @@ function hasClinicalValue(value: unknown, field?: string): boolean {
   if (typeof value === "string") {
     const emptyValues = field === "toothSelection"
       ? ["tooth-base"]
-      : ["none", "unknown", "normal", "natural", "tooth-base"];
+      // Der Bracket-Seiten-Qualifier ist buccal per Vorgabe; buccal ist der
+      // Leerwert, damit nicht jeder Standardzahn ueber die Positivliste
+      // stolpert (Bracket buccal/lingual, KFO).
+      : field === "orthoBracketSide"
+        ? ["buccal"]
+        : ["none", "unknown", "normal", "natural", "tooth-base"];
     return !emptyValues.includes(value);
   }
   if (Array.isArray(value)) return value.length > 0;
