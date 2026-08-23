@@ -83,6 +83,42 @@ by resolving their `basedOn` against a CarePlan the parser has already seen. A
 server returns search results in whatever order it likes, so the order is
 restored on assembly.
 
+### A partial read is a FAILED read
+
+Following `link[rel=next]` is not proof of completeness. A dropped connection, a
+lost page, a link the server stops offering — each ends the loop quietly, and a
+short read of a Dental Core chart **parses perfectly well**. It simply comes
+back missing findings, renders as a chart, and the next save writes that gap
+over the real one.
+
+This is not hypothetical. Measured on the live fixture: the app's own
+whole-mouth save is **128 Observations** against Aidbox's default page size of
+**100**, and `Observation/…tooth-state-16` was entry number **100** — the first
+entry of page two. A load that lost that page reported "Loaded" and showed tooth
+16 with no filling. Session-scale testing could never see it: four findings are
+eight resources and fit in one page.
+
+So the assembly is COUNTED. `searchAllPages` reads `Bundle.total` and compares
+it with what actually arrived; a short read sets `incomplete`, and
+`loadPatientChart` then **withholds the document entirely** — the report says
+the read was partial, nothing is charted, and the save gate stays shut. A page
+that fails still throws, and must: the caller turns that into a failed load, not
+into fewer teeth.
+
+A server that reports no `total` cannot be checked this way, and live mode does
+not pretend otherwise: `expected` stays undefined and `incomplete` stays false.
+
+### Why a rejected load now says which resource
+
+`parseDentalCoreBundle` answers `undefined` and carries no reason, which was the
+single hardest thing about diagnosing a rejected load — the acceptance run had
+"nothing was charted" and no way to ask why. On the failure path only, the load
+now **measures** the reason: it grows the collection one resource at a time and
+reports the first one that flips the parse, as `report.rejectedAt`. That is "the
+first resource that cannot stand with the ones before it", which is not always
+the guilty party — two resources can contradict each other — so the message says
+*refuses*, not *is wrong*.
+
 ### What counts as Dental Core
 
 * the `Patient` being charted;
@@ -269,6 +305,21 @@ ever open live mode. `npm ci --omit=dev` does not, and neither does consuming
 the published package, whose `dependencies` are unchanged. If that cost stops
 being worth it, the honest fix is to move `src/live` into its own workspace, not
 to loosen the boundary.
+
+## One round trip normalises the resource set
+
+Observed, and benign as far as could be measured. The first save of a normalised
+whole mouth writes 128 Observations; a load-then-save cycle then settles at 96
+and stays there. Exactly 32 keys drop — one per tooth, the chart-state
+Observation carrying `toothSelection`. The reason is an asymmetry in the codec,
+not in this mode: a normalised document states `toothSelection: "tooth-base"`
+explicitly, the parse does not restore that default, and the second save
+therefore no longer emits it. A document without `toothSelection` is a present
+tooth, so nothing clinical is lost — verified live across four cycles: 32 teeth
+every time, values unchanged, and the shape stable from the second save onward.
+
+It is recorded here rather than fixed, because fixing it means changing the
+codec's emit/parse symmetry and this mode does not widen the codec.
 
 ## Two charts on one patient reject each other
 

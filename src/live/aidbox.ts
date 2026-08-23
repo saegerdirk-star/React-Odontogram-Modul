@@ -55,6 +55,7 @@ export function createAidboxTransport(config: LiveConfig): FhirTransport {
 export const DEFAULT_MAX_PAGES = 50;
 
 interface SearchPage {
+  total?: number;
   entry?: Array<{ resource?: unknown }>;
   link?: Array<{ relation?: string; url?: string }>;
 }
@@ -63,6 +64,10 @@ export interface PagedSearchResult {
   resources: unknown[];
   /** The budget ran out with a next link still offered — the result is PARTIAL. */
   truncated: boolean;
+  /** What the server said the search matches (`Bundle.total`), when it says so. */
+  expected?: number;
+  /** Fewer resources arrived than the server counted — the result is PARTIAL. */
+  incomplete: boolean;
 }
 
 /**
@@ -75,6 +80,21 @@ export interface PagedSearchResult {
  * `truncated` into the load report, so a partial read is never displayed as a
  * whole chart. The same silence this function exists to prevent must not come
  * back in through its own guard.
+ *
+ * AND THE ASSEMBLY IS COUNTED. Following links is not proof of completeness: a
+ * dropped connection, a lost page, a link the server stops offering all end the
+ * loop quietly, and a short read of a Dental Core chart PARSES — it simply
+ * comes back missing findings. Measured on the live fixture: the app's own
+ * whole-mouth save is 128 Observations against a default page size of 100, and
+ * `Observation/...tooth-state-16` was entry number 100 — the first entry of
+ * page two. Losing that page produced a chart that loaded cleanly and showed
+ * tooth 16 with no filling. So the count the server reports in `Bundle.total`
+ * is checked against what actually arrived, and a short read is a FAILED read.
+ *
+ * A server that reports no `total` cannot be checked this way, and this does
+ * not pretend otherwise: `expected` stays undefined and `incomplete` stays
+ * false. A page that FAILS still throws, and must — the caller turns that into
+ * a failed load rather than a partial chart.
  */
 export async function searchAllPages(
   transport: FhirTransport,
@@ -85,17 +105,24 @@ export async function searchAllPages(
   const resources: unknown[] = [];
   let path = `/${resourceType}`;
   let pageQuery: Record<string, string | string[]> | undefined = query;
+  let expected: number | undefined;
   for (let page = 0; page < maxPages; page += 1) {
     const bundle = (await transport.request("GET", path, pageQuery ? { query: pageQuery } : undefined)) as SearchPage | null;
+    if (typeof bundle?.total === "number") expected = bundle.total;
     for (const entry of bundle?.entry ?? []) {
       if (entry?.resource) resources.push(entry.resource);
     }
     const next = extractNextPageUrl(bundle ?? undefined);
-    if (!next) return { resources, truncated: false };
+    if (!next) return { resources, truncated: false, ...completeness(resources.length, expected) };
     path = next.startsWith("/") ? next : `/${next}`;
     pageQuery = undefined;
   }
-  return { resources, truncated: true };
+  return { resources, truncated: true, ...completeness(resources.length, expected) };
+}
+
+function completeness(arrived: number, expected: number | undefined): { expected?: number; incomplete: boolean } {
+  if (typeof expected !== "number") return { incomplete: false };
+  return { expected, incomplete: arrived < expected };
 }
 
 /** The read/write surface the live mode needs, and nothing beyond it. */

@@ -145,6 +145,7 @@ describe("odontogram-6fi: a truncated search reaches the load report", () => {
       return {
         resources: resourceType === "Observation" ? (savedResources() as unknown[]) : [],
         truncated: resourceType === "Observation",
+        incomplete: false,
       };
     },
     async put() { return {}; },
@@ -223,5 +224,166 @@ describe("odontogram-6fi: assembling a load", () => {
     expect(result.report.parsed).toBe(false);
     expect(result.document).toBeUndefined();
     expect(result.report.error).toMatch(/reject/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The whole-mouth round trip, and the silent partial that broke it.
+//
+// The failure the acceptance run hit is invisible at session scale: a mouth
+// with four findings is 8 resources and fits in one page, while the app's own
+// save of a normalised mouth is 128 — TWO pages at Aidbox's default page size
+// of 100. Measured on the live fixture, `Observation/...tooth-state-16` was
+// entry number 100, the first entry of page two: a load that lost that page
+// PARSED CLEANLY and showed tooth 16 with no filling. A partial read that
+// reads as a whole chart is the worst outcome available here, because the next
+// save writes it back.
+// ---------------------------------------------------------------------------
+
+import { normalizeOdontogramDocument } from "../odontogram";
+
+/** A normalised whole mouth (32 teeth) carrying ONE composite filling on 16. */
+function wholeMouthDocument(): OdontogramDocument {
+  const document = normalizeOdontogramDocument({ version: PAYLOAD_VERSION, globals: {}, teeth: {} } as OdontogramDocument);
+  document.teeth["16"] = {
+    ...document.teeth["16"],
+    fillingSurfaces: ["occlusal"],
+    fillingSurfaceMaterials: { occlusal: "composite" },
+  };
+  return document;
+}
+
+/** What the server holds after that document is saved once. */
+function wholeMouthResources(): Record<string, unknown>[] {
+  const plan = buildWritePlan({ document: wholeMouthDocument(), patientId: PATIENT, effectiveDateTime: EFFECTIVE });
+  const byPath = new Map<string, Record<string, unknown>>();
+  for (const op of plan.ops) {
+    if (op.method === "DELETE") byPath.delete(op.path);
+    else byPath.set(op.path, op.resource as unknown as Record<string, unknown>);
+  }
+  return [...byPath.values()];
+}
+
+describe("odontogram-6fi: the whole-mouth round trip", () => {
+  it("saves and reads back a normalised mouth of more than one page", () => {
+    const resources = wholeMouthResources();
+    expect(resources.length).toBeGreaterThan(100);
+    const result = assembleLoadResult({
+      patientId: PATIENT,
+      resources: [{ resourceType: "Patient", id: PATIENT }, ...resources],
+    });
+    expect(result.report.parsed).toBe(true);
+    expect(result.document?.teeth["16"]).toMatchObject({
+      fillingSurfaces: ["occlusal"],
+      fillingSurfaceMaterials: { occlusal: "composite" },
+    });
+  });
+
+  it("says WHY the codec rejected a collection instead of only that it did", () => {
+    const resources = wholeMouthResources();
+    // One resource that belongs to somebody else is enough to make the codec
+    // refuse the whole collection. The report has to name it.
+    const poisoned = resources.map((resource, index) =>
+      index === 40 ? { ...resource, subject: { reference: "Patient/somebody-else" } } : resource);
+    const result = assembleLoadResult({
+      patientId: PATIENT,
+      resources: [{ resourceType: "Patient", id: PATIENT }, ...poisoned],
+    });
+    expect(result.report.parsed).toBe(false);
+    expect(result.report.rejectedAt).toBe(`Observation/${poisoned[40].id as string}`);
+    expect(result.report.error).toContain(poisoned[40].id as string);
+  });
+});
+
+describe("odontogram-6fi: a page that never arrives", () => {
+  const patient = { resourceType: "Patient", id: PATIENT };
+
+  it("fails the load when the server says there are more resources than arrived", async () => {
+    const gateway = {
+      async readPatient() { return patient; },
+      async search(resourceType: string) {
+        const resources = resourceType === "Observation" ? (wholeMouthResources().slice(0, 100) as unknown[]) : [];
+        return { resources, truncated: false, expected: resourceType === "Observation" ? 128 : 0, incomplete: resourceType === "Observation" };
+      },
+      async put() { return {}; },
+      async delete() { return {}; },
+    };
+    const result = await loadPatientChart(gateway, PATIENT);
+    // It would otherwise PARSE — that is the whole danger.
+    expect(result.report.parsed).toBe(false);
+    expect(result.document).toBeUndefined();
+    expect(result.report.error).toMatch(/incomplete|partial/i);
+    expect(result.report.incomplete).toEqual(["Observation"]);
+  });
+
+  it("lets a mid-search transport failure fail the load instead of returning a partial", async () => {
+    const gateway = {
+      async readPatient() { return patient; },
+      async search() { throw Object.assign(new Error("Active Storage for 'null' not found"), { status: 500 }); },
+      async put() { return {}; },
+      async delete() { return {}; },
+    };
+    await expect(loadPatientChart(gateway, PATIENT)).rejects.toThrow(/Active Storage/);
+  });
+});
+
+describe("odontogram-6fi: searchAllPages counts what the server promised", () => {
+  function pagingTransport(pages: Array<{ ids: string[]; next?: string; total?: number }>) {
+    let call = 0;
+    return {
+      async request() {
+        const page = pages[Math.min(call++, pages.length - 1)];
+        return {
+          resourceType: "Bundle",
+          total: page.total,
+          entry: page.ids.map((id) => ({ resource: { resourceType: "Observation", id } })),
+          ...(page.next ? { link: [{ relation: "next", url: page.next }] } : {}),
+        };
+      },
+    };
+  }
+
+  it("reports an incomplete read when fewer resources arrive than the server counted", async () => {
+    const transport = pagingTransport([{ ids: ["a", "b"], total: 128 }]);
+    const page = await searchAllPages(transport, "Observation", {});
+    expect(page.resources).toHaveLength(2);
+    expect(page.expected).toBe(128);
+    expect(page.incomplete).toBe(true);
+  });
+
+  it("is complete when the count matches", async () => {
+    const transport = pagingTransport([
+      { ids: ["a", "b"], total: 3, next: "http://localhost:8081/fhir/Observation?_page=2" },
+      { ids: ["c"], total: 3 },
+    ]);
+    const page = await searchAllPages(transport, "Observation", {});
+    expect(page.resources).toHaveLength(3);
+    expect(page.incomplete).toBe(false);
+  });
+
+  it("does not claim completeness when the server reports no total", async () => {
+    const transport = pagingTransport([{ ids: ["a"] }]);
+    const page = await searchAllPages(transport, "Observation", {});
+    expect(page.expected).toBeUndefined();
+    expect(page.incomplete).toBe(false);
+  });
+
+  it("never swallows a page failure into a partial result", async () => {
+    let call = 0;
+    const transport = {
+      async request() {
+        call += 1;
+        if (call === 1) {
+          return {
+            resourceType: "Bundle",
+            total: 2,
+            entry: [{ resource: { resourceType: "Observation", id: "a" } }],
+            link: [{ relation: "next", url: "http://localhost:8081/fhir/Observation?_page=2" }],
+          };
+        }
+        throw Object.assign(new Error("Active Storage for 'null' not found"), { status: 500 });
+      },
+    };
+    await expect(searchAllPages(transport, "Observation", {})).rejects.toThrow(/Active Storage/);
   });
 });

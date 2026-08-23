@@ -47,6 +47,22 @@ Erneutes Laden derselben PatientID stellt denselben Stand wieder her.
   unaufgelösten Referenz als Begründung. `periImplant`, `mPI` und `mBI` laufen
   über den Live-Modus deshalb nicht hin und zurück, alles andere am selben
   Implantatzahn schon.
+- **Ein Teil-Lesen ist ein FEHLGESCHLAGENES Lesen.** Den Blätterlinks zu folgen
+  beweist keine Vollständigkeit: eine verlorene Seite beendet die Schleife
+  still, und eine unvollständig gelesene Dental-Core-Karte LÄSST SICH LESEN —
+  sie kommt nur ohne Befunde zurück, sieht aus wie eine Karte, und das nächste
+  Speichern schreibt die Lücke über den Bestand. Am lebenden Bestand gemessen:
+  die ganze Mundkarte sind 128 Observations bei einer Vorgabe-Seitengröße von
+  100, und `…tooth-state-16` war Eintrag Nummer 100 — der erste der zweiten
+  Seite; ohne sie meldete der Ladevorgang „Geladen" und zeigte Zahn 16 ohne
+  Füllung. `searchAllPages` vergleicht jetzt `Bundle.total` mit dem, was
+  wirklich ankam; bei einem zu kurzen Lesen wird das Dokument GAR NICHT
+  übernommen, der Bericht sagt es, und der Speicher-Riegel bleibt zu.
+- **Ein abgelehnter Ladevorgang nennt die Ressource.** `parseDentalCoreBundle`
+  antwortet nur `undefined` — genau daran scheiterte die Fehlersuche der
+  Abnahme. Auf dem Fehlerweg wird der Grund jetzt GEMESSEN: die Sammlung wächst
+  Ressource für Ressource, und die erste, die den Codec kippen lässt, steht als
+  `rejectedAt` im Ladebericht und in der Oberfläche.
 - **Kein stiller Seitenabbruch.** `searchAllPages` meldet jetzt `truncated`,
   wenn das Seitenbudget aufgebraucht ist, bevor eine Ressourcenart vollständig
   gelesen war; der Ladebericht nennt die betroffene Ressourcenart, die

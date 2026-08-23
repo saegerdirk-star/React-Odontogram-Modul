@@ -87,10 +87,19 @@ function ReportPanel({ report, skipped }: { report?: LoadReport; skipped: Skippe
           {report.fetched} resource(s) read, {report.dentalCore} offered to the Dental Core codec,{" "}
           {report.unsupported.length} not supported.
           {report.error && <div style={{ color: "#b3261e" }}>{report.error}</div>}
-          {report.truncated?.length ? (
+          {report.rejectedAt && (
             <div style={{ color: "#b3261e" }}>
-              <strong>Partial read:</strong> the search for {report.truncated.join(", ")} hit the page budget.
-              Saving is disabled — writing back from a partial chart would drop the findings that were never read.
+              First resource the codec refuses: <code>{report.rejectedAt}</code>
+            </div>
+          )}
+          {(report.truncated?.length || report.incomplete?.length) ? (
+            <div style={{ color: "#b3261e" }}>
+              <strong>Partial read:</strong>{" "}
+              {report.incomplete?.length
+                ? `fewer ${report.incomplete.join(", ")} resources arrived than the server counted.`
+                : `the search for ${report.truncated?.join(", ")} hit the page budget.`}{" "}
+              Nothing was charted and saving is disabled — writing back from a partial read would drop the
+              findings that were never loaded.
             </div>
           ) : null}
           {report.unsupported.length > 0 && (

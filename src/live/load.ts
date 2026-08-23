@@ -42,6 +42,17 @@ export interface LoadReport {
   unsupported: UnsupportedResource[];
   /** Resource types whose search hit the page budget — their result is PARTIAL. */
   truncated?: string[];
+  /** Resource types where fewer resources arrived than the server counted. */
+  incomplete?: string[];
+  /**
+   * The first resource whose inclusion makes the codec refuse the collection.
+   *
+   * `parseDentalCoreBundle` answers `undefined` and nothing else, which is the
+   * single hardest thing about diagnosing a rejected load — the acceptance run
+   * had "nothing was charted" and no way to ask why. This is computed by
+   * bisecting the collection on the failure path only.
+   */
+  rejectedAt?: string;
   parsed: boolean;
   error?: string;
 }
@@ -126,6 +137,41 @@ function loadRank(resource: ResourceRecord): number {
   return 3;
 }
 
+/**
+ * Which resource the codec first refuses.
+ *
+ * `parseDentalCoreBundle` returns `undefined` and carries no reason, so the
+ * reason is MEASURED instead of asked for: grow the collection one resource at
+ * a time and report the one that flips it. Runs only when a load has already
+ * failed, so the cost buys a diagnosis nobody had before — a rejected load used
+ * to say "nothing was charted" and stop there.
+ *
+ * The answer is "the first resource that cannot stand with the ones before it",
+ * which is not always the guilty party (two resources can contradict each
+ * other) — the message says "refuses", not "is wrong".
+ */
+function firstRejectingResource(ordered: ResourceRecord[]): string | undefined {
+  const anchor = ordered.filter((resource) => resource.resourceType === "Patient");
+  const rest = ordered.filter((resource) => resource.resourceType !== "Patient");
+  for (let count = 1; count <= rest.length; count += 1) {
+    const probe = collectionOf([...anchor, ...rest.slice(0, count)]);
+    if (parseDentalCoreBundle(probe) === undefined) {
+      const culprit = rest[count - 1];
+      return `${culprit.resourceType}/${culprit.id}`;
+    }
+  }
+  return undefined;
+}
+
+function collectionOf(resources: ResourceRecord[]): Bundle {
+  return {
+    resourceType: "Bundle",
+    type: "collection",
+    identifier: { system: DENTAL_CORE, value: DENTAL_CORE_BUNDLE_IDENTIFIER },
+    entry: resources.map((resource) => ({ resource: resource as never })),
+  };
+}
+
 export interface AssembleInput {
   patientId: string;
   resources: ResourceRecord[];
@@ -141,23 +187,23 @@ export function assembleLoadResult({ patientId, resources }: AssembleInput): Loa
   // parser has already seen. A server hands its search results back in whatever
   // order it likes, so the order is restored here.
   const ordered = [...core].sort((left, right) => loadRank(left) - loadRank(right));
-  const bundle: Bundle = {
-    resourceType: "Bundle",
-    type: "collection",
-    // The marker says what this collection IS. Without it a chart holding no
-    // finding yet carries no admitted profile either, and the codec would
-    // decline to read an empty mouth.
-    identifier: { system: DENTAL_CORE, value: DENTAL_CORE_BUNDLE_IDENTIFIER },
-    entry: ordered.map((resource) => ({ resource: resource as never })),
-  };
+  // The marker says what this collection IS. Without it a chart holding no
+  // finding yet carries no admitted profile either, and the codec would
+  // decline to read an empty mouth.
+  const bundle = collectionOf(ordered);
   const document = parseDentalCoreBundle(bundle) as OdontogramDocument | undefined;
+  const rejectedAt = document === undefined ? firstRejectingResource(ordered) : undefined;
   const report: LoadReport = {
     fetched: resources.length,
     dentalCore: core.length,
     unsupported,
     parsed: document !== undefined,
+    ...(rejectedAt ? { rejectedAt } : {}),
     ...(document === undefined
-      ? { error: "The Dental Core codec rejected the assembled collection, so nothing was charted" }
+      ? {
+        error: "The Dental Core codec rejected the assembled collection, so nothing was charted"
+          + (rejectedAt ? ` — the first resource it refuses is ${rejectedAt}` : ""),
+      }
       : {}),
   };
   return { ...(document ? { document } : {}), bundle, report };
@@ -184,21 +230,33 @@ export async function loadPatientChart(gateway: AidboxGateway, patientId: string
   }
   const found: ResourceRecord[] = [patient as ResourceRecord];
   const truncated: string[] = [];
+  const incomplete: string[] = [];
   for (const resourceType of SEARCHED_RESOURCE_TYPES) {
+    // A page that fails THROWS, and is meant to: the caller turns it into a
+    // failed load. What must never happen is that it turns into fewer teeth.
     const page = await gateway.search(resourceType, { subject });
     found.push(...(page.resources as ResourceRecord[]));
     if (page.truncated) truncated.push(resourceType);
+    if (page.incomplete) incomplete.push(resourceType);
   }
   const result = assembleLoadResult({ patientId, resources: found });
-  if (!truncated.length) return result;
-  // A partial read must never display as a whole chart.
+  if (!truncated.length && !incomplete.length) return result;
+  // A PARTIAL READ IS A FAILED READ. It is not enough to mark it: a short read
+  // of a Dental Core chart parses perfectly well and simply comes back missing
+  // findings, so it would render as a chart, and the next save would write that
+  // gap back over the real one. The document is therefore withheld.
+  const reason = incomplete.length
+    ? `Fewer ${incomplete.join(", ")} resources arrived than the server counted`
+    : `The search for ${truncated.join(", ")} hit the page budget`;
   return {
-    ...result,
+    bundle: result.bundle,
+    document: undefined,
     report: {
       ...result.report,
-      truncated,
-      error: result.report.error
-        ?? `The search for ${truncated.join(", ")} hit the page budget — this chart is PARTIAL and must not be saved back`,
+      parsed: false,
+      ...(truncated.length ? { truncated } : {}),
+      ...(incomplete.length ? { incomplete } : {}),
+      error: `${reason} — this read is PARTIAL, so nothing was charted and nothing may be saved back`,
     },
   };
 }
