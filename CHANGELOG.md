@@ -1,5 +1,30 @@
 # Changelog
 
+## 2.47.2 - 2026-08-23
+
+### Molar-Pulpen als junger Erwachsener (Bead odontogram-5ez, Teil 1)
+
+Dirk hat die sechs Molaren (16, 17, 18, 46, 47, 48) nach der Odontographie
+(Bild 4, Keller 1928) neu gezeichnet — größere Kammer, höhere Hörner, Kanäle bis
+zum Apex. Die alten Molar-Pulpen waren zu klein. Alle übrigen Zähne behalten
+ihre alten Formen (waren gut genug), nur die Molaren waren betroffen.
+
+- **Eingesetzt über die reguläre Pipeline** (`redraw_alle` für die sechs
+  Molaren, dann Stufe 3), aber der Diff ist chirurgisch: die Kontur und alle
+  konturabgeleiteten Ebenen (Krone, Füllflächen, Halsbänder, Extraktionskreuz)
+  kommen deterministisch byte-identisch heraus, sodass sich **nur die
+  pulpa-abhängigen Ebenen** ändern — `tooth-healthy-pulp`, die mitgewarpte
+  (dormante) Inflam-Pulpa und die aus der neuen Pulpa neu geschnittenen
+  Endo-Ebenen (Wurzelfüllung, Stifte). 17 Ebenen je Molar, sonst nichts.
+- Die minimale Raster-Neuserialisierung der Füllflächen (0,01–0,13 Einheiten)
+  wurde aus dem Bestand zurückgesetzt — sie war unbeabsichtigt.
+- **`tooth-crownprep` bleibt unverändert:** die Molar-Präp war nie pulpa-gebunden
+  (die 2-mm-Reduktion band, nicht das Pulpadach), und die größere Pulpa steht
+  weiter sicher darunter — `verify_redraw.py` (`TOL_PULPADACH`) bestätigt es.
+- Nur `d` geändert, id/opacity/class unberührt → **SVG-Fingerabdruck
+  byte-identisch**, Parität hält. Kein Payload/FHIR. Die Zeichenquellen der sechs
+  Molaren (`<n>_pulpa_zeichnen.svg`) liegen in `~/dev/Odontogram-Anatomie`.
+
 ## 2.47.1 - 2026-08-22
 
 ### Der beschliffene Zahn schneidet die Pulpa nicht mehr an
