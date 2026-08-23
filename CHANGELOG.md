@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.47.4 - 2026-08-23
+
+### Loch in der Pulpa von 18 — Windung normalisiert (Bead odontogram-5ez)
+
+Dirk sah am oberen 8er ein weißes Loch am Kammerboden. Ursache: seine zwei
+gezeichneten Lumen-Teilpfade liefen **gegenläufig** (Flächen +354 / −132) — der
+palatinale Kanal entgegen dem Rest —, und unter der Nonzero-Füllregel stanzt ein
+gegenläufiger Teilpfad ein Loch in die Überlappung. Kein Zeichenfehler, ein
+Windungsproblem, das Inkscape nicht sichtbar macht.
+
+- **Fix im Generator, nicht in der Zeichnung:** `redraw_apply` vereinheitlicht
+  beim Einsetzen die Windung aller gezeichneten Pulpa-Teilpfade auf das
+  Vorzeichen des flächengrößten — dann ist ihre Vereinigung solide, egal in
+  welcher Richtung Inkscape sie gespeichert hat. Neue Helfer in `svgpath.py`:
+  `split_subpaths`, `signed_area`, `reverse_subpath` (Umkehr tauscht die
+  Bézier-Kontrollpunkte, Kurve bleibt, Windungssinn kippt).
+- **Neuer Vertrag** in `verify_redraw.py`: alle Teilpfade einer Pulpa-Ebene
+  müssen gleichsinnig laufen; die Prüfung fängt das alte Loch nachweislich.
+- Nur 18 betroffen (16/17 waren gleichläufig). Diff: `tooth-healthy-pulp-2` +
+  die daraus geschnittenen Endo-Ebenen; Kammer/Inflam unverändert (die Umkehr
+  ändert die Region nicht, nur die Laufrichtung). Fingerabdruck byte-identisch.
+
 ## 2.47.3 - 2026-08-23
 
 ### Molar-Pulpen 18 und 48 nachkorrigiert (Bead odontogram-5ez)

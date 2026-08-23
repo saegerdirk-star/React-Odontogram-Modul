@@ -413,6 +413,25 @@ def main() -> int:
                 f"apikal des Pulpadachs; der beschliffene Zahn schneidet die "
                 f"Pulpa an")
 
+        # Alle Teilpfade EINER Pulpa-Ebene muessen gleichsinnig laufen. Zwei
+        # gegenlaeufige stanzen unter der Nonzero-Regel ein Loch ineinander -
+        # an 18 stand so ein weisses Loch am Kammerboden, weil der palatinale
+        # Kanal entgegen dem Rest gezeichnet war (odontogram-5ez). `redraw_apply`
+        # normalisiert die Windung beim Einsetzen; diese Pruefung haelt das fest.
+        for pid in ("tooth-healthy-pulp-1", "tooth-healthy-pulp-2",
+                    "milktooth-healthy-pulp"):
+            pd = re.search(r'<path\b[^>]*\bid="' + re.escape(pid)
+                           + r'"[^>]*\bd="([^"]+)"', txt)
+            if not pd:
+                continue
+            vz = [svgpath.signed_area(s) >= 0
+                  for s in svgpath.split_subpaths(svgpath.to_absolute(pd.group(1)))
+                  if abs(svgpath.signed_area(s)) > 1.0]
+            if len(set(vz)) > 1:
+                failures.append(
+                    f"{key}: {pid} hat gegenlaeufige Teilpfade; unter der "
+                    f"Nonzero-Regel entsteht ein Loch in der Pulpa")
+
         mark = lambda b: "OK" if b else "!!"  # noqa: E731
         gut_impl = streckung is None or 1 / TOL_IMPLANTAT <= streckung <= TOL_IMPLANTAT
         print(f"{key:6s} {spender:8s} {mark(n_sub == 1)} {n_sub} "

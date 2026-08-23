@@ -398,3 +398,76 @@ def warp_path_d(d: str, fn, tol: float = 0.05, prec: int = 2) -> str:
     cmds = subdivide_for_warp(cmds, fn, tol)
     cmds = transform_cmds(cmds, fn)
     return serialize(cmds, prec)
+
+
+def split_subpaths(cmds):
+    """Absolute Kommandoliste in Teilpfade zerlegen (je ab einem M)."""
+    subs = []
+    cur = []
+    for cmd, a in cmds:
+        if cmd == "M" and cur:
+            subs.append(cur)
+            cur = []
+        cur.append((cmd, a))
+    if cur:
+        subs.append(cur)
+    return subs
+
+
+def signed_area(cmds):
+    """Vorzeichenbehaftete Flaeche eines Teilpfads ueber seine Ankerpunkte.
+
+    Positiv/negativ = Windungssinn. Nur die Endpunkte, das genuegt fuers
+    Vorzeichen (ein Bezier weicht davon in der Flaeche ab, nicht im Sinn).
+    """
+    pts = []
+    for cmd, a in cmds:
+        if cmd == "M" or cmd == "L":
+            pts.append((a[0], a[1]))
+        elif cmd == "C":
+            pts.append((a[4], a[5]))
+    s = 0.0
+    n = len(pts)
+    for i in range(n):
+        x0, y0 = pts[i]
+        x1, y1 = pts[(i + 1) % n]
+        s += x0 * y1 - x1 * y0
+    return s / 2.0
+
+
+def reverse_subpath(cmds):
+    """Einen Teilpfad in der Laufrichtung umkehren (M/L/C/Z).
+
+    Die Ankerpunkte laufen rueckwaerts, und bei jedem C werden die beiden
+    Kontrollpunkte getauscht - so bleibt die Kurve dieselbe, nur der
+    Windungssinn kippt. Zum Aufheben eines Nonzero-Lochs, wenn zwei Teilpfade
+    einer Flaeche gegenlaeufig gezeichnet sind.
+    """
+    pts = []
+    segs = []  # (typ, controls) von pts[i-1] nach pts[i]
+    closed = False
+    for cmd, a in cmds:
+        if cmd == "M":
+            pts.append((a[0], a[1]))
+        elif cmd == "L":
+            pts.append((a[0], a[1]))
+            segs.append(("L", None))
+        elif cmd == "C":
+            pts.append((a[4], a[5]))
+            segs.append(("C", ((a[0], a[1]), (a[2], a[3]))))
+        elif cmd == "Z":
+            closed = True
+    if len(pts) < 2:
+        return list(cmds)
+    out = [("M", [pts[-1][0], pts[-1][1]])]
+    for i in range(len(pts) - 1, 0, -1):
+        typ, ctrl = segs[i - 1]
+        p = pts[i - 1]
+        if typ == "L":
+            out.append(("L", [p[0], p[1]]))
+        else:
+            c1, c2 = ctrl
+            out.append(("C", [c2[0], c2[1], c1[0], c1[1], p[0], p[1]]))
+    if closed:
+        out.append(("Z", []))
+    return out

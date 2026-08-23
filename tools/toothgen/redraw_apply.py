@@ -794,7 +794,21 @@ def umzeichnen(zahn: str, template: str, mit_ankern: bool, stufen: int | None = 
         # Wurzelfuellung, Stifte und die Zeichnung des Kammerbodens - muessen in
         # DIESE Form hinein, und die zeichnet niemand einzeln nach.
         ziel = umriss_id(txt, "tooth-healthy-pulp")
-        eingesetzt = " ".join(svgpath.serialize(svgpath.to_absolute(g), 2) for g in gez)
+        # Windung vereinheitlichen: zwei gegenlaeufig GEZEICHNETE Teilpfade einer
+        # Pulpa stanzen unter der Nonzero-Regel ein Loch ineinander. An 18
+        # gesehen (odontogram-5ez): der palatinale Kanal lief entgegen dem Rest
+        # (+354 gegen -132), und in der Ueberlappung am Kammerboden blieb ein
+        # weisses Loch. Alle Teilpfade auf das Vorzeichen des FLAECHENGROESSTEN
+        # drehen; dann ist ihre Vereinigung solide - ganz gleich, in welcher
+        # Richtung Inkscape sie gespeichert hat.
+        teile = [s for g in gez
+                 for s in svgpath.split_subpaths(svgpath.to_absolute(g))]
+        if teile:
+            leit = max(teile, key=lambda s: abs(svgpath.signed_area(s)))
+            pos = svgpath.signed_area(leit) >= 0
+            teile = [s if (svgpath.signed_area(s) >= 0) == pos
+                     else svgpath.reverse_subpath(s) for s in teile]
+        eingesetzt = " ".join(svgpath.serialize(s, 2) for s in teile)
         txt = re.sub(r'(<path[^>]*\sid="' + re.escape(ziel) + r'"[^>]*\sd=")[^"]+(")',
                      lambda m: m.group(1) + eingesetzt + m.group(2), txt, count=1)
         if eingesetzt not in txt:
