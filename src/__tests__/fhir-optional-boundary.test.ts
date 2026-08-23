@@ -79,15 +79,26 @@ describe("optional FHIR package boundary", () => {
     expect(adapterTypes).not.toContain("export const PAYLOAD_VERSION");
   });
 
-  it("keeps commercial integration modules out of the package graph", () => {
+  // Bead odontogram-6fi narrowed this invariant, deliberately and in one
+  // direction only. What must stay out is the SHIPPED graph: `dependencies` is
+  // what a consumer installs, and nothing commercial may appear there. The
+  // Aidbox live mode (`src/live`, `live.html`) is a dev-server app beside the
+  // library and needs the @polaris SDK to talk to a server at all — as a
+  // devDependency, reachable from no library entry point, excluded from the
+  // declaration build, and not in `files`. `6fi-live-boundary.test.ts` holds
+  // that containment; here only the shipped graph is asserted.
+  it("keeps commercial integration modules out of the shipped package graph", () => {
     const packageJson = JSON.parse(source("package.json")) as {
       dependencies?: Record<string, string>;
       devDependencies?: Record<string, string>;
     };
-    const packageNames = Object.keys({ ...packageJson.dependencies, ...packageJson.devDependencies });
 
     for (const prohibited of ["polaris", "mira", "aidbox"]) {
-      expect(packageNames.some((name) => name.toLowerCase().includes(prohibited))).toBe(false);
+      expect(Object.keys(packageJson.dependencies ?? {}).some((name) => name.toLowerCase().includes(prohibited))).toBe(false);
+    }
+    // A development dependency may be the SDK, but never a host application.
+    for (const prohibited of ["mira", "aidbox"]) {
+      expect(Object.keys(packageJson.devDependencies ?? {}).some((name) => name.toLowerCase().includes(prohibited))).toBe(false);
     }
   });
 

@@ -12,6 +12,7 @@
   "exclude": [
     "src/main.tsx",
     "src/lib-entry.ts",
+    "src/live",
     "src/**/__tests__/**",
     "src/**/*.test.ts",
     "src/**/*.test.tsx"

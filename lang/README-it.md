@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.49.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.50.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -582,6 +582,10 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 **FHIR / Dental Core:**
 
 FHIR conversion is optional and has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.3.0`. A Dental Core session rejects Legacy, malformed, or unsupported input and refuses exports that would lose populated clinical state.
+
+**Modalità live con Aidbox (sviluppo, dalla 2.50.0):**
+
+Un secondo punto di ingresso del server di sviluppo, `live.html` (`src/live`), carica la cartella di un paziente direttamente da un'istanza Aidbox in esecuzione, la visualizza nella shell abituale tramite l'API di sessione sopra descritta, e scrive le modifiche come risorse Dental Core con id deterministici, così un nuovo salvataggio aggiorna anziché duplicare. Si configura tramite un `.env` escluso dal controllo di versione (copia di `.env.example`) che indica **esclusivamente un client macchina con ambito limitato** — mai una credenziale amministrativa. È uno strumento di sviluppo, non parte del pacchetto pubblicato: i pacchetti SDK `@polaris` sono devDependencies, `dependencies` resta invariato, e né `src/live` né `live.html` vengono pubblicati. La configurazione, la meccanica di caricamento/salvataggio e la differenza documentata rispetto al dialetto dell'adattatore charly si trovano in [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). Da notare che installare le devDependencies di questo repository ora richiede una credenziale per `npm.cognovis.de` (vedi il documento); `npm ci --omit=dev` e l'uso del pacchetto pubblicato no.
 
 **Esami datati, stato di valutazione e rilevazione perimplantare (dalla 2.4.0):**
 

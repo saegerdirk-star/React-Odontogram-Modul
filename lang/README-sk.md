@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.49.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.50.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -578,6 +578,10 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 **FHIR / Dental Core:**
 
 FHIR conversion is a pure optional projection of the UI-domain document. It has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.3.0`. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date and refuses exports that would lose populated clinical state; a Dental Core session rejects Legacy, unsupported, or malformed bundles.
+
+**Aidbox live režim (vývoj, od 2.50.0):**
+
+Druhý vstupný bod vývojového servera, `live.html` (`src/live`), načíta kartu jedného pacienta priamo z bežiaceho Aidboxu, zobrazí ju v bežnom rozhraní cez vyššie uvedené session API a zapisuje zmeny späť ako zdroje Dental Core pod deterministickými id, takže opätovné uloženie aktualizuje namiesto duplikovania. Nastavuje sa cez `.env` vylúčené z verzionovania (kópia `.env.example`), ktoré určuje **výhradne strojového klienta s obmedzeným rozsahom** — nikdy administrátorské poverenie. Je to vývojový nástroj, nie súčasť publikovaného balíka: balíky SDK `@polaris` sú devDependencies, `dependencies` sa nemení a ani `src/live`, ani `live.html` sa nepublikujú. Nastavenie, mechanika načítania/uloženia a zdokumentovaný rozdiel voči dialektu adaptéra charly sú v [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). Upozornenie: inštalácia devDependencies tohto repozitára teraz vyžaduje poverenie pre `npm.cognovis.de` (pozri dokument); `npm ci --omit=dev` a používanie publikovaného balíka ho nevyžadujú.
 
 **Datované vyšetrenia, stav posúdenia a peri-implantátový záznam (od 2.4.0):**
 

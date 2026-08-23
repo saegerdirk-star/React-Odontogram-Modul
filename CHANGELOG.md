@@ -1,5 +1,126 @@
 # Changelog
 
+## 2.50.0 - 2026-08-23
+
+### Live-Modus: das Odontogramm liest und schreibt direkt gegen Aidbox (Bead odontogram-6fi)
+
+Ein zweiter App-Einstieg neben der Bibliothek — `live.html` und `src/live`, nur
+über den Vite-Dev-Server. Mit einer `.env` (Aidbox-URL, Zugangsdaten eines
+**eingeschränkten** Maschinen-Clients) und einer PatientID lädt er das
+Odontogramm eines Patienten aus einem laufenden Aidbox, zeigt es in der
+gewohnten Oberfläche und schreibt Änderungen als Dental-Core-Ressourcen zurück.
+Erneutes Laden derselben PatientID stellt denselben Stand wieder her.
+
+- **Die IDs werden ABGELEITET, nie vergeben.** `buildDentalCoreBundle` besitzt
+  bereits ein Identitätsschema (`fhirIdentity.resources`, Schlüssel wie
+  `Observation/tooth-state/16`), und `parseDentalCoreBundle` liest genau diese
+  Schlüssel wieder aus einem Bundle heraus. Der Schreibplan baut das Bundle
+  deshalb ZWEIMAL: einmal, um die Schlüssel durch den Codec selbst zu erfahren,
+  einmal mit je einer deterministischen ID dazu. Damit aktualisiert ein zweites
+  Speichern, statt zu verdoppeln — und in `src/live` liegt keine zweite Kopie
+  des Schlüsselschemas.
+- **Der Behandlungsplan wird zweimal geschrieben.** Aidbox prüft referentielle
+  Integrität, und die Plan-Ressourcen verweisen im KREIS aufeinander
+  (`CarePlan.activity` → `ServiceRequest`, `ServiceRequest.basedOn` →
+  derselbe `CarePlan`). Keine Reihenfolge löst einen Kreis, und die
+  Transport-Schnittstelle kennt weder Transaktions-Bundle noch PATCH: also
+  einmal nackt (verweist dann nur auf den Patienten), dann die Anforderungen,
+  dann der vollständige Plan.
+- **Fremde Ressourcen werden GEMELDET, nicht verschluckt.**
+  `parseDentalCoreBundle` ist alles-oder-nichts — eine einzige unbekannte
+  Ressource nähme die ganze Karte mit. Der Ladepfad trennt deshalb vor dem
+  Codec und listet jede fremde Zahn-Ressource mit ID und Profil im Ladebericht.
+  Insbesondere die Befunde des charly-Adapters (volles Dental-IG,
+  `ze-befund`-Bitfeld unentschlüsselt als Code): der Unterschied ist in
+  `docs/aidbox-live-mode.md` dokumentiert, der Codec wird um keine Zeile
+  erweitert (das Entschlüsseln ist Bead odontogram-wl8).
+- **Kein stilles Teil-Ergebnis.** Ein Speichern ist eine Folge von
+  Einzel-PUTs; bricht eines ab, bleibt das Vorherige geschrieben. Der Ausführer
+  hält beim ersten Fehler an, und die Oberfläche nennt den Pfad, den
+  HTTP-Status und die Zahl der bereits geschriebenen Ressourcen.
+- **Kein Schreibauftrag ins Leere.** Ein Schreibauftrag, der eine Ressource
+  nennt, die niemand schreibt, wird nicht mehr geplant — `buildWritePlan`
+  läuft dazu bis zum Fixpunkt. Insbesondere trägt der periimplantäre Befund
+  im Codec einen unbedingten `focus` auf das Implantat-`Device` des Zahnes,
+  das außerhalb der Schreibrechte des eingeschränkten Clients liegt; der
+  Befund folgt seinem Device jetzt in die Liste „nicht geschrieben", samt der
+  unaufgelösten Referenz als Begründung. `periImplant`, `mPI` und `mBI` laufen
+  über den Live-Modus deshalb nicht hin und zurück, alles andere am selben
+  Implantatzahn schon.
+- **Ein Teil-Lesen ist ein FEHLGESCHLAGENES Lesen.** Den Blätterlinks zu folgen
+  beweist keine Vollständigkeit: eine verlorene Seite beendet die Schleife
+  still, und eine unvollständig gelesene Dental-Core-Karte LÄSST SICH LESEN —
+  sie kommt nur ohne Befunde zurück, sieht aus wie eine Karte, und das nächste
+  Speichern schreibt die Lücke über den Bestand. Am lebenden Bestand gemessen:
+  die ganze Mundkarte sind 128 Observations bei einer Vorgabe-Seitengröße von
+  100, und `…tooth-state-16` war Eintrag Nummer 100 — der erste der zweiten
+  Seite; ohne sie meldete der Ladevorgang „Geladen" und zeigte Zahn 16 ohne
+  Füllung. `searchAllPages` vergleicht jetzt `Bundle.total` mit dem, was
+  wirklich ankam; bei einem zu kurzen Lesen wird das Dokument GAR NICHT
+  übernommen, der Bericht sagt es, und der Speicher-Riegel bleibt zu.
+- **Die Suche verlangt eine feste Reihenfolge.** Eine geblätterte Suche ohne
+  Gesamtordnung ist keine Suche, sondern eine Verlosung: der Server wählt Seite
+  eins, und bei gleichrangigen Zeilen darf er Seite zwei anders ordnen — eine
+  Ressource kommt zweimal, eine andere nie. Am Aidbox gemessen: sechs
+  aufeinanderfolgende Abrufe derselben unveränderten 128er-Karte lieferten
+  jedes Mal 128 Ressourcen, davon 101/100/118/116/118/110 VERSCHIEDENE, also 10
+  bis 28 Doppelte. Der Codec lehnt eine Sammlung mit doppelter ID ab, und weil
+  jedes Mal eine andere doppelt war, wanderte die gemeldete Stelle — was wie
+  ein reihenfolgeempfindlicher Leser aussieht. Ist er nicht: alle 24
+  Zufallsordnungen genau dieses Bestands werden gelesen (ein Test hält das
+  fest). Behoben an zwei Stellen: jede geblätterte Suche verlangt `_sort=_id`,
+  und die Sammlung wird nach Identität VERSCHIEDEN gehalten und auch so gezählt
+  — ein Server, der die Sortierung ignoriert, kann ein löchriges Lesen damit
+  trotzdem nicht als vollständig ausgeben.
+- **Ein abgelehnter Ladevorgang nennt die Ressource.** `parseDentalCoreBundle`
+  antwortet nur `undefined` — genau daran scheiterte die Fehlersuche der
+  Abnahme. Auf dem Fehlerweg wird der Grund jetzt GEMESSEN: die Sammlung wächst
+  Ressource für Ressource, und die erste, die den Codec kippen lässt, steht als
+  `rejectedAt` im Ladebericht und in der Oberfläche.
+- **Kein stiller Seitenabbruch.** `searchAllPages` meldet jetzt `truncated`,
+  wenn das Seitenbudget aufgebraucht ist, bevor eine Ressourcenart vollständig
+  gelesen war; der Ladebericht nennt die betroffene Ressourcenart, die
+  Oberfläche zeigt eine Teil-Lese-Warnung, und Speichern ist dann gesperrt —
+  aus einer nur teilweise gelesenen Karte zurückzuschreiben ließe genau die
+  Befunde verschwinden, die nie geladen wurden.
+- **Kein geteilter Schreibpfad zwischen zwei Patienten.** Der Patientenanteil
+  einer ID war verlustbehaftet: `p.1` und `p-1` — beides gültige FHIR-IDs —
+  ergaben denselben Token, ebenso `ABC` und `abc`, womit die Schreibpfade zweier
+  Patienten zusammenfielen und eine Karte die andere überschrieben hätte. Jetzt
+  gibt es genau zwei Formen, getrennt durch den PUNKT, den die
+  Durchreichform nicht enthalten kann: eine bereits saubere kurze ID bleibt
+  unverändert, alles andere wird zu `<Kopf>.<Streuwert der ROHEN ID>`.
+- **Die PatientID wird geprüft, bevor irgendetwas angefragt wird.** Sie geht
+  unmittelbar in einen Anfragepfad; `../../admin/console` verließe damit `/fhir`
+  ganz und nähme die Zugangsdaten mit. Geprüft wird gegen die FHIR-ID-Grammatik.
+- **Was gelöscht wurde, wird gelöscht.** Ein Befund, den man wegnimmt, ließ
+  seine Ressource auf dem Server stehen, und der nächste Ladevorgang holte ihn
+  zurück. Der Schreibplan vergleicht dazu die Schlüsselmenge des Codecs: was der
+  letzte Ladevorgang mitbrachte und dieses Dokument nicht mehr erzeugt, wird
+  gelöscht — nach allen Schreibvorgängen, und in der Reihenfolge „verweisende
+  Ressource vor der, auf die sie zeigt".
+- **Gespeichert wird nur nach einem sauberen Ladevorgang.** Ein 403, ein 500,
+  eine Ablehnung durch den Codec oder ein Teil-Lesen hinterlassen eine leere
+  oder veraltete Sitzung; sie zurückzuschreiben überschriebe die maßgebliche
+  Karte. Der Knopf bleibt bis dahin gesperrt.
+- **Kein alleinstehender Befund, dessen Begleitressource fehlt.** Der Codec
+  verlangt zur Parodontal-Diagnose (`case.diagnosisOverride`) eine klinische
+  `Provenance` und liest keine ohne die andere; eine `Provenance` darf dieser
+  Client nicht schreiben. Die `Condition` allein zu schreiben hätte nicht einen
+  Befund verloren, sondern den nächsten Ladevorgang die GANZE Karte ablehnen
+  lassen — sie steht deshalb unter „nicht geschrieben".
+- **Nur der eingeschränkte Client.** `.env.example` nennt ausschließlich den
+  per AccessPolicy auf Patient/Observation/Condition/ServiceRequest/CarePlan
+  begrenzten Maschinen-Client; nirgends eine Administrator-Zugangsdatei. Aus
+  demselben Grund läuft der Client über die Basis-Fabrik von
+  `@polaris/fhir-de` statt über die SDK-Fassade: deren IG-Prüfung beim Start
+  liest `/ImplementationGuide`, was der eingeschränkte Client nicht darf (403).
+
+Die Bibliothek bleibt unberührt: `dependencies` unverändert, beide
+`@polaris`-Pakete nur als devDependencies, `src/live` aus `tsconfig.build.json`
+und aus `vite-plugin-dts` ausgeschlossen, `files` weiterhin `["dist"]`. Kein
+`svgLayer`, keine Payload-Änderung → Parität byte-identisch.
+
 ## 2.49.0 - 2026-08-23
 
 ### Veneer folgt dem Kronenumriß und hat einen Verlauf (Bead odontogram-5hm)
