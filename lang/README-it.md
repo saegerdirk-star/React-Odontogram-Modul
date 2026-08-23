@@ -583,6 +583,10 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 FHIR conversion is optional and has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.3.0`. A Dental Core session rejects Legacy, malformed, or unsupported input and refuses exports that would lose populated clinical state.
 
+**Modalità live con Aidbox (sviluppo, dalla 2.50.0):**
+
+Un secondo punto di ingresso del server di sviluppo, `live.html` (`src/live`), carica la cartella di un paziente direttamente da un'istanza Aidbox in esecuzione, la visualizza nella shell abituale tramite l'API di sessione sopra descritta, e scrive le modifiche come risorse Dental Core con id deterministici, così un nuovo salvataggio aggiorna anziché duplicare. Si configura tramite un `.env` escluso dal controllo di versione (copia di `.env.example`) che indica **esclusivamente un client macchina con ambito limitato** — mai una credenziale amministrativa. È uno strumento di sviluppo, non parte del pacchetto pubblicato: i pacchetti SDK `@polaris` sono devDependencies, `dependencies` resta invariato, e né `src/live` né `live.html` vengono pubblicati. La configurazione, la meccanica di caricamento/salvataggio e la differenza documentata rispetto al dialetto dell'adattatore charly si trovano in [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). Da notare che installare le devDependencies di questo repository ora richiede una credenziale per `npm.cognovis.de` (vedi il documento); `npm ci --omit=dev` e l'uso del pacchetto pubblicato no.
+
 **Esami datati, stato di valutazione e rilevazione perimplantare (dalla 2.4.0):**
 
 Un caso parodontale viene rivalutato negli anni, perciò un documento può ora portare

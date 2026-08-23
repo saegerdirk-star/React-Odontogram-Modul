@@ -582,6 +582,10 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 FHIR conversion is a pure optional projection of the UI-domain document. It has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.3.0`. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date and refuses exports that would lose populated clinical state; a Dental Core session rejects Legacy, unsupported, or malformed bundles.
 
+**Tryb live Aidbox (rozwój, od 2.50.0):**
+
+Drugi punkt wejścia serwera deweloperskiego, `live.html` (`src/live`), wczytuje kartę jednego pacjenta bezpośrednio z działającego Aidboxa, renderuje ją w zwykłej powłoce przez opisane wyżej API sesji i zapisuje zmiany z powrotem jako zasoby Dental Core pod deterministycznymi id, dzięki czemu ponowny zapis aktualizuje, zamiast duplikować. Konfiguruje się go przez wykluczony z kontroli wersji plik `.env` (kopia `.env.example`), który wskazuje **wyłącznie klienta maszynowego o ograniczonym zakresie** — nigdy dane uwierzytelniające administratora. To narzędzie deweloperskie, nienależące do publikowanego pakietu: pakiety SDK `@polaris` są devDependencies, `dependencies` pozostaje bez zmian, a ani `src/live`, ani `live.html` nie są publikowane. Konfiguracja, mechanika wczytywania/zapisu oraz udokumentowana różnica względem dialektu adaptera charly znajdują się w [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). Uwaga: instalacja devDependencies tego repozytorium wymaga teraz danych uwierzytelniających dla `npm.cognovis.de` (patrz dokument); `npm ci --omit=dev` oraz korzystanie z opublikowanego pakietu tego nie wymagają.
+
 **Datowane badania, status oceny i zapis okołowszczepowy (od 2.4.0):**
 
 Przypadek periodontologiczny bada się ponownie przez lata, dlatego dokument może teraz nieść

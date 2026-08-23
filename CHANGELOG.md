@@ -38,6 +38,47 @@ Erneutes Laden derselben PatientID stellt denselben Stand wieder her.
   Einzel-PUTs; bricht eines ab, bleibt das Vorherige geschrieben. Der Ausführer
   hält beim ersten Fehler an, und die Oberfläche nennt den Pfad, den
   HTTP-Status und die Zahl der bereits geschriebenen Ressourcen.
+- **Kein Schreibauftrag ins Leere.** Ein Schreibauftrag, der eine Ressource
+  nennt, die niemand schreibt, wird nicht mehr geplant — `buildWritePlan`
+  läuft dazu bis zum Fixpunkt. Insbesondere trägt der periimplantäre Befund
+  im Codec einen unbedingten `focus` auf das Implantat-`Device` des Zahnes,
+  das außerhalb der Schreibrechte des eingeschränkten Clients liegt; der
+  Befund folgt seinem Device jetzt in die Liste „nicht geschrieben", samt der
+  unaufgelösten Referenz als Begründung. `periImplant`, `mPI` und `mBI` laufen
+  über den Live-Modus deshalb nicht hin und zurück, alles andere am selben
+  Implantatzahn schon.
+- **Kein stiller Seitenabbruch.** `searchAllPages` meldet jetzt `truncated`,
+  wenn das Seitenbudget aufgebraucht ist, bevor eine Ressourcenart vollständig
+  gelesen war; der Ladebericht nennt die betroffene Ressourcenart, die
+  Oberfläche zeigt eine Teil-Lese-Warnung, und Speichern ist dann gesperrt —
+  aus einer nur teilweise gelesenen Karte zurückzuschreiben ließe genau die
+  Befunde verschwinden, die nie geladen wurden.
+- **Kein geteilter Schreibpfad zwischen zwei Patienten.** Der Patientenanteil
+  einer ID war verlustbehaftet: `p.1` und `p-1` — beides gültige FHIR-IDs —
+  ergaben denselben Token, ebenso `ABC` und `abc`, womit die Schreibpfade zweier
+  Patienten zusammenfielen und eine Karte die andere überschrieben hätte. Jetzt
+  gibt es genau zwei Formen, getrennt durch den PUNKT, den die
+  Durchreichform nicht enthalten kann: eine bereits saubere kurze ID bleibt
+  unverändert, alles andere wird zu `<Kopf>.<Streuwert der ROHEN ID>`.
+- **Die PatientID wird geprüft, bevor irgendetwas angefragt wird.** Sie geht
+  unmittelbar in einen Anfragepfad; `../../admin/console` verließe damit `/fhir`
+  ganz und nähme die Zugangsdaten mit. Geprüft wird gegen die FHIR-ID-Grammatik.
+- **Was gelöscht wurde, wird gelöscht.** Ein Befund, den man wegnimmt, ließ
+  seine Ressource auf dem Server stehen, und der nächste Ladevorgang holte ihn
+  zurück. Der Schreibplan vergleicht dazu die Schlüsselmenge des Codecs: was der
+  letzte Ladevorgang mitbrachte und dieses Dokument nicht mehr erzeugt, wird
+  gelöscht — nach allen Schreibvorgängen, und in der Reihenfolge „verweisende
+  Ressource vor der, auf die sie zeigt".
+- **Gespeichert wird nur nach einem sauberen Ladevorgang.** Ein 403, ein 500,
+  eine Ablehnung durch den Codec oder ein Teil-Lesen hinterlassen eine leere
+  oder veraltete Sitzung; sie zurückzuschreiben überschriebe die maßgebliche
+  Karte. Der Knopf bleibt bis dahin gesperrt.
+- **Kein alleinstehender Befund, dessen Begleitressource fehlt.** Der Codec
+  verlangt zur Parodontal-Diagnose (`case.diagnosisOverride`) eine klinische
+  `Provenance` und liest keine ohne die andere; eine `Provenance` darf dieser
+  Client nicht schreiben. Die `Condition` allein zu schreiben hätte nicht einen
+  Befund verloren, sondern den nächsten Ladevorgang die GANZE Karte ablehnen
+  lassen — sie steht deshalb unter „nicht geschrieben".
 - **Nur der eingeschränkte Client.** `.env.example` nennt ausschließlich den
   per AccessPolicy auf Patient/Observation/Condition/ServiceRequest/CarePlan
   begrenzten Maschinen-Client; nirgends eine Administrator-Zugangsdatei. Aus

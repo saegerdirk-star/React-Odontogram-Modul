@@ -49,6 +49,32 @@ describe("odontogram-6fi: deterministic resource ids", () => {
     expect(deterministicResourceId("p-1", "Observation/tooth-state/16")).not.toBe(deterministicResourceId("p-1", "Observation/tooth-state/17"));
   });
 
+  // The patient's share of an id must be INJECTIVE over the FHIR id space, or
+  // two patients share a write path and one silently overwrites the other's
+  // chart. `p.1` and `p-1` are BOTH valid FHIR ids, and so are `ABC` and `abc`
+  // — sanitising them to the same token is not a charset problem that
+  // validation could catch, it is a collision.
+  it("never lets two different patient ids share one token", () => {
+    const collisions: Array<[string, string]> = [["p.1", "p-1"], ["ABC", "abc"], ["a.b", "a-b"], ["x..y", "x-y"]];
+    for (const [left, right] of collisions) {
+      expect(liveIdPrefix(left), `${left} vs ${right}`).not.toBe(liveIdPrefix(right));
+      expect(deterministicResourceId(left, "CarePlan/plan")).not.toBe(deterministicResourceId(right, "CarePlan/plan"));
+    }
+  });
+
+  it("leaves an already-clean patient id untouched, so existing ids stay stable", () => {
+    for (const clean of ["odontogram-6fi-demo", "p-1", "patient42"]) {
+      expect(liveIdPrefix(clean)).toBe(`odo-${clean}-`);
+    }
+  });
+
+  it("keeps a long patient id inside a legal FHIR id and still separates two of them", () => {
+    const long = "a-very-long-patient-identifier-from-the-practice-system";
+    const other = `${long}-2`;
+    expect(deterministicResourceId(long, "CarePlan/plan")).toMatch(/^[A-Za-z0-9\-.]{1,64}$/);
+    expect(deterministicResourceId(long, "CarePlan/plan")).not.toBe(deterministicResourceId(other, "CarePlan/plan"));
+  });
+
   it("stays a legal FHIR id even for a long key, and stays unique when truncated", () => {
     const long = `Observation/finding/16/${"a".repeat(120)}`;
     const other = `Observation/finding/17/${"a".repeat(120)}`;
@@ -200,7 +226,80 @@ describe("odontogram-6fi: the write plan", () => {
     }
   });
 
-  it("plans nothing for a blank chart rather than inventing a resource", () => {
+  // A chart is edited SUBTRACTIVELY too. Clearing a finding removes its
+  // resource from the bundle — and a plan that only ever PUTs leaves the old
+  // resource on the server, where the next load reads it straight back in. The
+  // finding would be un-deletable through live mode.
+  describe("removals", () => {
+    /** The identity a load brings back after this document was saved once. */
+    function identityOf(document: OdontogramDocument): OdontogramDocument["fhirIdentity"] {
+      const plan = buildWritePlan({ document, patientId: "p-1", effectiveDateTime: EFFECTIVE });
+      const resources: Record<string, { id: string }> = {};
+      for (const op of plan.ops) resources[op.identityKey] = { id: op.id };
+      return { resources };
+    }
+
+    it("deletes the resource of a finding that was cleared", () => {
+      const loaded = chartedDocument();
+      const identity = identityOf(loaded);
+      const edited: OdontogramDocument = { ...chartedDocument(), fhirIdentity: identity };
+      delete edited.teeth["16"];
+      const plan = buildWritePlan({ document: edited, patientId: "p-1", effectiveDateTime: EFFECTIVE });
+      const removal = plan.ops.find((op) => op.identityKey === "Observation/caries/16/occlusal");
+      expect(removal?.method).toBe("DELETE");
+      expect(removal?.path).toBe(`/Observation/${identity!.resources!["Observation/caries/16/occlusal"].id}`);
+      expect(plan.ops.some((op) => op.method === "PUT" && op.identityKey === "Observation/caries/16/occlusal")).toBe(false);
+    });
+
+    it("runs every delete after every write", () => {
+      const identity = identityOf(chartedDocument());
+      const edited: OdontogramDocument = { ...chartedDocument(), fhirIdentity: identity };
+      delete edited.teeth["16"];
+      delete edited.plan;
+      const plan = buildWritePlan({ document: edited, patientId: "p-1", effectiveDateTime: EFFECTIVE });
+      const methods = plan.ops.map((op) => op.method);
+      expect(methods).toContain("DELETE");
+      expect(methods.lastIndexOf("PUT")).toBeLessThan(methods.indexOf("DELETE"));
+    });
+
+    it("deletes a referencing resource before the resource it references", () => {
+      const identity = identityOf(chartedDocument());
+      const edited: OdontogramDocument = { ...chartedDocument(), fhirIdentity: identity };
+      delete edited.plan;
+      const plan = buildWritePlan({ document: edited, patientId: "p-1", effectiveDateTime: EFFECTIVE });
+      const deletes = plan.ops.filter((op) => op.method === "DELETE").map((op) => op.resourceType);
+      expect(deletes).toContain("CarePlan");
+      expect(deletes).toContain("ServiceRequest");
+      expect(deletes.indexOf("ServiceRequest")).toBeLessThan(deletes.indexOf("CarePlan"));
+    });
+
+    it("clears the whole mouth rather than planning nothing for a blank chart", () => {
+      const identity = identityOf(chartedDocument());
+      const blank: OdontogramDocument = { version: PAYLOAD_VERSION, globals: {}, teeth: {}, fhirIdentity: identity };
+      const plan = buildWritePlan({ document: blank, patientId: "p-1", effectiveDateTime: EFFECTIVE });
+      expect(plan.ops.length).toBeGreaterThan(0);
+      expect(plan.ops.every((op) => op.method === "DELETE")).toBe(true);
+    });
+
+    it("never deletes the patient, whatever else goes", () => {
+      const identity = identityOf(chartedDocument())!;
+      identity.resources!["Patient/subject"] = { id: "p-1" };
+      const blank: OdontogramDocument = { version: PAYLOAD_VERSION, globals: {}, teeth: {}, fhirIdentity: identity };
+      const plan = buildWritePlan({ document: blank, patientId: "p-1", effectiveDateTime: EFFECTIVE });
+      expect(plan.ops.some((op) => op.resourceType === "Patient")).toBe(false);
+    });
+
+    it("plans the same removals twice for the same input", () => {
+      const identity = identityOf(chartedDocument());
+      const edited: OdontogramDocument = { ...chartedDocument(), fhirIdentity: identity };
+      delete edited.teeth["16"];
+      const first = buildWritePlan({ document: edited, patientId: "p-1", effectiveDateTime: EFFECTIVE });
+      const second = buildWritePlan({ document: edited, patientId: "p-1", effectiveDateTime: EFFECTIVE });
+      expect(second.ops).toEqual(first.ops);
+    });
+  });
+
+  it("plans nothing for a chart that was never loaded and holds nothing", () => {
     const blank: OdontogramDocument = { version: PAYLOAD_VERSION, globals: {}, teeth: {} };
     const plan = buildWritePlan({ document: blank, patientId: "p-1", effectiveDateTime: EFFECTIVE });
     expect(plan.ops).toEqual([]);

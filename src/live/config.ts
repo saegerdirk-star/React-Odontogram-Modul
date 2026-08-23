@@ -40,7 +40,19 @@ export interface LiveConfigResult {
   config?: LiveConfig;
   /** Empty when `ok`. Names every missing key at once when not. */
   missing: string[];
+  /** Present but unusable — a value that is there and still cannot be used. */
+  invalid: string[];
 }
+
+/**
+ * The FHIR id grammar, `[A-Za-z0-9-.]{1,64}`.
+ *
+ * Checked BEFORE anything is requested, because the patient id goes straight
+ * into a request path: `../../admin/console` escapes `/fhir` altogether and
+ * carries the Basic credential with it. A path is not the place to discover
+ * that an id was never an id.
+ */
+const FHIR_ID = /^[A-Za-z0-9.-]{1,64}$/;
 
 /** The label used for the patient, which has two sources and therefore two names. */
 export const PATIENT_CONFIG_LABEL = "VITE_DEFAULT_PATIENT_ID (or ?patient=<id>)";
@@ -73,10 +85,14 @@ export function resolveLiveConfig(env: LiveEnv, search: string): LiveConfigResul
   const clientSecret = cleaned(env.VITE_AIDBOX_CLIENT_SECRET);
   const patientId = resolvePatientId(env, search);
   const missing: string[] = [];
+  const invalid: string[] = [];
   if (!baseUrl) missing.push("VITE_AIDBOX_BASE_URL");
   if (!clientId) missing.push("VITE_AIDBOX_CLIENT_ID");
   if (!clientSecret) missing.push("VITE_AIDBOX_CLIENT_SECRET");
   if (!patientId) missing.push(PATIENT_CONFIG_LABEL);
-  if (missing.length) return { ok: false, missing };
-  return { ok: true, missing: [], config: { baseUrl, clientId, clientSecret, patientId } };
+  else if (!FHIR_ID.test(patientId)) {
+    invalid.push(`The patient id "${patientId}" is not a FHIR id (${FHIR_ID.source}) and is refused before any request`);
+  }
+  if (missing.length || invalid.length) return { ok: false, missing, invalid };
+  return { ok: true, missing: [], invalid: [], config: { baseUrl, clientId, clientSecret, patientId } };
 }

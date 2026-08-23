@@ -23,10 +23,22 @@ never crashes and never guesses a server.
 ## Credentials
 
 **Only the scoped machine client, never an admin.** `odontogram-live`
-authenticates with HTTP Basic and is limited by an Aidbox AccessPolicy to
-`GET/PUT/POST/PATCH` on `/fhir/Patient`, `/fhir/Observation`, `/fhir/Condition`,
-`/fhir/ServiceRequest` and `/fhir/CarePlan`. That scope is the boundary of what
-live mode can do, and the code below is written to it.
+authenticates with HTTP Basic and is limited by the Aidbox AccessPolicy
+`odontogram-live-dental` to exactly:
+
+| Resource type | Verbs |
+|---|---|
+| `Patient` | `GET` only |
+| `Observation`, `Condition`, `ServiceRequest`, `CarePlan` | `GET`, `PUT`, `POST`, `DELETE` |
+
+Nothing else, and nothing outside `/fhir`. The patient record is **read-only**
+on purpose — the odontogram charts teeth, it does not own the patient — and a
+`PUT /fhir/Patient/...` answers `403`, verified. `DELETE` is there because
+clearing a finding has to remove its resource; without it a cleared finding
+would reappear on the next load.
+
+That scope is the boundary of what live mode can do, and the code below is
+written to it.
 
 This app runs in a browser, so whatever stands in the `VITE_*` variables is
 compiled into the served bundle and readable by anyone who can open the page.
@@ -89,6 +101,30 @@ date in, an ordered list of single-resource `PUT`s out. `executeWritePlan` runs
 them. Nothing that decides *what* is written or *under which id* touches the
 network.
 
+### The patient's share of an id is injective
+
+A patient id becomes part of every resource id this mode writes, so two patients
+must never produce the same token — otherwise their write paths coincide and one
+chart silently overwrites the other. Sanitising alone does not give that:
+`p.1` and `p-1` sanitise to the same thing, and so do `ABC` and `abc`, while all
+four are valid FHIR ids, so no charset check catches it.
+
+There are therefore exactly two forms, kept disjoint by the DOT, which the
+pass-through charset excludes and the hashed form always contains:
+
+* an id that is already a short slug (`^[a-z0-9-]{1,24}$`) passes through
+  unchanged — every id in use stays stable and every path stays readable;
+* anything else becomes `<sanitised head>.<hash of the raw id>`.
+
+The residue is bounded and deliberate: two ids in the hashed form are separated
+by a 32-bit hash, which is collision-resistant rather than strictly injective. A
+FHIR id has 64 characters, and the identity key has to fit beside the patient.
+
+The patient id is also validated against the FHIR id grammar
+`[A-Za-z0-9-.]{1,64}` in `resolveLiveConfig`, **before any request is made** — it
+goes straight into a request path, where `../../admin/console` would escape
+`/fhir` altogether and carry the Basic credential with it.
+
 ### The ids are derived, never minted
 
 `buildDentalCoreBundle` already owns a resource-identity mechanism:
@@ -118,6 +154,37 @@ complete CarePlan, then the Observations. The write order is
 `Patient → Device → Procedure → ServiceRequest → CarePlan → Observation →
 Condition → Provenance`, with the bare CarePlan ahead of all of it.
 
+### Clearing a finding deletes its resource
+
+A chart is edited subtractively too, and a plan that only ever `PUT`s would make
+a finding un-deletable: its resource would stay on the server and the next load
+would read it straight back in.
+
+The comparison is the codec's own identity KEY SET. A key the last load brought
+back (`document.fhirIdentity.resources`) that this document no longer produces
+belongs to a finding that was cleared, and its id is deleted. The patient is
+never deleted, and neither is anything outside the write policy.
+
+Deletes run **after** every write, so the resources that survive have already
+been rewritten without their references to what is about to go. Their order is a
+resource before the one it references — deliberately NOT the reverse of the
+write order, which would put the CarePlan ahead of its ServiceRequests, and the
+CarePlan is what two of the three plan relationships point at. Measured against
+Aidbox on 2026-08-23, that server does not check incoming references on delete
+(deleting a ServiceRequest still named by a CarePlan's `activity` answered
+`200`), but an order that only works because a server is lenient is one server
+away from being wrong.
+
+### Saving is offered only after one clean load
+
+`isSaveAllowed` is a pure rule with one job: a save may be offered only when
+what is on screen actually came from the server, for THIS patient, whole. A
+`403`, a `500`, a codec rejection or a truncated read each leave a blank or
+stale session behind — and saving from one of those writes that blankness over
+the authoritative chart. It is the one failure mode in this whole mode that
+destroys data rather than failing to record it, so the button is disabled until
+a load has completed cleanly.
+
 ### No silent partial success
 
 Because a save is a sequence of single-resource writes, a failure halfway
@@ -136,6 +203,7 @@ resources were already written.
 | A search that hits the page budget (50 pages) yields a **partial** read. | The load report names the resource type, the UI shows a "Partial read" warning, and **Save is disabled** — writing back from a chart that was only partly read would silently omit the findings that were never loaded. |
 | The same five types are all that is read. | Anything charted outside them does not come back. |
 | A save is not atomic. | See above. |
+| **The periodontal-diagnosis `Condition` is not written.** | The codec pairs a `case.diagnosisOverride` Condition with a clinical `Provenance` and requires BOTH when reading back; a `Provenance` is outside the write policy. Writing the Condition alone would not lose one finding — it would make the next load reject the WHOLE chart. So it follows its Provenance into "Not written", and `diagnosisOverride` does not round-trip through live mode. |
 | Foreign dental dialects are not read. | See the next section. |
 | The examination date stamps the whole write. | It comes from the loaded examination where there is one, so a re-save does not re-date the chart; a fresh chart is stamped with today. |
 
@@ -201,6 +269,29 @@ ever open live mode. `npm ci --omit=dev` does not, and neither does consuming
 the published package, whose `dependencies` are unchanged. If that cost stops
 being worth it, the honest fix is to move `src/live` into its own workspace, not
 to loosen the boundary.
+
+## Two charts on one patient reject each other
+
+Observed on the demo patient on 2026-08-23. It had been charted full-mouth by
+one run and then partly overwritten by another that had NOT loaded first, so the
+server held 262 resources: a `CarePlan` listing one activity beside 33 plan
+`ServiceRequest`s from the earlier chart. `parseDentalCoreBundle` compares those
+two counts and rejects the whole collection, so the load reports
+
+```
+"fetched": 262, "dentalCore": 262, "parsed": false,
+"error": "The Dental Core codec rejected the assembled collection, so nothing was charted"
+```
+
+and Save stays disabled — which is exactly what the save gate is for, and the
+reason it exists: the second run produced this state precisely BECAUSE it saved
+without loading first, which the UI no longer allows. In normal use the removal
+pass keeps the two in step, since a load-then-save cycle deletes what the
+previous chart left behind.
+
+Recovering such a patient means deleting the stale resources. Live mode does not
+offer a "clear this patient" button and deliberately will not: it is a
+destructive operation on a record it does not own.
 
 ## Observed while verifying against the local Aidbox
 

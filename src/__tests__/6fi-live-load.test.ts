@@ -107,6 +107,37 @@ describe("odontogram-6fi: paged search", () => {
   });
 });
 
+// Reviewer 2's claim, checked rather than assumed: the codec pairs a
+// `diagnosisOverride` Condition with a clinical Provenance and REQUIRES both on
+// read (`if (diagnosis || provenance) ... if (!provenance) return undefined`).
+// A Provenance is outside the write policy, while the Condition has no
+// unresolved outgoing reference of its own — so without a companion rule the
+// Condition is written alone and the next load rejects the WHOLE chart.
+describe("odontogram-6fi: a resource whose required companion is not written", () => {
+  function diagnosisDocument(): OdontogramDocument {
+    return { ...chartedDocument(), case: { diagnosisOverride: "periodontitis" } } as OdontogramDocument;
+  }
+
+  it("does not write the periodontal-diagnosis Condition without its Provenance", () => {
+    const plan = buildWritePlan({ document: diagnosisDocument(), patientId: PATIENT, effectiveDateTime: EFFECTIVE });
+    expect(plan.ops.some((op) => op.identityKey === "Condition/periodontal-diagnosis")).toBe(false);
+    const skipped = plan.skipped.find((entry) => entry.identityKey === "Condition/periodontal-diagnosis");
+    expect(skipped?.reason).toMatch(/Provenance/i);
+  });
+
+  it("keeps the rest of that chart loadable — the whole point of not writing it", () => {
+    const plan = buildWritePlan({ document: diagnosisDocument(), patientId: PATIENT, effectiveDateTime: EFFECTIVE });
+    const byPath = new Map<string, Record<string, unknown>>();
+    for (const op of plan.ops) byPath.set(op.path, op.resource as unknown as Record<string, unknown>);
+    const result = assembleLoadResult({
+      patientId: PATIENT,
+      resources: [{ resourceType: "Patient", id: PATIENT }, ...byPath.values()],
+    });
+    expect(result.report.parsed).toBe(true);
+    expect(result.document?.teeth["16"]).toMatchObject({ caries: ["caries-occlusal"] });
+  });
+});
+
 describe("odontogram-6fi: a truncated search reaches the load report", () => {
   const gateway = {
     async readPatient() { return { resourceType: "Patient", id: PATIENT }; },
@@ -117,6 +148,7 @@ describe("odontogram-6fi: a truncated search reaches the load report", () => {
       };
     },
     async put() { return {}; },
+    async delete() { return {}; },
   };
 
   it("names the resource type whose search was cut short", async () => {

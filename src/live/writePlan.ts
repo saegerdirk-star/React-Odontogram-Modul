@@ -38,14 +38,21 @@ export const WRITABLE_RESOURCE_TYPES = ["Observation", "Condition", "ServiceRequ
 
 export type WritableResourceType = (typeof WRITABLE_RESOURCE_TYPES)[number];
 
-/** A single-resource create-or-update. `path` is relative to the FHIR base URL. */
+/**
+ * One single-resource operation. `path` is relative to the FHIR base URL.
+ *
+ * `DELETE` carries no resource: it removes what a cleared finding left behind.
+ * A plan that only ever PUT would make a finding un-deletable through live
+ * mode — the resource would stay on the server and the next load would read it
+ * straight back in.
+ */
 export interface WriteOp {
-  method: "PUT";
+  method: "PUT" | "DELETE";
   path: string;
   resourceType: string;
   id: string;
   identityKey: string;
-  resource: Resource;
+  resource?: Resource;
   /** A first, deliberately incomplete write that exists only to break a reference cycle. */
   bootstrap?: true;
 }
@@ -91,6 +98,20 @@ export class WritePlanIdentityError extends Error {
  */
 const WRITE_ORDER = ["Patient", "Device", "Procedure", "ServiceRequest", "CarePlan", "Observation", "Condition", "Provenance"];
 
+/**
+ * Delete order — a resource goes before the one it REFERENCES, so nothing is
+ * removed while something still points at it.
+ *
+ * Deliberately NOT the reverse of `WRITE_ORDER`. Reversing it would put the
+ * CarePlan before its ServiceRequests, and the CarePlan is the one thing two of
+ * the three plan relationships point AT (`Observation.basedOn` and
+ * `ServiceRequest.basedOn`); only `CarePlan.activity` points the other way.
+ * That last one is the same cycle the bare first write exists for and no order
+ * can satisfy it — so the order chosen is the one that leaves the fewest
+ * dangling references, with the CarePlan last.
+ */
+const DELETE_ORDER = ["Provenance", "Observation", "Condition", "ServiceRequest", "CarePlan", "Procedure", "Device", "Patient"];
+
 const FHIR_ID_MAX = 64;
 
 /** The prefix every id this mode mints carries, so a loader can recognise its own profile-less resources. */
@@ -98,15 +119,37 @@ export function liveIdPrefix(patientId: string): string {
   return `odo-${patientToken(patientId)}-`;
 }
 
+/** A patient id this mode can carry verbatim: already a slug, and short enough. */
+const CLEAN_PATIENT_ID = /^[a-z0-9-]{1,24}$/;
+
 /**
- * The patient's share of an id, BOUNDED. A practice system may hand out a
- * patient identifier longer than a whole FHIR id, and a prefix that no longer
- * fits is a prefix the loader can no longer recognise — so a long one is
- * shortened deterministically rather than truncating the key behind it.
+ * The patient's share of an id — BOUNDED, and INJECTIVE over the FHIR id space.
+ *
+ * Injectivity is the whole point and was missing at first. Sanitising alone
+ * maps `p.1` and `p-1` onto the same token, and `ABC` onto `abc`; all four are
+ * valid FHIR ids, so no charset validation catches it, and the consequence is
+ * that two patients share one set of write paths and one silently overwrites
+ * the other's chart.
+ *
+ * So there are exactly two forms, and they cannot collide with each other:
+ *
+ *   - a patient id that is ALREADY a short slug passes through unchanged (which
+ *     keeps every id in use stable, and keeps a path readable);
+ *   - anything else becomes `<sanitised head>.<hash of the RAW id>`.
+ *
+ * The separator is the DOT. A pass-through token can never contain one — its
+ * charset excludes it — while a hashed token always does, so the two forms are
+ * disjoint by construction rather than by luck. A dot is legal in a FHIR id
+ * (`[A-Za-z0-9-.]{1,64}`), so the result is still a legal id.
+ *
+ * Two DIFFERENT raw ids in the hashed form are separated by a 32-bit hash of
+ * the raw id, which is collision-RESISTANT rather than strictly injective. That
+ * is a deliberate, bounded residue: a FHIR id has 64 characters to spend and
+ * the key has to fit beside the patient in them.
  */
 function patientToken(patientId: string): string {
-  const value = slug(patientId);
-  return value.length <= 24 ? value : `${value.slice(0, 15)}-${shortHash(patientId)}`;
+  if (CLEAN_PATIENT_ID.test(patientId)) return patientId;
+  return `${slug(patientId).slice(0, 15)}.${shortHash(patientId)}`;
 }
 
 function slug(value: string): string {
@@ -160,6 +203,11 @@ function rank(resourceType: string): number {
   return index === -1 ? WRITE_ORDER.length : index;
 }
 
+function deleteRank(resourceType: string): number {
+  const index = DELETE_ORDER.indexOf(resourceType);
+  return index === -1 ? DELETE_ORDER.length : index;
+}
+
 /**
  * Derive the ordered writes for a document.
  *
@@ -177,12 +225,15 @@ export function buildWritePlan({ document, patientId, effectiveDateTime }: Write
   const anonymous: OdontogramDocument = { ...document };
   delete anonymous.fhirIdentity;
   const probe = buildDentalCoreBundle(anonymous, options);
-  if (!probe.entry?.length) return { ops: [], skipped: [] };
-  const keysByFullUrl = identityKeysOf(probe);
-
   // Existing ids win: they came off the server on the last load, and a live
   // mode that renamed them would orphan the resources it read a moment ago.
   const known = document.fhirIdentity?.resources ?? {};
+  // NOT an early return on `{ops: [], skipped: []}`: a chart that now holds
+  // nothing but was loaded with findings has to have those findings DELETED.
+  // Returning early here is how "clear the mouth and save" would silently do
+  // nothing at all.
+  if (!probe.entry?.length) return { ops: removals(known, new Set(), patientId), skipped: [] };
+  const keysByFullUrl = identityKeysOf(probe);
   const resources: Record<string, DentalCoreResourceIdentity> = {};
   const keyById = new Map<string, string>();
   for (const key of keysByFullUrl.values()) {
@@ -201,6 +252,15 @@ export function buildWritePlan({ document, patientId, effectiveDateTime }: Write
 
   const ops: WriteOp[] = [];
   const skipped: SkippedResource[] = [];
+  // A resource whose REQUIRED companion is not written cannot be written
+  // either. The codec pairs a periodontal-diagnosis `Condition` with a clinical
+  // `Provenance` and demands both when reading back — so writing the Condition
+  // alone does not lose one finding, it makes the NEXT LOAD REJECT THE WHOLE
+  // CHART. A Provenance is outside this client's write policy, and the
+  // Condition has no unresolved outgoing reference of its own, so nothing else
+  // in this plan would have caught it. Collected from the Provenance's own
+  // `target`, never from a hand-kept list of pairs.
+  const orphanedByProvenance = new Map<string, string>();
   for (const entry of entries) {
     const resource = entry.resource;
     if (!resource) continue;
@@ -221,13 +281,66 @@ export function buildWritePlan({ document, patientId, effectiveDateTime }: Write
         identityKey,
         reason: `${resourceType} is outside the scoped machine client's write policy (${WRITABLE_RESOURCE_TYPES.join(", ")})`,
       });
+      if (resourceType === "Provenance") {
+        for (const target of referencesOf((resource as { target?: unknown }).target)) {
+          orphanedByProvenance.set(target, identityKey);
+        }
+      }
       continue;
     }
     ops.push({ method: "PUT", path: `/${resourceType}/${id}`, resourceType, id, identityKey, resource });
   }
-  const resolved = withResolvableReferences(ops, skipped, patientId);
+  const resolved = withResolvableReferences(ops, skipped, patientId, orphanedByProvenance);
   const bootstrap = bootstrapCarePlan(resolved.ops);
-  return { ops: bootstrap ? [bootstrap, ...resolved.ops] : resolved.ops, skipped: resolved.skipped };
+  const writes = bootstrap ? [bootstrap, ...resolved.ops] : resolved.ops;
+  // Deletes go LAST, after the writes. By then the surviving resources have
+  // already been rewritten without their references to what is about to go —
+  // a CarePlan that keeps one of two ServiceRequests carries the new activity
+  // list before the other one is deleted.
+  return { ops: [...writes, ...removals(known, new Set(keysByFullUrl.values()), patientId)], skipped: resolved.skipped };
+}
+
+/**
+ * What the last load brought back and this chart no longer holds.
+ *
+ * The set of identity keys IS the comparison: a key the codec emitted then and
+ * does not emit now belongs to a finding that was cleared. Only ids can be
+ * deleted, so an identity captured without one is left alone; the patient never
+ * is (this odontogram does not own the patient record, and the write policy
+ * makes Patient read-only besides).
+ *
+ * Delete order is the REVERSE of the write order — a resource goes before the
+ * one it references. Measured against Aidbox on 2026-08-23, that server does
+ * not actually check incoming references on delete (deleting a ServiceRequest
+ * still named by a CarePlan's `activity` answered 200), but a delete order that
+ * only works because the server is lenient is one server away from being wrong.
+ */
+function removals(
+  known: Record<string, DentalCoreResourceIdentity>,
+  currentKeys: Set<string>,
+  patientId: string,
+): WriteOp[] {
+  return Object.entries(known)
+    .filter(([key, identity]) => {
+      if (currentKeys.has(key) || !identity?.id) return false;
+      const resourceType = key.split("/", 1)[0];
+      if (resourceType === "Patient" || identity.id === patientId) return false;
+      return (WRITABLE_RESOURCE_TYPES as readonly string[]).includes(resourceType);
+    })
+    .map(([key, identity]) => {
+      const resourceType = key.split("/", 1)[0];
+      return {
+        method: "DELETE" as const,
+        path: `/${resourceType}/${identity.id}`,
+        resourceType,
+        id: identity.id!,
+        identityKey: key,
+      };
+    })
+    .sort((left, right) => {
+      const byRank = deleteRank(left.resourceType) - deleteRank(right.resourceType);
+      return byRank !== 0 ? byRank : left.id.localeCompare(right.id);
+    });
 }
 
 /** Every `reference` string anywhere inside a resource, at any depth. */
@@ -260,11 +373,26 @@ function referencesOf(value: unknown): string[] {
  * NOT a codec change. The bundle `src/fhir` produces is untouched; what this
  * decides is only which of its resources this scoped client can carry.
  */
-function withResolvableReferences(ops: WriteOp[], skipped: SkippedResource[], patientId: string): WritePlan {
+function withResolvableReferences(
+  ops: WriteOp[],
+  skipped: SkippedResource[],
+  patientId: string,
+  orphanedByProvenance: Map<string, string> = new Map(),
+): WritePlan {
   const carried = [...ops];
   const dropped = [...skipped];
   for (;;) {
     const written = new Set([`Patient/${patientId}`, ...carried.map((op) => `${op.resourceType}/${op.id}`)]);
+    const orphaned = carried.findIndex((op) => orphanedByProvenance.has(`${op.resourceType}/${op.id}`));
+    if (orphaned !== -1) {
+      const [op] = carried.splice(orphaned, 1);
+      dropped.push({
+        resourceType: op.resourceType,
+        identityKey: op.identityKey,
+        reason: `Its required clinical Provenance (${orphanedByProvenance.get(`${op.resourceType}/${op.id}`)}) is not written, and the codec refuses to read one without the other — writing it alone would make the next load reject the whole chart`,
+      });
+      continue;
+    }
     const index = carried.findIndex((op) =>
       referencesOf(op.resource).some((reference) => !written.has(reference)));
     if (index === -1) return { ops: carried, skipped: dropped };

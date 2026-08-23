@@ -72,6 +72,27 @@ describe("odontogram-6fi: live-mode configuration", () => {
     expect(result.missing).toEqual(["VITE_DEFAULT_PATIENT_ID (or ?patient=<id>)"]);
   });
 
+  // The patient id goes straight into a request path. `../../admin/console`
+  // escapes `/fhir` entirely and carries the Basic header with it, so the id is
+  // checked against the FHIR id grammar BEFORE anything is requested — a
+  // configuration error, not a 404.
+  it("rejects a patient id that is not a FHIR id, before any request is made", () => {
+    for (const hostile of ["../../admin/console", "p/1", "p 1", "p?x=1", "p#1", "a".repeat(65), "p%2F1"]) {
+      const result = resolveLiveConfig(fullEnv, `?patient=${encodeURIComponent(hostile)}`);
+      expect(result.ok, hostile).toBe(false);
+      expect(result.config, hostile).toBeUndefined();
+      expect(result.invalid.join(" "), hostile).toMatch(/patient/i);
+    }
+  });
+
+  it("accepts every id the FHIR id grammar allows", () => {
+    for (const id of ["p-1", "p.1", "ABC", "a".repeat(64), "odontogram-6fi-demo"]) {
+      const result = resolveLiveConfig(fullEnv, `?patient=${encodeURIComponent(id)}`);
+      expect(result.ok, id).toBe(true);
+      expect(result.config?.patientId, id).toBe(id);
+    }
+  });
+
   it("treats a whitespace-only credential as missing, not as a credential", () => {
     const result = resolveLiveConfig({ ...fullEnv, VITE_AIDBOX_CLIENT_SECRET: "   " }, "");
     expect(result.ok).toBe(false);

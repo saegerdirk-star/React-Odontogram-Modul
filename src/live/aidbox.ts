@@ -103,6 +103,7 @@ export interface AidboxGateway {
   readPatient(patientId: string): Promise<Record<string, unknown> | null>;
   search(resourceType: string, query: Record<string, string | string[]>): Promise<PagedSearchResult>;
   put(path: string, resource: unknown): Promise<unknown>;
+  delete(path: string): Promise<unknown>;
 }
 
 /**
@@ -127,5 +128,6 @@ export function createAidboxGateway(config: LiveConfig, transport: FhirTransport
     readPatient: async (patientId) => (await patients.read(patientId)) as Record<string, unknown> | null,
     search: (resourceType, query) => searchAllPages(transport, resourceType, query),
     put: (path, resource) => transport.request("PUT", path, { body: resource }),
+    delete: (path) => transport.request("DELETE", path),
   };
 }

@@ -583,6 +583,10 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 FHIR conversion is a pure optional projection of the UI-domain document. It has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.3.0`. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date and refuses exports that would lose populated clinical state; a Dental Core session rejects Legacy, unsupported, or malformed bundles.
 
+**Modo en vivo con Aidbox (desarrollo, desde 2.50.0):**
+
+Un segundo punto de entrada del servidor de desarrollo, `live.html` (`src/live`), carga la ficha de un paciente directamente desde un Aidbox en ejecución, la renderiza en la interfaz habitual a través de la API de sesión descrita arriba, y escribe los cambios de vuelta como recursos Dental Core bajo ids deterministas, de modo que un nuevo guardado actualiza en lugar de duplicar. Se configura mediante un `.env` excluido del control de versiones (copia de `.env.example`) que nombra **únicamente un cliente de máquina con alcance restringido** — nunca una credencial de administrador. Es una herramienta de desarrollo, no forma parte del paquete publicado: los paquetes del SDK `@polaris` son devDependencies, `dependencies` no cambia, y ni `src/live` ni `live.html` se publican. La configuración, la mecánica de carga/guardado y la diferencia documentada respecto al dialecto del adaptador charly están en [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). Ten en cuenta que instalar las devDependencies de este repositorio ahora requiere una credencial para `npm.cognovis.de` (véase el documento); `npm ci --omit=dev` y el consumo del paquete publicado no la requieren.
+
 **Exámenes fechados, estado de valoración y registro periimplantario (desde 2.4.0):**
 
 Un caso periodontal se reexamina durante años, por lo que un documento puede llevar ahora la

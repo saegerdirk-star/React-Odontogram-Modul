@@ -25,7 +25,8 @@ import { loadPatientChart } from "./load";
 import type { LoadReport } from "./load";
 import { buildWritePlan } from "./writePlan";
 import type { SkippedResource } from "./writePlan";
-import { executeWritePlan } from "./save";
+import { executeWritePlan, isSaveAllowed } from "./save";
+import type { LoadOutcome } from "./save";
 
 type Status =
   | { kind: "idle" }
@@ -57,7 +58,7 @@ const panel: React.CSSProperties = {
   fontSize: "0.9rem",
 };
 
-function SetupHint({ missing }: { missing: string[] }) {
+function SetupHint({ missing, invalid }: { missing: string[]; invalid: string[] }) {
   return (
     <div style={{ ...panel, maxWidth: "48rem", margin: "2rem auto" }}>
       <h1 style={{ fontSize: "1.1rem", margin: "0 0 0.5rem" }}>Aidbox live mode is not configured</h1>
@@ -66,6 +67,9 @@ function SetupHint({ missing }: { missing: string[] }) {
         A patient can also be named on the URL as <code>?patient=&lt;id&gt;</code>.
       </p>
       <ul>{missing.map((key) => <li key={key}><code>{key}</code></li>)}</ul>
+      {invalid.length > 0 && (
+        <ul>{invalid.map((problem) => <li key={problem} style={{ color: "#b3261e" }}>{problem}</li>)}</ul>
+      )}
       <p style={{ margin: "0.5rem 0 0" }}>
         Use the scoped machine client only. See <code>docs/aidbox-live-mode.md</code>.
       </p>
@@ -127,6 +131,9 @@ function LiveChart({ config }: { config: LiveConfig }) {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [report, setReport] = useState<LoadReport | undefined>(undefined);
   const [skipped, setSkipped] = useState<SkippedResource[]>([]);
+  // What the LAST load attempt left behind. Saving hangs on this and on
+  // nothing else — see `isSaveAllowed`.
+  const [loadOutcome, setLoadOutcome] = useState<LoadOutcome | undefined>(undefined);
   // The date every written resource is stamped with. It comes from the loaded
   // examination where there is one, so a re-save does not re-date the chart.
   const effectiveRef = useRef<string>(today());
@@ -134,17 +141,31 @@ function LiveChart({ config }: { config: LiveConfig }) {
   const load = useCallback(async () => {
     setStatus({ kind: "busy", text: `Loading Patient/${config.patientId} ...` });
     setSkipped([]);
+    setLoadOutcome(undefined);
     try {
       const result = await loadPatientChart(gateway, config.patientId);
       setReport(result.report);
+      setLoadOutcome({
+        patientId: config.patientId,
+        parsed: result.report.parsed && !!result.document,
+        truncated: result.report.truncated,
+        error: result.report.error,
+      });
       if (!result.document) {
         setStatus({ kind: "error", text: result.report.error ?? "Nothing could be charted" });
         return;
       }
       effectiveRef.current = result.document.examination?.effectiveDateTime ?? today();
       session.setDocument(result.document);
+      if (result.report.error) {
+        setStatus({ kind: "error", text: result.report.error });
+        return;
+      }
       setStatus({ kind: "ok", text: `Loaded Patient/${config.patientId}` });
     } catch (error) {
+      // A transport failure is a failed load like any other: it must reach the
+      // save gate, or a 403 would leave Save enabled over a blank session.
+      setLoadOutcome({ patientId: config.patientId, parsed: false, error: message(error) });
       setStatus({ kind: "error", text: `Load failed: ${message(error)}` });
     }
   }, [config.patientId, gateway, session]);
@@ -163,8 +184,8 @@ function LiveChart({ config }: { config: LiveConfig }) {
         const { op, status: httpStatus, message: text } = result.failure;
         setStatus({
           kind: "error",
-          text: `PUT ${op.path} failed${httpStatus ? ` (HTTP ${httpStatus})` : ""}: ${text}. `
-            + `${result.written.length} resource(s) were already written — the chart on the server is partially updated.`,
+          text: `${op.method} ${op.path} failed${httpStatus ? ` (HTTP ${httpStatus})` : ""}: ${text}. `
+            + `${result.written.length} operation(s) had already run — the chart on the server is partially updated.`,
         });
         return;
       }
@@ -177,11 +198,11 @@ function LiveChart({ config }: { config: LiveConfig }) {
   useEffect(() => { void load(); }, [load]);
 
   const busy = status.kind === "busy";
-  // A chart that was only partly read must not be written back: the save plan
-  // is derived from what is on screen, so the findings that were never read
-  // would not be written either — and the ones already on the server would
-  // keep whatever this session did not know about.
-  const partial = (report?.truncated?.length ?? 0) > 0;
+  // Saving is offered ONLY after one clean load of this patient. What is on
+  // screen is what would be written, so it has to have come from the server,
+  // whole: a failed load, a codec rejection or a partial read each leave a
+  // blank or stale session that would be written over the real chart.
+  const saveAllowed = isSaveAllowed({ busy, patientId: config.patientId, load: loadOutcome });
   const statusColor = status.kind === "error" ? "#b3261e" : status.kind === "ok" ? "#1b5e20" : "inherit";
 
   return (
@@ -191,7 +212,14 @@ function LiveChart({ config }: { config: LiveConfig }) {
         <span>Patient/<code>{config.patientId}</code></span>
         <span style={{ opacity: 0.7 }}>{config.baseUrl}</span>
         <button type="button" onClick={() => void load()} disabled={busy}>Load</button>
-        <button type="button" onClick={() => void save()} disabled={busy || partial}>Save</button>
+        <button
+          type="button"
+          onClick={() => void save()}
+          disabled={!saveAllowed}
+          title={saveAllowed ? undefined : "Saving needs one clean, complete load of this patient first"}
+        >
+          Save
+        </button>
         <span role="status" style={{ color: statusColor }}>
           {status.kind === "idle" ? "" : status.text}
         </span>
@@ -207,6 +235,6 @@ export default function LiveApp() {
     () => resolveLiveConfig(import.meta.env as Record<string, string | undefined>, window.location.search),
     [],
   );
-  if (!resolved.ok) return <SetupHint missing={resolved.missing} />;
+  if (!resolved.ok) return <SetupHint missing={resolved.missing} invalid={resolved.invalid} />;
   return <LiveChart config={resolved.config} />;
 }
