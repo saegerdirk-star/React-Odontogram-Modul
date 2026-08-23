@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.48.1 - 2026-08-23
+
+### Zahnfleisch am ausgewählten Zahn wird nicht mehr dunkelrot (Bead odontogram-aja)
+
+Dirk, 23.08.2026: „wenn ich zu Implant wechsele, wird das Zahnfleisch schon
+rot." Kein Implantat-Problem, sondern die AUSWAHL: die aktive (und die
+gehoverte) Kachel ersetzten den Hintergrund `rgba(255,255,255,.7)` durch einen
+blauen Auswahl-Tint OHNE Weiß. Das Zahnfleischband (`svg.gum-overlay`, #c31703)
+liegt hinter dem Raster und erscheint nur durch dieses 70%-Weiß als Blassrosa
+(aja-Vorkompensation); fehlt das Weiß, kommt das rohe #c31703 als Dunkelrot
+durch — an JEDEM ausgewählten Zahn, Dirk bemerkte es am Implantat. Der Tint
+liegt jetzt als Gradient-Ebene ÜBER der weißen Grundfarbe statt sie zu ersetzen,
+sodass die Aufhellung erhalten bleibt und der Auswahlton zusätzlich darauf sitzt.
+Reines CSS an der Kachel — SVG-Fingerabdruck byte-identisch.
+
 ## 2.48.0 - 2026-08-23
 
 ### Brücken-Rendering überarbeitet (Bead odontogram-5hm)

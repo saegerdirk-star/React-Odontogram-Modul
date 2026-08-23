@@ -429,7 +429,14 @@ select:focus{
 .tooth-tile.placeholder .tooth-svg svg{
   opacity:0;
 }
-.tooth-tile:hover{background: rgba(59,123,255,.08)}
+/* Der Auswahl-/Hover-Tint liegt UEBER dem 70%-Weiss der Kachel, ersetzt es nicht.
+   Das Zahnfleischband (svg.gum-overlay, #c31703) liegt HINTER dem Raster und
+   erscheint nur durch das 70%-Weiss der Kachel als Blassrosa (aja-Vorkompensation).
+   Ein Tint, der das Weiss ERSETZT, liess das rohe #c31703 als Dunkelrot durch -
+   sichtbar an jedem AUSGEWAEHLTEN Zahn (Dirk, 23.08.2026, am Implantat bemerkt,
+   betrifft aber jeden). Als Gradient-Ebene ueber der weissen Grundfarbe bleibt
+   die Aufhellung erhalten und der Auswahlton sitzt zusaetzlich darauf. */
+.tooth-tile:hover{background: linear-gradient(rgba(59,123,255,.08),rgba(59,123,255,.08)), rgba(255,255,255,.7)}
 .tooth-tile:active{transform: scale(.99)}
 
 /* ── Selection animation ─────────────────────── */
@@ -455,7 +462,9 @@ select:focus{
 }
 .tooth-tile.active{
   border-color: rgba(59,123,255,.7);
-  background: rgba(59,123,255,.06);
+  /* Tint UEBER dem 70%-Weiss (siehe :hover) - sonst zeigt das ausgewaehlte
+     Kachelband das rohe #c31703 als Dunkelrot. */
+  background: linear-gradient(rgba(59,123,255,.06),rgba(59,123,255,.06)), rgba(255,255,255,.7);
   transition: border-color .2s ease, background .2s ease;
 }
 .tooth-tile.active::after{
