@@ -1,0 +1,156 @@
+// Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
+// Cognovis fork - https://github.com/cognovis/React-Odontogram-Modul
+// Dirk Saeger, Malte Sussdorff 2026
+//
+// Bead odontogram-6fi, seam 2: deriving the write plan is a PURE function.
+//
+// The whole round-trip hangs on the ids: a save that mints a fresh id every
+// time duplicates the patient's chart on the server instead of updating it.
+// The ids are therefore DERIVED from the codec's own resource-identity keys,
+// never minted, and a document that already carries server ids keeps them.
+
+import { describe, it, expect } from "vitest";
+import { PAYLOAD_VERSION } from "../document";
+import type { OdontogramDocument } from "../document";
+import {
+  WRITABLE_RESOURCE_TYPES,
+  buildWritePlan,
+  deterministicResourceId,
+  liveIdPrefix,
+} from "../live/writePlan";
+
+const EFFECTIVE = "2026-08-23";
+
+function chartedDocument(): OdontogramDocument {
+  return {
+    version: PAYLOAD_VERSION,
+    globals: {},
+    teeth: {
+      "16": { caries: ["caries-occlusal"], cariesSeverity: { occlusal: 5 } },
+      "26": { restorationType: "crown", restorationMaterial: "zircon", crownReplace: true },
+      "36": { endo: "endo-filling" },
+    },
+    plan: { "36": { restorationType: "crown", restorationMaterial: "zircon" } },
+  } as OdontogramDocument;
+}
+
+describe("odontogram-6fi: deterministic resource ids", () => {
+  it("derives the same id for the same patient and identity key every time", () => {
+    expect(deterministicResourceId("p-1", "Observation/tooth-state/16"))
+      .toBe(deterministicResourceId("p-1", "Observation/tooth-state/16"));
+  });
+
+  it("carries the live-mode prefix so the loader recognises its own resources", () => {
+    expect(deterministicResourceId("p-1", "CarePlan/plan").startsWith(liveIdPrefix("p-1"))).toBe(true);
+  });
+
+  it("separates patients and keys", () => {
+    expect(deterministicResourceId("p-1", "CarePlan/plan")).not.toBe(deterministicResourceId("p-2", "CarePlan/plan"));
+    expect(deterministicResourceId("p-1", "Observation/tooth-state/16")).not.toBe(deterministicResourceId("p-1", "Observation/tooth-state/17"));
+  });
+
+  it("stays a legal FHIR id even for a long key, and stays unique when truncated", () => {
+    const long = `Observation/finding/16/${"a".repeat(120)}`;
+    const other = `Observation/finding/17/${"a".repeat(120)}`;
+    for (const key of [long, other, "CarePlan/plan"]) {
+      const id = deterministicResourceId("a-very-long-patient-identifier-from-the-practice-system", key);
+      expect(id).toMatch(/^[A-Za-z0-9\-.]{1,64}$/);
+    }
+    expect(deterministicResourceId("p-1", long)).not.toBe(deterministicResourceId("p-1", other));
+  });
+});
+
+describe("odontogram-6fi: the write plan", () => {
+  it("turns every writable resource into a PUT at its own deterministic id", () => {
+    const plan = buildWritePlan({ document: chartedDocument(), patientId: "p-1", effectiveDateTime: EFFECTIVE });
+    expect(plan.ops.length).toBeGreaterThan(0);
+    for (const op of plan.ops) {
+      expect(op.method).toBe("PUT");
+      expect(op.path).toBe(`/${op.resourceType}/${op.id}`);
+      expect(op.id).toBe(deterministicResourceId("p-1", op.identityKey));
+      expect((op.resource as { id?: string }).id).toBe(op.id);
+      expect(WRITABLE_RESOURCE_TYPES).toContain(op.resourceType);
+    }
+  });
+
+  it("references the patient it was asked for and never writes the Patient itself", () => {
+    const plan = buildWritePlan({ document: chartedDocument(), patientId: "p-1", effectiveDateTime: EFFECTIVE });
+    expect(plan.ops.some((op) => op.resourceType === "Patient")).toBe(false);
+    const subjects = plan.ops.map((op) => (op.resource as { subject?: { reference?: string } }).subject?.reference);
+    expect(new Set(subjects.filter(Boolean))).toEqual(new Set(["Patient/p-1"]));
+  });
+
+  it("produces an identical plan for an identical document (idempotent re-save)", () => {
+    const first = buildWritePlan({ document: chartedDocument(), patientId: "p-1", effectiveDateTime: EFFECTIVE });
+    const second = buildWritePlan({ document: chartedDocument(), patientId: "p-1", effectiveDateTime: EFFECTIVE });
+    expect(second).toEqual(first);
+  });
+
+  it("keeps server-assigned ids a load already brought back", () => {
+    const document = chartedDocument();
+    document.fhirIdentity = { resources: { "Observation/tooth-state/26": { id: "server-owned-26", versionId: "7" } } };
+    const plan = buildWritePlan({ document, patientId: "p-1", effectiveDateTime: EFFECTIVE });
+    const op = plan.ops.find((candidate) => candidate.identityKey === "Observation/tooth-state/26");
+    expect(op?.id).toBe("server-owned-26");
+    expect(op?.path).toBe("/Observation/server-owned-26");
+    // The server owns the version; a stale versionId must not ride back in.
+    expect((op?.resource as { meta?: { versionId?: string } }).meta?.versionId).toBeUndefined();
+  });
+
+  // A server that enforces referential integrity (Aidbox does) rejects a PUT
+  // naming a resource that is not there yet — and the codec's plan resources
+  // reference each other in a CYCLE: the CarePlan lists its ServiceRequests,
+  // and each planned ServiceRequest is `basedOn` that same CarePlan. With no
+  // transaction bundle and no PATCH in the transport SPI, the only way through
+  // is to write the CarePlan TWICE: once bare to break the cycle, once
+  // complete once its activities exist.
+  it("breaks the CarePlan/ServiceRequest reference cycle with a bare first write", () => {
+    const plan = buildWritePlan({ document: chartedDocument(), patientId: "p-1", effectiveDateTime: EFFECTIVE });
+    const carePlanOps = plan.ops.filter((op) => op.resourceType === "CarePlan");
+    expect(carePlanOps).toHaveLength(2);
+    expect(carePlanOps[0].bootstrap).toBe(true);
+    expect((carePlanOps[0].resource as { activity?: unknown[] }).activity).toBeUndefined();
+    expect((carePlanOps[1].resource as { activity?: unknown[] }).activity?.length).toBeGreaterThan(0);
+    expect(carePlanOps[0].id).toBe(carePlanOps[1].id);
+  });
+
+  it("orders every write after the resources it references", () => {
+    const plan = buildWritePlan({ document: chartedDocument(), patientId: "p-1", effectiveDateTime: EFFECTIVE });
+    const types = plan.ops.map((op) => op.resourceType);
+    const firstCarePlan = types.indexOf("CarePlan");
+    const lastCarePlan = types.lastIndexOf("CarePlan");
+    const firstRequest = types.indexOf("ServiceRequest");
+    const lastRequest = types.lastIndexOf("ServiceRequest");
+    // The bare CarePlan precedes the ServiceRequests that point back at it,
+    // the complete one follows them, and any Observation naming the CarePlan
+    // follows that.
+    expect(firstCarePlan).toBeLessThan(firstRequest);
+    expect(lastCarePlan).toBeGreaterThan(lastRequest);
+    for (const [index, op] of plan.ops.entries()) {
+      const basedOn = (op.resource as { basedOn?: Array<{ reference?: string }> }).basedOn ?? [];
+      if (basedOn.some((reference) => reference.reference?.startsWith("CarePlan/"))) {
+        // After the BARE CarePlan — that is what the bare write is for.
+        expect(index, `${op.path} references the CarePlan and must be written after it`).toBeGreaterThan(firstCarePlan);
+      }
+    }
+  });
+
+  it("reports a resource outside the scoped client's write policy instead of dropping it", () => {
+    const document = chartedDocument();
+    document.teeth["15"] = { toothSelection: "implant", implantProduct: { manufacturer: "Example", lot: "L1" } };
+    const plan = buildWritePlan({ document, patientId: "p-1", effectiveDateTime: EFFECTIVE });
+    expect(plan.ops.some((op) => op.resourceType === "Device")).toBe(false);
+    expect(plan.skipped).toContainEqual(expect.objectContaining({
+      resourceType: "Device",
+      identityKey: "Device/implant/15",
+    }));
+    expect(plan.skipped[0].reason).toMatch(/write policy/i);
+  });
+
+  it("plans nothing for a blank chart rather than inventing a resource", () => {
+    const blank: OdontogramDocument = { version: PAYLOAD_VERSION, globals: {}, teeth: {} };
+    const plan = buildWritePlan({ document: blank, patientId: "p-1", effectiveDateTime: EFFECTIVE });
+    expect(plan.ops).toEqual([]);
+    expect(plan.skipped).toEqual([]);
+  });
+});

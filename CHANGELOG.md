@@ -1,5 +1,55 @@
 # Changelog
 
+## 2.50.0 - 2026-08-23
+
+### Live-Modus: das Odontogramm liest und schreibt direkt gegen Aidbox (Bead odontogram-6fi)
+
+Ein zweiter App-Einstieg neben der Bibliothek — `live.html` und `src/live`, nur
+über den Vite-Dev-Server. Mit einer `.env` (Aidbox-URL, Zugangsdaten eines
+**eingeschränkten** Maschinen-Clients) und einer PatientID lädt er das
+Odontogramm eines Patienten aus einem laufenden Aidbox, zeigt es in der
+gewohnten Oberfläche und schreibt Änderungen als Dental-Core-Ressourcen zurück.
+Erneutes Laden derselben PatientID stellt denselben Stand wieder her.
+
+- **Die IDs werden ABGELEITET, nie vergeben.** `buildDentalCoreBundle` besitzt
+  bereits ein Identitätsschema (`fhirIdentity.resources`, Schlüssel wie
+  `Observation/tooth-state/16`), und `parseDentalCoreBundle` liest genau diese
+  Schlüssel wieder aus einem Bundle heraus. Der Schreibplan baut das Bundle
+  deshalb ZWEIMAL: einmal, um die Schlüssel durch den Codec selbst zu erfahren,
+  einmal mit je einer deterministischen ID dazu. Damit aktualisiert ein zweites
+  Speichern, statt zu verdoppeln — und in `src/live` liegt keine zweite Kopie
+  des Schlüsselschemas.
+- **Der Behandlungsplan wird zweimal geschrieben.** Aidbox prüft referentielle
+  Integrität, und die Plan-Ressourcen verweisen im KREIS aufeinander
+  (`CarePlan.activity` → `ServiceRequest`, `ServiceRequest.basedOn` →
+  derselbe `CarePlan`). Keine Reihenfolge löst einen Kreis, und die
+  Transport-Schnittstelle kennt weder Transaktions-Bundle noch PATCH: also
+  einmal nackt (verweist dann nur auf den Patienten), dann die Anforderungen,
+  dann der vollständige Plan.
+- **Fremde Ressourcen werden GEMELDET, nicht verschluckt.**
+  `parseDentalCoreBundle` ist alles-oder-nichts — eine einzige unbekannte
+  Ressource nähme die ganze Karte mit. Der Ladepfad trennt deshalb vor dem
+  Codec und listet jede fremde Zahn-Ressource mit ID und Profil im Ladebericht.
+  Insbesondere die Befunde des charly-Adapters (volles Dental-IG,
+  `ze-befund`-Bitfeld unentschlüsselt als Code): der Unterschied ist in
+  `docs/aidbox-live-mode.md` dokumentiert, der Codec wird um keine Zeile
+  erweitert (das Entschlüsseln ist Bead odontogram-wl8).
+- **Kein stilles Teil-Ergebnis.** Ein Speichern ist eine Folge von
+  Einzel-PUTs; bricht eines ab, bleibt das Vorherige geschrieben. Der Ausführer
+  hält beim ersten Fehler an, und die Oberfläche nennt den Pfad, den
+  HTTP-Status und die Zahl der bereits geschriebenen Ressourcen.
+- **Nur der eingeschränkte Client.** `.env.example` nennt ausschließlich den
+  per AccessPolicy auf Patient/Observation/Condition/ServiceRequest/CarePlan
+  begrenzten Maschinen-Client; nirgends eine Administrator-Zugangsdatei. Aus
+  demselben Grund läuft der Client über die Basis-Fabrik von
+  `@polaris/fhir-de` statt über die SDK-Fassade: deren IG-Prüfung beim Start
+  liest `/ImplementationGuide`, was der eingeschränkte Client nicht darf (403).
+
+Die Bibliothek bleibt unberührt: `dependencies` unverändert, beide
+`@polaris`-Pakete nur als devDependencies, `src/live` aus `tsconfig.build.json`
+und aus `vite-plugin-dts` ausgeschlossen, `files` weiterhin `["dist"]`. Kein
+`svgLayer`, keine Payload-Änderung → Parität byte-identisch.
+
 ## 2.49.0 - 2026-08-23
 
 ### Veneer folgt dem Kronenumriß und hat einen Verlauf (Bead odontogram-5hm)
