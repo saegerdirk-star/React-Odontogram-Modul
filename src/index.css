@@ -377,8 +377,13 @@ select:focus{
 /* Bead odontogram-5hm: der Kronenrand ist im Template fuer JEDES Material das
    gleiche kraeftige Rot (#b3261e) - eine reine Umrisslinie, kein Befund. Dirk,
    23.08.2026: "Warum hat die Krone einen roten Rand?" Auf einen dezenten,
-   zahnfarbenen Ton gesetzt. Nur der Stroke; fill/Fingerabdruck unberuehrt. */
+   zahnfarbenen Ton gesetzt. Nur der Stroke; fill/Fingerabdruck unberuehrt.
+   Das Veneer trug im Template den Gradia-Gruenrand (#1b3f1c) fuer JEDES
+   Material - derselbe Fall, derselbe Ton (Dirk, 23.08.2026). */
 .tooth-grid .tooth-tile.side-view svg [id$="-crown"]{ stroke: #a2937e !important; }
+/* Das Veneer in BEIDEN Ansichten (die Kauflaeche traegt den Rand nach
+   vestibulaer); die Kauflaechen-Vorlage gab ihm einen schwarzen Rand. */
+.tooth-grid .tooth-tile svg [id$="-veneer"]{ stroke: #a2937e !important; }
 /* Die per-Zahn-Sattelebene (`{material}-bridge-connector`) ist ueberfluessig,
    seit die Bruecken-Auflage den Verbinder in Endkoordinaten zeichnet - sie
    hinterliess am Glied einen gewarpten Farbrest ("warp Reste", Dirk). Parity-
@@ -3028,6 +3033,16 @@ body.odon-dragging{ cursor: cell; }
 #toothGrid .tooth-tile [id="telescope-crown-inside"]{ fill: url(#odonKroneTeleInnen) !important; }
 #toothGrid .tooth-tile [id="prosthesis-crown"]{ fill: url(#odonKroneProthZahn) !important; }
 #toothGrid .tooth-tile [id="prosthesis-implant-crown"]{ fill: url(#odonKroneProthBasis) !important; }
+
+/* Das VENEER (odontogram-5hm, 23.08.2026): seit es aus dem Kronenschnitt kommt
+   (kronen.py `veneer_d`), ist es die Kronenform - also bekommt es denselben
+   gewoelbten Materialkoerper wie die Krone. Vorher war jedes Veneer eine flache
+   Farbe (bis auf e.max) mit dem Gradia-Gruenrand; "kein Verlauf" (Dirk). */
+#toothGrid .tooth-tile [id="emax-veneer"]{ fill: url(#odonKroneEmax) !important; }
+#toothGrid .tooth-tile [id="gold-veneer"]{ fill: url(#odonKroneGold) !important; }
+#toothGrid .tooth-tile [id="gradia-veneer"]{ fill: url(#odonKroneGradia) !important; }
+#toothGrid .tooth-tile [id="zircon-veneer"]{ fill: url(#odonKroneZirkon) !important; }
+#toothGrid .tooth-tile [id="temporary-veneer"]{ fill: url(#odonKroneProvi) !important; }
 
 
 /* Bead odontogram-bbd: das Onlay ist die Krone ohne ihr zervikales Drittel.

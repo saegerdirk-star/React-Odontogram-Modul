@@ -31,13 +31,23 @@ DIE KAUFLAECHENANSICHT hat keinen Hals, an dem man schneiden koennte - dort IST
 die Krone der ganze Umriss der Kautafel (`background-cusp`). Also wird sie
 genau der.
 
-WAS HIER NICHT ANGEFASST WIRD: Inlay, Onlay und Veneer decken den Zahn nur
-teilweise und lassen sich nicht aus seinem Umriss schneiden; beim Veneer ist
-genau dieses Muster schon einmal gescheitert (siehe `veneer_aus`). Der
-Brueckenverbinder steht ZWISCHEN zwei Zaehnen und gehoert keinem von beiden.
+DAS VENEER kommt seit 23.08.2026 (Dirk: "aus Kronenschnitt, eingerueckt") aus
+derselben Kette wie die Krone, nur ringsum eingerueckt (`veneer_d`) - es bedeckt
+die labiale Flaeche, und die IST in der Seitenansicht der Kronenumriss. Der
+frueher probierte Weg (`veneer_aus`, Zeilenabtastung) scheiterte an zwei Dingen:
+er lief bis an die Zahnkante (kein sichtbarer Rand) und schnitt die spitze
+Schneide waagerecht ab. Ein KONSTANTER Einwaerts-Versatz laengs der Normalen
+loest beides - der Rand ist ringsum da, und die Spitze schliesst, weil die Form
+aus der Kontur stammt. Nur die Seitenansicht: die Kauflaeche hat keine labiale
+Kette.
+
+WAS HIER NICHT ANGEFASST WIRD: Inlay und Onlay decken den Zahn nur teilweise und
+lassen sich nicht aus seinem Umriss schneiden. Der Brueckenverbinder steht
+ZWISCHEN zwei Zaehnen und gehoert keinem von beiden.
 """
 from __future__ import annotations
 
+import math
 import re
 import sys
 from pathlib import Path
@@ -96,6 +106,22 @@ LECK_KORONAL = 2.6
 # Teleskop; ein echter Offset waere hier Aufwand ohne sichtbaren Unterschied.
 TELESKOP_INNEN = "telescope-crown-inside"
 TELESKOP_VERSATZ = 1.3   # Einheiten, die die Kappe auf JEDER Seite schmaler wird
+
+# Das VENEER: die labiale Kronenflaeche, ringsum eingerueckt (Dirk, 23.08.2026,
+# "aus Kronenschnitt, eingerueckt"). Es kommt aus derselben Kette wie die Krone -
+# folgt also Dirks Umriss und schliesst die spitze Schneide/Hoeckerkante, weil
+# es aus der Kontur geschnitten ist. Der sichtbare Zahnrand ringsum ist, was es
+# als Veneer kenntlich macht.
+#
+# KEINE Streckung wie bei der inneren Teleskopkrone: die zieht um die
+# Zervikalmitte zusammen und verkuerzt einen hohen Schneidezahn vertikal um
+# (1-s)*Kronenhoehe - an einem 60 Einheiten hohen 11er rund 9 Einheiten, die
+# Spitze stuende weit unter dem Zahn. Genau diese herausstehende Spitze war
+# einer der beiden Gruende, an denen `veneer_aus` (die Zeilenabtastung)
+# scheiterte. Ein KONSTANTER Versatz laengs der Innennormalen haelt den Rand
+# ueberall gleich breit.
+VENEER = tuple(f"{m}-veneer" for m in ("emax", "gold", "gradia", "zircon", "temporary"))
+VENEER_VERSATZ = 1.6   # Einheiten, die das Veneer ringsum vom Zahnrand einrueckt
 
 # Wie fein der Umriss abgetastet wird, bevor am Hals geschnitten wird. 0,25
 # Einheiten sind gut ein Viertel der Strichstaerke - feiner bringt nur Punkte.
@@ -201,6 +227,63 @@ def als_d(k, y_schnitt: float, skalierung: float = 1.0) -> str:
     return "".join(teile)
 
 
+def veneer_d(k, y_schnitt: float, d: float = VENEER_VERSATZ) -> str:
+    """Die Kette um `d` laengs der Innennormalen nach innen, am Hals geschlossen.
+
+    Konstanter Versatz, nicht die Streckung von `als_d`: der Rand bleibt ueberall
+    gleich breit, auch an der spitzen Schneide/Hoeckerkante, wo eine Streckung
+    ihn nach oben aufzoege und die Zahnspitze herausstehen liesse.
+    """
+    n = len(k)
+    cx = sum(p[0] for p in k) / n
+    # Die Innenseite EINMAL aus der Windung bestimmen, nicht punktweise aus dem
+    # Schwerpunkt: an Schneide und Zervikalrand laeuft die Kontur radial zum
+    # Schwerpunkt, das Punktprodukt geht gegen null und Rauschen kippt die
+    # Normale - das war der Zacken an der Schneidekante. Bei positiver Flaeche
+    # (gegen den Uhrzeigersinn) liegt das Innere LINKS der Laufrichtung.
+    flaeche = sum(k[i][0] * k[(i + 1) % n][1] - k[(i + 1) % n][0] * k[i][1]
+                  for i in range(n))
+    s = 1.0 if flaeche > 0 else -1.0
+    # Die Normale ueber ein FENSTER mehrerer Punkte bilden, nicht ueber die
+    # unmittelbaren Nachbarn: Dirks Kontur hat an der Schneidekante kleine
+    # Wackler, und ein 1,6er Versatz ueber 0,25er Nachbarn verstaerkt sie zu
+    # Falten. Ein Fenster von rund 1,5 Einheiten Bogenlaenge glaettet die
+    # Richtung, ohne die Form zu verlieren.
+    w = max(1, round(1.5 / SCHRITT))
+    aus: list[tuple[float, float]] = []
+    for i, p in enumerate(k):
+        a = k[max(0, i - w)]
+        b = k[min(n - 1, i + w)]
+        tx, ty = b[0] - a[0], b[1] - a[1]
+        laenge = math.hypot(tx, ty)
+        if laenge < 1e-6:
+            aus.append(p)
+            continue
+        nx, ny = -ty / laenge * s, tx / laenge * s   # Innennormale aus der Windung
+        aus.append((p[0] + d * nx, p[1] + d * ny))
+    # Faltungen entfernen: an einer scharfen konvexen Ecke (Schneide/Hoecker)
+    # kann der Versatz ueberschiessen und ein Zackchen bilden. Punkte, deren
+    # Segment gegen die Laufrichtung des Umrisses zeigt, greedy wegwerfen - so
+    # bleibt die Ecke sauber, statt sich zu ueberschlagen.
+    gefiltert: list[tuple[float, float]] = []
+    for i, q in enumerate(aus):
+        if len(gefiltert) >= 1 and 0 < i < len(k):
+            ox, oy = k[i][0] - k[i - 1][0], k[i][1] - k[i - 1][1]
+            qx, qy = q[0] - gefiltert[-1][0], q[1] - gefiltert[-1][1]
+            if ox * qx + oy * qy < 0:
+                continue
+        gefiltert.append(q)
+    aus = gefiltert
+    # Die beiden Enden liegen auf der Schnittlinie; ihre Grundkante rueckt
+    # waagerecht nach innen, die Hoehe bleibt am Hals.
+    ax = k[0][0] + (d if k[0][0] < cx else -d)
+    bx = k[-1][0] + (d if k[-1][0] < cx else -d)
+    teile = [f"M{_f(bx)},{_f(y_schnitt)}", f"L{_f(ax)},{_f(y_schnitt)}"]
+    teile += [f"L{_f(x)},{_f(y)}" for x, y in aus]
+    teile.append("Z")
+    return "".join(teile)
+
+
 def krone(zahn: str) -> tuple[str, str] | None:
     """`(volle Krone, innere Teleskopkrone)` als Pfaddaten, oder None.
 
@@ -272,6 +355,11 @@ def einsetzen(zahn: str) -> dict[str, int]:
         balken = leck_d(zahn, kette_)
         if balken:
             paare.append((LECK, balken))
+        # Das Veneer aus derselben Kette, ringsum eingerueckt (Seitenansicht;
+        # die Kauflaeche hat keine labiale Kette, an der man einruecken koennte).
+        if kette_ is not None and y is not None:
+            ven = veneer_d(kette_, y)
+            paare += [(vid, ven) for vid in VENEER]
     n = 0
     for ident, neu in paare:
         m = re.search(r'<path\b(?:(?!/>).)*?id="' + re.escape(ident) + r'"(?:(?!/>).)*?/>',

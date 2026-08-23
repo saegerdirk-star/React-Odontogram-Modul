@@ -1,5 +1,34 @@
 # Changelog
 
+## 2.49.0 - 2026-08-23
+
+### Veneer folgt dem Kronenumriß und hat einen Verlauf (Bead odontogram-5hm)
+
+Dirk, 23.08.2026: „11 Veneer folgt nicht dem Kronenumriß und hat keinen
+Verlauf … keines der Veneers." Das ausgelieferte Veneer war die gewarpte
+Spenderform, die zu den neu gezeichneten Konturen nicht mehr passte, flach
+gefüllt (bis auf e.max) und mit dem Gradia-Grünrand für jedes Material.
+
+- **Form aus dem Kronenschnitt, eingerückt** (Dirks Vorgabe „aus Kronenschnitt,
+  eingerückt"): `kronen.py` `veneer_d` versetzt die Kronenkette um 1,6 Einheiten
+  längs der Innennormalen nach innen. Das Veneer *ist* damit die Kontur (folgt
+  dem Umriß, schließt die spitze Schneide/Höckerkante) mit einem sichtbaren
+  Zahnrand ringsum. Kein Streckungs-Muster wie bei der inneren Teleskopkrone
+  (das verkürzt einen hohen Schneidezahn vertikal) und nicht die verworfene
+  Zeilenabtastung `veneer_aus` (lief bis an die Zahnkante, schnitt die Spitze
+  waagerecht ab).
+- **Draufsicht: nur der Rand nach vestibulär** (Dirk): `kauflaechen.py`
+  `veneer_einsetzen` schreibt das bukkale Randband der Kautafel in die
+  Veneer-Ebene.
+- **Verlauf**: jedes Veneer bekommt jetzt den Kronen-Dome seines Materials
+  (`odonKrone…`); vorher waren vier von fünf flach.
+- **Rand**: der Gradia-Grünrand (#1b3f1c) ist in beiden Ansichten auf den
+  dezenten Zahnton (#a2937e) gesetzt.
+
+Rollout über alle 52 Templates; der Diff berührt ausschließlich die
+Veneer-Ebenen. `d`/fill/stroke liegen außerhalb des SVG-Fingerabdrucks
+(id/opacity/class) → Parität byte-identisch. Alle toothgen-Contracts grün.
+
 ## 2.48.1 - 2026-08-23
 
 ### Zahnfleisch am ausgewählten Zahn wird nicht mehr dunkelrot (Bead odontogram-aja)

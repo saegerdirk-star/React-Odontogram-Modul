@@ -52,6 +52,12 @@ SEKTOR = 52.0
 
 FLAECHEN = ("mesial", "distal", "buccal", "lingual")
 
+# Der Kauflaechen-Veneer: NUR der Rand nach vestibulaer (Dirk, 23.08.2026,
+# "bei der Draufsicht nur den Rand nach vestibulaer"). Von oben gesehen ist das
+# genau das bukkale Randband der Kautafel - dieselbe Maske, die `gebiete` ohnehin
+# fuer die bukkale Fuellflaeche liefert.
+VENEER = tuple(f"{m}-veneer" for m in ("emax", "gold", "gradia", "zircon", "temporary"))
+
 
 def _teile(d: str) -> list[np.ndarray]:
     """Einen Pfad in seine Teilzuege zerlegen - `M` trennt sie."""
@@ -320,10 +326,13 @@ def einsetzen(ziel: str) -> dict[str, int]:
     datei = fe.TEMPLATES / f"{ziel}.svg"
     txt = datei.read_text()
     gezaehlt: dict[str, int] = {}
+    bukkal_d: str | None = None
     for flaeche, maske in g.items():
         teile = fe.polygone(ziel, maske, ursprung)
         P = teile[0] if teile else np.zeros((0, 2))
         neu_d = fe._d_teile(teile)
+        if flaeche == "buccal":
+            bukkal_d = neu_d          # das vestibulaere Randband, fuers Veneer
         n = 0
         for vorsatz in fe.EINZELN:
             ident = vorsatz + flaeche
@@ -363,8 +372,48 @@ def einsetzen(ziel: str) -> dict[str, int]:
                 txt = txt.replace(alt, alt.replace(f'd="{d}"', f'd="{gezogen}"'), 1)
                 n += 1
         gezaehlt[flaeche] = n
+    # Das Veneer bekommt das bukkale Randband - nur der Rand nach vestibulaer.
+    txt, gezaehlt["veneer"] = _veneer_schreiben(txt, bukkal_d)
     datei.write_text(txt)
     return gezaehlt
+
+
+def _veneer_schreiben(txt: str, bukkal_d: str | None) -> tuple[str, int]:
+    """Das bukkale Randband in alle Veneer-Ebenen schreiben."""
+    nv = 0
+    if not bukkal_d:
+        return txt, 0
+    for ident in VENEER:
+        m = re.search(r'<(?:path|polygon)\b(?:(?!/>).)*?id="' + ident
+                      + r'"(?:(?!/>).)*?/>', txt, re.S)
+        if not m or ' d="' not in m.group(0):
+            continue
+        alt = m.group(0)
+        txt = txt.replace(alt, re.sub(r'\sd="[^"]*"', ' d="' + bukkal_d + '"',
+                                      alt, count=1), 1)
+        nv += 1
+    return txt, nv
+
+
+def veneer_einsetzen(ziel: str) -> int:
+    """NUR die Veneer-Ebene der Kauflaeche schreiben - das bukkale Randband -,
+    ohne die Fuellflaechen anzufassen.
+
+    Die Rasterableitung der Fuellflaechen ist nicht bit-reproduzierbar (0,02
+    Einheiten Drift); ein voller `einsetzen`-Lauf schriebe sie mit Rauschen neu.
+    Fuer den Veneer-Rollout wird deshalb nur die bukkale Maske gebraucht.
+    """
+    g, ursprung = gebiete(ziel)
+    maske = g.get("buccal")
+    if maske is None or not maske.any():
+        return 0
+    teile = fe.polygone(ziel, maske, ursprung)
+    if not teile:
+        return 0
+    datei = fe.TEMPLATES / f"{ziel}.svg"
+    txt, nv = _veneer_schreiben(datei.read_text(), fe._d_teile(teile))
+    datei.write_text(txt)
+    return nv
 
 
 # Die bukkale Flaeche der SEITENANSICHT, aus der Kauflaeche projiziert.
