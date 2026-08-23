@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.47.3 - 2026-08-23
+
+### Molar-Pulpen 18 und 48 nachkorrigiert (Bead odontogram-5ez)
+
+Dirks Sichtprüfung nach v2.47.2: an **18** war die palatinale Pulpa bis in die
+zentrale gezeichnet, wurde aber getrennt dargestellt (weiße Lücke im
+palatinalen Kanal); an **48** war die mesiale Wurzel unvollständig. Beide in den
+Zeichenquellen korrigiert und über denselben chirurgischen Weg neu eingesetzt
+(`redraw_alle` für die zwei, Stufe 3, Füllflächen-Rauschen zurückgesetzt). Diff
+wieder nur pulpa/endo (16 Ebenen an 18, 17 an 48), Kontur/Krone/Füllflächen
+byte-identisch, `verify_redraw` grün, Fingerabdruck unverändert.
+
 ## 2.47.2 - 2026-08-23
 
 ### Molar-Pulpen als junger Erwachsener (Bead odontogram-5ez, Teil 1)
