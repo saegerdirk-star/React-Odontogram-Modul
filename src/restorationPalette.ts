@@ -67,7 +67,7 @@ export const RESTORATION_PALETTE: PaletteEntry[] = [
     // the wrong one (Dirk chose to derive instead).
     key: "emax", kind: "ramp",
     vars: Array.from({ length: 9 }, (_, i) => `--odon-rest-emax-${i}`),
-    defaults: ["#fff", "#fdf3ea", "#f9d8b9", "#f5c18f", "#f2ae6c", "#f09f52", "#ef953f", "#ee8f33", "#ee8d30"],
+    defaults: ["#fff", "#faf6f0", "#f2ebe0", "#eae0d1", "#e2d6c4", "#dbcdb8", "#d5c6ae", "#d0c0a7", "#cebda3"],
   },
   {
     key: "metalCeramic", kind: "ramp",

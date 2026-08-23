@@ -55,7 +55,7 @@ describe("an untouched palette writes nothing", () => {
 
   it("shows a ramp material by its OWN colour, not its near-white first stop", () => {
     // e.max starts at #fff; a picker showing white would name the wrong thing.
-    expect(restorationColour("emax")).toBe("#ee8d30");
+    expect(restorationColour("emax")).toBe("#cebda3");
   });
 });
 

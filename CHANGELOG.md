@@ -1,5 +1,43 @@
 # Changelog
 
+## 2.48.0 - 2026-08-23
+
+### Brücken-Rendering überarbeitet (Bead odontogram-5hm)
+
+Dirk zeigte eine Brücke 27(Krone)-26(Brückenglied)-25(Krone): das Zahnfleisch
+verschob sich und wurde dunkelrot, das Brückenglied war glatt abgeschnitten, und
+es war keine Verbindung zwischen Glied und Kronen erkennbar. Überarbeitet in
+mehreren Schritten am Bild:
+
+- **Verbindung bei „Pfeiler = Krone".** `detectBridgeSpans` verband nur
+  aufeinanderfolgende Brücken-Zähne; eine Krone–Brückenglied–Krone-Folge (Dirks
+  Eingabeweise) ergab keine Spanne und keinen Verbinder. Neu: `bridgeConstructions`
+  nimmt die Kronen-Pfeiler NEBEN dem Glied dazu (dieselbe Logik wie
+  `checkBridgeSpans`), sodass die Brücke als EINE Spanne verbunden wird. Die
+  Verbinder liegen als solide Blöcke am Kontaktpunkt (nicht über ihn hinaus nach
+  okklusal, deutlich von der Gingiva weg).
+- **Brückenglied als schwebendes Stück.** Statt der flach abgeschnittenen
+  Kronenkappe wird die zervikale Partie der Kronenebene GECLIPPT (`data-pontic`
+  + `clip-path` in index.css, im eigenen Rahmen wie der Onlay-Clip), sodass
+  darunter ein schmaler Streifen Zahnfleisch steht und die Krone samt Farbverlauf
+  als schwebendes Glied liest. Der geclippte Streifen wird in der Brücken-Auflage
+  mit der angezeigten Zahnfleischfarbe gefüllt.
+- **Farbverlauf für alle Materialien.** Verbinder und der Gingivastreifen tragen
+  einen Radial-Verlauf in der Materialfarbe (`ensureBridgeGradient`), an die
+  tatsächlich angezeigte Kronenfarbe je Material angeglichen (`DEFAULT_MATERIAL_COLORS`
+  neu: gold `#e0a80d`, zircon `#cfe3ee`, gradia `#57b285` … statt zu greller
+  Näherungen). Die überflüssige per-Zahn-Sattelebene (`{material}-bridge-connector`)
+  ist ausgeblendet (hinterließ „warp Reste" am Glied).
+- **emax ist jetzt weiß/creme statt orange.** Die emax-Rampe (choosable-palette
+  Standard, `restorationPalette.ts` + 52 Templates + Quelle) ging von Weiß zu
+  Orange – unrealistisch für e.max-Keramik und Grund für den Farb-Mismatch mit
+  den Verbindern. Auf eine weiße Keramik-Rampe gesetzt.
+- **Der rote Kronenrand** (`stroke #b3261e`, für JEDES Material dieselbe
+  Umrisslinie, kein Befund) ist auf einen dezenten zahnfarbenen Ton gesetzt.
+
+Nur Render/CSS/Fill – kein Payload/FHIR, `fill`/`stroke`/`clip-path`/`data-`
+liegen außerhalb des SVG-Fingerabdrucks (id/opacity/class) → Parität byte-identisch.
+
 ## 2.47.6 - 2026-08-23
 
 ### Content-Security-Policy im Demo-Build (Bead odontogram-e8h)

@@ -4467,6 +4467,7 @@ function applyStateToSvg(toothNo: Any){
   syncPapillaMark(toothNo);       // Bead odontogram-gry
   syncEruptionMark(toothNo);      // Bead odontogram-0n8
   syncOcclusalRelief(toothNo);    // Bead odontogram-qvr
+  syncPonticMark(toothNo);        // Bead odontogram-5hm
   syncOcclBracketSide(toothNo);   // KFO: Bracket in der Draufsicht buccal/lingual
   updateToothTooltip(toothNo);
 }
@@ -4516,6 +4517,26 @@ function syncOcclusalRelief(toothNo: number): void {
     }
   }
 }
+
+/** Bead odontogram-5hm: das Brueckenglied ist ein SCHWEBENDES Stueck - keine
+ *  praeparierte Krone. Dirk, 23.08.2026: die alte Krone darunter ausblenden und
+ *  ein Stueck als Brueckenglied einsetzen, mit einem schmalen Streifen
+ *  Zahnfleisch darunter. Umgesetzt per Clip: die zervikale Partie der
+ *  Pontic-Krone wird abgeschnitten (`data-pontic` + Regel in index.css), sodass
+ *  zwischen Zahnfleischband und Glied ein Streifen Gingiva frei bleibt und die
+ *  Krone als schwebendes Glied liest. Nur ein `data-` am DIV - ausserhalb des
+ *  SVG, der Fingerabdruck sieht es nicht. */
+function syncPonticMark(toothNo: number): void {
+  const tiles = toothTile.get(toothNo);
+  if(!tiles) return;
+  const st = toothState.get(toothNo);
+  const istPontic = st?.toothSelection === "none" && st?.restorationType === "bridge";
+  for(const tile of tiles){
+    if(istPontic) tile.dataset.pontic = "1";
+    else delete tile.dataset.pontic;
+  }
+}
+
 
 /**
  * KFO: die Seite des Brackets in der KAUFLAECHENANSICHT (Dirk, 22.08.2026).

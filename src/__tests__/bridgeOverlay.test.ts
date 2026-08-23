@@ -177,12 +177,17 @@ describe("renderBridgeOverlay (jsdom)", () => {
     document.body.appendChild(grid);
   });
 
-  it("draws 2 saddle bars for a 13-14-15 bridge", () => {
+  it("draws 2 connectors for a crown-pontic-crown bridge 13-14-15", () => {
     addSideTile(13, { left: 0, top: 10, width: 100, height: 120 });
     addSideTile(14, { left: 104, top: 10, width: 100, height: 120 });
     addSideTile(15, { left: 208, top: 10, width: 100, height: 120 });
+    // Real charting (odontogram-5hm): 13/15 are crown abutments, 14 is a gap
+    // charted as a bridge pontic. The overlay joins the three members with a
+    // connector at each contact (crown->pontic, pontic->crown).
     const get: GetToothState = (tn) =>
-      [13, 14, 15].includes(tn) ? { restorationType: "bridge", restorationMaterial: "zircon" } : undefined;
+      tn === 14 ? { toothSelection: "none", restorationType: "bridge", restorationMaterial: "zircon" }
+      : tn === 13 || tn === 15 ? { restorationType: "crown", restorationMaterial: "zircon" }
+      : undefined;
 
     renderBridgeOverlay({ grid, getState: get });
 
@@ -207,8 +212,13 @@ describe("renderBridgeOverlay (jsdom)", () => {
     addSideTile(13, { left: 0, top: 10, width: 100, height: 120 });
     addSideTile(14, { left: 104, top: 10, width: 100, height: 120 });
     let bridge = true;
-    const get: GetToothState = (tn) =>
-      bridge && [13, 14].includes(tn) ? { restorationType: "bridge" } : undefined;
+    // 13 crown abutment, 14 gap pontic -> one connector between them.
+    const get: GetToothState = (tn) => {
+      if(!bridge) return undefined;
+      if(tn === 13) return { restorationType: "crown" };
+      if(tn === 14) return { toothSelection: "none", restorationType: "bridge" };
+      return undefined;
+    };
 
     renderBridgeOverlay({ grid, getState: get });
     expect(grid.querySelectorAll(`rect.${BRIDGE_BAR_CLASS}`)).toHaveLength(1);

@@ -79,21 +79,35 @@ export const SADDLE_OVERLAP = 0.12;
  * gradient materials (emax, metal-ceramic) are approximated by a representative
  * solid color; the per-tooth saddle still shows the true gradient inside the tile.
  */
+// Bead odontogram-5hm: an die tatsaechlich ANGEZEIGTE Kronenfarbe je Material
+// angeglichen (emax/metal-ceramic aus der Rampenmitte, die Vollfarben aus dem
+// var()-Default der Kronenebene), damit Verbinder und Basis mit dem Kronenkoerper
+// verschmelzen statt daneben zu leuchten. Vorher standen hier zu grelle
+// Naeherungen (Gold #ece614 gegen die bernsteinfarbene Krone #e0a80d usw.).
 const DEFAULT_MATERIAL_COLORS: Record<string, string> = {
-  emax: "#e9e1d2",
-  gold: "#ece614",
-  gradia: "#55ff98",
-  zircon: "#feffbf",
+  emax: "#e2d6c4",
+  gold: "#e0a80d",
+  gradia: "#57b285",
+  zircon: "#cfe3ee",
   metal: "#0051bf",
-  "metal-ceramic": "#c9ccd1",
-  telescope: "#0051bf",
-  temporary: "#ffffff",
+  "metal-ceramic": "#bbd975",
+  telescope: "#d8c9a0",
+  temporary: "#c8b392",
 };
 
 /** Default color resolver used when no `materialColor` dependency is provided. */
 export function defaultMaterialColor(material: string): string {
   return DEFAULT_MATERIAL_COLORS[material] ?? "#8a8f98";
 }
+
+// Bead odontogram-5hm: das Brueckenglied schwebt - die alte Krone wird zervikal
+// GECLIPPT (index.css, `data-pontic`), darunter steht ein Streifen Gingiva.
+/** Bruchteil der KRONENhoehe, der zervikal abgeschnitten wird - MUSS zum
+ *  `clip-path: inset(... )` in index.css passen. */
+const PONTIC_CLIP_FRAC = 0.12;
+/** Die ANGEZEIGTE Zahnfleischfarbe (gum-base #c31703 unter dem 70%-Weiss der
+ *  Kachel ~ (237,183,179)), fuer den Gingivastreifen unter dem Brueckenglied. */
+const GUM_STRIP_COLOR = "#edb7b3";
 
 function isBridgeTooth(s: BridgeToothState | undefined | null): boolean {
   if(!s) return false;
@@ -344,6 +358,99 @@ export function computeBridgeBars(
   return bars;
 }
 
+// Bead odontogram-5hm: die Bruecke soll als EIN Koerper lesen. Der duenne
+// Sattel-Balken (computeBridgeBars) verband nur die Zahnfleischlinie; Dirk sah
+// keine Verbindung und ein flach abgeschnittenes Brueckenglied. Diese Geometrie
+// zeichnet stattdessen SOLIDE Verbinder (vom Kontaktpunkt bis zervikal, ueber
+// den Kachel-Spalt) und rundet die basale Auflage des Brueckenglieds (Kuppel
+// zur Gingiva statt flachem Kronen-Schnitt). Alles in der Auflage vorne (z5),
+// in der Materialfarbe - erster Vorschlag, Dirk beurteilt am Bild.
+
+// Gemessen an der aktiven Kronenebene (OBERKIEFER, Krone zeigt nach unten): die
+// flache Zervikalkante liegt bei ~0,60 der Kachelhoehe, die Kaukante bei ~0,87,
+// die Krone fuellt die Kachel fast ganz (0,03..0,97 der Breite).
+// Dirk, 23.08.2026: der Verbinder darf den Kontaktpunkt NICHT nach okklusal
+// (unten) ueberragen und muss deutlich von der Gingiva (oben) wegbleiben. Also
+// ein kompaktes Band um den Kontaktpunkt: Krone reicht von ~0,59 (zervikal) bis
+// ~0,87 (okklusal), der Kontakt liegt bei ~0,74. Oberkante mit klarem Abstand
+// zur Zahnfleischlinie, Unterkante am Kontakt.
+/** Oberkante des Verbinders (gingival), mit Abstand zur Zahnfleischlinie, OBERKIEFER. */
+const CONNECTOR_TOP = 0.70;
+/** Unterkante des Verbinders (okklusal), am Kontaktpunkt - nicht darueber hinaus, OBERKIEFER. */
+const CONNECTOR_BOTTOM = 0.80;
+/** Wie weit der Verbinder in jede Nachbarkrone greift, Anteil der Kachelbreite. */
+const CONNECTOR_OVERLAP = 0.16;
+
+/** Verbinder + Brueckenglied-Basen + deren Umriss, fertig platziert. */
+export interface BridgeBody { connectors: BridgeBar[]; }
+
+
+function _f(v: number): string {
+  return (Math.round(v * 100) / 100).toString();
+}
+
+/**
+ * Die VERBUNDENEN Spannen: jeder Brückenglied-Lauf plus seine Kronen-Pfeiler
+ * links und rechts (Dirks Schema "Pfeiler = Krone"), in Bogenreihenfolge. Nutzt
+ * dieselbe Konstruktion wie {@link checkBridgeSpans} - eine Krone-Brückenglied-
+ * Krone-Folge ist damit EINE Spanne, obwohl `detectBridgeSpans` nur den
+ * Brücken-Lauf (das Glied) sieht. Nur Spannen MIT Glied und mit mindestens zwei
+ * Mitgliedern liefern etwas zu zeichnen.
+ */
+export function bridgeConstructions(getState: GetToothState): number[][] {
+  const out: number[][] = [];
+  for(const check of checkBridgeSpans(getState)){
+    if(check.pontics.length === 0) continue;             // ein blockierter Kronenlauf ist keine Bruecke
+    const arch = ARCHES.find((a) => a.includes(check.span[0]));
+    if(!arch) continue;
+    const mitglieder = [...check.abutments, ...check.pontics]
+      .sort((x, y) => arch.indexOf(x) - arch.indexOf(y));
+    if(mitglieder.length >= 2) out.push(mitglieder);
+  }
+  return out;
+}
+
+/**
+ * Der sichtbare Brueckenkoerper: solide Verbinder zwischen benachbarten
+ * Brueckenmitgliedern (Krone/Glied) und eine gerundete Basis je Brueckenglied.
+ * Erwartet die VERBUNDENEN Spannen (siehe {@link bridgeConstructions}).
+ */
+export function computeBridgeBody(
+  constructions: number[][],
+  getState: GetToothState,
+  rectFor: RectFor,
+  materialColor: MaterialColor,
+): BridgeBody {
+  const connectors: BridgeBar[] = [];
+  for(const span of constructions){
+    const fill = materialColor(spanMaterial(span, getState));
+    const isLower = span[0] >= 31;
+    // Anteile fuer den Unterkiefer am Mittelband spiegeln (Kachel ist 180° gedreht).
+    const top = isLower ? 1 - CONNECTOR_BOTTOM : CONNECTOR_TOP;
+    const bottom = isLower ? 1 - CONNECTOR_TOP : CONNECTOR_BOTTOM;
+    const bulgeDir = isLower ? +1 : -1;   // Kuppel zeigt zur Gingiva (OK nach oben)
+
+    // Solide Verbinder zwischen benachbarten Mitgliedern, im Kronenbereich.
+    for(let i = 0; i < span.length - 1; i++){
+      const a = rectFor(span[i]);
+      const b = rectFor(span[i + 1]);
+      if(!a || !b) continue;
+      if(a.width <= 0 || a.height <= 0 || b.width <= 0 || b.height <= 0) continue;
+      const leftRect = a.x <= b.x ? a : b;
+      const rightRect = a.x <= b.x ? b : a;
+      const x0 = leftRect.x + leftRect.width - leftRect.width * CONNECTOR_OVERLAP;
+      const x1 = rightRect.x + rightRect.width * CONNECTOR_OVERLAP;
+      const width = x1 - x0;
+      if(width <= 0) continue;
+      const y0 = leftRect.y + leftRect.height * top;
+      const y1 = leftRect.y + leftRect.height * bottom;
+      connectors.push({ x: x0, y: y0, width, height: y1 - y0, fill });
+    }
+
+  }
+  return { connectors };
+}
+
 /** Dependencies for {@link renderBridgeOverlay}. */
 export interface RenderBridgeOverlayDeps {
   /** The `#toothGrid` element (host of the overlay). */
@@ -404,8 +511,12 @@ export function renderBridgeOverlay(deps: RenderBridgeOverlayDeps): void {
     `:scope > svg.${BRIDGE_OVERLAY_CLASS}`,
   ) as SVGSVGElement | null;
 
-  const spans = detectBridgeSpans(deps.getState);
-  if(spans.length === 0){
+  // Bead odontogram-5hm: die VERBUNDENE Spanne (Kronen-Pfeiler + Glied), nicht
+  // nur der Brücken-Lauf - sonst bleibt eine Krone-Brückenglied-Krone-Brücke
+  // (Dirks Schema) ohne Verbinder, weil `detectBridgeSpans` das einzelne Glied
+  // verwirft.
+  const constructions = bridgeConstructions(deps.getState);
+  if(constructions.length === 0){
     // Clear any stale bars but do not create a fresh overlay for an empty grid.
     if(overlay){ while(overlay.firstChild) overlay.removeChild(overlay.firstChild); }
     return;
@@ -413,8 +524,26 @@ export function renderBridgeOverlay(deps: RenderBridgeOverlayDeps): void {
 
   const gridRect = grid.getBoundingClientRect();
   const rectFor: RectFor = (toothNo) => tileRectFor(grid, gridRect, toothNo);
+  // Die ECHTE Kronen-Bbox des Zahns (aktive, sichtbare `*-crown`-Ebene) in
+  // Rasterkoordinaten - damit die Brueckenglied-Basis an der Kronenkontur sitzt
+  // und nicht ueber sie hinaussteht.
+  const crownBoxFor: RectFor = (toothNo) => {
+    const tile = sideTile(grid, toothNo);
+    if(!tile) return null;
+    const crown = Array.from(tile.querySelectorAll('svg [id$="-crown"]'))
+      .find((e) => {
+        const el = e as SVGGraphicsElement;
+        return typeof el.getBoundingClientRect === "function"
+          && el.getBoundingClientRect().height > 0
+          && getComputedStyle(el as unknown as Element).display !== "none";
+      }) as SVGGraphicsElement | undefined;
+    if(!crown) return null;
+    const r = crown.getBoundingClientRect();
+    if(r.width === 0 || r.height === 0) return null;
+    return { x: r.left - gridRect.left, y: r.top - gridRect.top, width: r.width, height: r.height };
+  };
 
-  const bars = computeBridgeBars(spans, deps.getState, rectFor, materialColor);
+  const body = computeBridgeBody(constructions, deps.getState, rectFor, materialColor);
 
   if(!overlay){
     overlay = document.createElementNS(SVG_NS, "svg");
@@ -430,10 +559,101 @@ export function renderBridgeOverlay(deps: RenderBridgeOverlayDeps): void {
   overlay.setAttribute("height", String(H));
   overlay.setAttribute("viewBox", `0 0 ${W} ${H}`);
 
-  for(const bar of bars){
-    overlay.appendChild(barRect(bar));
+  // Bead odontogram-5hm: erst die Brueckenglied-Basen (gefuellt), dann die
+  // Verbinder darueber, damit die Verbinder die Basiskante ueberdecken und die
+  // Bruecke als ein Koerper liest. Jede Form traegt einen Material-Verlauf
+  // (ensureBridgeGradient), damit sie sich nahtlos in den Kronenkoerper einfuegt.
+  for(const c of body.connectors){
+    overlay.appendChild(barRect({ ...c, fill: ensureBridgeGradient(overlay, c.fill) }));
+  }
+
+  // Bead odontogram-5hm: der geclippte Zervikalstreifen des Brueckenglieds
+  // (index.css `data-pontic ... clip-path: inset(PONTIC_CLIP_FRAC)`) liegt sonst
+  // leer ueber dem weissen Kachelgrund. Er wird mit der ANGEZEIGTEN Zahnfleisch-
+  // farbe gefuellt, sodass unter dem schwebenden Glied ein Streifen Gingiva steht
+  // (Dirk), nahtlos an das Zahnfleischband anschliessend.
+  for(const span of constructions){
+    const isLower = span[0] >= 31;
+    for(const tn of span){
+      if(!isPontic(deps.getState(tn))) continue;
+      const cb = crownBoxFor(tn);
+      if(!cb || cb.height <= 0) continue;
+      const h = cb.height * PONTIC_CLIP_FRAC;
+      const y = isLower ? cb.y + cb.height - h : cb.y;
+      const strip = document.createElementNS(SVG_NS, "rect");
+      strip.setAttribute("class", BRIDGE_BAR_CLASS);
+      strip.setAttribute("x", _f(cb.x));
+      strip.setAttribute("y", _f(y));
+      strip.setAttribute("width", _f(cb.width));
+      strip.setAttribute("height", _f(h));
+      strip.setAttribute("fill", GUM_STRIP_COLOR);
+      overlay.appendChild(strip);
+    }
   }
 }
+
+
+// Bead odontogram-5hm: das Angesetzte (Verbinder + Brueckenglied-Basis) soll den
+// GLEICHEN VERLAUF wie die Krone tragen, nicht eine flache Farbe (Dirk,
+// 23.08.2026: "Das angesetzte Teil sollte die gleiche Farbe/Verlauf wie das
+// Brueckenglied haben ... Die Verbinder sollen auch einen Verlauf bekommen.
+// Funktioniert das auch mit allen anderen Farben?"). Die Kronen-Gradienten
+// liegen je Kachel und tragen dieselbe id mehrfach im Dokument - von der
+// separaten Auflage aus nicht sicher referenzierbar. Also wird PRO
+// Material-Farbe ein eigener Radial-Verlauf in die Auflage gebaut: heller in der
+// Mitte, die Materialfarbe, dunkler am Rand. Das gibt jedem Material (Voll- wie
+// Rampenfarbe) einen Verlauf, der zum Kronenkoerper passt.
+function _clampByte(v: number): number { return Math.max(0, Math.min(255, Math.round(v))); }
+function _parseHex(hex: string): [number, number, number] {
+  let h = hex.trim().replace("#", "");
+  if(h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+function _toHex(r: number, g: number, b: number): string {
+  return "#" + [r, g, b].map((v) => _clampByte(v).toString(16).padStart(2, "0")).join("");
+}
+/** Heller (f>0, Richtung Weiss) oder dunkler (f<0, Richtung Schwarz). */
+function _shade(hex: string, f: number): string {
+  const [r, g, b] = _parseHex(hex);
+  if(f >= 0) return _toHex(r + (255 - r) * f, g + (255 - g) * f, b + (255 - b) * f);
+  return _toHex(r * (1 + f), g * (1 + f), b * (1 + f));
+}
+/** Eine eindeutige, css-taugliche id aus einer Farbe. */
+function _gradId(color: string): string {
+  return "bridge-grad-" + color.replace(/[^a-z0-9]/gi, "");
+}
+/**
+ * Sorgt fuer einen Radial-Verlauf dieser Materialfarbe in `<defs>` der Auflage
+ * und gibt die `url(#...)`-Referenz zurueck. Nur Vollfarben (#rgb/#rrggbb)
+ * bekommen einen Verlauf; alles andere (schon eine Referenz) bleibt, wie es ist.
+ */
+function ensureBridgeGradient(overlay: SVGSVGElement, color: string): string {
+  if(!/^#[0-9a-f]{3,6}$/i.test(color)) return color;
+  const id = _gradId(color);
+  let defs = overlay.querySelector("defs") as SVGDefsElement | null;
+  if(!defs){
+    defs = document.createElementNS(SVG_NS, "defs");
+    overlay.insertBefore(defs, overlay.firstChild);
+  }
+  if(!defs.querySelector(`#${id}`)){
+    const grad = document.createElementNS(SVG_NS, "radialGradient");
+    grad.setAttribute("id", id);
+    grad.setAttribute("cx", "0.5");
+    grad.setAttribute("cy", "0.38");
+    grad.setAttribute("r", "0.75");
+    // Heller Kern, Materialfarbe, dunklerer Rand - derselbe Aufbau wie die
+    // `odonKrone*`-Kronen-Verlaeufe.
+    for(const [off, col] of [["0", _shade(color, 0.18)], ["0.55", color], ["1", _shade(color, -0.12)]] as const){
+      const s = document.createElementNS(SVG_NS, "stop");
+      s.setAttribute("offset", off);
+      s.setAttribute("stop-color", col);
+      grad.appendChild(s);
+    }
+    defs.appendChild(grad);
+  }
+  return `url(#${id})`;
+}
+
 
 /**
  * Build a saddle-bar `<rect>` SVG element in the current document. Shared by the
@@ -446,11 +666,13 @@ export function barRect(bar: BridgeBar): SVGRectElement {
   rect.setAttribute("y", String(bar.y));
   rect.setAttribute("width", String(bar.width));
   rect.setAttribute("height", String(bar.height));
-  const r = Math.min(bar.height / 2, bar.width / 2);
+  // Nur leicht gerundet: eine volle Pille (rx = halbe Breite) las sich als
+  // eigenes Element neben der Krone statt als solider Verbinder (Bead 5hm).
+  const r = Math.min(bar.height / 2, bar.width / 2, 3);
   rect.setAttribute("rx", String(r));
   rect.setAttribute("ry", String(r));
   rect.setAttribute("fill", bar.fill);
-  rect.setAttribute("stroke", "#1b3f1c");
-  rect.setAttribute("stroke-width", "0.5");
+  // Kein Rand: der Verbinder soll mit der Kronenfarbe verschmelzen (Dirk,
+  // 23.08.2026), nicht als eigenes Element danebenstehen.
   return rect;
 }

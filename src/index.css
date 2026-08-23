@@ -374,6 +374,26 @@ select:focus{
   pointer-events:none;
   z-index:5;
 }
+/* Bead odontogram-5hm: der Kronenrand ist im Template fuer JEDES Material das
+   gleiche kraeftige Rot (#b3261e) - eine reine Umrisslinie, kein Befund. Dirk,
+   23.08.2026: "Warum hat die Krone einen roten Rand?" Auf einen dezenten,
+   zahnfarbenen Ton gesetzt. Nur der Stroke; fill/Fingerabdruck unberuehrt. */
+.tooth-grid .tooth-tile.side-view svg [id$="-crown"]{ stroke: #a2937e !important; }
+/* Die per-Zahn-Sattelebene (`{material}-bridge-connector`) ist ueberfluessig,
+   seit die Bruecken-Auflage den Verbinder in Endkoordinaten zeichnet - sie
+   hinterliess am Glied einen gewarpten Farbrest ("warp Reste", Dirk). Parity-
+   frei: collectActiveLayers liest data-active, nicht computed display. */
+.tooth-grid .tooth-tile.side-view svg [id$="-bridge-connector"]{ display:none !important; }
+/* Bead odontogram-5hm: das Brueckenglied (data-pontic) ist ein SCHWEBENDES
+   Stueck, keine praeparierte Krone. Dirk, 23.08.2026: die alte Krone darunter
+   ausblenden und ein Stueck als Glied einsetzen, mit einem schmalen Streifen
+   Zahnfleisch darunter. Umgesetzt als Clip: die zervikale Partie der Krone wird
+   abgeschnitten, sodass zwischen Zahnfleischband und Glied ein Streifen Gingiva
+   frei bleibt und die Krone (samt Farbverlauf und Rand) als schwebendes Stueck
+   liest. Der Clip rechnet im EIGENEN Rahmen der Ebene, also VOR der 180°-Drehung
+   der Unterkiefer-Kachel (wie der Onlay-Clip `data-onlay`) - `inset` von OBEN
+   schneidet damit in beiden Kiefern die zervikale (gingivale) Seite ab. */
+.tooth-grid .tooth-tile[data-pontic].side-view svg [id$="-crown"]{ clip-path: inset(12% 0 0 0); }
 .tooth-label-row{
   display:contents;
 }
