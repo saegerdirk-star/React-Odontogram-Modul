@@ -225,8 +225,57 @@ export function buildWritePlan({ document, patientId, effectiveDateTime }: Write
     }
     ops.push({ method: "PUT", path: `/${resourceType}/${id}`, resourceType, id, identityKey, resource });
   }
-  const bootstrap = bootstrapCarePlan(ops);
-  return { ops: bootstrap ? [bootstrap, ...ops] : ops, skipped };
+  const resolved = withResolvableReferences(ops, skipped, patientId);
+  const bootstrap = bootstrapCarePlan(resolved.ops);
+  return { ops: bootstrap ? [bootstrap, ...resolved.ops] : resolved.ops, skipped: resolved.skipped };
+}
+
+/** Every `reference` string anywhere inside a resource, at any depth. */
+function referencesOf(value: unknown): string[] {
+  if (Array.isArray(value)) return value.flatMap(referencesOf);
+  if (!value || typeof value !== "object") return [];
+  const record = value as Record<string, unknown>;
+  const own = typeof record.reference === "string" ? [record.reference] : [];
+  return [...own, ...Object.values(record).flatMap(referencesOf)];
+}
+
+/**
+ * Drop every op that names a resource nobody writes.
+ *
+ * Aidbox enforces referential integrity, so such an op is rejected — and it is
+ * rejected IN THE MIDDLE of the sequence, after earlier resources are already
+ * on the server. Planning it means every save of that chart half-fails.
+ *
+ * The real case is the peri-implant finding: `toFhirDentalCore` gives it an
+ * unconditional `focus` on the tooth's implant `Device`, and a Device is
+ * outside this client's write policy — so the finding must follow the Device
+ * into `skipped`. It also covers the reference the codec mints for a Device it
+ * never emits (a peri-implant finding on an implant with no charted product),
+ * which resolves to nothing at all.
+ *
+ * Dropping one op can strand another, so this runs to a fixpoint. The patient
+ * is the one reference that needs no op: it lives on the server already and
+ * this odontogram does not own it.
+ *
+ * NOT a codec change. The bundle `src/fhir` produces is untouched; what this
+ * decides is only which of its resources this scoped client can carry.
+ */
+function withResolvableReferences(ops: WriteOp[], skipped: SkippedResource[], patientId: string): WritePlan {
+  const carried = [...ops];
+  const dropped = [...skipped];
+  for (;;) {
+    const written = new Set([`Patient/${patientId}`, ...carried.map((op) => `${op.resourceType}/${op.id}`)]);
+    const index = carried.findIndex((op) =>
+      referencesOf(op.resource).some((reference) => !written.has(reference)));
+    if (index === -1) return { ops: carried, skipped: dropped };
+    const [op] = carried.splice(index, 1);
+    const unresolved = referencesOf(op.resource).filter((reference) => !written.has(reference));
+    dropped.push({
+      resourceType: op.resourceType,
+      identityKey: op.identityKey,
+      reason: `References ${unresolved.join(", ")}, which this client does not write — the server would reject the write`,
+    });
+  }
 }
 
 /**

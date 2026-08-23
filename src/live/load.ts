@@ -40,6 +40,8 @@ export interface LoadReport {
   dentalCore: number;
   /** What was left over, named rather than dropped. */
   unsupported: UnsupportedResource[];
+  /** Resource types whose search hit the page budget — their result is PARTIAL. */
+  truncated?: string[];
   parsed: boolean;
   error?: string;
 }
@@ -169,16 +171,34 @@ export function assembleLoadResult({ patientId, resources }: AssembleInput): Loa
 export async function loadPatientChart(gateway: AidboxGateway, patientId: string): Promise<LoadResult> {
   const patient = await gateway.readPatient(patientId);
   const subject = `Patient/${patientId}`;
-  const found: ResourceRecord[] = patient ? [patient as ResourceRecord] : [];
+  // No patient, no chart: every search below would be answered against a
+  // subject that does not exist. Stop here instead of making four requests
+  // whose result is discarded.
+  if (!patient) {
+    const empty = assembleLoadResult({ patientId, resources: [] });
+    return {
+      ...empty,
+      report: { ...empty.report, parsed: false, error: `No Patient/${patientId} on this server` },
+      document: undefined,
+    };
+  }
+  const found: ResourceRecord[] = [patient as ResourceRecord];
+  const truncated: string[] = [];
   for (const resourceType of SEARCHED_RESOURCE_TYPES) {
     const page = await gateway.search(resourceType, { subject });
-    found.push(...(page as ResourceRecord[]));
+    found.push(...(page.resources as ResourceRecord[]));
+    if (page.truncated) truncated.push(resourceType);
   }
   const result = assembleLoadResult({ patientId, resources: found });
-  if (patient) return result;
+  if (!truncated.length) return result;
+  // A partial read must never display as a whole chart.
   return {
     ...result,
-    report: { ...result.report, parsed: false, error: `No Patient/${patientId} on this server` },
-    document: undefined,
+    report: {
+      ...result.report,
+      truncated,
+      error: result.report.error
+        ?? `The search for ${truncated.join(", ")} hit the page budget — this chart is PARTIAL and must not be saved back`,
+    },
   };
 }

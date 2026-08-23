@@ -33,8 +33,15 @@ type Status =
   | { kind: "ok"; text: string }
   | { kind: "error"; text: string };
 
+/**
+ * Today, in the LOCAL calendar. `toISOString()` is UTC, so west of Greenwich it
+ * dates an evening examination to the day before — and an examination date is
+ * read as the day the patient sat in the chair.
+ */
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
 function message(error: unknown): string {
@@ -76,6 +83,12 @@ function ReportPanel({ report, skipped }: { report?: LoadReport; skipped: Skippe
           {report.fetched} resource(s) read, {report.dentalCore} offered to the Dental Core codec,{" "}
           {report.unsupported.length} not supported.
           {report.error && <div style={{ color: "#b3261e" }}>{report.error}</div>}
+          {report.truncated?.length ? (
+            <div style={{ color: "#b3261e" }}>
+              <strong>Partial read:</strong> the search for {report.truncated.join(", ")} hit the page budget.
+              Saving is disabled — writing back from a partial chart would drop the findings that were never read.
+            </div>
+          ) : null}
           {report.unsupported.length > 0 && (
             <ul>
               {report.unsupported.map((entry) => (
@@ -164,6 +177,11 @@ function LiveChart({ config }: { config: LiveConfig }) {
   useEffect(() => { void load(); }, [load]);
 
   const busy = status.kind === "busy";
+  // A chart that was only partly read must not be written back: the save plan
+  // is derived from what is on screen, so the findings that were never read
+  // would not be written either — and the ones already on the server would
+  // keep whatever this session did not know about.
+  const partial = (report?.truncated?.length ?? 0) > 0;
   const statusColor = status.kind === "error" ? "#b3261e" : status.kind === "ok" ? "#1b5e20" : "inherit";
 
   return (
@@ -173,7 +191,7 @@ function LiveChart({ config }: { config: LiveConfig }) {
         <span>Patient/<code>{config.patientId}</code></span>
         <span style={{ opacity: 0.7 }}>{config.baseUrl}</span>
         <button type="button" onClick={() => void load()} disabled={busy}>Load</button>
-        <button type="button" onClick={() => void save()} disabled={busy}>Save</button>
+        <button type="button" onClick={() => void save()} disabled={busy || partial}>Save</button>
         <span role="status" style={{ color: statusColor }}>
           {status.kind === "idle" ? "" : status.text}
         </span>

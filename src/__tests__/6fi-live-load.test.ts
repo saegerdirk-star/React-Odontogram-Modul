@@ -20,7 +20,7 @@ import { PAYLOAD_VERSION } from "../document";
 import type { OdontogramDocument } from "../document";
 import { buildWritePlan } from "../live/writePlan";
 import { searchAllPages } from "../live/aidbox";
-import { assembleLoadResult } from "../live/load";
+import { assembleLoadResult, loadPatientChart } from "../live/load";
 
 const PATIENT = "p-1";
 const EFFECTIVE = "2026-08-23";
@@ -83,13 +83,14 @@ describe("odontogram-6fi: paged search", () => {
         return { resourceType: "Bundle", entry: [{ resource: { resourceType: "Observation", id: "b" } }] };
       },
     };
-    const resources = await searchAllPages(transport, "Observation", { subject: `Patient/${PATIENT}` });
-    expect(resources.map((resource) => (resource as { id: string }).id)).toEqual(["a", "b"]);
+    const page = await searchAllPages(transport, "Observation", { subject: `Patient/${PATIENT}` });
+    expect(page.resources.map((resource) => (resource as { id: string }).id)).toEqual(["a", "b"]);
+    expect(page.truncated).toBe(false);
     expect(requests[0]).toBe(`/Observation?subject=Patient%2F${PATIENT}`);
     expect(requests[1]).toBe("/Observation?page=2");
   });
 
-  it("stops at the page budget instead of looping forever on a self-referential link", async () => {
+  it("stops at the page budget and SAYS the result is partial", async () => {
     const transport = {
       async request() {
         return {
@@ -99,8 +100,29 @@ describe("odontogram-6fi: paged search", () => {
         };
       },
     };
-    const resources = await searchAllPages(transport, "Observation", {}, 3);
-    expect(resources).toHaveLength(3);
+    const page = await searchAllPages(transport, "Observation", {}, 3);
+    expect(page.resources).toHaveLength(3);
+    // Silence here would show a partial mouth as if it were the whole one.
+    expect(page.truncated).toBe(true);
+  });
+});
+
+describe("odontogram-6fi: a truncated search reaches the load report", () => {
+  const gateway = {
+    async readPatient() { return { resourceType: "Patient", id: PATIENT }; },
+    async search(resourceType: string) {
+      return {
+        resources: resourceType === "Observation" ? (savedResources() as unknown[]) : [],
+        truncated: resourceType === "Observation",
+      };
+    },
+    async put() { return {}; },
+  };
+
+  it("names the resource type whose search was cut short", async () => {
+    const result = await loadPatientChart(gateway, PATIENT);
+    expect(result.report.truncated).toEqual(["Observation"]);
+    expect(result.report.error).toMatch(/partial|truncat/i);
   });
 });
 

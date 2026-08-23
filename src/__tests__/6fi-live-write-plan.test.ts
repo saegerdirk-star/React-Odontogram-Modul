@@ -147,6 +147,59 @@ describe("odontogram-6fi: the write plan", () => {
     expect(plan.skipped[0].reason).toMatch(/write policy/i);
   });
 
+  // A write that names a resource nobody writes is a write the server rejects
+  // (Aidbox answers `422 non-existent-resource`), and it does so IN THE MIDDLE
+  // of the sequence — after earlier resources are already on the server. The
+  // peri-implant finding is the real case: the codec gives it an unconditional
+  // `focus` on the tooth's implant Device, and a Device is outside this
+  // client's write policy. So the finding follows the Device into `skipped`
+  // rather than being planned and failing.
+  it("skips a write whose reference points at a resource that is not written", () => {
+    const document = chartedDocument();
+    document.teeth["15"] = {
+      toothSelection: "implant",
+      periImplant: "peri-implantitis-moderate",
+      mpi: { buccal: 2 },
+      implantProduct: { manufacturer: "Example", lot: "L1" },
+    };
+    const plan = buildWritePlan({ document, patientId: "p-1", effectiveDateTime: EFFECTIVE });
+    expect(plan.ops.some((op) => op.identityKey === "Observation/peri-implant/15")).toBe(false);
+    expect(plan.skipped).toContainEqual(expect.objectContaining({ identityKey: "Device/implant/15" }));
+    const carried = plan.skipped.find((entry) => entry.identityKey === "Observation/peri-implant/15");
+    expect(carried?.resourceType).toBe("Observation");
+    expect(carried?.reason).toMatch(/Device\/|not written/i);
+  });
+
+  it("skips a peri-implant finding even when no implant Device is charted at all", () => {
+    // With no `implantProduct` the codec emits NO Device, yet still references
+    // one — an unresolvable reference rather than a policy-skipped one. Both
+    // end the same way: not planned.
+    const document = chartedDocument();
+    document.teeth["15"] = { toothSelection: "implant", periImplant: "mucositis" };
+    const plan = buildWritePlan({ document, patientId: "p-1", effectiveDateTime: EFFECTIVE });
+    expect(plan.ops.some((op) => op.identityKey === "Observation/peri-implant/15")).toBe(false);
+    expect(plan.skipped.some((entry) => entry.identityKey === "Observation/peri-implant/15")).toBe(true);
+  });
+
+  it("leaves no planned write naming a resource the plan does not write", () => {
+    const document = chartedDocument();
+    document.teeth["15"] = { toothSelection: "implant", periImplant: "peri-implantitis-severe", implantProduct: { lot: "L1" } };
+    const plan = buildWritePlan({ document, patientId: "p-1", effectiveDateTime: EFFECTIVE });
+    const written = new Set(plan.ops.map((op) => `${op.resourceType}/${op.id}`));
+    const references = (value: unknown): string[] => {
+      if (Array.isArray(value)) return value.flatMap(references);
+      if (!value || typeof value !== "object") return [];
+      const record = value as Record<string, unknown>;
+      const own = typeof record.reference === "string" ? [record.reference] : [];
+      return [...own, ...Object.values(record).flatMap(references)];
+    };
+    for (const op of plan.ops) {
+      for (const reference of references(op.resource)) {
+        expect([...written, "Patient/p-1"], `${op.path} references ${reference}`).toContain(reference);
+      }
+    }
+  });
+
   it("plans nothing for a blank chart rather than inventing a resource", () => {
     const blank: OdontogramDocument = { version: PAYLOAD_VERSION, globals: {}, teeth: {} };
     const plan = buildWritePlan({ document: blank, patientId: "p-1", effectiveDateTime: EFFECTIVE });

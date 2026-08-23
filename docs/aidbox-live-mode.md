@@ -131,6 +131,9 @@ resources were already written.
 | Limit | Consequence |
 |---|---|
 | The scoped client may write only `Observation`, `Condition`, `ServiceRequest`, `CarePlan`. | A `Device` (implant or restoration product), a `Procedure` or a `Provenance` the codec emits is **not written**. It is listed under "Not written" in the UI, never dropped silently. |
+| **A peri-implant finding is not saved either.** | `toFhirDentalCore` gives the peri-implant Observation an unconditional `focus` on the tooth's implant `Device`, and a `Device` is outside the write policy — so on a server that enforces referential integrity the finding could only fail. It follows its Device into "Not written" instead. In practice: `periImplant`, `mPI` and `mBI` **do not round-trip through live mode**. Everything else on that implant tooth (presence, restoration, caries, periodontal findings) does. |
+| Any write naming a resource that is not itself written is dropped the same way. | The rule is general, not a special case for the implant Device: `buildWritePlan` runs to a fixpoint, so a finding stranded by a dropped finding is dropped too — with its unresolved reference named in the reason. |
+| A search that hits the page budget (50 pages) yields a **partial** read. | The load report names the resource type, the UI shows a "Partial read" warning, and **Save is disabled** — writing back from a chart that was only partly read would silently omit the findings that were never loaded. |
 | The same five types are all that is read. | Anything charted outside them does not come back. |
 | A save is not atomic. | See above. |
 | Foreign dental dialects are not read. | See the next section. |
@@ -185,5 +188,26 @@ The published artifact stays free of `@polaris/*`:
 
 `src/__tests__/6fi-live-boundary.test.ts` holds all of it.
 
+### The install-time cost of that boundary
+
 The `@polaris` packages come from the Cognovis registry; the repo-local `.npmrc`
 maps the scope, and authentication comes from the developer's own `~/.npmrc`.
+
+**This is not free for anyone who only wants the library.** Because the packages
+are in `devDependencies` and in `package-lock.json`, a plain `npm ci` or
+`npm install` in this repository now needs a credential for
+`npm.cognovis.de` — every contributor and every CI job, whether or not they
+ever open live mode. `npm ci --omit=dev` does not, and neither does consuming
+the published package, whose `dependencies` are unchanged. If that cost stops
+being worth it, the honest fix is to move `src/live` into its own workspace, not
+to loosen the boundary.
+
+## Observed while verifying against the local Aidbox
+
+Under a real browser the first `GET /fhir/Patient/{id}` intermittently answers
+`500` with "Active Storage for 'null' not found" — a keep-alive framing quirk of
+this Aidbox build with browser connections, not a fault in the request. **Live
+mode does not retry**: the load reports the failure and the Load button repeats
+it. If that turns out to be routine rather than occasional, a bounded retry on
+the patient read is the place to add one; until then, no code here claims a
+resilience it does not have.
