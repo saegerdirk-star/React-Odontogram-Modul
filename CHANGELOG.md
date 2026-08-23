@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.47.6 - 2026-08-23
+
+### Content-Security-Policy im Demo-Build (Bead odontogram-e8h)
+
+Der letzte konkrete Security-Punkt aus dem Upstream-Abgleich (die scharfen
+Plugin-SVG-Löcher waren schon zu). Zoltáns Commit 7f86651 übernommen: ein
+Vite-Plugin injiziert ein CSP-Meta-Tag NUR in den Produktions-Build
+(`apply: "build"`) — der Dev-Server braucht Vites Inline-Preamble und bleibt
+unberührt.
+
+- Politik: `default-src 'self'`, `script-src 'self'`, `style-src 'self'
+  'unsafe-inline'` (die Anzeige setzt Inline-Styles), `img-src 'self' data:
+  blob:` (der PNG/JPG/PDF-Export rastert über eine Blob-URL), `font-src 'self'`,
+  `connect-src 'self'`, `object-src 'none'`, `base-uri 'self'`.
+- An unserem Baum geprüft: keine externen Fonts, kein eval/Worker, kein
+  data:-Font. Build erzeugt, serviert und geprüft — Basis-Render (64 Kacheln),
+  Blob→Image→Canvas-Rasterung (Export-Kern) und Perio-Ansicht laufen **ohne
+  einen einzigen CSP-Verstoß**. Volle Suite grün; nur `vite.config.ts` geändert.
+
 ## 2.47.5 - 2026-08-23
 
 ### Die dunklen Streifen im Zahnfleisch sind weg (Bead odontogram-aja)
