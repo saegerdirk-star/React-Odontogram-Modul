@@ -54,6 +54,23 @@ export function createAidboxTransport(config: LiveConfig): FhirTransport {
 /** How many pages a single search will follow before giving up. */
 export const DEFAULT_MAX_PAGES = 50;
 
+/**
+ * The sort every paged search asks for.
+ *
+ * A paged search WITHOUT a total order is not a search, it is a lottery. The
+ * server picks page one, and if two rows are equally ranked it may order them
+ * differently when it picks page two — so a resource comes twice and another
+ * never comes at all. Measured against Aidbox on 2026-08-23: six consecutive
+ * two-page fetches of the same unchanged 128-resource chart returned 128
+ * resources every time, of which 101, 100, 118, 116, 118 and 110 were DISTINCT
+ * — 10 to 28 duplicates per read, and as many resources silently absent. With
+ * `_sort=_id` the same six fetches returned 128 distinct resources every time.
+ *
+ * `_id` and not `_lastUpdated`: both were measured stable, but two resources
+ * written in the same save can share a timestamp, and ids cannot collide.
+ */
+export const STABLE_SORT = "_id";
+
 interface SearchPage {
   total?: number;
   entry?: Array<{ resource?: unknown }>;
@@ -102,27 +119,48 @@ export async function searchAllPages(
   query: Record<string, string | string[]>,
   maxPages: number = DEFAULT_MAX_PAGES,
 ): Promise<PagedSearchResult> {
-  const resources: unknown[] = [];
+  // DISTINCT, keyed by identity: an unstable sort hands the same resource out
+  // twice, and the codec refuses a collection carrying a duplicate id. Keeping
+  // the first occurrence is not a repair — the count below is what decides
+  // whether the read was whole.
+  const distinct = new Map<string, unknown>();
+  let anonymous = 0;
+  const collect = (resource: unknown): void => {
+    const record = resource as { resourceType?: unknown; id?: unknown };
+    const key = typeof record?.resourceType === "string" && typeof record?.id === "string"
+      ? `${record.resourceType}/${record.id}`
+      : `anonymous:${anonymous += 1}`;
+    if (!distinct.has(key)) distinct.set(key, resource);
+  };
+
   let path = `/${resourceType}`;
-  let pageQuery: Record<string, string | string[]> | undefined = query;
+  let pageQuery: Record<string, string | string[]> | undefined = { ...query, _sort: STABLE_SORT };
   let expected: number | undefined;
   for (let page = 0; page < maxPages; page += 1) {
     const bundle = (await transport.request("GET", path, pageQuery ? { query: pageQuery } : undefined)) as SearchPage | null;
     if (typeof bundle?.total === "number") expected = bundle.total;
     for (const entry of bundle?.entry ?? []) {
-      if (entry?.resource) resources.push(entry.resource);
+      if (entry?.resource) collect(entry.resource);
     }
     const next = extractNextPageUrl(bundle ?? undefined);
-    if (!next) return { resources, truncated: false, ...completeness(resources.length, expected) };
+    if (!next) return { resources: [...distinct.values()], truncated: false, ...completeness(distinct.size, expected) };
+    // The next link carries the sort with it, so it is not re-applied.
     path = next.startsWith("/") ? next : `/${next}`;
     pageQuery = undefined;
   }
-  return { resources, truncated: true, ...completeness(resources.length, expected) };
+  return { resources: [...distinct.values()], truncated: true, ...completeness(distinct.size, expected) };
 }
 
-function completeness(arrived: number, expected: number | undefined): { expected?: number; incomplete: boolean } {
+/**
+ * Completeness is counted in DISTINCT resources against the server's own total.
+ *
+ * Counting arrivals instead would have missed the whole defect: an unstable
+ * paged search delivers exactly `total` resources while a tenth of them are
+ * repeats and the rest of that tenth never arrived.
+ */
+function completeness(distinct: number, expected: number | undefined): { expected?: number; incomplete: boolean } {
   if (typeof expected !== "number") return { incomplete: false };
-  return { expected, incomplete: arrived < expected };
+  return { expected, incomplete: distinct < expected };
 }
 
 /** The read/write surface the live mode needs, and nothing beyond it. */

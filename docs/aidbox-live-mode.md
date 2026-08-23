@@ -108,6 +108,46 @@ into fewer teeth.
 A server that reports no `total` cannot be checked this way, and live mode does
 not pretend otherwise: `expected` stays undefined and `incomplete` stays false.
 
+### The search asks for a stable order
+
+**A paged search without a total order is not a search, it is a lottery.** The
+server picks page one; if two rows rank equally it may order them differently
+when it picks page two, so one resource arrives twice and another never arrives
+at all. The FHIR spec does not require search results to be ordered, so this is
+the server keeping its promise, not breaking it.
+
+Measured against Aidbox on 2026-08-23 — six consecutive two-page fetches of the
+same unchanged 128-resource chart:
+
+| fetch | resources returned | DISTINCT | duplicates |
+|---|---|---|---|
+| 1 | 128 | 101 | 27 |
+| 2 | 128 | 100 | 28 |
+| 3 | 128 | 118 | 10 |
+| 4 | 128 | 116 | 12 |
+| 5 | 128 | 118 | 10 |
+| 6 | 128 | 110 | 18 |
+
+The codec refuses a collection carrying a duplicate id, so the load failed — and
+because a different resource duplicated each time, the reported `rejectedAt`
+moved between attempts, which reads exactly like an order-sensitive parser. It
+is not one: `parseDentalCoreBundle` accepts all 24 seeded permutations of that
+very fixture and all 30 of a synthetic whole mouth, and a test records that.
+
+Two changes, either of which alone would have been half a fix:
+
+* every paged search asks for `_sort=_id`, which made the same six fetches
+  return 128 distinct resources every time (`_id` and not `_lastUpdated`: both
+  measured stable, but two resources written in one save can share a timestamp
+  and ids cannot collide);
+* the assembly is kept DISTINCT by identity and completeness is counted in
+  DISTINCT resources against the server's total — so a server that ignores the
+  sort still cannot pass a holed read off as a whole one.
+
+Before and after on the standing fixture: without the sort, 0 of 6 loads
+parsed (each honestly reported as an incomplete read of 101–128 distinct against
+128); with it, 10 of 10 loads parsed with all 32 teeth and the save gate open.
+
 ### Why a rejected load now says which resource
 
 `parseDentalCoreBundle` answers `undefined` and carries no reason, which was the

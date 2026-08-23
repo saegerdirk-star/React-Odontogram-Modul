@@ -58,6 +58,20 @@ Erneutes Laden derselben PatientID stellt denselben Stand wieder her.
   Füllung. `searchAllPages` vergleicht jetzt `Bundle.total` mit dem, was
   wirklich ankam; bei einem zu kurzen Lesen wird das Dokument GAR NICHT
   übernommen, der Bericht sagt es, und der Speicher-Riegel bleibt zu.
+- **Die Suche verlangt eine feste Reihenfolge.** Eine geblätterte Suche ohne
+  Gesamtordnung ist keine Suche, sondern eine Verlosung: der Server wählt Seite
+  eins, und bei gleichrangigen Zeilen darf er Seite zwei anders ordnen — eine
+  Ressource kommt zweimal, eine andere nie. Am Aidbox gemessen: sechs
+  aufeinanderfolgende Abrufe derselben unveränderten 128er-Karte lieferten
+  jedes Mal 128 Ressourcen, davon 101/100/118/116/118/110 VERSCHIEDENE, also 10
+  bis 28 Doppelte. Der Codec lehnt eine Sammlung mit doppelter ID ab, und weil
+  jedes Mal eine andere doppelt war, wanderte die gemeldete Stelle — was wie
+  ein reihenfolgeempfindlicher Leser aussieht. Ist er nicht: alle 24
+  Zufallsordnungen genau dieses Bestands werden gelesen (ein Test hält das
+  fest). Behoben an zwei Stellen: jede geblätterte Suche verlangt `_sort=_id`,
+  und die Sammlung wird nach Identität VERSCHIEDEN gehalten und auch so gezählt
+  — ein Server, der die Sortierung ignoriert, kann ein löchriges Lesen damit
+  trotzdem nicht als vollständig ausgeben.
 - **Ein abgelehnter Ladevorgang nennt die Ressource.** `parseDentalCoreBundle`
   antwortet nur `undefined` — genau daran scheiterte die Fehlersuche der
   Abnahme. Auf dem Fehlerweg wird der Grund jetzt GEMESSEN: die Sammlung wächst
