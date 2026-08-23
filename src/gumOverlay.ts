@@ -124,6 +124,7 @@ export function renderGumOverlay(grid: HTMLElement | null): void {
     }
   }
 
+  luecken_aufhellen(overlay, gridRect, kacheln);
   papillenluecken(grid, overlay, gridRect, kacheln);
   bruchlinien(grid, gridRect, kacheln);
   // Die Halsverschattung ist am 20.08.2026 wieder ENTFERNT worden. Sie sass
@@ -160,6 +161,83 @@ export function renderGumOverlay(grid: HTMLElement | null): void {
  *  Bandhoehe ohnehin an der Schmelz-Zement-Grenze des jeweiligen Zahns
  *  (odontogram-x8k), eine geschaetzte Hoehe laege also auch noch je Zahn anders
  *  daneben. */
+// Bead odontogram-aja: die Rasterluecke zwischen zwei Kacheln traegt keinen
+// halbdurchsichtigen weissen Kachelhintergrund (`.tooth-tile` background:
+// rgba(255,255,255,.7)), also steht das Band dort in VOLLER Farbe (247,159,154),
+// waehrend es ueber jeder Kachel aufgehellt ist (253,226,225). Der dunkle
+// senkrechte Streifen ist also die LUECKE, nicht die Papille - und er sitzt
+// genau da, wo das Auge die Papille sucht, und macht aus der Girlande eine Reihe
+// von Balken. Die fehlende Aufhellung wird nachgelegt: dasselbe 70%-Weiss ueber
+// dem Band, aber NUR in der Luecke (ueber einer Kachel hellt weiter der
+// Kachelhintergrund auf, dort liegt kein Rechteck) - so wird beides gleich hell.
+// In der Auflage, hinter den Kacheln, aber NACH den Band-Klonen, also ueber
+// ihnen: in der Luecke steht keine Kachel darueber, dort wirkt das Rechteck.
+function luecken_aufhellen(band: SVGSVGElement, gridRect: DOMRect,
+                           kacheln: ArrayLike<Element>): void {
+  const proBogen = new Map<boolean, HTMLElement[]>();
+  for(const k of Array.from(kacheln)){
+    const el = k as HTMLElement;
+    if(el.getBoundingClientRect().width === 0) continue;
+    const oben = !!el.closest(".upper-arch");
+    let reihe = proBogen.get(oben);
+    if(!reihe){ reihe = []; proBogen.set(oben, reihe); }
+    reihe.push(el);
+  }
+  // Der y-Bereich des Bandes an einer Kachel, am KLON gemessen (das Original ist
+  // `display:none` und hat keine Ausdehnung). Die Papille ragt hoeher als die
+  // Bandkante, deshalb die volle Klon-Hoehe.
+  const bandBox = (el: HTMLElement): DOMRect | null => {
+    const klon = band.querySelector(
+      `g[data-tooth="${el.dataset.tooth}"][data-layer="gum-base"]`) as SVGGElement | null;
+    const k = klon && typeof klon.getBoundingClientRect === "function"
+      ? klon.getBoundingClientRect() : null;
+    return k && k.height > 0 ? k : null;
+  };
+  const waschen = (x: number, breite: number, top: number, bot: number): void => {
+    if(!(breite > 0) || !Number.isFinite(top) || !Number.isFinite(bot) || bot <= top) return;
+    const rect = document.createElementNS(SVG_NS, "rect");
+    rect.setAttribute("x", String(x));
+    rect.setAttribute("y", String(top));
+    rect.setAttribute("width", String(breite));
+    rect.setAttribute("height", String(bot - top));
+    rect.setAttribute("fill", "#ffffff");
+    rect.setAttribute("fill-opacity", "0.7");   // = `.tooth-tile` background
+    band.appendChild(rect);
+  };
+
+  for(const reihe of proBogen.values()){
+    reihe.sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
+    // Die Zwischenraeume zwischen benachbarten Kacheln.
+    for(let i = 0; i + 1 < reihe.length; i++){
+      const a = reihe[i].getBoundingClientRect();
+      const b = reihe[i + 1].getBoundingClientRect();
+      const luecke = b.left - a.right;
+      if(luecke <= 0 || luecke > 24) continue;   // Nachbarn, keine Bogen-Kante
+      const ka = bandBox(reihe[i]), kb = bandBox(reihe[i + 1]);
+      const top = Math.min(ka?.top ?? Infinity, kb?.top ?? Infinity) - gridRect.top;
+      const bot = Math.max(ka?.bottom ?? -Infinity, kb?.bottom ?? -Infinity) - gridRect.top;
+      waschen(a.right - gridRect.left, luecke, top, bot);
+    }
+    // Die BOGENENDEN: hinter dem ersten und letzten Molaren buchtet das Band
+    // aus, ohne Nachbarn und ohne Kachel darueber - also ohne Aufhellung. Die
+    // Ausbuchtung reicht so weit wie der Klon ueber die Kachelkante hinaus.
+    if(reihe.length){
+      const erste = reihe[0], letzte = reihe[reihe.length - 1];
+      const re = erste.getBoundingClientRect(), ke = bandBox(erste);
+      if(ke){
+        waschen(ke.left - gridRect.left, re.left - ke.left,
+                ke.top - gridRect.top, ke.bottom - gridRect.top);
+      }
+      const rl = letzte.getBoundingClientRect(), kl = bandBox(letzte);
+      if(kl){
+        waschen(rl.right - gridRect.left, kl.right - rl.right,
+                kl.top - gridRect.top, kl.bottom - gridRect.top);
+      }
+    }
+  }
+}
+
+
 function papillenluecken(grid: HTMLElement, band: SVGSVGElement, gridRect: DOMRect,
                          kacheln: ArrayLike<Element>): void {
   let auflage = grid.querySelector(":scope > svg.papilla-marks") as SVGSVGElement | null;

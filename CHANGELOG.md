@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.47.5 - 2026-08-23
+
+### Die dunklen Streifen im Zahnfleisch sind weg (Bead odontogram-aja)
+
+An jeder Kachel-Lücke stand ein dunkelroter senkrechter Streifen im
+Zahnfleischband. Gemessen war er nicht die Papille, sondern die **Lücke**: die
+Bänder liegen in der Auflage `svg.gum-overlay` HINTER dem Raster, jede Kachel
+trägt einen halbdurchsichtigen weißen Hintergrund (`rgba(255,255,255,.7)`), der
+das Band über der Kachel aufhellt (→ 253,226,225) - in der 4-px-Lücke fehlt die
+Kachel, dort stand es in voller Farbe (247,159,154) und damit dunkler.
+
+- **Fix (Bead-Weg 2):** `luecken_aufhellen` in `gumOverlay.ts` legt dieselbe
+  70%-Weiß-Aufhellung in jede Lücke **und** an beide Bogenenden (hinter dem
+  ersten/letzten Molaren, wo die Band-Ausbuchtung keinen Nachbarn hat) - über
+  den Band-Klonen, nur wo keine Kachel steht. So ist der Ton über Kachel, Lücke
+  und Bogenende gleich, die Girlande durchgehend.
+- **Ton als Entscheidung, nicht als Nebenprodukt:** der Zahnfleischton kommt
+  jetzt aus einer CSS-Regel (`gum-base` fill, vorkompensiert auf einen Hauch
+  dunkler als die gesunde Pulpa, damit beide sich abheben - Dirks Wahl). Nur
+  Anzeige-`fill`, `!important` über dem inline-Style; die Templates sind
+  unverändert → **SVG-Fingerabdruck byte-identisch**, kein Payload/FHIR.
+
 ## 2.47.4 - 2026-08-23
 
 ### Loch in der Pulpa von 18 — Windung normalisiert (Bead odontogram-5ez)

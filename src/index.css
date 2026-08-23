@@ -348,6 +348,19 @@ select:focus{
   inset:0;
   pointer-events:none;
 }
+/* Bead odontogram-aja: der Zahnfleischton (Dirks Wahl, einen Hauch dunkler als
+   die gesunde Pulpa, damit beide sich abheben). Das Band liegt HINTER dem
+   Raster, unter dem 70%-Weiss des Kachelhintergrunds (und des Luecken-Ausgleichs
+   `luecken_aufhellen`) - also kommen nur 30% der Fuellfarbe durch. Die Fuellung
+   ist deshalb vorkompensiert: #c31703 erscheint unter dem 70%-Weiss als rund
+   (237,183,179). Damit ist die Farbe eine ENTSCHEIDUNG statt eines Nebenprodukts
+   (Bead-Weg 2), und weil die Aufhellung ueber Kachel und Luecke jetzt gleich
+   ist, ueberall derselbe Ton. Dunkler geht mit dem 70%-Weiss nicht - der
+   duennste durchkommende Kanal steht dann schon am Boden. `!important` schlaegt
+   das inline `style="fill:#f79f9a"` des Templates; der Fingerabdruck kennt
+   `fill` nicht, also parity-frei. Aendert sich der Kachelhintergrund (.7), muss
+   diese Zahl nach. */
+.tooth-grid > svg.gum-overlay [id="gum-base"]{ fill: #c31703 !important; }
 /* Die Baender bleiben im Template - der Generator, die Zustandslogik und die
    Parity-Fingerprints fassen sie unveraendert an -, sie werden hier nur nicht
    mehr GEMALT. Gezeigt wird der Klon in der Auflage darueber. */
