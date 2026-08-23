@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.49.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.50.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -581,6 +581,10 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 **FHIR / Dental Core:**
 
 FHIR conversion is optional and has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.3.0`. A Dental Core session rejects Legacy, malformed, or unsupported input and refuses exports that would lose populated clinical state.
+
+**Aidbox élő mód (fejlesztés, 2.50.0-tól):**
+
+Egy második fejlesztői szerverbelépési pont, a `live.html` (`src/live`), egyetlen beteg fogazati kártyáját tölti be közvetlenül egy futó Aidboxból, a fenti munkamenet API-n keresztül a megszokott keretben jeleníti meg, és a változtatásokat Dental Core erőforrásokként írja vissza determinisztikus azonosítók alatt, így egy ismételt mentés frissít, nem duplikál. Egy verziókezelésből kizárt `.env` fájlon (másolat a `.env.example`-ből) keresztül állítható be, amely **kizárólag egy korlátozott jogosultságú gépi klienst** nevez meg — soha nem adminisztrátori hitelesítő adatot. Fejlesztői eszköz, nem része a közzétett csomagnak: a `@polaris` SDK csomagok devDependencies-ek, a `dependencies` változatlan, és sem az `src/live`, sem a `live.html` nem kerül publikálásra. A beállítás, a betöltés/mentés mechanikája és a charly adapter dialektusához dokumentált eltérés a [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md) fájlban található. Megjegyzendő, hogy a jelen tárolóban a devDependencies telepítése mostantól hitelesítést igényel az `npm.cognovis.de`-hez (lásd a dokumentumot); az `npm ci --omit=dev` és a közzétett csomag használata nem.
 
 **Dátumozott vizsgálatok, felmérési státusz és peri-implantáris rögzítés (2.4.0-tól):**
 

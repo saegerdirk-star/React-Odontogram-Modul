@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.49.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.50.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -580,6 +580,19 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 **FHIR / Dental Core:**
 
 FHIR conversion is optional and has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.3.0`. A Dental Core session rejects Legacy, malformed, or unsupported input and refuses exports that would lose populated clinical state.
+
+**وضع Aidbox الحي (تطوير، ابتداءً من 2.50.0):**
+
+نقطة دخول ثانية لخادم التطوير، `live.html` (`src/live`)، تُحمِّل سجل مريض واحد مباشرةً من نسخة
+Aidbox قيد التشغيل، وتعرضه في الواجهة المعتادة عبر واجهة برمجة الجلسة المذكورة أعلاه، وتكتب
+التغييرات مرة أخرى كموارد Dental Core تحت معرّفات حتمية، بحيث يُحدِّث الحفظ المتكرر بدلاً من
+التكرار. يُهيَّأ عبر ملف `.env` مستبعد من التحكم بالإصدارات (نسخة من `.env.example`) يُسمّي
+**عميل آلة محدود النطاق فقط** — لا بيانات اعتماد إدارية أبداً. إنها أداة تطوير، وليست جزءاً من
+الحزمة المنشورة: حزم SDK الخاصة بـ`@polaris` هي devDependencies، و`dependencies` يبقى دون
+تغيير، ولا يُنشر أيّ من `src/live` أو `live.html`. الإعداد وآلية التحميل/الحفظ والفرق الموثَّق
+عن لهجة محوّل charly موجودة في [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md).
+يُلاحَظ أن تثبيت devDependencies لهذا المستودع يتطلب الآن بيانات اعتماد لـ`npm.cognovis.de`
+(راجع الوثيقة)؛ أما `npm ci --omit=dev` واستهلاك الحزمة المنشورة فلا يتطلبان ذلك.
 
 **فحوص مؤرَّخة وحالة التقييم وتسجيل ما حول الزرعة (اعتباراً من 2.4.0):**
 

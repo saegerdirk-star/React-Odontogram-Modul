@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
-[![Version](https://img.shields.io/badge/version-2.49.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
+[![Version](https://img.shields.io/badge/version-2.50.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](https://raw.githubusercontent.com/ZoliQua/React-Odontogram-Modul/main/src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
 
@@ -119,6 +119,10 @@ A clinical Dental Core export requires an effective date supplied by the caller,
 Diabetes, HbA1c, smoking, and edentulous resources remain owned by the host patient record and are never minted by this codec. When those document fields are populated, pass their existing Condition or Observation entries through `exportOptions.sharedResources`; the bundle carries them unchanged, records their references in Provenance, and fails closed if a required host resource is absent or inconsistent. The smoking-status Observation (LOINC 72166-2) may carry either the LOINC LL2201-3 / IPS Current Smoking Status answer codes or the engine-local codes.
 
 Hosts can import `DENTAL_CORE_CANONICAL`, `DENTAL_CORE_PROFILES`, `DENTAL_CORE_PACKAGE_VERSION`, and `DENTAL_CORE_CODE_SYSTEM_URLS` from `react-advanced-odontogram/fhir` for compatibility checks. Legacy remains intentionally limited to its upstream-supported fields; unsupported or malformed claimed Core Bundles are rejected rather than silently losing content.
+
+### Aidbox live mode (development)
+
+A second dev-server entry, `live.html` (`src/live`), loads one patient's chart straight from a running Aidbox, renders it in the ordinary shell through the session API above, and writes changes back as Dental Core resources under deterministic ids, so a re-save updates instead of duplicating. It is configured through a git-ignored `.env` (copy `.env.example`) naming a **scoped machine client only** — never an admin credential — and it is a development tool, not part of the published package: the `@polaris` SDK packages are devDependencies, `dependencies` is unchanged, and neither `src/live` nor `live.html` is published. Setup, the load/save mechanics, and the documented delta to the charly adapter's dialect are in [`docs/aidbox-live-mode.md`](docs/aidbox-live-mode.md). Note that installing this repository's devDependencies now requires a credential for `npm.cognovis.de` (see the doc); `npm ci --omit=dev` and consuming the published package do not.
 
 ## 🦷 Periodontal charting
 
