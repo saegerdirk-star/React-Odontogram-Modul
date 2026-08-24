@@ -98,10 +98,10 @@ describe("the orthodontic view is the third segment of the switcher", () => {
     ).toBe(true);
   });
 
-  it("the three segments stand in reading order: odontogram, periodontal, orthodontic", async () => {
+  it("the segments stand in reading order: odontogram, periodontal, orthodontic, schematic", async () => {
     await mount();
     const ids = [...document.querySelectorAll("#appViewToggle > button")].map(b => b.id);
-    expect(ids).toEqual(["appViewOdontogram", "appViewDentalChart", "appViewOrtho"]);
+    expect(ids).toEqual(["appViewOdontogram", "appViewDentalChart", "appViewOrtho", "appViewSchematic"]);
   });
 
   it("selecting it mounts both cards and marks the segment active", async () => {

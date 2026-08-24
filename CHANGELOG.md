@@ -1,9 +1,34 @@
 # Changelog
 
+## 2.53.0 - 2026-08-24
+
+### Schematische Befund-Ansicht (Phase 1, Anzeige)
+
+Dirk, 24.08.2026: eine schematische Darstellung des Befundes als additive,
+umschaltbare Ansicht neben der anatomischen — bewusst NICHT charly (eigene
+Formen). Neuer Reiter „Schema" im Ansicht-Umschalter (`#appViewToggle`) neben
+Odontogramm / Parodontal / KFO. Ein eigener, DOM-freier Renderer über denselben
+Fall-Daten (`src/schematicGraphic.ts` + `src/SchematicChart.tsx`, Muster wie
+`PerioChart`) — kein neues State-Feld, kein Payload-/FHIR-/Anatomie-Render →
+**Parität byte-identisch**.
+
+Je Zahn zwei Glyphen wie im anatomischen Layout: eine **Seitenansicht** (Krone
+2/5 + Wurzeln 3/5; Front = Prämolar breit, Molaren breiter; Wurzelzahl 1/2/3
+datengetrieben aus `rootsOf`) und ein **Draufsicht-Kasten** mit fünf Flächen
+(O Mitte, M/D/B/L außen; mesial/distal quadranten-bewusst zur Mittellinie).
+
+Abgebildete Befunde (Phase 1): Karies (rot) und Füllung (Materialfarbe) je
+Fläche; Krone/Brücke (Materialfarbe + K/B), Veneer (V), Inlay/Onlay; Implantat
+(Schraubenkörper mit Gewinde), Brückenglied (schwebend), fehlend (Geist),
+Wurzelrest, Extraktion (X); Endo (Kanäle + WF / Stift + St), Pulpitis/Nekrose
+(roter Punkt), apikale Diagnose dreifach (Granulom = Scheibe, Zyste = Ring,
+Wurzelkaries (Halsband), Kronenrand-Leck (gestrichelte Randlinie), Mobilität
+(I/II/III). Perio-Sondierung, feine Index-Rampen und KFO-Feinheiten bleiben
+bewusst den Fachansichten überlassen. Nur Anzeige; Bearbeiten folgt in Phase 2.
+
 ## 2.52.0 - 2026-08-24
 
 ### Generated Dental Core types from the estate generator and Core 0.5.0 (Bead odontogram-4sf)
-
 - Replaced the development FHIR TypeScript generator with `@cognovis/codegen@0.1.1` from `https://npm.cognovis.de`.
 - Regenerated `src/fhir/generated/**` from published `de.cognovis.fhir.dental.core#0.5.0` (npm tarball, SHA-512 pinned). Existing chart-property and chart-value mappings stay valid; additive Core profiles are generated but not newly mapped.
 

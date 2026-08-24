@@ -1467,6 +1467,10 @@ select:focus{
 @media (min-width:1400px){
   .ortho-column{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 }
+/* Schematic chart view (odontogram-5hm sequel) — full-width, own SVG renderer. */
+.schematic-column{grid-column:1 / -1; min-width:0; padding:12px 8px; overflow-x:auto}
+.schematic-chart-wrap{max-inline-size:1400px; margin-inline:auto}
+.schematic-chart-wrap svg.schematic-chart{display:block; width:100%; height:auto}
 .perio-inline-panel{min-height:480px}
 
 /* Tooth information panel — its own card below (outside) the dental chart box */

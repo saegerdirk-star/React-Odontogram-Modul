@@ -44,6 +44,7 @@ import PerioChart from "./PerioChart";
 import PerioSidebar from "./PerioSidebar";
 import ModelAnalysisCard from "./ModelAnalysisCard";
 import CephalometryCard from "./CephalometryCard";
+import SchematicChart from "./SchematicChart";
 // Bead odontogram-ap7: capture/correct the initial examination.
 import ExaminationCard from "./ExaminationCard";
 import DualStateConfirm from "./DualStateConfirm";
@@ -264,7 +265,7 @@ const LANGUAGE_OPTIONS: { value: Language; labelKey: string }[] = [
  * keeps the SVG-fingerprint parity byte-identical and what keeps
  * `wireControls()`'s one-time listeners attached.
  */
-type AppView = "odontogram" | "dentalChart" | "ortho";
+type AppView = "odontogram" | "dentalChart" | "ortho" | "schematic";
 
 export default function App({
   language,
@@ -357,6 +358,7 @@ export default function App({
   // is reachable in BOTH perio view modes — the switcher exists for it alone
   // when the periodontal chart lives in a dialog.
   const isOrthoView = activeView === "ortho";
+  const isSchematicView = activeView === "schematic";
   // DS-1 Task 2: mirror the module-level "a status edit on a planned tooth is
   // awaiting confirmation" flag into React state via the existing onStateChange
   // subscription (requestDualStateConfirm / accept / cancel all notify), so the
@@ -852,6 +854,16 @@ export default function App({
             >
               {t("view.ortho")}
             </button>
+            <button
+              id="appViewSchematic"
+              type="button"
+              className={"chart-mode-btn" + (isSchematicView ? " is-active" : "")}
+              role="tab"
+              aria-selected={isSchematicView}
+              onClick={() => setActiveView("schematic")}
+            >
+              {t("view.schematic")}
+            </button>
           </div>
           {viewMode === "popup" && (
             <button
@@ -868,7 +880,7 @@ export default function App({
         </div>
         <div
           className="chart-column"
-          style={isPerioView || isOrthoView ? { display: "none" } : undefined}
+          style={isPerioView || isOrthoView || isSchematicView ? { display: "none" } : undefined}
         >
         {/* Tiefenreiz: Verlaufsdefinitionen fuer die Zahnsubstanz.
             ------------------------------------------------------------------
@@ -1152,7 +1164,12 @@ export default function App({
             <CephalometryCard />
           </div>
         )}
-        <aside className="panel" style={isOrthoView ? { display: "none" } : undefined}>
+        {isSchematicView && (
+          <div className="schematic-column" dir="ltr">
+            <SchematicChart />
+          </div>
+        )}
+        <aside className="panel" style={isOrthoView || isSchematicView ? { display: "none" } : undefined}>
           {/* Keep the odontogram control panel ALWAYS mounted, toggling only
               its visibility with CSS. Unmounting it on the perio toggle
               produced fresh DOM nodes whose one-time wireControls() listeners

@@ -14396,6 +14396,55 @@ export function getToothStateSummary(toothNo: number): string[]{
   return getStateSummary(toothNo);
 }
 
+/** Read-only, structured projection of a tooth's ACTIVE-chart state for a
+ *  display renderer (the schematic chart). Sets become arrays, Maps become
+ *  plain records — a DOM-free consumer can read it without touching the live
+ *  Map objects. Absent = default; only the fields the schematic draws. */
+export type ToothDisplayState = {
+  toothSelection: string; toothSubstrate: string;
+  restorationType: string; restorationMaterial: string;
+  caries: string[]; cariesSeverity: Record<string, number>;
+  fillingSurfaces: string[]; fillingSurfaceMaterials: Record<string, string>;
+  rootCaries: string; endo: string;
+  pulpDx: string; apicalDx: string; periapicalType: string;
+  extractionPlan: boolean; crownNeeded: boolean; crownReplace: boolean;
+  crownLeakage: boolean; mobility: string; bridgePillar: boolean;
+  cantilever: boolean; eruptionStage: string; prosthesis: string;
+};
+
+export function getToothDisplayState(toothNo: number): ToothDisplayState {
+  const s: Any = toothState.get(toothNo) ?? defaultState();
+  const arr = (v: Any): string[] => v instanceof Set ? [...v] : Array.isArray(v) ? v : [];
+  const rec = (v: Any): Record<string, Any> => {
+    if(v instanceof Map) return Object.fromEntries(v);
+    return (v && typeof v === "object") ? { ...v } : {};
+  };
+  return {
+    toothSelection: String(s.toothSelection ?? "tooth-base"),
+    toothSubstrate: String(s.toothSubstrate ?? "natural"),
+    restorationType: String(s.restorationType ?? "none"),
+    restorationMaterial: String(s.restorationMaterial ?? "none"),
+    caries: arr(s.caries),
+    cariesSeverity: rec(s.cariesSeverity) as Record<string, number>,
+    fillingSurfaces: arr(s.fillingSurfaces),
+    fillingSurfaceMaterials: rec(s.fillingSurfaceMaterials) as Record<string, string>,
+    rootCaries: String(s.rootCaries ?? "none"),
+    endo: String(s.endo ?? "none"),
+    pulpDx: String(s.pulpDx ?? "normal"),
+    apicalDx: String(s.apicalDx ?? "normal"),
+    periapicalType: String(s.periapicalType ?? "none"),
+    extractionPlan: !!s.extractionPlan,
+    crownNeeded: !!s.crownNeeded,
+    crownReplace: !!s.crownReplace,
+    crownLeakage: !!s.crownLeakage,
+    mobility: String(s.mobility ?? "none"),
+    bridgePillar: !!s.bridgePillar,
+    cantilever: !!s.cantilever,
+    eruptionStage: String(s.eruptionStage ?? "none"),
+    prosthesis: String(s.prosthesis ?? "none"),
+  };
+}
+
 /** One heading + its per-tooth entries in the tooth-information summary. */
 export type OdontogramSummarySection = {
   key: "caries" | "fillings" | "endo" | "diagnoses" | "wear" | "discoloration" | "orthodontics" | "prosthetics";

@@ -1,0 +1,307 @@
+// Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
+// Cognovis fork - https://github.com/cognovis/React-Odontogram-Modul
+// Dirk Saeger, Malte Sussdorff 2026
+
+/**
+ * DOM-free renderer for the SCHEMATIC chart view (Dirk, 24.08.2026): a second,
+ * toggleable representation of the findings, geometric and deliberately NOT
+ * charly (own shapes). Per tooth two stacked glyphs like the anatomical layout:
+ *   - a SIDE view = crown 2/5 of length + roots 3/5, crown facing the occlusal
+ *     plane (middle), roots outward; crown width Front = premolar, molars wider;
+ *     root count 1/2/3 from `rootsOf`; the roots fill the cervical at crown width.
+ *   - a DRAUFSICHT = a rounded five-surface box (O centre, M/D/B/L outer).
+ *
+ * Pure string generation over a `getState` reader (`ToothDisplayState`). No new
+ * odontogram state, no payload/FHIR change → parity-free. Phase 1 is DISPLAY
+ * ONLY; interactivity is a later phase.
+ */
+import { rootsOf, isUpperTooth, type ToothDisplayState } from "./odontogram";
+
+// Arch order (occlusal-to-occlusal in the middle): upper side glyphs point their
+// roots UP, lower point DOWN.
+export const UPPER_ARCH = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
+export const LOWER_ARCH = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
+
+const CELL_W = 60;                 // px per tooth column
+const SIDE_H = 118;                // side-glyph cell height
+const OCCL_H = 74;                 // occlusal-box cell height
+const NUM_H = 18;                  // tooth-number row height
+
+// Crown 2/5 : roots 3/5 of the tooth length.
+const CROWN_FRAC = 2 / 5;
+const TOOTH_LEN = 96;              // drawn tooth length inside the side cell
+const CROWN_W_FRONT = 30;          // Front = Praemolar
+const CROWN_W_MOLAR = 50;
+
+// --- colours -------------------------------------------------------------
+const INK = "#333";
+const CARIES = "#c62828";
+// direct filling materials
+const FILL_COLORS: Record<string, string> = {
+  amalgam: "#9aa0a4", composite: "#ece5d6", gic: "#ecd9a6", temporary: "#bcd4ec",
+};
+// crown/bridge materials (aligned to the anatomical crown tones)
+const CROWN_COLORS: Record<string, string> = {
+  emax: "#e2d6c4", gold: "#e0a80d", gradia: "#57b285", zircon: "#cfe3ee",
+  metal: "#8fb3e0", "metal-ceramic": "#bbd975", telescope: "#d8c9a0", temporary: "#c8b392",
+};
+
+function isMolar(toothNo: number): boolean {
+  const d = toothNo % 10;
+  return d >= 6 && d <= 8;
+}
+function crownWidth(toothNo: number): number {
+  return isMolar(toothNo) ? CROWN_W_MOLAR : CROWN_W_FRONT;
+}
+function rootCount(toothNo: number): number {
+  return Math.max(1, rootsOf(toothNo).length);
+}
+// mesial faces the arch midline: on the LEFT for quadrants 2/3, RIGHT for 1/4.
+function mesialOnLeft(toothNo: number): boolean {
+  const q = Math.floor(toothNo / 10);
+  return q === 2 || q === 3;
+}
+
+// ---------------------------------------------------------------------------
+// Side glyph — crown + roots, drawn in a local box (cx = CELL_W/2). `crownDown`
+// puts the crown at the bottom (upper arch, roots up); else crown at the top.
+// ---------------------------------------------------------------------------
+function crownPath(cx: number, w: number, top: number, cerv: number): string {
+  const l = cx - w / 2, r = cx + w / 2;
+  return `M${l},${top + 9} Q${l},${top} ${cx},${top} Q${r},${top} ${r},${top + 9} L${r},${cerv} L${l},${cerv} Z`;
+}
+function rootPaths(cx: number, w: number, cerv: number, apex: number, n: number): string[] {
+  const l = cx - w / 2, r = cx + w / 2, gap = 2.5;
+  const seg = (r - l - (n - 1) * gap) / n;
+  const out: string[] = [];
+  let x = l;
+  for (let i = 0; i < n; i++) {
+    const a = x, b = x + seg, mid = (a + b) / 2;
+    out.push(`M${a.toFixed(1)},${cerv} L${b.toFixed(1)},${cerv} L${(mid + 2.2).toFixed(1)},${apex - 4} Q${mid.toFixed(1)},${apex} ${(mid - 2.2).toFixed(1)},${apex - 4} Z`);
+    x = b + gap;
+  }
+  return out;
+}
+
+// Centre x of each root (same segmentation as rootPaths) — for endo canals.
+function rootCenters(cx: number, w: number, n: number): number[] {
+  const l = cx - w / 2, r = cx + w / 2, gap = 2.5;
+  const seg = (r - l - (n - 1) * gap) / n;
+  const out: number[] = [];
+  let x = l;
+  for (let i = 0; i < n; i++) { out.push(x + seg / 2); x += seg + gap; }
+  return out;
+}
+
+// Single implant screw: a tapered body from wTop (cervical) to wBot (apex) with
+// a zig-zag thread edge on both sides — reads unmistakably as a screw, unlike
+// horizontal hatching over the natural roots (Dirk, 24.08.2026).
+function screwPath(cx: number, wTop: number, wBot: number, yTop: number, yBot: number): string {
+  const amp = 2.4;
+  const n = Math.max(4, Math.round((yBot - yTop) / 6));
+  const half = (i: number) => (wTop / 2) + ((wBot / 2) - (wTop / 2)) * (i / n);
+  const jag = (i: number) => (i % 2 === 0 ? 0 : amp);
+  const pts: string[] = [];
+  for (let i = 0; i <= n; i++) pts.push(`${(cx - half(i) + jag(i)).toFixed(1)},${(yTop + (yBot - yTop) * i / n).toFixed(1)}`);
+  for (let i = n; i >= 0; i--) pts.push(`${(cx + half(i) - jag(i)).toFixed(1)},${(yTop + (yBot - yTop) * i / n).toFixed(1)}`);
+  return "M" + pts.join(" L") + " Z";
+}
+
+function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): string {
+  const cx = CELL_W / 2;
+  const w = crownWidth(toothNo);
+  const n = rootCount(toothNo);
+  const pad = (SIDE_H - TOOTH_LEN) / 2;
+  // canonical: crown at top (pad .. pad+crownH), roots below
+  const crownH = TOOTH_LEN * CROWN_FRAC;
+  const top = pad, cerv = pad + crownH, apex = pad + TOOTH_LEN;
+  const sel = s.toothSelection, sub = s.toothSubstrate, rt = s.restorationType;
+  const missing = sel === "none" || sel === "no-tooth-after-extraction";
+  const implant = sel === "implant";
+  const pontic = missing && rt === "bridge";
+  const radix = sub === "radix";
+  const crowned = rt === "crown" || rt === "bridge";
+
+  const parts: string[] = [];
+  const stroke = `fill="#fff" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"`;
+
+  if (missing && !pontic) {
+    // ghost outline only
+    parts.push(`<path d="${crownPath(cx, w, top, cerv)}" fill="none" stroke="#c9c9c9" stroke-width="1.2" stroke-dasharray="3 3"/>`);
+    for (const d of rootPaths(cx, w, cerv, apex, n)) parts.push(`<path d="${d}" fill="none" stroke="#c9c9c9" stroke-width="1.2" stroke-dasharray="3 3"/>`);
+  } else {
+    // crown fill
+    let crownFill = "#fff";
+    if (crowned) crownFill = CROWN_COLORS[s.restorationMaterial] ?? "#ddd";
+    if (!radix && !pontic) {
+      parts.push(`<path d="${crownPath(cx, w, top, cerv)}" fill="${crownFill}" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>`);
+    } else if (pontic) {
+      // floating crown, no roots
+      parts.push(`<path d="${crownPath(cx, w, top, cerv)}" fill="${crownFill}" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>`);
+    }
+    // roots — an IMPLANT has none: a single screw body with a threaded (zig-zag)
+    // edge, not the natural roots. Otherwise the data-driven root count.
+    if (!pontic) {
+      if (implant) {
+        parts.push(`<path d="${screwPath(cx, 20, 9, cerv, apex)}" fill="#dfe4e8" stroke="#8a9096" stroke-width="1.5" stroke-linejoin="round"/>`);
+      } else {
+        for (const d of rootPaths(cx, w, cerv, apex, n)) parts.push(`<path d="${d}" ${stroke}/>`);
+      }
+    }
+    // veneer: colour the buccal face (a strip on the crown)
+    if (rt === "veneer") {
+      parts.push(`<rect x="${cx - w / 2 + 2}" y="${top + 3}" width="${w - 4}" height="${(cerv - top) - 5}" rx="2" fill="${CROWN_COLORS[s.restorationMaterial] ?? "#e2d6c4"}" opacity="0.9"/>`);
+    }
+    // --- secondary finding symbols (canonical coords, flip WITH the tooth) ---
+    const rootLen = apex - cerv;
+    // root caries: a red neck band across the root just below the cervical line
+    if (s.rootCaries !== "none") {
+      const op = s.rootCaries === "active" ? 0.5 : s.rootCaries === "arrested" ? 0.7 : 1;
+      parts.push(`<rect x="${cx - w / 2}" y="${cerv}" width="${w}" height="6" fill="${CARIES}" opacity="${op}"/>`);
+    }
+    // endo: filled canal(s) / pins down each root centre
+    if (s.endo !== "none" && !implant) {
+      const pin = s.endo === "endo-glass-pin" || s.endo === "endo-metal-pin";
+      const frac = pin ? 0.5 : s.endo === "endo-filling-incomplete" ? 0.82 : 0.94;
+      const col = pin ? "#8a9096" : "#d98f4a";
+      for (const rx of rootCenters(cx, w, n)) parts.push(`<line x1="${rx.toFixed(1)}" y1="${cerv + 1}" x2="${rx.toFixed(1)}" y2="${(cerv + rootLen * frac).toFixed(1)}" stroke="${col}" stroke-width="2.4" stroke-linecap="round"/>`);
+    }
+    // diseased pulp (only when not endo-treated): a red dot at the crown base
+    if (s.pulpDx !== "normal" && s.endo === "none") {
+      parts.push(`<circle cx="${cx}" cy="${cerv - 5}" r="3" fill="${CARIES}"/>`);
+    }
+    // apical lesion at the root apex, three-way (Dirk, 24.08.2026): a cyst is a
+    // ring (defined border), an abscess a filled disc with rays (acute/pus),
+    // otherwise a filled disc (granuloma / Beherdung).
+    if (s.apicalDx !== "normal") {
+      const ay = apex - 5, r = 6.5;
+      if (s.periapicalType === "cyst") {
+        parts.push(`<circle cx="${cx}" cy="${ay}" r="${r}" fill="#fff" stroke="${CARIES}" stroke-width="1.6"/>`);
+      } else if (s.apicalDx.includes("abscess")) {
+        const rays = Array.from({ length: 8 }, (_, k) => {
+          const a = (k / 8) * Math.PI * 2;
+          return `<line x1="${(cx + Math.cos(a) * r).toFixed(1)}" y1="${(ay + Math.sin(a) * r).toFixed(1)}" x2="${(cx + Math.cos(a) * (r + 3)).toFixed(1)}" y2="${(ay + Math.sin(a) * (r + 3)).toFixed(1)}" stroke="${CARIES}" stroke-width="1.2"/>`;
+        }).join("");
+        parts.push(`${rays}<circle cx="${cx}" cy="${ay}" r="${r}" fill="${CARIES}" opacity="0.85"/>`);
+      } else {
+        parts.push(`<circle cx="${cx}" cy="${ay}" r="${r}" fill="${CARIES}" opacity="0.8"/>`);
+      }
+    }
+    // crown marginal leakage: a red dashed line on the cervical margin
+    if (s.crownLeakage && crowned) {
+      parts.push(`<line x1="${cx - w / 2}" y1="${cerv}" x2="${cx + w / 2}" y2="${cerv}" stroke="${CARIES}" stroke-width="1.6" stroke-dasharray="2 2"/>`);
+    }
+  }
+  // extraction cross over the whole glyph (symmetric → safe to flip)
+  if (s.extractionPlan) {
+    parts.push(`<g stroke="#b70000" stroke-width="2.2"><line x1="8" y1="${top}" x2="${CELL_W - 8}" y2="${apex}"/><line x1="${CELL_W - 8}" y1="${top}" x2="8" y2="${apex}"/></g>`);
+  }
+
+  let g = parts.join("");
+  // flip vertically for the upper arch so roots point up / crown faces the middle
+  if (crownDown) g = `<g transform="translate(0,${SIDE_H}) scale(1,-1)">${g}</g>`;
+
+  // upright text annotations, added AFTER the flip so they never read upside down.
+  const anno: string[] = [];
+  const badge = crowned ? (rt === "bridge" ? "B" : "K") : rt === "veneer" ? "V" : rt === "onlay" ? "On" : rt === "inlay" ? "I" : "";
+  if (badge) anno.push(`<text x="${CELL_W - 5}" y="14" text-anchor="end" font-size="11" font-weight="600" fill="${INK}">${badge}</text>`);
+  if (s.endo !== "none" && !implant) {
+    const t = (s.endo === "endo-glass-pin" || s.endo === "endo-metal-pin") ? "St" : "WF";
+    anno.push(`<text x="${CELL_W - 5}" y="${SIDE_H - 4}" text-anchor="end" font-size="9" fill="#b5722f">${t}</text>`);
+  }
+  const mob = { m1: "I", m2: "II", m3: "III" }[s.mobility] ?? "";
+  if (mob) anno.push(`<text x="5" y="${SIDE_H - 4}" font-size="10" fill="#666">${mob}</text>`);
+
+  return g + anno.join("");
+}
+
+// ---------------------------------------------------------------------------
+// Occlusal five-surface box. Surfaces: O centre, plus M/D/B/L outer zones.
+// ---------------------------------------------------------------------------
+const SURF_KEYS = ["mesial", "distal", "buccal", "lingual", "occlusal"] as const;
+function surfaceColor(surf: string, s: ToothDisplayState): string | null {
+  const filled = s.fillingSurfaces.includes(surf);
+  const carious = s.caries.includes(`caries-${surf}`);   // caries Set keys are `caries-<surface>`
+  if (filled) {
+    const mat = s.fillingSurfaceMaterials[surf] ?? "composite";
+    return FILL_COLORS[mat] ?? "#ece5d6";
+  }
+  if (carious) return CARIES;
+  return null;
+}
+
+function occlBox(toothNo: number, s: ToothDisplayState): string {
+  // box coords in a CELL_W x OCCL_H cell, centred
+  const bw = 44, cx = CELL_W / 2, cy = OCCL_H / 2;
+  const x0 = cx - bw / 2, y0 = cy - bw / 2, inner = 18, ix0 = cx - inner / 2, iy0 = cy - inner / 2;
+  const missing = s.toothSelection === "none" || s.toothSelection === "no-tooth-after-extraction";
+  const parts: string[] = [];
+  if (missing && s.restorationType !== "bridge") {
+    parts.push(`<rect x="${x0}" y="${y0}" width="${bw}" height="${bw}" rx="8" fill="none" stroke="#c9c9c9" stroke-width="1.2" stroke-dasharray="3 3"/>`);
+    return parts.join("");
+  }
+  // outer zones as coloured triangles between the inner square and the outer box.
+  // B = top, L = bottom; the LEFT/RIGHT zones are mesial/distal by quadrant so
+  // mesial always faces the arch midline (mesialOnLeft = quadrant 2/3).
+  const leftShape = `M${x0},${y0} L${x0},${y0 + bw} L${ix0},${iy0 + inner} L${ix0},${iy0} Z`;
+  const rightShape = `M${x0 + bw},${y0} L${x0 + bw},${y0 + bw} L${ix0 + inner},${iy0 + inner} L${ix0 + inner},${iy0} Z`;
+  const topShape = `M${x0},${y0} L${x0 + bw},${y0} L${ix0 + inner},${iy0} L${ix0},${iy0} Z`;
+  const botShape = `M${x0},${y0 + bw} L${x0 + bw},${y0 + bw} L${ix0 + inner},${iy0 + inner} L${ix0},${iy0 + inner} Z`;
+  const onLeft = mesialOnLeft(toothNo);
+  const zones: [string, string][] = [
+    ["buccal", topShape], ["lingual", botShape],
+    [onLeft ? "mesial" : "distal", leftShape], [onLeft ? "distal" : "mesial", rightShape],
+  ];
+  for (const [surf, shape] of zones) {
+    const c = surfaceColor(surf, s);
+    if (c) parts.push(`<path d="${shape}" fill="${c}" opacity="0.9"/>`);
+  }
+  const oc = surfaceColor("occlusal", s);
+  parts.push(`<rect x="${x0}" y="${y0}" width="${bw}" height="${bw}" rx="8" fill="none" stroke="${INK}" stroke-width="1.5"/>`);
+  parts.push(`<rect x="${ix0}" y="${iy0}" width="${inner}" height="${inner}" rx="4" fill="${oc ?? "#fff"}" stroke="${INK}" stroke-width="1.2"/>`);
+  // short corner ticks
+  const t = 6;
+  parts.push(`<g stroke="${INK}" stroke-width="0.9">`
+    + `<line x1="${ix0}" y1="${iy0}" x2="${ix0 - t}" y2="${iy0 - t}"/>`
+    + `<line x1="${ix0 + inner}" y1="${iy0}" x2="${ix0 + inner + t}" y2="${iy0 - t}"/>`
+    + `<line x1="${ix0}" y1="${iy0 + inner}" x2="${ix0 - t}" y2="${iy0 + inner + t}"/>`
+    + `<line x1="${ix0 + inner}" y1="${iy0 + inner}" x2="${ix0 + inner + t}" y2="${iy0 + inner + t}"/></g>`);
+  return parts.join("");
+}
+
+// ---------------------------------------------------------------------------
+// Whole chart.
+// ---------------------------------------------------------------------------
+export type GetDisplayState = (toothNo: number) => ToothDisplayState;
+
+function archRows(teeth: number[], getState: GetDisplayState, sideOnTop: boolean): string {
+  // returns two rows of <g> (side + occlusal) plus a number row; y-stacked
+  const cols = teeth.length;
+  const numY = 0, r1Y = NUM_H, r2Y = NUM_H + (sideOnTop ? SIDE_H : OCCL_H);
+  const nums = teeth.map((tn, i) =>
+    `<text x="${i * CELL_W + CELL_W / 2}" y="${NUM_H - 5}" text-anchor="middle" font-size="11" fill="#888">${tn}</text>`).join("");
+  const rowSide = teeth.map((tn, i) => {
+    const g = sideGlyph(tn, getState(tn), /*crownDown*/ isUpperTooth(tn));
+    const y = sideOnTop ? r1Y : r2Y;
+    return `<g transform="translate(${i * CELL_W},${y})">${g}</g>`;
+  }).join("");
+  const rowOccl = teeth.map((tn, i) => {
+    const y = sideOnTop ? r2Y : r1Y;
+    return `<g transform="translate(${i * CELL_W},${y})">${occlBox(tn, getState(tn))}</g>`;
+  }).join("");
+  return nums + rowSide + rowOccl;
+}
+
+/** Full schematic chart as one standalone <svg> string. Upper arch: side glyphs
+ *  on top (roots up), occlusal below; lower arch: occlusal on top, side glyphs
+ *  below (roots down) — the occlusal plane sits in the middle. */
+export function buildSchematicSvg(getState: GetDisplayState): string {
+  const w = UPPER_ARCH.length * CELL_W;
+  const upperH = NUM_H + SIDE_H + OCCL_H;
+  const lowerH = NUM_H + OCCL_H + SIDE_H;
+  const gap = 10;
+  const h = upperH + gap + lowerH;
+  const upper = `<g transform="translate(0,0)">${archRows(UPPER_ARCH, getState, /*sideOnTop*/ true)}</g>`;
+  const lower = `<g transform="translate(0,${upperH + gap})">${archRows(LOWER_ARCH, getState, /*sideOnTop*/ false)}</g>`;
+  return `<svg class="schematic-chart" viewBox="0 0 ${w} ${h}" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,system-ui,sans-serif">${upper}${lower}</svg>`;
+}
