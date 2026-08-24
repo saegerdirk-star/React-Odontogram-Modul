@@ -16,11 +16,13 @@ export { DentalModelAnalysisPanelProfile } from "./Observation_DentalModelAnalys
 export { DentalOrthodonticFindingProfile } from "./Observation_DentalOrthodonticFinding";
 export { DentalOrthodonticPhotographProfile } from "./Media_DentalOrthodonticPhotograph";
 export { DentalPeriImplantFindingProfile } from "./Observation_DentalPeriImplantFinding";
+export { DentalPeriapicalIndexProfile } from "./Observation_DentalPeriapicalIndex";
 export { DentalPeriodontalFindingProfile } from "./Observation_DentalPeriodontalFinding";
 export { DentalPeriodontitisConditionProfile } from "./Condition_DentalPeriodontitisCondition";
 export { DentalPhotostaticAnalysisProfile } from "./Observation_DentalPhotostaticAnalysis";
 export { DentalPhotostaticMeasurementProfile } from "./Observation_DentalPhotostaticMeasurement";
 export { DentalProcedureProfile } from "./Procedure_DentalProcedure";
+export { DentalRestorationEvaluationProfile } from "./Observation_DentalRestorationEvaluation";
 export { DentalRiskEvidenceProfile } from "./Observation_DentalRiskEvidence";
 export { DentalServiceRequestProfile } from "./ServiceRequest_DentalServiceRequest";
 export { DentalSkeletalMaturityAssessmentProfile } from "./Observation_DentalSkeletalMaturityAssessment";

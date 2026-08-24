@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.51.0 - 2026-08-24
+
+### Generated Dental Core types from the estate generator and Core 0.5.0 (Bead odontogram-4sf)
+
+- Replaced the development FHIR TypeScript generator with `@cognovis/codegen@0.1.1` from `https://npm.cognovis.de`.
+- Regenerated `src/fhir/generated/**` from published `de.cognovis.fhir.dental.core#0.5.0` (npm tarball, SHA-512 pinned). Existing chart-property and chart-value mappings stay valid; additive Core profiles are generated but not newly mapped.
+
 ## 2.50.0 - 2026-08-23
 
 ### Live-Modus: das Odontogramm liest und schreibt direkt gegen Aidbox (Bead odontogram-6fi)

@@ -29,7 +29,7 @@ export type DentalCephalometricAnalysisPanelProfileRaw = {
     derivedFrom: Reference<"DocumentReference" | "ImagingStudy" | "Media" | "MolecularSequence" | "Observation" | "QuestionnaireResponse">[];
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-cephalometric-analysis-panel (pkg: de.cognovis.fhir.dental.core#0.3.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-cephalometric-analysis-panel (pkg: de.cognovis.fhir.dental.core#0.5.0)
 export class DentalCephalometricAnalysisPanelProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-cephalometric-analysis-panel";
 

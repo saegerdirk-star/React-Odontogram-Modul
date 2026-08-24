@@ -10,8 +10,11 @@ import type { Reference } from "../../hl7-fhir-r4-core/Reference";
 
 import { ToothSurfaceExtProfile } from "./Extension_ToothSurfaceExt";
 
-export type DentalCariesFinding_Component_LesionActivitySliceFlat = Omit<ObservationComponent, "code" | "value" | "valueQuantity" | "valueCodeableConcept" | "valueBoolean" | "valueInteger"> & CodeableConcept;
-export type DentalCariesFinding_Component_LesionActivitySliceFlatAll = DentalCariesFinding_Component_LesionActivitySliceFlat;
+export type DentalRestorationEvaluation_Component_DefectTypeSliceFlat = Omit<ObservationComponent, "code" | "value" | "valueQuantity" | "valueCodeableConcept" | "valueBoolean" | "valueInteger"> & CodeableConcept;
+export type DentalRestorationEvaluation_Component_DefectTypeSliceFlatAll = DentalRestorationEvaluation_Component_DefectTypeSliceFlat;
+
+export type DentalRestorationEvaluation_Component_ActionSliceFlat = Omit<ObservationComponent, "code" | "value" | "valueQuantity" | "valueCodeableConcept" | "valueBoolean" | "valueInteger"> & CodeableConcept;
+export type DentalRestorationEvaluation_Component_ActionSliceFlatAll = DentalRestorationEvaluation_Component_ActionSliceFlat;
 
 import {
     ensureProfile,
@@ -21,6 +24,8 @@ import {
     setArraySlice,
     getArraySlice,
     ensureSliceDefaults,
+    setArraySliceAll,
+    getArraySliceAll,
     ensurePath,
     wrapSliceChoice,
     unwrapSliceChoice,
@@ -39,19 +44,22 @@ import {
     validateMustSupport,
 } from "../../profile-helpers";
 
-export type DentalCariesFindingProfileRaw = {
+export type DentalRestorationEvaluationProfileRaw = {
     subject: Reference<"Device" | "Group" | "Location" | "Patient">;
     bodySite: CodeableConcept;
     valueCodeableConcept: CodeableConcept;
     status: ("registered" | "preliminary" | "final" | "amended" | "corrected" | "cancelled" | "entered-in-error" | "unknown");
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-caries-finding (pkg: de.cognovis.fhir.dental.core#0.5.0)
-export class DentalCariesFindingProfile {
-    static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-caries-finding";
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-restoration-evaluation (pkg: de.cognovis.fhir.dental.core#0.5.0)
+export class DentalRestorationEvaluationProfile {
+    static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-restoration-evaluation";
 
-    private static readonly lesionActivitySliceMatch: Record<string, unknown> = {
-        "code": {"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"caries-lesion-activity"}]},
+    private static readonly defectTypeSliceMatch: Record<string, unknown> = {
+        "code": {"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"restoration-defect-type"}]},
+    }
+    private static readonly actionSliceMatch: Record<string, unknown> = {
+        "code": {"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"restoration-action"}]},
     }
 
     private resource: Observation;
@@ -60,11 +68,11 @@ export class DentalCariesFindingProfile {
         this.resource = resource;
     }
 
-    static from (resource: Observation) : DentalCariesFindingProfile {
-        if (!resource.meta?.profile?.includes(DentalCariesFindingProfile.canonicalUrl)) {
-            throw new Error(`DentalCariesFindingProfile: meta.profile must include ${DentalCariesFindingProfile.canonicalUrl}`)
+    static from (resource: Observation) : DentalRestorationEvaluationProfile {
+        if (!resource.meta?.profile?.includes(DentalRestorationEvaluationProfile.canonicalUrl)) {
+            throw new Error(`DentalRestorationEvaluationProfile: meta.profile must include ${DentalRestorationEvaluationProfile.canonicalUrl}`)
         }
-        const profile = new DentalCariesFindingProfile(resource);
+        const profile = new DentalRestorationEvaluationProfile(resource);
         const { errors } = profile.validate();
         if (errors.length > 0) throw new Error(errors.join("; "))
         return profile;
@@ -74,31 +82,31 @@ export class DentalCariesFindingProfile {
         if (typeof resource !== "object" || resource === null) return false;
         const r = resource as { resourceType?: string; meta?: { profile?: string[] } };
         if (r.resourceType !== "Observation") return false;
-        return (r.meta?.profile ?? []).includes(DentalCariesFindingProfile.canonicalUrl);
+        return (r.meta?.profile ?? []).includes(DentalRestorationEvaluationProfile.canonicalUrl);
     }
 
-    static apply (resource: Observation) : DentalCariesFindingProfile {
-        ensureProfile(resource, DentalCariesFindingProfile.canonicalUrl);
-        applyFixedValue(resource, "code", {"coding":[{"system":"http://snomed.info/sct","code":"80967001"}]});
-        return new DentalCariesFindingProfile(resource);
+    static apply (resource: Observation) : DentalRestorationEvaluationProfile {
+        ensureProfile(resource, DentalRestorationEvaluationProfile.canonicalUrl);
+        applyFixedValue(resource, "code", {"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"restoration-evaluation"}]});
+        return new DentalRestorationEvaluationProfile(resource);
     }
 
-    static createResource (args: DentalCariesFindingProfileRaw) : Observation {
+    static createResource (args: DentalRestorationEvaluationProfileRaw) : Observation {
         const resource: Observation = {
             resourceType: "Observation",
-            code: {"coding":[{"system":"http://snomed.info/sct","code":"80967001"}]},
+            code: {"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"restoration-evaluation"}]},
             subject: args.subject,
             bodySite: args.bodySite,
             valueCodeableConcept: args.valueCodeableConcept,
             status: args.status,
-            meta: { profile: [DentalCariesFindingProfile.canonicalUrl] },
+            meta: { profile: [DentalRestorationEvaluationProfile.canonicalUrl] },
         }
         return resource;
     }
 
-    static create (args: DentalCariesFindingProfileRaw) : DentalCariesFindingProfile {
-        const resource = DentalCariesFindingProfile.createResource(args);
-        return DentalCariesFindingProfile.apply(resource);
+    static create (args: DentalRestorationEvaluationProfileRaw) : DentalRestorationEvaluationProfile {
+        const resource = DentalRestorationEvaluationProfile.createResource(args);
+        return DentalRestorationEvaluationProfile.apply(resource);
     }
 
     toResource () : Observation {
@@ -179,8 +187,16 @@ export class DentalCariesFindingProfile {
     }
 
     // Slices
-    public setLesionActivity (input?: DentalCariesFinding_Component_LesionActivitySliceFlat | ObservationComponent): this {
-        const match = DentalCariesFindingProfile.lesionActivitySliceMatch
+    public setDefectType (input: (DentalRestorationEvaluation_Component_DefectTypeSliceFlat | ObservationComponent)[]): this {
+        const match = DentalRestorationEvaluationProfile.defectTypeSliceMatch
+        const arr = this.resource.component ??= []
+        const values = input.map(item => matchesValue(item, match) ? item as ObservationComponent : applySliceMatch<ObservationComponent>(wrapSliceChoice<ObservationComponent>(item, "valueCodeableConcept"), match))
+        setArraySliceAll(arr, match, values)
+        return this
+    }
+
+    public setAction (input?: DentalRestorationEvaluation_Component_ActionSliceFlat | ObservationComponent): this {
+        const match = DentalRestorationEvaluationProfile.actionSliceMatch
         if (input && matchesValue(input, match)) {
             setArraySlice(this.resource.component ??= [], match, input as ObservationComponent)
             return this
@@ -191,25 +207,36 @@ export class DentalCariesFindingProfile {
         return this
     }
 
-    public getLesionActivity(mode: 'flat'): DentalCariesFinding_Component_LesionActivitySliceFlatAll | undefined;
-    public getLesionActivity(mode: 'raw'): ObservationComponent | undefined;
-    public getLesionActivity(): DentalCariesFinding_Component_LesionActivitySliceFlatAll | undefined;
-    public getLesionActivity (mode: 'flat' | 'raw' = 'flat'): DentalCariesFinding_Component_LesionActivitySliceFlatAll | ObservationComponent | undefined {
-        const match = DentalCariesFindingProfile.lesionActivitySliceMatch
+    public getDefectType(mode: 'flat'): DentalRestorationEvaluation_Component_DefectTypeSliceFlatAll[] | undefined;
+    public getDefectType(mode: 'raw'): ObservationComponent[] | undefined;
+    public getDefectType(): DentalRestorationEvaluation_Component_DefectTypeSliceFlatAll[] | undefined;
+    public getDefectType (mode: 'flat' | 'raw' = 'flat'): (DentalRestorationEvaluation_Component_DefectTypeSliceFlatAll | ObservationComponent)[] | undefined {
+        const match = DentalRestorationEvaluationProfile.defectTypeSliceMatch
+        const items = getArraySliceAll(this.resource.component, match)
+        if (items.length === 0) return undefined
+        if (mode === 'raw') return items
+        return items.map(item => unwrapSliceChoice<DentalRestorationEvaluation_Component_DefectTypeSliceFlatAll>(item, ["code"], "valueCodeableConcept"))
+    }
+
+    public getAction(mode: 'flat'): DentalRestorationEvaluation_Component_ActionSliceFlatAll | undefined;
+    public getAction(mode: 'raw'): ObservationComponent | undefined;
+    public getAction(): DentalRestorationEvaluation_Component_ActionSliceFlatAll | undefined;
+    public getAction (mode: 'flat' | 'raw' = 'flat'): DentalRestorationEvaluation_Component_ActionSliceFlatAll | ObservationComponent | undefined {
+        const match = DentalRestorationEvaluationProfile.actionSliceMatch
         const item = getArraySlice(this.resource.component, match)
         if (!item) return undefined
         if (mode === 'raw') return item
-        return unwrapSliceChoice<DentalCariesFinding_Component_LesionActivitySliceFlatAll>(item, ["code"], "valueCodeableConcept")
+        return unwrapSliceChoice<DentalRestorationEvaluation_Component_ActionSliceFlatAll>(item, ["code"], "valueCodeableConcept")
     }
 
     // Validation
     validate(): { errors: string[]; warnings: string[] } {
-        const profileName = "DentalCariesFinding"
+        const profileName = "DentalRestorationEvaluation"
         const res = this.resource
         return {
             errors: [
                 ...validateRequired(res, profileName, "code"),
-                ...validateFixedValue(res, profileName, "code", {"coding":[{"system":"http://snomed.info/sct","code":"80967001"}]}),
+                ...validateFixedValue(res, profileName, "code", {"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"restoration-evaluation"}]}),
                 ...validateRequired(res, profileName, "subject"),
                 ...validateReference(res, profileName, "subject", ["Device","Group","Location","Patient"]),
                 ...validateReference(res, profileName, "performer", ["CareTeam","Organization","Patient","Practitioner","PractitionerRole","RelatedPerson"]),
@@ -217,8 +244,9 @@ export class DentalCariesFindingProfile {
                 ...validateReference(res, profileName, "derivedFrom", ["DocumentReference","ImagingStudy","Media","MolecularSequence","Observation","QuestionnaireResponse"]),
                 ...validateChoiceRequired(res, profileName, ["valueCodeableConcept"]),
                 ...validateChoiceProhibited(res, profileName, ["valueQuantity","valueString","valueBoolean","valueInteger","valueRange","valueRatio","valueSampledData","valueTime","valueDateTime","valuePeriod"]),
-                ...validateSliceCardinality(res, profileName, "component", {"code":{"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"caries-lesion-activity"}]}}, "lesionActivity", 0, 1),
-                ...validateSliceFields(res, profileName, "component", {"code":{"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"caries-lesion-activity"}]}}, "lesionActivity", ["value","valueCodeableConcept"]),
+                ...validateSliceFields(res, profileName, "component", {"code":{"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"restoration-defect-type"}]}}, "defectType", ["value","valueCodeableConcept"]),
+                ...validateSliceCardinality(res, profileName, "component", {"code":{"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"restoration-action"}]}}, "action", 0, 1),
+                ...validateSliceFields(res, profileName, "component", {"code":{"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"restoration-action"}]}}, "action", ["value","valueCodeableConcept"]),
                 ...validateRequired(res, profileName, "status"),
             ],
             warnings: [

@@ -105,13 +105,13 @@ describe("optional FHIR package boundary", () => {
   it("pins and verifies the released Dental Core generation input", () => {
     const generator = source("tools/generate-dental-core-types.mjs");
 
-    expect(generator).toContain('name: "de.cognovis.fhir.dental.core", version: "0.3.0"');
-    expect(generator).toContain("https://fhir.cognovis.de/dental-core/0.3.0/package.tgz");
-    expect(generator).toContain("12e2292e8d3c33907cde013fb1730a79cd276e25076fad8399e1df1e1f1addbc9b20c81a504839f78c3102bfdaad3d460f4f969d98eae97a7f277dce604733cb");
+    expect(generator).toContain('name: "de.cognovis.fhir.dental.core", version: "0.5.0"');
+    expect(generator).toContain("https://npm.cognovis.de/de.cognovis.fhir.dental.core/-/de.cognovis.fhir.dental.core-0.5.0.tgz");
+    expect(generator).toContain("81ed6290f278c4a2668d6079e443cdee4aaf1a2aa63ea9e19e1aaff208b68ec4b0f5a062fabe22bc6f672555b0c974fef7d64282d3277cad14ff4cd1b1b45835");
     expect(generator).toContain("dental-core-contract.ts");
     expect(generator).not.toMatch(removedDialectPattern);
     expect(generator).not.toMatch(/de\.cognovis\.fhir\.dental"/i);
-    expect(generator).toContain("@atomic-ehr/codegen");
+    expect(generator).toContain("@cognovis/codegen");
   });
 
   it("contains no removed-dialect implementation, generated artifact, or documentation residue", () => {

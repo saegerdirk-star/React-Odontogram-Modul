@@ -47,7 +47,7 @@ export type DentalCephalometricAnalysisProfileRaw = {
     component?: ObservationComponent[];
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-cephalometric-analysis (pkg: de.cognovis.fhir.dental.core#0.3.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-cephalometric-analysis (pkg: de.cognovis.fhir.dental.core#0.5.0)
 export class DentalCephalometricAnalysisProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-cephalometric-analysis";
 

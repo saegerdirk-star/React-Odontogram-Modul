@@ -12,6 +12,7 @@ import { ToothSurfaceExtProfile } from "./Extension_ToothSurfaceExt";
 
 import {
     ensureProfile,
+    applyFixedValue,
     ensurePath,
     isExtension,
     getExtensionValue,
@@ -28,17 +29,17 @@ import {
     validateMustSupport,
 } from "../../profile-helpers";
 
-export type DentalPeriImplantFindingProfileRaw = {
-    code: CodeableConcept;
+export type DentalPeriapicalIndexProfileRaw = {
     subject: Reference<"Device" | "Group" | "Location" | "Patient">;
     bodySite: CodeableConcept;
-    focus: Reference<string /* Resource */>[];
+    derivedFrom: Reference<"DocumentReference" | "ImagingStudy" | "Media" | "MolecularSequence" | "Observation" | "QuestionnaireResponse">[];
+    valueCodeableConcept: CodeableConcept;
     status: ("registered" | "preliminary" | "final" | "amended" | "corrected" | "cancelled" | "entered-in-error" | "unknown");
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-peri-implant-finding (pkg: de.cognovis.fhir.dental.core#0.5.0)
-export class DentalPeriImplantFindingProfile {
-    static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-peri-implant-finding";
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-periapical-index (pkg: de.cognovis.fhir.dental.core#0.5.0)
+export class DentalPeriapicalIndexProfile {
+    static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-periapical-index";
 
     private resource: Observation;
 
@@ -46,11 +47,11 @@ export class DentalPeriImplantFindingProfile {
         this.resource = resource;
     }
 
-    static from (resource: Observation) : DentalPeriImplantFindingProfile {
-        if (!resource.meta?.profile?.includes(DentalPeriImplantFindingProfile.canonicalUrl)) {
-            throw new Error(`DentalPeriImplantFindingProfile: meta.profile must include ${DentalPeriImplantFindingProfile.canonicalUrl}`)
+    static from (resource: Observation) : DentalPeriapicalIndexProfile {
+        if (!resource.meta?.profile?.includes(DentalPeriapicalIndexProfile.canonicalUrl)) {
+            throw new Error(`DentalPeriapicalIndexProfile: meta.profile must include ${DentalPeriapicalIndexProfile.canonicalUrl}`)
         }
-        const profile = new DentalPeriImplantFindingProfile(resource);
+        const profile = new DentalPeriapicalIndexProfile(resource);
         const { errors } = profile.validate();
         if (errors.length > 0) throw new Error(errors.join("; "))
         return profile;
@@ -60,30 +61,32 @@ export class DentalPeriImplantFindingProfile {
         if (typeof resource !== "object" || resource === null) return false;
         const r = resource as { resourceType?: string; meta?: { profile?: string[] } };
         if (r.resourceType !== "Observation") return false;
-        return (r.meta?.profile ?? []).includes(DentalPeriImplantFindingProfile.canonicalUrl);
+        return (r.meta?.profile ?? []).includes(DentalPeriapicalIndexProfile.canonicalUrl);
     }
 
-    static apply (resource: Observation) : DentalPeriImplantFindingProfile {
-        ensureProfile(resource, DentalPeriImplantFindingProfile.canonicalUrl);
-        return new DentalPeriImplantFindingProfile(resource);
+    static apply (resource: Observation) : DentalPeriapicalIndexProfile {
+        ensureProfile(resource, DentalPeriapicalIndexProfile.canonicalUrl);
+        applyFixedValue(resource, "code", {"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"periapical-index"}]});
+        return new DentalPeriapicalIndexProfile(resource);
     }
 
-    static createResource (args: DentalPeriImplantFindingProfileRaw) : Observation {
+    static createResource (args: DentalPeriapicalIndexProfileRaw) : Observation {
         const resource: Observation = {
             resourceType: "Observation",
-            code: args.code,
+            code: {"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"periapical-index"}]},
             subject: args.subject,
             bodySite: args.bodySite,
-            focus: args.focus,
+            derivedFrom: args.derivedFrom,
+            valueCodeableConcept: args.valueCodeableConcept,
             status: args.status,
-            meta: { profile: [DentalPeriImplantFindingProfile.canonicalUrl] },
+            meta: { profile: [DentalPeriapicalIndexProfile.canonicalUrl] },
         }
         return resource;
     }
 
-    static create (args: DentalPeriImplantFindingProfileRaw) : DentalPeriImplantFindingProfile {
-        const resource = DentalPeriImplantFindingProfile.createResource(args);
-        return DentalPeriImplantFindingProfile.apply(resource);
+    static create (args: DentalPeriapicalIndexProfileRaw) : DentalPeriapicalIndexProfile {
+        const resource = DentalPeriapicalIndexProfile.createResource(args);
+        return DentalPeriapicalIndexProfile.apply(resource);
     }
 
     toResource () : Observation {
@@ -91,15 +94,6 @@ export class DentalPeriImplantFindingProfile {
     }
 
     // Field accessors
-    getCode () : CodeableConcept | undefined {
-        return this.resource.code as CodeableConcept | undefined;
-    }
-
-    setCode (value: CodeableConcept) : this {
-        Object.assign(this.resource, { code: value });
-        return this;
-    }
-
     getSubject () : Reference<"Device" | "Group" | "Location" | "Patient"> | undefined {
         return this.resource.subject as Reference<"Device" | "Group" | "Location" | "Patient"> | undefined;
     }
@@ -118,12 +112,21 @@ export class DentalPeriImplantFindingProfile {
         return this;
     }
 
-    getFocus () : Reference<string /* Resource */>[] | undefined {
-        return this.resource.focus as Reference<string /* Resource */>[] | undefined;
+    getDerivedFrom () : Reference<"DocumentReference" | "ImagingStudy" | "Media" | "MolecularSequence" | "Observation" | "QuestionnaireResponse">[] | undefined {
+        return this.resource.derivedFrom as Reference<"DocumentReference" | "ImagingStudy" | "Media" | "MolecularSequence" | "Observation" | "QuestionnaireResponse">[] | undefined;
     }
 
-    setFocus (value: Reference<string /* Resource */>[]) : this {
-        Object.assign(this.resource, { focus: value });
+    setDerivedFrom (value: Reference<"DocumentReference" | "ImagingStudy" | "Media" | "MolecularSequence" | "Observation" | "QuestionnaireResponse">[]) : this {
+        Object.assign(this.resource, { derivedFrom: value });
+        return this;
+    }
+
+    getValueCodeableConcept () : CodeableConcept | undefined {
+        return this.resource.valueCodeableConcept as CodeableConcept | undefined;
+    }
+
+    setValueCodeableConcept (value: CodeableConcept) : this {
+        Object.assign(this.resource, { valueCodeableConcept: value });
         return this;
     }
 
@@ -134,6 +137,10 @@ export class DentalPeriImplantFindingProfile {
     setStatus (value: ("registered" | "preliminary" | "final" | "amended" | "corrected" | "cancelled" | "entered-in-error" | "unknown")) : this {
         Object.assign(this.resource, { status: value });
         return this;
+    }
+
+    getCode () : CodeableConcept | undefined {
+        return this.resource.code as CodeableConcept | undefined;
     }
 
     // Extensions
@@ -171,18 +178,20 @@ export class DentalPeriImplantFindingProfile {
     // Slices
     // Validation
     validate(): { errors: string[]; warnings: string[] } {
-        const profileName = "DentalPeriImplantFinding"
+        const profileName = "DentalPeriapicalIndex"
         const res = this.resource
         return {
             errors: [
                 ...validateRequired(res, profileName, "code"),
+                ...validateFixedValue(res, profileName, "code", {"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"periapical-index"}]}),
                 ...validateRequired(res, profileName, "subject"),
                 ...validateReference(res, profileName, "subject", ["Device","Group","Location","Patient"]),
                 ...validateReference(res, profileName, "performer", ["CareTeam","Organization","Patient","Practitioner","PractitionerRole","RelatedPerson"]),
                 ...validateRequired(res, profileName, "bodySite"),
+                ...validateRequired(res, profileName, "derivedFrom"),
                 ...validateReference(res, profileName, "derivedFrom", ["DocumentReference","ImagingStudy","Media","MolecularSequence","Observation","QuestionnaireResponse"]),
-                ...validateRequired(res, profileName, "focus"),
-                ...validateReference(res, profileName, "focus", ["Resource"]),
+                ...validateChoiceRequired(res, profileName, ["valueCodeableConcept"]),
+                ...validateChoiceProhibited(res, profileName, ["valueQuantity","valueString","valueBoolean","valueInteger","valueRange","valueRatio","valueSampledData","valueTime","valueDateTime","valuePeriod"]),
                 ...validateRequired(res, profileName, "status"),
             ],
             warnings: [
@@ -190,7 +199,6 @@ export class DentalPeriImplantFindingProfile {
                 ...validateEnum(res, profileName, "dataAbsentReason", ["unknown","asked-unknown","temp-unknown","not-asked","asked-declined","masked","not-applicable","unsupported","as-text","error","not-a-number","negative-infinity","positive-infinity","not-performed","not-permitted"]),
                 ...validateMustSupport(res, profileName, "dataAbsentReason"),
                 ...validateMustSupport(res, profileName, "note"),
-                ...validateMustSupport(res, profileName, "derivedFrom"),
             ],
         }
     }
