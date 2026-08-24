@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.51.1 - 2026-08-24
+
+### Schneidezahn-Implantate schmaler (Bead odontogram-5hm)
+
+Dirk, 24.08.2026: „die Schneidezähne müssen auch schmalere bekommen.
+Normalerweise setze ich welche Ankylos A 9,5 oder A11." Die Schneidezähne
+(11/12/21/22, 31/32/41/42) bekommen in `implantate.py` jetzt eine zweite,
+schmalere Durchmesser-Stufe (horizontale Stauchung auf **0,55**, entsprechend
+dem 3,5-mm-Ankylos-A-Durchmesser) — schmaler als die Prämolaren/Eckzähne (0,70)
+und deutlich schmaler als die Molaren. Nur die bleibenden Frontzähne;
+Milchzähne werden nicht implantiert. Weiterhin nur ein Transform-Attribut auf
+der `implant`-Gruppe → Parität byte-identisch.
+
 ## 2.51.0 - 2026-08-24
 
 ### Implantat senkrecht, mittig und positionsgerecht im Durchmesser (Bead odontogram-5hm)

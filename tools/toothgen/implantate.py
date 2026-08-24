@@ -52,12 +52,18 @@ import kronen   # noqa: E402  (Pfadparser + _d_von)
 TEMPLATES = Path(__file__).resolve().parents[2] / "src" / "assets" / "teeth-svgs"
 
 # Der Schraubenkoerper ist fuer alle Positionen dieselbe (molarengrosse)
-# Zeichnung. Ein Praemolaren- oder Eckzahn-Implantat ist SCHMALER (Dirk,
-# 24.08.2026: "Mach die Implantate von 15, 14, 13 kleiner im Durchmesser, gilt
-# vermutlich auch fuer 45, 44, 43"). Horizontale Stauchung um die Mittelachse,
-# Laenge unveraendert - nur ein weiterer Faktor im transform, also parity-frei.
-SCHMAL = {13, 14, 15, 43, 44, 45}
-DURCHMESSER_SCHMAL = 0.70
+# Zeichnung. Ein Implantat ist je nach Position SCHMALER - horizontale Stauchung
+# um die Mittelachse, Laenge unveraendert, nur ein weiterer Faktor im transform
+# (also parity-frei). Zwei Stufen (Dirk, 24.08.2026):
+#   - Praemolar/Eckzahn (13/14/15, 43/44/45): "kleiner im Durchmesser" -> 0,70.
+#   - Schneidezahn (11/12/21/22, 31/32/41/42): noch schmaler; Dirk setzt dort
+#     klinisch Ankylos A (3,5 mm Durchmesser) -> 0,55. Nur die BLEIBENDEN
+#     Front-/Seitenzaehne; Milchzaehne werden nicht implantiert.
+DURCHMESSER: dict[int, float] = {}
+for _z in (13, 14, 15, 43, 44, 45):
+    DURCHMESSER[_z] = 0.70
+for _z in (11, 12, 21, 22, 31, 32, 41, 42):
+    DURCHMESSER[_z] = 0.55
 
 
 def _group_inner(txt: str, gid: str) -> str | None:
@@ -103,7 +109,7 @@ def transform_fuer(txt: str, zahn: str) -> str | None:
     e = tx - (ca * mx - sa * my)                 # Drehung um (mx,my) + x-Recenter
     f = my - (sa * mx + ca * my)
     # Schmale Positionen zusaetzlich horizontal um die Mittelachse (x=tx) stauchen.
-    sx = DURCHMESSER_SCHMAL if _fdi(zahn) in SCHMAL else 1.0
+    sx = DURCHMESSER.get(_fdi(zahn), 1.0)
     if sx != 1.0:
         e = sx * e + tx * (1.0 - sx)
         ca, sa = sx * ca, sa           # a=sx*ca, b=sa, c=-sx*sa, d=ca (Scale nach Rotation)
