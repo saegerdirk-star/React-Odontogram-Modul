@@ -111,7 +111,7 @@ function clinicalFixture(): OdontogramExportPayload {
 describe("generated Dental Core contract", () => {
   it("pins the immutable published package and exposes its profiles and terminology", () => {
     expect(DENTAL_CORE_PACKAGE_NAME).toBe("de.cognovis.fhir.dental.core");
-    expect(DENTAL_CORE_PACKAGE_VERSION).toBe("0.3.0");
+    expect(DENTAL_CORE_PACKAGE_VERSION).toBe("0.5.0");
     expect(DENTAL_CORE_PACKAGE_SHA512).toHaveLength(128);
     expect(DENTAL_CORE_PROFILE_URLS["dental-chart-state"]).toBe(`${DENTAL_CORE}/StructureDefinition/dental-chart-state`);
     expect(DENTAL_CORE_CODE_SYSTEM_URLS["dental-chart-property"]).toBe(PROPERTY_SYSTEM);

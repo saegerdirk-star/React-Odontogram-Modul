@@ -1,6 +1,6 @@
 {
   "name": "react-advanced-odontogram",
-  "version": "2.51.1",
+  "version": "2.52.0",
   "license": "MIT",
   "type": "module",
   "description": "Interactive, SVG-based dental odontogram (dental chart) editor for React + TypeScript — multi-surface caries/filling charting, endodontic/prosthetic/periodontal states, FDI/Universal/Palmer numbering, HL7 FHIR R4 export/import, and ICDAS scoring.",
@@ -86,7 +86,7 @@
     "jspdf": "^4.2.1"
   },
   "devDependencies": {
-    "@atomic-ehr/codegen": "0.0.18",
+    "@cognovis/codegen": "0.1.1",
     "@eslint/js": "^9.39.2",
     "@microsoft/api-extractor": "^7.58.12",
     "@polaris/fhir-de": "^2026.8.3",

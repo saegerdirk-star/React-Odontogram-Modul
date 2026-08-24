@@ -17,6 +17,15 @@ export type DentalOrthodonticFinding_Component_OrthodonticFindingSliceFlatAll = 
 export type DentalOrthodonticFinding_Component_ModelMeasurementSliceFlat = Omit<ObservationComponent, "code" | "value" | "valueQuantity" | "valueCodeableConcept" | "valueBoolean" | "valueInteger"> & Quantity;
 export type DentalOrthodonticFinding_Component_ModelMeasurementSliceFlatAll = DentalOrthodonticFinding_Component_ModelMeasurementSliceFlat;
 
+export type DentalOrthodonticFinding_Component_AngleClassSliceFlat = Omit<ObservationComponent, "code" | "value" | "valueQuantity" | "valueCodeableConcept" | "valueBoolean" | "valueInteger"> & CodeableConcept;
+export type DentalOrthodonticFinding_Component_AngleClassSliceFlatAll = DentalOrthodonticFinding_Component_AngleClassSliceFlat;
+
+export type DentalOrthodonticFinding_Component_CrowdingSeveritySliceFlat = Omit<ObservationComponent, "code" | "value" | "valueQuantity" | "valueCodeableConcept" | "valueBoolean" | "valueInteger"> & CodeableConcept;
+export type DentalOrthodonticFinding_Component_CrowdingSeveritySliceFlatAll = DentalOrthodonticFinding_Component_CrowdingSeveritySliceFlat;
+
+export type DentalOrthodonticFinding_Component_BoltonDiscrepancyTypeSliceFlat = Omit<ObservationComponent, "code" | "value" | "valueQuantity" | "valueCodeableConcept" | "valueBoolean" | "valueInteger"> & CodeableConcept;
+export type DentalOrthodonticFinding_Component_BoltonDiscrepancyTypeSliceFlatAll = DentalOrthodonticFinding_Component_BoltonDiscrepancyTypeSliceFlat;
+
 import {
     ensureProfile,
     applySliceMatch,
@@ -50,7 +59,7 @@ export type DentalOrthodonticFindingProfileRaw = {
     status: ("registered" | "preliminary" | "final" | "amended" | "corrected" | "cancelled" | "entered-in-error" | "unknown");
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-orthodontic-finding (pkg: de.cognovis.fhir.dental.core#0.3.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-orthodontic-finding (pkg: de.cognovis.fhir.dental.core#0.5.0)
 export class DentalOrthodonticFindingProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-orthodontic-finding";
 
@@ -59,6 +68,15 @@ export class DentalOrthodonticFindingProfile {
     }
     private static readonly modelMeasurementSliceMatch: Record<string, unknown> = {
         "code": {"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"model-measurement"}]},
+    }
+    private static readonly angleClassSliceMatch: Record<string, unknown> = {
+        "code": {"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"angle-class"}]},
+    }
+    private static readonly crowdingSeveritySliceMatch: Record<string, unknown> = {
+        "code": {"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"crowding-severity"}]},
+    }
+    private static readonly boltonDiscrepancyTypeSliceMatch: Record<string, unknown> = {
+        "code": {"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"bolton-discrepancy-type"}]},
     }
 
     private resource: Observation;
@@ -211,6 +229,42 @@ export class DentalOrthodonticFindingProfile {
         return this
     }
 
+    public setAngleClass (input?: DentalOrthodonticFinding_Component_AngleClassSliceFlat | ObservationComponent): this {
+        const match = DentalOrthodonticFindingProfile.angleClassSliceMatch
+        if (input && matchesValue(input, match)) {
+            setArraySlice(this.resource.component ??= [], match, input as ObservationComponent)
+            return this
+        }
+        const wrapped = wrapSliceChoice<ObservationComponent>(input ?? {}, "valueCodeableConcept")
+        const value = applySliceMatch<ObservationComponent>(wrapped, match)
+        setArraySlice(this.resource.component ??= [], match, value)
+        return this
+    }
+
+    public setCrowdingSeverity (input?: DentalOrthodonticFinding_Component_CrowdingSeveritySliceFlat | ObservationComponent): this {
+        const match = DentalOrthodonticFindingProfile.crowdingSeveritySliceMatch
+        if (input && matchesValue(input, match)) {
+            setArraySlice(this.resource.component ??= [], match, input as ObservationComponent)
+            return this
+        }
+        const wrapped = wrapSliceChoice<ObservationComponent>(input ?? {}, "valueCodeableConcept")
+        const value = applySliceMatch<ObservationComponent>(wrapped, match)
+        setArraySlice(this.resource.component ??= [], match, value)
+        return this
+    }
+
+    public setBoltonDiscrepancyType (input?: DentalOrthodonticFinding_Component_BoltonDiscrepancyTypeSliceFlat | ObservationComponent): this {
+        const match = DentalOrthodonticFindingProfile.boltonDiscrepancyTypeSliceMatch
+        if (input && matchesValue(input, match)) {
+            setArraySlice(this.resource.component ??= [], match, input as ObservationComponent)
+            return this
+        }
+        const wrapped = wrapSliceChoice<ObservationComponent>(input ?? {}, "valueCodeableConcept")
+        const value = applySliceMatch<ObservationComponent>(wrapped, match)
+        setArraySlice(this.resource.component ??= [], match, value)
+        return this
+    }
+
     public getOrthodonticFinding(mode: 'flat'): DentalOrthodonticFinding_Component_OrthodonticFindingSliceFlatAll[] | undefined;
     public getOrthodonticFinding(mode: 'raw'): ObservationComponent[] | undefined;
     public getOrthodonticFinding(): DentalOrthodonticFinding_Component_OrthodonticFindingSliceFlatAll[] | undefined;
@@ -233,6 +287,39 @@ export class DentalOrthodonticFindingProfile {
         return items.map(item => unwrapSliceChoice<DentalOrthodonticFinding_Component_ModelMeasurementSliceFlatAll>(item, ["code"], "valueQuantity"))
     }
 
+    public getAngleClass(mode: 'flat'): DentalOrthodonticFinding_Component_AngleClassSliceFlatAll | undefined;
+    public getAngleClass(mode: 'raw'): ObservationComponent | undefined;
+    public getAngleClass(): DentalOrthodonticFinding_Component_AngleClassSliceFlatAll | undefined;
+    public getAngleClass (mode: 'flat' | 'raw' = 'flat'): DentalOrthodonticFinding_Component_AngleClassSliceFlatAll | ObservationComponent | undefined {
+        const match = DentalOrthodonticFindingProfile.angleClassSliceMatch
+        const item = getArraySlice(this.resource.component, match)
+        if (!item) return undefined
+        if (mode === 'raw') return item
+        return unwrapSliceChoice<DentalOrthodonticFinding_Component_AngleClassSliceFlatAll>(item, ["code"], "valueCodeableConcept")
+    }
+
+    public getCrowdingSeverity(mode: 'flat'): DentalOrthodonticFinding_Component_CrowdingSeveritySliceFlatAll | undefined;
+    public getCrowdingSeverity(mode: 'raw'): ObservationComponent | undefined;
+    public getCrowdingSeverity(): DentalOrthodonticFinding_Component_CrowdingSeveritySliceFlatAll | undefined;
+    public getCrowdingSeverity (mode: 'flat' | 'raw' = 'flat'): DentalOrthodonticFinding_Component_CrowdingSeveritySliceFlatAll | ObservationComponent | undefined {
+        const match = DentalOrthodonticFindingProfile.crowdingSeveritySliceMatch
+        const item = getArraySlice(this.resource.component, match)
+        if (!item) return undefined
+        if (mode === 'raw') return item
+        return unwrapSliceChoice<DentalOrthodonticFinding_Component_CrowdingSeveritySliceFlatAll>(item, ["code"], "valueCodeableConcept")
+    }
+
+    public getBoltonDiscrepancyType(mode: 'flat'): DentalOrthodonticFinding_Component_BoltonDiscrepancyTypeSliceFlatAll | undefined;
+    public getBoltonDiscrepancyType(mode: 'raw'): ObservationComponent | undefined;
+    public getBoltonDiscrepancyType(): DentalOrthodonticFinding_Component_BoltonDiscrepancyTypeSliceFlatAll | undefined;
+    public getBoltonDiscrepancyType (mode: 'flat' | 'raw' = 'flat'): DentalOrthodonticFinding_Component_BoltonDiscrepancyTypeSliceFlatAll | ObservationComponent | undefined {
+        const match = DentalOrthodonticFindingProfile.boltonDiscrepancyTypeSliceMatch
+        const item = getArraySlice(this.resource.component, match)
+        if (!item) return undefined
+        if (mode === 'raw') return item
+        return unwrapSliceChoice<DentalOrthodonticFinding_Component_BoltonDiscrepancyTypeSliceFlatAll>(item, ["code"], "valueCodeableConcept")
+    }
+
     // Validation
     validate(): { errors: string[]; warnings: string[] } {
         const profileName = "DentalOrthodonticFinding"
@@ -247,6 +334,12 @@ export class DentalOrthodonticFindingProfile {
                 ...validateChoiceProhibited(res, profileName, ["valueString","valueBoolean","valueInteger","valueRange","valueRatio","valueSampledData","valueTime","valueDateTime","valuePeriod"]),
                 ...validateSliceFields(res, profileName, "component", {"code":{"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"orthodontic-finding"}]}}, "orthodonticFinding", ["valueCodeableConcept"]),
                 ...validateSliceFields(res, profileName, "component", {"code":{"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"model-measurement"}]}}, "modelMeasurement", ["valueQuantity"]),
+                ...validateSliceCardinality(res, profileName, "component", {"code":{"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"angle-class"}]}}, "angleClass", 0, 2),
+                ...validateSliceFields(res, profileName, "component", {"code":{"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"angle-class"}]}}, "angleClass", ["valueCodeableConcept"]),
+                ...validateSliceCardinality(res, profileName, "component", {"code":{"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"crowding-severity"}]}}, "crowdingSeverity", 0, 2),
+                ...validateSliceFields(res, profileName, "component", {"code":{"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"crowding-severity"}]}}, "crowdingSeverity", ["valueCodeableConcept"]),
+                ...validateSliceCardinality(res, profileName, "component", {"code":{"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"bolton-discrepancy-type"}]}}, "boltonDiscrepancyType", 0, 2),
+                ...validateSliceFields(res, profileName, "component", {"code":{"coding":[{"system":"https://fhir.cognovis.de/dental-core/CodeSystem/dental-component","code":"bolton-discrepancy-type"}]}}, "boltonDiscrepancyType", ["valueCodeableConcept"]),
                 ...validateRequired(res, profileName, "status"),
             ],
             warnings: [

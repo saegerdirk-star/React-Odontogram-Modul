@@ -27,7 +27,7 @@ export type DentalProcedureProfileRaw = {
     bodySite: CodeableConcept[];
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-procedure (pkg: de.cognovis.fhir.dental.core#0.3.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-procedure (pkg: de.cognovis.fhir.dental.core#0.5.0)
 export class DentalProcedureProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-procedure";
 
