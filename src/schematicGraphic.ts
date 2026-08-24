@@ -152,6 +152,43 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
     if (rt === "veneer") {
       parts.push(`<rect x="${cx - w / 2 + 2}" y="${top + 3}" width="${w - 4}" height="${(cerv - top) - 5}" rx="2" fill="${CROWN_COLORS[s.restorationMaterial] ?? "#e2d6c4"}" opacity="0.9"/>`);
     }
+    const half = w / 2, crownH2 = cerv - top;
+    // crown fracture (toothSubstrate "broken", charly's Fr): a jagged crack down
+    // the crown — the CROWN is broken, as opposed to `Fra`/rootFracture below.
+    if (sub === "broken" && !radix && !pontic) {
+      const yA = top + 3, yB = cerv - 1, steps = 4;
+      const pts: string[] = [];
+      for (let i = 0; i <= steps; i++) pts.push(`${cx + (i % 2 === 0 ? -5 : 5)},${(yA + (yB - yA) * (i / steps)).toFixed(1)}`);
+      parts.push(`<polyline points="${pts.join(" ")}" fill="none" stroke="#222" stroke-width="1.8" stroke-linejoin="round"/>`);
+    }
+    // calculus (charly's Zahnstein): tan deposits at the cervical neck, on the
+    // coronal side — distinct in colour and side from the red root-caries band.
+    if (s.calculus) {
+      parts.push(`<rect x="${cx - half}" y="${cerv - 4}" width="${w}" height="4" rx="1.5" fill="#bfa15c"/>`);
+      for (let i = 0; i < 3; i++) parts.push(`<circle cx="${(cx - half + w * (0.25 + i * 0.25)).toFixed(1)}" cy="${cerv - 2}" r="2.2" fill="#bfa15c"/>`);
+    }
+    // eruption (charly's D): shade the still-submerged part of the crown (the
+    // neck side) with a gum band — the tooth erupts tip-first, so the erupted
+    // fraction grows emerging → half → full.
+    if (s.eruptionStage !== "none") {
+      const eruptedFrac = s.eruptionStage === "emerging" ? 0.2 : s.eruptionStage === "half-crown" ? 0.5 : 0.8;
+      const gumY = top + crownH2 * eruptedFrac;
+      parts.push(`<rect x="${cx - half}" y="${gumY.toFixed(1)}" width="${w}" height="${(cerv - gumY).toFixed(1)}" fill="#e9b8b1" opacity="0.6"/>`);
+      parts.push(`<line x1="${cx - half}" y1="${gumY.toFixed(1)}" x2="${cx + half}" y2="${gumY.toFixed(1)}" stroke="#cf9089" stroke-width="1.2"/>`);
+    }
+    // retention (charly's clasp/bar pictures, bead odontogram-dma): a metal clasp
+    // hook, a bar, or a rigid attachment block at the neck.
+    if (s.retention === "clasp" || s.retention === "attachment" || s.retention === "bar-abutment") {
+      const metal = "#7b838c";
+      if (s.retention === "bar-abutment") {
+        parts.push(`<rect x="${cx - half - 2}" y="${cerv - 1}" width="${w + 4}" height="3" rx="1.5" fill="${metal}"/>`);
+      } else if (s.retention === "attachment") {
+        parts.push(`<rect x="${cx - 3}" y="${cerv - 2}" width="6" height="5" fill="${metal}"/>`);
+      } else {
+        const ex = mesialOnLeft(toothNo) ? cx - half : cx + half, dir = mesialOnLeft(toothNo) ? -1 : 1;
+        parts.push(`<path d="M${ex},${cerv - 9} Q${(ex + dir * 5).toFixed(1)},${cerv - 3} ${(ex + dir * 1).toFixed(1)},${cerv + 3}" fill="none" stroke="${metal}" stroke-width="2" stroke-linecap="round"/>`);
+      }
+    }
     // --- secondary finding symbols (canonical coords, flip WITH the tooth) ---
     const rootLen = apex - cerv;
     // root caries: a red neck band across the root just below the cervical line
@@ -252,9 +289,18 @@ function occlBox(toothNo: number, s: ToothDisplayState): string {
     ["buccal", topShape], ["lingual", botShape],
     [onLeft ? "mesial" : "distal", leftShape], [onLeft ? "distal" : "mesial", rightShape],
   ];
+  // The zone trapezoids run to the SQUARE outer corners, but the outline is
+  // rounded (rx=8) — so a coloured surface poked past the rounding (Dirk,
+  // 24.08.2026). Clip the fills to the same rounded box the outline draws.
+  const zonePaths: string[] = [];
   for (const [surf, shape] of zones) {
     const c = surfaceColor(surf, s);
-    if (c) parts.push(`<path d="${shape}" fill="${c}" opacity="0.9"/>`);
+    if (c) zonePaths.push(`<path d="${shape}" fill="${c}" opacity="0.9"/>`);
+  }
+  if (zonePaths.length) {
+    const clipId = `occlClip-${toothNo}`;
+    parts.push(`<clipPath id="${clipId}"><rect x="${x0}" y="${y0}" width="${bw}" height="${bw}" rx="8"/></clipPath>`);
+    parts.push(`<g clip-path="url(#${clipId})">${zonePaths.join("")}</g>`);
   }
   const oc = surfaceColor("occlusal", s);
   parts.push(`<rect x="${x0}" y="${y0}" width="${bw}" height="${bw}" rx="8" fill="none" stroke="${INK}" stroke-width="1.5"/>`);
@@ -289,7 +335,15 @@ function archRows(teeth: number[], getState: GetDisplayState, sideOnTop: boolean
     const y = sideOnTop ? r2Y : r1Y;
     return `<g transform="translate(${i * CELL_W},${y})">${occlBox(tn, getState(tn))}</g>`;
   }).join("");
-  return nums + rowSide + rowOccl;
+  // Phase 2 (odontogram-ip3): one transparent hit rect per tooth column, laid
+  // LAST so it sits on top and captures the click for BOTH the side glyph and
+  // the occlusal box. It carries `data-tooth`; the view delegates off that and
+  // marks the active column via `.is-active` (stroke only, so the glyph stays
+  // readable). No fill by default — it must not tint the drawing.
+  const archH = NUM_H + SIDE_H + OCCL_H;
+  const hits = teeth.map((tn, i) =>
+    `<rect class="schematic-hit" data-tooth="${tn}" x="${i * CELL_W}" y="0" width="${CELL_W}" height="${archH}" rx="6" fill="transparent"/>`).join("");
+  return nums + rowSide + rowOccl + hits;
 }
 
 /** Full schematic chart as one standalone <svg> string. Upper arch: side glyphs

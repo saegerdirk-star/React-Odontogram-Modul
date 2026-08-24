@@ -315,7 +315,7 @@ describe("Die Tabelle selbst", () => {
       "endo", "endoResection", "apicalDx", "periapicalType",
       "extractionPlan", "missingClosed", "prosthesis",
       "sensibility", "percussion", "rootFracture", "rootResection",
-      "eruptionStage",
+      "eruptionStage", "calculus",
     ]);
     for(const f of felder) expect(bekannt.has(f), `unbekanntes Feld: ${f}`).toBe(true);
   });

@@ -1,5 +1,54 @@
 # Changelog
 
+## 2.54.0 - 2026-08-24
+
+### Schematische Befund-Ansicht (Phase 2, Bearbeitung)
+
+Dirk, 24.08.2026: die Seitenspalten-Bedienung ist umständlich — die Findings
+sollen direkt unter dem Schema bearbeitbar sein, „klein und übersichtlich wie
+in charly", mit Tooltips für die Details.
+
+**Klick-Auswahl im Schema.** Jeder Zahn im Schema ist anklickbar
+(transparente Trefferfläche je Spalte, `data-tooth`); der Klick wählt ihn über
+die neue `selectToothInChart()` — exakt der Grid-Einzelklick, nur aufrufbar.
+Hover zeigt den vollen Befundtext (`getToothStateSummary`), dieselben Zeilen
+wie der anatomische Tile-Tooltip. Der aktive Zahn wird markiert.
+
+**Kompaktes charly-artiges Tastenfeld** unter dem Schema
+(`src/SchematicKeypad.tsx`) statt der wuchtigen Karten-Spalte: kleine
+Kürzel-Knöpfe in Reihen (Zustand, Durchbruch, Material, Karies, Flächen,
+Restauration, Retention, Endo, Wurzel/Apikal, Pulpa). **Kein zweiter
+Bearbeitungsweg** — jede Taste läuft über `applyShorthand` (Bead
+odontogram-t8y) bzw. den gegateten `setRetention`, also durch `applyToSelected`
++ das DS-1-Gate wie das Tippen. Die fünf Flächen tragen charlys Doppelrolle:
+Material-Chip aktiv → Füllung (`Ko`), sonst Karies (`co`/`cK3o`).
+Umschalter **„Alle Optionen"** blendet weiterhin die vollen Controls unter das
+Chart. Nur im Schema-Reiter, per CSS (`.schematic-edit`); Odontogramm/Paro/KFO
+unberührt.
+
+**Vier zusätzliche Befunde** aufs Tastenfeld (Durchgang durch charlys
+Befund-Tastenfeld, Dirk): **Fr** Kronenfraktur (`toothSubstrate: broken`),
+**Zst** Zahnstein (`calculus`), **D1/D2/D3** Durchbruchstadien
+(`eruptionStage`), **Kl/Steg** Halteelemente (`setRetention` clasp /
+bar-abutment). `Fr` und `Zst` neu in `SHORTHAND_DE` (charlys Bedeutungen; `Zst`
+als Kürzel für charlys Ankreuzfeld). Jeder davon bekam ein **Schema-Symbol**:
+Bruchlinie, Zahnstein-Halsband, Zahnfleischband über dem noch bedeckten
+Kronenteil, Klammerhäkchen / Steg-Balken — in kanonischen Koordinaten, flippen
+korrekt mit dem Oberkiefer. `calculus`/`retention` jetzt in
+`getToothDisplayState`/`ToothDisplayState` projiziert.
+
+**Bugfix Kauflächen-Box:** die farbigen Flächen-Trapeze standen über den
+gerundeten Kronenrand hinaus (eckige Ecken gegen `rx=8`); sie werden jetzt an
+den gerundeten Umriss geklippt (Dirk, 24.08.2026).
+
+**i18n:** das Tastenfeld folgt der UI-Sprache (Kopf, Reihen-Labels, Material,
+Hinweise, Tooltips über `t()`, EN + DE, restliche Sprachen fallen auf EN
+zurück); die charly-Kürzel selbst bleiben als Vokabular.
+
+Kein Payload-/FHIR-Change; die Anatomie-Render ist unberührt → SVG-Fingerprint,
+FHIR-Golden und Roundtrip byte-identisch (Payload bleibt 2.53er Stand;
+Schema ist nicht Teil der Fixtures).
+
 ## 2.53.0 - 2026-08-24
 
 ### Schematische Befund-Ansicht (Phase 1, Anzeige)

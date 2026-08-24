@@ -6564,6 +6564,23 @@ function updateSelectionUI(){
   }
 }
 
+/** Select a single tooth from a view OUTSIDE the grid — the schematic chart
+ *  (bead odontogram-ip3, Phase 2). It does exactly what a single grid-tile
+ *  click does: sets the selection + active tooth + anchor and repaints the
+ *  control panel through updateSelectionUI()/syncControlsFromState(). Editing
+ *  then flows through the SAME wired controls and the DS-1 gate — there is no
+ *  second mutation path, only a second way to pick the tooth. */
+export function selectToothInChart(toothNo: number): void {
+  selectedTeeth = new Set([toothNo]);
+  activeTooth = toothNo;
+  selectionAnchor = toothNo;
+  updateSelectionUI();
+}
+
+/** The currently active (single) tooth, or null. Read-only; the schematic
+ *  keypad uses it to label itself and to gate its buttons. */
+export function getActiveTooth(): number | null { return activeTooth; }
+
 // ---- Touch: Zoom Popover ----
 function showZoomPopover(toothNo: number){
   hideZoomPopover();
@@ -14410,6 +14427,7 @@ export type ToothDisplayState = {
   extractionPlan: boolean; crownNeeded: boolean; crownReplace: boolean;
   crownLeakage: boolean; mobility: string; bridgePillar: boolean;
   cantilever: boolean; eruptionStage: string; prosthesis: string;
+  calculus: boolean; retention: string;
 };
 
 export function getToothDisplayState(toothNo: number): ToothDisplayState {
@@ -14442,6 +14460,8 @@ export function getToothDisplayState(toothNo: number): ToothDisplayState {
     cantilever: !!s.cantilever,
     eruptionStage: String(s.eruptionStage ?? "none"),
     prosthesis: String(s.prosthesis ?? "none"),
+    calculus: !!s.calculus,
+    retention: String(s.retention ?? "none"),
   };
 }
 

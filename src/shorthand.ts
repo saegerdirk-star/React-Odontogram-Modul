@@ -119,6 +119,15 @@ export const SHORTHAND_DE: Record<string, Entry> = {
   "D2":   { kind: "axis", field: "eruptionStage", value: "half-crown" },
   "D3":   { kind: "axis", field: "eruptionStage", value: "full-crown" },
   "WR":   { kind: "axis", field: "toothSubstrate", value: "radix" },
+  // charlys viertes Bild ("Fr im Kasten") ist die KRONEN-Fraktur — ein anderer
+  // Befund als `Fra` (die WURZELfraktur, weiter unten): die Krone ist gebrochen,
+  // also `toothSubstrate: "broken"`. "Fra" gewinnt beim Tippen ueber "Fr", weil
+  // die laengste Uebereinstimmung zuerst greift.
+  "Fr":   { kind: "axis", field: "toothSubstrate", value: "broken" },
+  // Zahnstein steht bei charly als Ankreuzfeld in der rechten Spalte, nicht als
+  // getippter Buchstabe; das Kuerzel ist hier unsere Wahl, die Bedeutung ist
+  // charlys. `calculus` ist ein boolesches Feld in defaultState().
+  "Zst":  { kind: "axis", field: "calculus", value: true },
   ")L(":  { kind: "axis", field: "missingClosed", value: true },
   // "ersetzt" and "Brueckenglied" are both a gap that carries something. A
   // pontic is a gap tooth with a bridge on it (`restorationOptions()` offers a

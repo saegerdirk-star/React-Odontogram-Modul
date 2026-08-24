@@ -1471,6 +1471,85 @@ select:focus{
 .schematic-column{grid-column:1 / -1; min-width:0; padding:12px 8px; overflow-x:auto}
 .schematic-chart-wrap{max-inline-size:1400px; margin-inline:auto}
 .schematic-chart-wrap svg.schematic-chart{display:block; width:100%; height:auto}
+.schematic-chart-outer{position:relative}
+
+/* Bead odontogram-ip3, Phase 2: editing in the schematic view.
+   ---------------------------------------------------------------------------
+   Toolbar above the chart: a one-line hint plus the Compact/All-options toggle. */
+.schematic-toolbar{
+  max-inline-size:1400px; margin:0 auto 8px; padding:0 2px;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+.schematic-hint{color:var(--muted, #667); font-size:13px}
+
+/* The transparent per-column hit rect. No fill (it must never tint the glyph);
+   hover and the active column show as a stroked box only. */
+.schematic-hit{cursor:pointer; stroke:transparent; stroke-width:1.5; transition:stroke .08s}
+.schematic-hit:hover{stroke:#9bbcff}
+.schematic-hit.is-active{stroke:#3b7bff; stroke-width:2}
+
+/* Hover read-out: the full finding text (getToothStateSummary), the same lines
+   the anatomical tile tooltip carries. Fixed to the cursor. */
+.schematic-tooltip{
+  position:fixed; z-index:180; pointer-events:none;
+  max-width:320px; padding:8px 10px;
+  background:rgba(255,255,255,.98); color:#222;
+  border:1px solid var(--line, #d8dde3); border-radius:8px;
+  box-shadow:0 6px 20px rgba(0,0,0,.14);
+  font-size:12px; line-height:1.4;
+}
+.schematic-tooltip-title{font-weight:700; margin-bottom:2px}
+.schematic-tooltip-line{white-space:normal}
+.schematic-tooltip-empty{color:#999}
+
+/* THE EDITING SURFACE. Two housings, one toggle:
+   - COMPACT (default): a small charly-style keypad (SchematicKeypad) below the
+     chart; the full card panel is hidden (kept mounted for wireControls).
+   - ALL OPTIONS (.schematic-edit-all): the REAL card panel is relocated below
+     the chart, full-width, as a horizontal band; the keypad is not rendered.
+   Both drive the SAME wired controls + DS-1 gate. Scoped to .schematic-edit so
+   the odontogram / perio / ortho views are completely untouched. */
+.layout.schematic-edit:not(.schematic-edit-all) aside.panel{display:none}
+.layout.schematic-edit.schematic-edit-all aside.panel{grid-column:1 / -1; display:block; margin-top:4px}
+.layout.schematic-edit.schematic-edit-all .panel-body{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
+  align-items:start;
+  gap:12px;
+  max-height:46vh;
+  overflow:auto;
+  padding-right:4px;
+}
+
+/* The compact keypad. */
+.schematic-keypad{
+  max-inline-size:1400px; margin:10px auto 0; padding:12px 14px;
+  background:rgba(255,255,255,.9); border:1px solid var(--line, #d8dde3);
+  border-radius:14px;
+}
+.schematic-keypad.is-disabled .keypad-row-label,
+.schematic-keypad.is-disabled .keypad-hint{opacity:.6}
+.keypad-head{display:flex; gap:12px; align-items:baseline; margin-bottom:8px}
+.keypad-title{font-weight:700; font-size:15px}
+.keypad-active{color:var(--muted, #667); font-size:13px}
+.keypad-row{display:flex; align-items:center; gap:10px; margin:5px 0}
+.keypad-row-label{
+  inline-size:118px; flex:none; text-align:right;
+  color:var(--muted, #667); font-size:12px;
+}
+.keypad-keys{display:flex; flex-wrap:wrap; gap:6px; align-items:center}
+.keypad-btn{
+  min-inline-size:40px; block-size:32px; padding:0 10px;
+  border:1px solid var(--line, #d8dde3); border-radius:8px;
+  background:#fff; color:#222; font-size:13px; font-weight:600; cursor:pointer;
+  transition:border-color .08s, color .08s, background .08s;
+}
+.keypad-btn:hover:not(:disabled){border-color:#3b7bff; color:#3b7bff}
+.keypad-btn:active:not(:disabled){background:#eef4ff}
+.keypad-btn:disabled{opacity:.4; cursor:default}
+.keypad-surf{min-inline-size:34px}
+.keypad-mat.is-active{background:#3b7bff; color:#fff; border-color:#3b7bff}
+.keypad-hint{color:#8a94a2; font-size:12px; margin-inline-start:4px}
 .perio-inline-panel{min-height:480px}
 
 /* Tooth information panel — its own card below (outside) the dental chart box */

@@ -2,7 +2,7 @@
 // Created by Zoltan Dul (https://github.com/ZoliQua) 2025-2026
 
 import { useEffect, useRef, useState } from "react";
-import { destroyOdontogram, initOdontogram, setNumberingSystem, clearSelection, setOcclusalVisible, setWisdomVisible, setShowBase, setHealthyPulpVisible, registerPlugins, setPluginState, getPluginState, getToothStateSummary, getOdontogramSummary, formatToothLabel, onStateChange, setReadOnly, getReadOnly, setNotesEnabled, getNotesEnabled, setIcdasEnabled, getIcdasEnabled, setPulpDetailLevel, getPulpDetailLevel, setSecondaryCariesMode, getSecondaryCariesMode, setRootCariesMode, getRootCariesMode, setRadiographicDepthMode, getRadiographicDepthMode, setCariesDepthEnabled, getCariesDepthEnabled, setWearDetailLevel, getWearDetailLevel, setDiscolorationDetailLevel, getDiscolorationDetailLevel, setSurfaceNotation, getSurfaceNotation, exportFhir, exportImage, exportSvg, setImportFormat, openPerioOverlay, closePerioOverlay, isPerioOverlayOpen, getPerioViewMode, setPerioViewMode, getPerioRowVisibility, setPerioRowVisibility, getPerioIndexNameMode, setPerioIndexNameMode, isDualStateConfirmPending, acceptDualStateConfirm, cancelDualStateConfirm, hasAnyPerioData, getImportAsBaseline, setImportAsBaseline, getChartMode, setChartMode, getStatusChart, getPlanChart, setPlanChart, getPlanChanges, exportStatus, importStatus, exportPdf, exportPerioImage, exportPerioSvg } from "./odontogram";
+import { destroyOdontogram, initOdontogram, setNumberingSystem, clearSelection, setOcclusalVisible, setWisdomVisible, setShowBase, setHealthyPulpVisible, registerPlugins, setPluginState, getPluginState, getToothStateSummary, getOdontogramSummary, formatToothLabel, onStateChange, setReadOnly, getReadOnly, setNotesEnabled, getNotesEnabled, setIcdasEnabled, getIcdasEnabled, setPulpDetailLevel, getPulpDetailLevel, setSecondaryCariesMode, getSecondaryCariesMode, setRootCariesMode, getRootCariesMode, setRadiographicDepthMode, getRadiographicDepthMode, setCariesDepthEnabled, getCariesDepthEnabled, setWearDetailLevel, getWearDetailLevel, setDiscolorationDetailLevel, getDiscolorationDetailLevel, setSurfaceNotation, getSurfaceNotation, exportFhir, exportImage, exportSvg, setImportFormat, openPerioOverlay, closePerioOverlay, isPerioOverlayOpen, getPerioViewMode, setPerioViewMode, getPerioRowVisibility, setPerioRowVisibility, getPerioIndexNameMode, setPerioIndexNameMode, isDualStateConfirmPending, acceptDualStateConfirm, cancelDualStateConfirm, hasAnyPerioData, getImportAsBaseline, setImportAsBaseline, getChartMode, setChartMode, getStatusChart, getPlanChart, setPlanChart, getPlanChanges, exportStatus, importStatus, exportPdf, exportPerioImage, exportPerioSvg, selectToothInChart } from "./odontogram";
 export { clearSelection, setOcclusalVisible, setWisdomVisible, setShowBase, setHealthyPulpVisible, registerPlugins, setPluginState, getPluginState, getToothStateSummary, getOdontogramSummary, formatToothLabel, onStateChange, setReadOnly, getReadOnly, setNotesEnabled, getNotesEnabled, setIcdasEnabled, getIcdasEnabled, setPulpDetailLevel, getPulpDetailLevel, setSecondaryCariesMode, getSecondaryCariesMode, setRootCariesMode, getRootCariesMode, setRadiographicDepthMode, getRadiographicDepthMode, setCariesDepthEnabled, getCariesDepthEnabled, setWearDetailLevel, getWearDetailLevel, setDiscolorationDetailLevel, getDiscolorationDetailLevel, setSurfaceNotation, getSurfaceNotation, exportFhir, exportImage, exportSvg, setImportFormat, getPerioViewMode, setPerioViewMode, getPerioRowVisibility, setPerioRowVisibility, getPerioIndexNameMode, setPerioIndexNameMode, isDualStateConfirmPending, acceptDualStateConfirm, cancelDualStateConfirm, getImportAsBaseline, setImportAsBaseline, initOdontogram, destroyOdontogram, setNumberingSystem, getChartMode, setChartMode, getStatusChart, getPlanChart, setPlanChart, getPlanChanges, openPerioOverlay, closePerioOverlay, isPerioOverlayOpen, hasAnyPerioData, exportStatus, importStatus, exportPdf, exportPerioImage, exportPerioSvg };
 export { default as PerioChart } from "./PerioChart";
 // Bead odontogram-3l1: the controlled-integration surface (UI-domain document
@@ -45,6 +45,7 @@ import PerioSidebar from "./PerioSidebar";
 import ModelAnalysisCard from "./ModelAnalysisCard";
 import CephalometryCard from "./CephalometryCard";
 import SchematicChart from "./SchematicChart";
+import SchematicKeypad from "./SchematicKeypad";
 // Bead odontogram-ap7: capture/correct the initial examination.
 import ExaminationCard from "./ExaminationCard";
 import DualStateConfirm from "./DualStateConfirm";
@@ -337,6 +338,19 @@ export default function App({
   // dialog and the switcher carries Odontogram | Orthodontics alone.
   const [viewMode, setViewMode] = useState<PerioViewMode>(() => getPerioViewMode());
   const [activeView, setActiveView] = useState<AppView>("odontogram");
+  // Bead odontogram-ip3, Phase 2: in the schematic view the real control panel
+  // is relocated BELOW the chart as a compact band. "Compact" hides the bulky
+  // batch-select block and the secondary cards (baseline, ortho); this flag,
+  // flipped by the "All options" toggle in the schematic header, reveals them.
+  // Session-only UI state, never touches the case.
+  const [schematicShowAll, setSchematicShowAll] = useState<boolean>(false);
+  // The tooth picked in the schematic view. Held here (not read from the engine)
+  // so BOTH the chart (highlight) and the keypad (enable/label) react to a click
+  // — a plain selection does not fire onStateChange, so the keypad can't learn
+  // it any other way. The click also drives the engine's real selection via
+  // selectToothInChart, so applyShorthand from the keypad targets this tooth.
+  const [schematicTooth, setSchematicTooth] = useState<number | null>(null);
+  const onSchematicSelect = (tn: number) => { selectToothInChart(tn); setSchematicTooth(tn); };
   // UI-2 Task 1: mirror the two Settings -> Periodontal tab module flags into
   // React state, same precedent as `viewMode` mirroring `perioViewMode` above
   // — kept in sync via the shared `onStateChange` subscription so a host
@@ -810,7 +824,7 @@ export default function App({
         </div>
       </header>
 
-      <main className="layout">
+      <main className={"layout" + (isSchematicView ? " schematic-edit" : "") + (isSchematicView && schematicShowAll ? " schematic-edit-all" : "")}>
         {/* ONE switcher for every clinical view (bead odontogram-c51).
             ------------------------------------------------------------------
             The periodontal segment is the only one that depends on the
@@ -1166,10 +1180,23 @@ export default function App({
         )}
         {isSchematicView && (
           <div className="schematic-column" dir="ltr">
-            <SchematicChart />
+            <div className="schematic-toolbar">
+              <span className="schematic-hint">{t("schematic.editHint")}</span>
+              <button
+                type="button"
+                id="schematicShowAllToggle"
+                className={"btn btn-ghost btn-sm" + (schematicShowAll ? " is-active" : "")}
+                aria-pressed={schematicShowAll}
+                onClick={() => setSchematicShowAll((v) => !v)}
+              >
+                {schematicShowAll ? t("schematic.compact") : t("schematic.showAll")}
+              </button>
+            </div>
+            <SchematicChart selected={schematicTooth} onSelect={onSchematicSelect} />
+            {!schematicShowAll && <SchematicKeypad tooth={schematicTooth} />}
           </div>
         )}
-        <aside className="panel" style={isOrthoView || isSchematicView ? { display: "none" } : undefined}>
+        <aside className="panel" style={isOrthoView ? { display: "none" } : undefined}>
           {/* Keep the odontogram control panel ALWAYS mounted, toggling only
               its visibility with CSS. Unmounting it on the perio toggle
               produced fresh DOM nodes whose one-time wireControls() listeners
