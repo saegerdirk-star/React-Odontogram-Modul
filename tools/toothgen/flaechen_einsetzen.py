@@ -32,6 +32,7 @@ import crownprep as cp             # noqa: E402
 import fuellflaechen as ff          # noqa: E402
 import fuellflaechen_einsetzen as fe  # noqa: E402
 import halsbaender as hb            # noqa: E402
+import implantate as impl           # noqa: E402
 import kauflaechen as kf            # noqa: E402
 import endo as en                  # noqa: E402
 import kronen as kr                 # noqa: E402
@@ -72,6 +73,12 @@ def main() -> int:
     seiten_prep = cp.seitenzaehne()
     preps = sum(cp.einsetzen(z)["crownprep"] for z in seiten_prep)
     print(f"Beschliffene Zaehne: {preps} in {len(seiten_prep)} Seitenansichten")
+
+    # Dirk, 24.08.2026: das Implantat senkrecht und mittig, die Krone oben drauf -
+    # die Wurzel-Ausrichtung brauchen wir in der 2D-Darstellung nicht. Nur ein
+    # transform auf die implant-Gruppe, also parity-frei.
+    aufgerichtet = sum(impl.einsetzen(z) for z in impl.alle())
+    print(f"Implantate senkrecht+mittig: {aufgerichtet} Vorlagen")
 
     print(f"Kauflaechen: {len(rp.PLAN_OCCL)}")
     for ziel in rp.PLAN_OCCL:

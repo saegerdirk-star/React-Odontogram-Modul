@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.51.0 - 2026-08-24
+
+### Implantat senkrecht, mittig und positionsgerecht im Durchmesser (Bead odontogram-5hm)
+
+Dirk, 24.08.2026: „Die Implantate folgen offensichtlich der Ausrichtung der
+Wurzeln der Zähne. Das brauchen wir nicht. Es ist eine zweidimensionale
+Darstellung und wir machen die genau senkrecht und mittig. Die Krone kommt oben
+drauf." Und: „Mach die Implantate von 15, 14, 13 kleiner im Durchmesser, gilt
+vermutlich auch für 45, 44, 43."
+
+Der Schraubenkörper `implant-base` war je Vorlage entlang der Wurzelachse
+gezeichnet — leicht gekippt (3–11°) und außer der Mitte (Schwerpunkt bei
+0,57–0,78 statt 0,5). Die Krone sitzt dagegen schon mittig, weil sie aus der
+zentrierten Kontur geschnitten wird. Neues Generator-Modul `tools/toothgen/
+implantate.py` legt einen `transform` auf die `<g id="implant">`-Gruppe, der die
+Zeichnung um den Schwerpunkt des Schraubenkörpers **senkrecht dreht** und in x
+auf den **Zahnmittelpunkt** schiebt; für Prämolaren/Eckzähne (13/14/15, 43/44/45)
+zusätzlich eine **horizontale Stauchung auf 0,70** (schmalerer Durchmesser). Die
+Krone sitzt damit sauber oben drauf. Läuft in der dritten Stufe
+(`flaechen_einsetzen.py`), idempotent, nur ein Transform-Attribut → außerhalb des
+SVG-Fingerabdrucks (id/opacity/class), Parität byte-identisch. Alle
+toothgen-Contracts grün, gemessen steht jede Schraube danach unter 1,5° und bei
+cx ≈ 0,50.
+
 ## 2.50.0 - 2026-08-23
 
 ### Live-Modus: das Odontogramm liest und schreibt direkt gegen Aidbox (Bead odontogram-6fi)

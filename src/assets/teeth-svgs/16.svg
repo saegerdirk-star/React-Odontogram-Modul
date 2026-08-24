@@ -285,7 +285,7 @@
     </g>
   <g id="restorations" data-active="1">
     <path id="crown-leakage" d="M0.9,54.76L37,54.76L37,58.16L0.9,58.16Z" data-active="1" style="display: none; fill: #9e00e9; stroke: #9e00e9; stroke-miterlimit: 10;" />
-    <g id="implant" data-active="1" style="display: none;">
+    <g id="implant" data-active="1" style="display: none;" transform="matrix(0.99595,0.08995,-0.08995,0.99595,1.897,-1.820)">
       <path id="implant-locator-screw" d="M19.22,65.7c1.37,1.23,5.37.36,7.61.26,4.43-.82,2.04-4.29,2.27-6.47-.05-.62.16-1.45-.58-1.84-.3-.25-1.01-.27-1.43-.23-2.1.18-4.76.22-6.83.75-1.8.42-1.86,1.32-1.77,2.39.15,1.78.01,3.5.57,5.06l.01.18h0Z" data-active="1" style="fill: url(#toothgen-16-linear-gradient-16-8); stroke: #c8c9c9; stroke-miterlimit: 10; stroke-width: .2px;" />
       <path id="implant-connector" d="M14.54,60.08h0c.25,1.24,1.7,1.74,2.78,1.29,1.9-.78,2.08-1.97,4.59-2.27l4.61-.39c1.12-.09,2.65,1.49,4.22,1.63,1.56.14,1.91-.7,1.7-1.58-.14-1.7-.42-4.99-1.13-5.02-.71-.03-4.33.36-5.17.43l-6.29.53c-1.4.12-3.8-.04-4.84,1.03-1.03,1.08-1.18,2.7-.82,3.66l.33.6h0Z" data-active="1" style="fill: url(#toothgen-16-linear-gradient-16-9);" />
       <path id="implant-bar" d="M-.43,72.82c10.22-.58,37.01-3.1,48.18-4.04,11.17-.94,4.86-2.39,5-4.09.14-1.72.18-2.89-2.07-2.88-2.25.01-8.38.7-11.03.92-6.42.54-11.74.98-17.72,1.66-6.7.56-21.21,1.95-22.34,1.87-1.94.34-3.56,1.11-3.77,2.02-.14,1.72.13,4.92,3.61,4.46h0Z" data-active="1" style="fill: url(#toothgen-16-radial-gradient-16-0);" />
