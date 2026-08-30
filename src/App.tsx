@@ -1350,6 +1350,10 @@ export default function App({
                   <span>{t("tooth.broken.distal")}</span>
                 </label>
               </div>
+              <div id="crownFractureTypeRow" className="row">
+                <span>{t("crownFractureType.label")}</span>
+                <select id="crownFractureTypeSelect"></select>
+              </div>
               <div id="contactPointRow" className="row inline-checks contact-row">
                 <label>
                   <input type="checkbox" id="contactMesial" />

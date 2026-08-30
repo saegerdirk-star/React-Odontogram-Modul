@@ -217,13 +217,23 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
       parts.push(`<rect x="${cx - w / 2 + 2}" y="${top + 3}" width="${w - 4}" height="${(cerv - top) - 5}" rx="2" fill="${CROWN_COLORS[s.restorationMaterial] ?? "#e2d6c4"}" opacity="0.9"/>`);
     }
     const half = w / 2, crownH2 = cerv - top;
-    // crown fracture (toothSubstrate "broken", charly's Fr): a jagged crack down
-    // the crown — the CROWN is broken, as opposed to `Fra`/rootFracture below.
-    if (sub === "broken" && !radix && !pontic) {
+    // crown fracture (toothSubstrate "broken" and/or charly's 3-way severity in
+    // crownFractureType): a crack down the crown — the CROWN is broken, as opposed
+    // to `Fra`/rootFracture below. Severity modulates the line: crack = hairline,
+    // split = jagged zig-zag, fracture = a wider jag drawn as a split gap.
+    if ((sub === "broken" || s.crownFractureType !== "none") && !radix && !pontic) {
       const yA = top + 3, yB = cerv - 1, steps = 4;
-      const pts: string[] = [];
-      for (let i = 0; i <= steps; i++) pts.push(`${cx + (i % 2 === 0 ? -5 : 5)},${(yA + (yB - yA) * (i / steps)).toFixed(1)}`);
-      parts.push(`<polyline points="${pts.join(" ")}" fill="none" stroke="#222" stroke-width="1.8" stroke-linejoin="round"/>`);
+      const sev = s.crownFractureType;
+      const amp = sev === "crack" ? 2 : 5;
+      const sw = sev === "crack" ? 1.2 : sev === "fracture" ? 2.6 : 1.8;
+      const jag = (o: number) => {
+        const pts: string[] = [];
+        for (let i = 0; i <= steps; i++) pts.push(`${(cx + o + (i % 2 === 0 ? -amp : amp)).toFixed(1)},${(yA + (yB - yA) * (i / steps)).toFixed(1)}`);
+        return `<polyline points="${pts.join(" ")}" fill="none" stroke="#222" stroke-width="${sw}" stroke-linejoin="round"/>`;
+      };
+      // a full "fracture" reads as a gap: two jagged lines a hair apart
+      if (sev === "fracture") { parts.push(jag(-1.5)); parts.push(jag(1.5)); }
+      else parts.push(jag(0));
     }
     // calculus (charly's Zahnstein): tan deposits at the cervical neck, on the
     // coronal side — distinct in colour and side from the red root-caries band.

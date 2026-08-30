@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.58.0 - 2026-08-30
+
+### Kronenfraktur dreistufig (charly-Paritäts-Audit, Baustein 4)
+
+charly führt die Kronenfraktur dreistufig — **Riss / gesplittert / Bruch**; wir
+kannten nur ein binäres „broken" plus die per-Ecke-Flags (mesial/inzisal/distal,
+das WO). Neue additive Achse **`crownFractureType`** (`none` | `crack` | `split`
+| `fracture`) sagt die Schwere, orthogonal zur Ecke.
+
+- Schema: die Riss-Glyphe wird nach Schwere abgestuft — Riss als Haarlinie,
+  gesplittert als Zickzack, Bruch als breiterer Zickzack mit sichtbarem Spalt.
+- Steuerung: ein Auswahlfeld unter den Bruch-Ecken (präsenter Zahn).
+- Tooltip/Summary: die Frakturzeile nennt die Schwere in Klammern.
+
+Omit-when-`none` serialisiert, toleranter Hydrate, kein `svgLayer` → SVG-Parität
+byte-identisch. Payload **2.35 → 2.36**.
+
 ## 2.57.0 - 2026-08-30
 
 ### Hemisektion / Amputation / Prämolarisierung + WSR im Schema (Paritäts-Audit, Baustein 3)

@@ -13,6 +13,8 @@ export interface ToothRecord {
   mods?: string[];
   periapicalType?: string;
   endo?: string;
+  /** charly WURZELZUSTAND per root: {canal: [filling|post|incomplete|temporary]}. */
+  endoCanals?: Record<string, string[]>;
   caries?: string[];
   cariesActiveDepth?: number;
   // SP6 Task 1: unified per-surface caries severity (0..6), read as ICDAS on a
@@ -33,6 +35,8 @@ export interface ToothRecord {
   // SP12 design). Enum axis, no svgLayer — see registry/axes.ts.
   discoloration?: string;
   periImplant?: string;
+  /** charly BefundAngabeImplantat: center|mesial|distal|both; omit-when-center. */
+  implantPosition?: string;
   // SP-perio PG-C Task 2: two per-tooth categorical DATA axes (payload >=2.14,
   // additive). `cejVisibility` (none|detectable|not-detectable) and
   // `rootConcavity` (none|mild|deep). Omitted entirely when `none` (skipValue),
@@ -56,6 +60,8 @@ export interface ToothRecord {
   brokenMesial?: boolean;
   brokenIncisal?: boolean;
   brokenDistal?: boolean;
+  /** charly's 3-way crown-fracture severity (crack|split|fracture); omit-when-none. */
+  crownFractureType?: string;
   extractionWound?: boolean;
   extractionPlan?: boolean;
   parapulpalPin?: boolean;
@@ -255,7 +261,7 @@ export interface DentalCoreIdentity {
 // filling or caries lesion extends into the cervical region. Omitted entirely
 // when empty, so a document that never records it is byte-identical apart from
 // this version string, and an older document needs no migration.
-export const PAYLOAD_VERSION = "2.35";
+export const PAYLOAD_VERSION = "2.36";
 
 /**
  * The UI-domain document (bead odontogram-3l1, AC2/AC4): a versioned,

@@ -520,6 +520,9 @@ function defaultState(){
     brokenMesial: false,
     brokenIncisal: false,
     brokenDistal: false,
+    // charly führt die Kronenfraktur DREISTUFIG (Riss / gesplittert / Bruch);
+    // die brokenMesial/Incisal/Distal-Flags sagen WO, dieser Wert wie SCHWER.
+    crownFractureType: "none", // none | crack | split | fracture
     extractionWound: false,
     extractionPlan: false,
     parapulpalPin: false,
@@ -2789,8 +2792,10 @@ function cariesSeverityTierLabel(state: Any): string | null {
 }
 /** Fracture presence label, or null. */
 function fractureSummaryLabel(state: Any): string | null {
-  if(!(state.brokenMesial || state.brokenIncisal || state.brokenDistal)) return null;
-  return t("summary.fracture");
+  const cft = state.crownFractureType && state.crownFractureType !== "none";
+  if(!(state.brokenMesial || state.brokenIncisal || state.brokenDistal || cft)) return null;
+  const base = t("summary.fracture");
+  return cft ? `${base} (${t("crownFractureType.option." + state.crownFractureType)})` : base;
 }
 
 function getBrokenCrownVariant(state: Any){
@@ -3231,6 +3236,10 @@ function getRootOptions(toothNo: number | null): { value: string; label: string 
 }
 function getRootFractureOptions(): { value: string; label: string }[]{
   return Array.from(VALID_ROOT_FRACTURE).map(v => ({ value: v, label: t("rootFracture.option." + kebabToCamel(v)) }));
+}
+function getCrownFractureTypeOptions(): { value: string; label: string }[]{
+  return ["none", "crack", "split", "fracture"].map(v =>
+    ({ value: v, label: t("crownFractureType.option." + v) }));
 }
 function getRootResectionOptions(): { value: string; label: string }[]{
   return Array.from(VALID_ROOT_RESECTION).map(v => ({ value: v, label: t("rootResection.option." + kebabToCamel(v)) }));
@@ -5919,6 +5928,8 @@ function syncControlsFromState(state: Any){
   $("#brokenMesial").checked = !!state.brokenMesial;
   $("#brokenIncisal").checked = !!state.brokenIncisal;
   $("#brokenDistal").checked = !!state.brokenDistal;
+  setSelectOptions($("#crownFractureTypeSelect"), getCrownFractureTypeOptions(), state.crownFractureType ?? "none");
+  $("#crownFractureTypeRow").classList.toggle("hidden", !(activeTooth && isToothPresent(state.toothSelection)));
   $("#extractionWound").checked = !!state.extractionWound;
   $("#extractionPlan").checked = !!state.extractionPlan;
   $("#parapulpalPin").checked = !!state.parapulpalPin;
@@ -6686,6 +6697,25 @@ export function setImplantPosition(toothNo: number, value: string): void {
 }
 export function getImplantPosition(toothNo: number): string {
   return String(toothState.get(toothNo)?.implantPosition ?? "center");
+}
+
+const VALID_CROWN_FRACTURE_TYPE = new Set(["none", "crack", "split", "fracture"]);
+/** Kronenfraktur-Schwere (charly dreistufig: Riss / gesplittert / Bruch). A
+ *  severity qualifier on the crown-fracture finding — orthogonal to WHERE the
+ *  crown is broken (brokenMesial/Incisal/Distal). Present natural/milk tooth. */
+export function setCrownFractureType(toothNo: number, value: string): void {
+  if(!VALID_CROWN_FRACTURE_TYPE.has(value)) return;
+  const s = toothState.get(toothNo);
+  if(!s || !isToothPresent(s.toothSelection)) return;
+  gateToothEdit(toothNo, () => {
+    if((s.crownFractureType ?? "none") === value) return false;
+    s.crownFractureType = value;
+    notifyStateChange();
+    return true;
+  });
+}
+export function getCrownFractureType(toothNo: number): string {
+  return String(toothState.get(toothNo)?.crownFractureType ?? "none");
 }
 
 const VALID_ENDO_CANAL = new Set(["filling", "post", "incomplete", "temporary"]);
@@ -8361,6 +8391,7 @@ function serializeState(s: Any){
     // Implantatposition: omit-when-"center", so a chart with no repositioned
     // implant stays byte-identical apart from the version field.
     ...(s.implantPosition && s.implantPosition !== "center" ? { implantPosition: s.implantPosition } : {}),
+    ...(s.crownFractureType && s.crownFractureType !== "none" ? { crownFractureType: s.crownFractureType } : {}),
     // Endo pro Kanal: omit-when-empty (a chart with no per-canal detail stays
     // byte-identical apart from the version field).
     ...(s.endoCanals && Object.keys(s.endoCanals).length ? { endoCanals: s.endoCanals } : {}),
@@ -8761,6 +8792,7 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   // key, which reads as "no retention element recorded".
   s.retention = validateEnum(raw.retention, VALID_RETENTION, "none");
   s.implantPosition = validateEnum(raw.implantPosition, VALID_IMPLANT_POSITION, "center");
+  s.crownFractureType = validateEnum(raw.crownFractureType, VALID_CROWN_FRACTURE_TYPE, "none");
   s.endoCanals = {};
   if(raw.endoCanals && typeof raw.endoCanals === "object"){
     for(const [k, v] of Object.entries(raw.endoCanals as Record<string, unknown>)){
@@ -13751,6 +13783,12 @@ function wireControls(){
     nachZeichnen(betroffen);
   });
 
+  buildSelect($("#crownFractureTypeSelect"), getCrownFractureTypeOptions(), (value)=>{
+    const betroffen = Array.from(selectedTeeth) as number[];
+    for(const toothNo of betroffen) setCrownFractureType(toothNo, value);
+    nachZeichnen(betroffen);
+  });
+
   buildSelect($("#eruptionSelect"), getEruptionOptions(), (value)=>{
     const betroffen = Array.from(selectedTeeth) as number[];
     for(const toothNo of betroffen) setEruptionStage(toothNo, value);
@@ -14593,6 +14631,8 @@ export type ToothDisplayState = {
   implantPosition: string;
   endoCanals: Record<string, string[]>;
   rootResection: string; rootResectionRoot: string; endoResection: boolean;
+  brokenMesial: boolean; brokenIncisal: boolean; brokenDistal: boolean;
+  crownFractureType: string;
 };
 
 export function getToothDisplayState(toothNo: number): ToothDisplayState {
@@ -14634,6 +14674,10 @@ export function getToothDisplayState(toothNo: number): ToothDisplayState {
     rootResection: String(s.rootResection ?? "none"),
     rootResectionRoot: String(s.rootResectionRoot ?? ""),
     endoResection: !!s.endoResection,
+    brokenMesial: !!s.brokenMesial,
+    brokenIncisal: !!s.brokenIncisal,
+    brokenDistal: !!s.brokenDistal,
+    crownFractureType: String(s.crownFractureType ?? "none"),
   };
 }
 
