@@ -103,6 +103,8 @@ export interface ToothRecord {
   pulpDx?: string;
   pulpLatin?: string;
   apicalDx?: string;
+  /** charly: the root the apical lesion sits on (multi-rooted). Omit-when-empty. */
+  apicalRoot?: string;
   resorptionType?: string;
   // `rootCaries` is a normal enum axis. `radiographicDepth` (per-surface
   // none/E1/E2/D1/D2/D3) is a per-surface scalar map, independent of the
@@ -276,7 +278,7 @@ export interface DentalCoreIdentity {
 // filling or caries lesion extends into the cervical region. Omitted entirely
 // when empty, so a document that never records it is byte-identical apart from
 // this version string, and an older document needs no migration.
-export const PAYLOAD_VERSION = "2.43";
+export const PAYLOAD_VERSION = "2.44";
 
 /**
  * The UI-domain document (bead odontogram-3l1, AC2/AC4): a versioned,
