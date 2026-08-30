@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.66.0 - 2026-08-30
+
+### Apikale Beherdung pro Wurzel (charly-Paritäts-Audit, Baustein 12)
+
+charly führt die apikale Beherdung pro Wurzel; wir behalten `apicalDx` je Zahn,
+benennen aber optional die betroffene **Wurzel** (`apicalRoot`) an einem
+mehrwurzeligen Zahn. Die Läsion sitzt dann im Schema am Apex genau dieser Wurzel
+statt in der Mitte.
+
+- Schema: das apikale Bild (Granulom-Scheibe / Zysten-Ring / Abszess-Strahlen)
+  wird an den benannten Wurzel-Apex verschoben.
+- Steuerung: Auswahlfeld „Wurzel (apikal)", nur bei mehrwurzeligem Zahn mit
+  apikaler Diagnose.
+- Tooltip/Summary: die Diagnosezeile nennt die Wurzel.
+
+Omit-when-empty serialisiert, toleranter Hydrate (fremde Wurzel verworfen), kein
+neuer `svgLayer` → SVG-Parität byte-identisch. Payload **2.43 → 2.44**.
+
+Damit ist der charly-Paritäts-Audit im Wesentlichen abgeschlossen; die noch
+offene Randkaries pro Seite ist bereits über die per-Fläche-Sekundärkaries und
+`fillingDefect` abgedeckt.
+
 ## 2.65.0 - 2026-08-30
 
 ### Kippung/Wanderung/Drehung „zunehmend" (charly-Paritäts-Audit, Baustein 11)

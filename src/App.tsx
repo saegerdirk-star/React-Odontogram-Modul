@@ -1533,6 +1533,10 @@ export default function App({
                   <span>{t("periapical.typeLabel")}</span>
                   <select id="periapicalTypeSelect"></select>
                 </div>
+                <div id="apicalRootRow" className="row hidden">
+                  <span>{t("apical.rootLabel")}</span>
+                  <select id="apicalRootSelect"></select>
+                </div>
                 <div id="papillaMesialRow" className="row">
                   <span>{t("papillaLoss.label")} ({t("papillaLoss.site.mesial")})</span>
                   <select id="papillaMesialSelect"></select>
