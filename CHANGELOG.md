@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.67.0 - 2026-08-30
+
+### Schema: Schneidekante statt Kaufläche bei Frontzähnen
+
+Frontzähne (13–23, 43–33) hatten in der Schema-Draufsicht dieselbe molare
+Kauflächen-Box wie alle anderen — falsch, ein Schneidezahn/Eckzahn hat keine
+Kaufläche, sondern eine Schneidekante (Dirk, 30.08.2026). `occlBox` ist jetzt
+parametrisiert: ein anteriorer Zahn (`isAnteriorTooth`) bekommt eine **flachere,
+breitere Box mit einer horizontalen Schneidekanten-Leiste** in der Mitte (statt
+des zentralen Kauflächen-Quadrats mit Eck-Ticks), plus einer leicht betonten
+Kantenlinie — die Fünf-Flächen-Zuordnung (M/D/labial/palatinal/inzisal) und alle
+Befund-Einfärbungen bleiben. Seitenzähne unverändert.
+
+Reine Schema-Darstellung — kein State/Payload/FHIR, SVG-Fingerprint-Parität
+byte-identisch. Payload bleibt **2.44**.
+
 ## 2.66.0 - 2026-08-30
 
 ### Apikale Beherdung pro Wurzel (charly-Paritäts-Audit, Baustein 12)

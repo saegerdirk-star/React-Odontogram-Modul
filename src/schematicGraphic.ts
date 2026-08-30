@@ -15,7 +15,7 @@
  * odontogram state, no payload/FHIR change → parity-free. Phase 1 is DISPLAY
  * ONLY; interactivity is a later phase.
  */
-import { rootsOf, isUpperTooth, type ToothDisplayState } from "./odontogram";
+import { rootsOf, isUpperTooth, isAnteriorTooth, type ToothDisplayState } from "./odontogram";
 
 // Arch order (occlusal-to-occlusal in the middle): upper side glyphs point their
 // roots UP, lower point DOWN.
@@ -392,22 +392,32 @@ function surfaceColor(surf: string, s: ToothDisplayState): string | null {
 }
 
 function occlBox(toothNo: number, s: ToothDisplayState): string {
-  // box coords in a CELL_W x OCCL_H cell, centred
+  // box coords in a CELL_W x OCCL_H cell, centred. ANTERIOR teeth (13-23, 43-33)
+  // have no occlusal table but an INCISAL EDGE — their top view is a wider,
+  // flatter box whose centre is a horizontal incisal-edge BAR (mesiodistal)
+  // rather than the molar occlusal square (Dirk, 30.08.2026).
+  const anterior = isAnteriorTooth(toothNo);
   const bw = 44, cx = CELL_W / 2, cy = OCCL_H / 2;
-  const x0 = cx - bw / 2, y0 = cy - bw / 2, inner = 18, ix0 = cx - inner / 2, iy0 = cy - inner / 2;
+  const boxW = bw, boxH = anterior ? 30 : bw;
+  const inW = anterior ? 30 : 18, inH = anterior ? 9 : 18;
+  const x0 = cx - boxW / 2, y0 = cy - boxH / 2;
+  const ix0 = cx - inW / 2, iy0 = cy - inH / 2;
+  const outerRx = anterior ? 6 : 8, innerRx = anterior ? 3 : 4;
   const missing = s.toothSelection === "none" || s.toothSelection === "no-tooth-after-extraction";
   const parts: string[] = [];
   if (missing && s.restorationType !== "bridge") {
-    parts.push(`<rect x="${x0}" y="${y0}" width="${bw}" height="${bw}" rx="8" fill="none" stroke="#c9c9c9" stroke-width="1.2" stroke-dasharray="3 3"/>`);
+    parts.push(`<rect x="${x0}" y="${y0}" width="${boxW}" height="${boxH}" rx="${outerRx}" fill="none" stroke="#c9c9c9" stroke-width="1.2" stroke-dasharray="3 3"/>`);
     return parts.join("");
   }
-  // outer zones as coloured triangles between the inner square and the outer box.
+  // outer zones as coloured trapezoids between the inner region and the outer box.
   // B = top, L = bottom; the LEFT/RIGHT zones are mesial/distal by quadrant so
-  // mesial always faces the arch midline (mesialOnLeft = quadrant 2/3).
-  const leftShape = `M${x0},${y0} L${x0},${y0 + bw} L${ix0},${iy0 + inner} L${ix0},${iy0} Z`;
-  const rightShape = `M${x0 + bw},${y0} L${x0 + bw},${y0 + bw} L${ix0 + inner},${iy0 + inner} L${ix0 + inner},${iy0} Z`;
-  const topShape = `M${x0},${y0} L${x0 + bw},${y0} L${ix0 + inner},${iy0} L${ix0},${iy0} Z`;
-  const botShape = `M${x0},${y0 + bw} L${x0 + bw},${y0 + bw} L${ix0 + inner},${iy0 + inner} L${ix0},${iy0 + inner} Z`;
+  // mesial always faces the arch midline (mesialOnLeft = quadrant 2/3). For an
+  // anterior the inner region is the incisal bar, so buccal/lingual become thin
+  // labial/palatal strips and the centre reads as the biting edge.
+  const leftShape = `M${x0},${y0} L${x0},${y0 + boxH} L${ix0},${iy0 + inH} L${ix0},${iy0} Z`;
+  const rightShape = `M${x0 + boxW},${y0} L${x0 + boxW},${y0 + boxH} L${ix0 + inW},${iy0 + inH} L${ix0 + inW},${iy0} Z`;
+  const topShape = `M${x0},${y0} L${x0 + boxW},${y0} L${ix0 + inW},${iy0} L${ix0},${iy0} Z`;
+  const botShape = `M${x0},${y0 + boxH} L${x0 + boxW},${y0 + boxH} L${ix0 + inW},${iy0 + inH} L${ix0},${iy0 + inH} Z`;
   const onLeft = mesialOnLeft(toothNo);
   const zones: [string, string][] = [
     ["buccal", topShape], ["lingual", botShape],
@@ -423,7 +433,7 @@ function occlBox(toothNo: number, s: ToothDisplayState): string {
   }
   if (zonePaths.length) {
     const clipId = `occlClip-${toothNo}`;
-    parts.push(`<clipPath id="${clipId}"><rect x="${x0}" y="${y0}" width="${bw}" height="${bw}" rx="8"/></clipPath>`);
+    parts.push(`<clipPath id="${clipId}"><rect x="${x0}" y="${y0}" width="${boxW}" height="${boxH}" rx="${outerRx}"/></clipPath>`);
     parts.push(`<g clip-path="url(#${clipId})">${zonePaths.join("")}</g>`);
   }
   // Teilkrone pro Fläche (charly TEILKRONE1-4): mark the surfaces a partial crown
@@ -431,7 +441,7 @@ function occlBox(toothNo: number, s: ToothDisplayState): string {
   // partial. Empty coverage = whole table, drawn as the "On" badge alone.
   if (s.restorationType === "onlay" && s.onlayCoverage.length) {
     const col = CROWN_COLORS[s.restorationMaterial] ?? "#cbb26b";
-    const occlShape = `M${ix0},${iy0} h${inner} v${inner} h${-inner} Z`;
+    const occlShape = `M${ix0},${iy0} h${inW} v${inH} h${-inW} Z`;
     const surfShape: Record<string, string> = {
       buccal: topShape, lingual: botShape, occlusal: occlShape,
       [onLeft ? "mesial" : "distal"]: leftShape,
@@ -440,19 +450,25 @@ function occlBox(toothNo: number, s: ToothDisplayState): string {
     const clipId = `onlayClip-${toothNo}`;
     const covered = s.onlayCoverage.map(surf => surfShape[surf]).filter(Boolean)
       .map(d => `<path d="${d}" fill="${col}" opacity="0.6" stroke="${INK}" stroke-width="0.8"/>`).join("");
-    parts.push(`<clipPath id="${clipId}"><rect x="${x0}" y="${y0}" width="${bw}" height="${bw}" rx="8"/></clipPath>`);
+    parts.push(`<clipPath id="${clipId}"><rect x="${x0}" y="${y0}" width="${boxW}" height="${boxH}" rx="${outerRx}"/></clipPath>`);
     parts.push(`<g clip-path="url(#${clipId})">${covered}</g>`);
   }
   const oc = surfaceColor("occlusal", s);
-  parts.push(`<rect x="${x0}" y="${y0}" width="${bw}" height="${bw}" rx="8" fill="none" stroke="${INK}" stroke-width="1.5"/>`);
-  parts.push(`<rect x="${ix0}" y="${iy0}" width="${inner}" height="${inner}" rx="4" fill="${oc ?? "#fff"}" stroke="${INK}" stroke-width="1.2"/>`);
-  // short corner ticks
-  const t = 6;
-  parts.push(`<g stroke="${INK}" stroke-width="0.9">`
-    + `<line x1="${ix0}" y1="${iy0}" x2="${ix0 - t}" y2="${iy0 - t}"/>`
-    + `<line x1="${ix0 + inner}" y1="${iy0}" x2="${ix0 + inner + t}" y2="${iy0 - t}"/>`
-    + `<line x1="${ix0}" y1="${iy0 + inner}" x2="${ix0 - t}" y2="${iy0 + inner + t}"/>`
-    + `<line x1="${ix0 + inner}" y1="${iy0 + inner}" x2="${ix0 + inner + t}" y2="${iy0 + inner + t}"/></g>`);
+  parts.push(`<rect x="${x0}" y="${y0}" width="${boxW}" height="${boxH}" rx="${outerRx}" fill="none" stroke="${INK}" stroke-width="1.5"/>`);
+  // Centre: the molar occlusal square, or the anterior incisal-edge bar. The bar
+  // carries a slightly heavier top line — that is the biting edge itself.
+  parts.push(`<rect x="${ix0}" y="${iy0}" width="${inW}" height="${inH}" rx="${innerRx}" fill="${oc ?? "#fff"}" stroke="${INK}" stroke-width="1.2"/>`);
+  if (anterior) {
+    parts.push(`<line x1="${ix0 + 1}" y1="${cy}" x2="${ix0 + inW - 1}" y2="${cy}" stroke="${INK}" stroke-width="1.4"/>`);
+  } else {
+    // short corner ticks (posterior only)
+    const t = 6;
+    parts.push(`<g stroke="${INK}" stroke-width="0.9">`
+      + `<line x1="${ix0}" y1="${iy0}" x2="${ix0 - t}" y2="${iy0 - t}"/>`
+      + `<line x1="${ix0 + inW}" y1="${iy0}" x2="${ix0 + inW + t}" y2="${iy0 - t}"/>`
+      + `<line x1="${ix0}" y1="${iy0 + inH}" x2="${ix0 - t}" y2="${iy0 + inH + t}"/>`
+      + `<line x1="${ix0 + inW}" y1="${iy0 + inH}" x2="${ix0 + inW + t}" y2="${iy0 + inH + t}"/></g>`);
+  }
   // charly Funktion: an occlusal function marker at the table centre — premature
   // contact = a red dot, interference = a red chevron, overload = a red ring.
   const fn = s.occlusalFunction;
