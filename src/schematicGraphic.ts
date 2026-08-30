@@ -481,6 +481,32 @@ function occlBox(toothNo: number, s: ToothDisplayState): string {
   return parts.join("");
 }
 
+/** Transparent, CLICKABLE surface zones over the occlusal box — one per surface,
+ *  carrying `data-tooth` and `data-surf` (the shorthand char m/o/d/v/l). Same
+ *  geometry as `occlBox`; laid on TOP of the column hit rect so a click on a
+ *  surface enters a finding there, a click elsewhere still selects the tooth. */
+function occlSurfaceHits(toothNo: number): string {
+  const anterior = isAnteriorTooth(toothNo);
+  const bw = 44, cx = CELL_W / 2, cy = OCCL_H / 2;
+  const boxW = bw, boxH = anterior ? 30 : bw;
+  const inW = anterior ? 26 : 18, inH = anterior ? 9 : 18;
+  const x0 = cx - boxW / 2, y0 = cy - boxH / 2;
+  const ix0 = cx - inW / 2, iy0 = cy - inH / 2;
+  const leftShape = `M${x0},${y0} L${x0},${y0 + boxH} L${ix0},${iy0 + inH} L${ix0},${iy0} Z`;
+  const rightShape = `M${x0 + boxW},${y0} L${x0 + boxW},${y0 + boxH} L${ix0 + inW},${iy0 + inH} L${ix0 + inW},${iy0} Z`;
+  const topShape = `M${x0},${y0} L${x0 + boxW},${y0} L${ix0 + inW},${iy0} L${ix0},${iy0} Z`;
+  const botShape = `M${x0},${y0 + boxH} L${x0 + boxW},${y0 + boxH} L${ix0 + inW},${iy0 + inH} L${ix0},${iy0 + inH} Z`;
+  const occlShape = `M${ix0},${iy0} h${inW} v${inH} h${-inW} Z`;
+  const onLeft = mesialOnLeft(toothNo);
+  // surface -> shorthand char: mesial m, distal d, buccal v, lingual l, occlusal o
+  const zones: [string, string][] = [
+    ["v", topShape], ["l", botShape], ["o", occlShape],
+    [onLeft ? "m" : "d", leftShape], [onLeft ? "d" : "m", rightShape],
+  ];
+  return zones.map(([ch, d]) =>
+    `<path class="schematic-surf-hit" data-tooth="${toothNo}" data-surf="${ch}" d="${d}" fill="transparent"/>`).join("");
+}
+
 // ---------------------------------------------------------------------------
 // Whole chart.
 // ---------------------------------------------------------------------------
@@ -565,7 +591,16 @@ function archRows(teeth: number[], getState: GetDisplayState, sideOnTop: boolean
     teeth.forEach(tn => { if (getState(tn).occlusalSplint) run.push(tn); else flush(); });
     flush();
   }
-  return nums + rowSide + rowOccl + hits + canalHits + splintBars.join("") + splintGuard.join("");
+  // Clickable surface zones over the occlusal box, laid LAST (above the column
+  // hit) so a click on a surface enters a finding there; only on a tooth that
+  // actually carries surfaces (present natural/milk tooth).
+  const occlY = sideOnTop ? r2Y : r1Y;
+  const surfHits = teeth.map((tn, i) => {
+    const s = getState(tn);
+    if (s.toothSelection !== "tooth-base" && s.toothSelection !== "milktooth") return "";
+    return `<g transform="translate(${i * CELL_W},${occlY})">${occlSurfaceHits(tn)}</g>`;
+  }).join("");
+  return nums + rowSide + rowOccl + hits + canalHits + splintBars.join("") + splintGuard.join("") + surfHits;
 }
 
 /** Full schematic chart as one standalone <svg> string. Upper arch: side glyphs

@@ -6870,6 +6870,22 @@ export function selectToothInChart(toothNo: number): void {
   updateSelectionUI();
 }
 
+/** Set the whole selection from a view OUTSIDE the grid (the schematic chart's
+ *  multi-select — drag / shift / ctrl). Mirrors what the grid's own pointer
+ *  handlers do, but driven from the schematic. `primary` is the active tooth
+ *  (defaults to the last in the set); `anchor` is the range anchor for the next
+ *  shift-select (defaults to `primary`). Editing still flows through the same
+ *  wired controls / applyShorthand over `selectedTeeth`, so nothing new mutates. */
+export function setChartSelection(toothNos: number[], primary: number | null = null, anchor: number | null = null): void {
+  selectedTeeth = new Set(toothNos);
+  activeTooth = primary ?? (toothNos.length ? toothNos[toothNos.length - 1] : null);
+  selectionAnchor = anchor ?? activeTooth;
+  updateSelectionUI();
+}
+
+/** The current selection as an array, in no guaranteed order. */
+export function getSelectedTeeth(): number[] { return [...selectedTeeth] as number[]; }
+
 /** The currently active (single) tooth, or null. Read-only; the schematic
  *  keypad uses it to label itself and to gate its buttons. */
 export function getActiveTooth(): number | null { return activeTooth; }

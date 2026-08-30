@@ -1492,6 +1492,10 @@ select:focus{
    a root reads as clickable without tinting the drawing. */
 .schematic-canal-hit{cursor:pointer; stroke:transparent; stroke-width:1.5; transition:stroke .08s}
 .schematic-canal-hit:hover{stroke:#d98f4a}
+/* Clickable occlusal surface zones: click a surface to enter a filling (armed
+   material) or caries. Faint hover so the target reads as clickable. */
+.schematic-surf-hit{cursor:pointer; stroke:transparent; stroke-width:1.2; transition:stroke .08s, fill .08s}
+.schematic-surf-hit:hover{stroke:#3b7bff; fill:rgba(59,123,255,.10)}
 
 /* Hover read-out: the full finding text (getToothStateSummary), the same lines
    the anatomical tile tooltip carries. Fixed to the cursor. */

@@ -7,13 +7,15 @@
  * case state, like PerioChart. Pinned dir="ltr" so tooth geometry never
  * mirrors under RTL.
  *
- * Phase 1 was display-only. Phase 2 (bead odontogram-ip3) makes it EDITABLE
- * without a second mutation path: a click on a tooth selects it through
- * `selectToothInChart`, which drives the very control panel App.tsx relocates
- * BELOW this chart in the schematic view — so every edit still runs through the
- * existing wired controls and the DS-1 gate. Hovering a tooth shows the full
- * finding text (`getToothStateSummary`), the same lines the anatomical tile
- * tooltip carries; the schematic glyph stays the terse overview.
+ * Editing (odontogram-ip3 and the 30.08.2026 UX pass): NO second mutation path.
+ *  - Selecting teeth mirrors the anatomical grid — click / shift-range /
+ *    ctrl-toggle / drag-select, all through `setChartSelection` (the same
+ *    `selectedTeeth` the wired controls and `applyShorthand` read).
+ *  - Clicking a SURFACE zone of the occlusal box enters a finding there via
+ *    `applyShorthand` (filling with the armed material, else caries) — the same
+ *    token the keypad's surface keys emit, so it batches over the whole
+ *    selection exactly like the anatomical surface-cross checkboxes.
+ *  - Clicking a root canal cycles its endo state (or moves a resected root).
  */
 import { useEffect, useRef, useState } from "react";
 import {
@@ -23,27 +25,43 @@ import {
   cycleEndoCanal,
   setRootResection,
 } from "./odontogram";
+import { teethBetween } from "./shorthand";
 import { buildSchematicSvg } from "./schematicGraphic";
 
-/** Nearest ancestor carrying `data-tooth` — the transparent per-column hit rect
- *  the schematic SVG lays over both the side glyph and the occlusal box. */
 function toothAt(target: EventTarget | null): number | null {
   const el = (target as Element | null)?.closest?.("[data-tooth]") as HTMLElement | null;
   if (!el) return null;
   const n = Number(el.dataset.tooth);
   return Number.isFinite(n) ? n : null;
 }
+function toothFromPoint(x: number, y: number): number | null {
+  const el = document.elementFromPoint(x, y)?.closest?.("[data-tooth]") as HTMLElement | null;
+  if (!el) return null;
+  const n = Number(el.dataset.tooth);
+  return Number.isFinite(n) ? n : null;
+}
+
+const DRAG_THRESHOLD = 4;
 
 export default function SchematicChart({
   selected,
-  onSelect,
+  primary,
+  onSelectionChange,
+  onSurface,
 }: {
-  selected: number | null;
-  onSelect: (toothNo: number) => void;
+  /** The whole selection — every one gets the active highlight. */
+  selected: number[];
+  /** The active (primary) tooth — the range anchor for the next shift-select. */
+  primary: number | null;
+  onSelectionChange: (teeth: number[], primary: number) => void;
+  onSurface: (toothNo: number, surfChar: string) => void;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [svg, setSvg] = useState("");
   const [tip, setTip] = useState<{ tn: number; x: number; y: number } | null>(null);
+  // Drag-select bookkeeping (refs — no re-render while dragging).
+  const drag = useRef<{ anchor: number; x: number; y: number; moved: boolean } | null>(null);
+  const suppressClick = useRef(false);
 
   useEffect(() => {
     const rebuild = () => setSvg(buildSchematicSvg(getToothDisplayState));
@@ -51,14 +69,13 @@ export default function SchematicChart({
     return onStateChange(rebuild);
   }, []);
 
-  // Re-stamp the active column after every (re)build. dangerouslySetInnerHTML
-  // rewrites the SVG whenever `svg` changes, wiping the class; this puts it back.
+  // Re-stamp the active columns after every (re)build (innerHTML wipes classes).
   useEffect(() => {
     const root = wrapRef.current;
     if (!root) return;
     root.querySelectorAll(".schematic-hit.is-active").forEach((e) => e.classList.remove("is-active"));
-    if (selected != null) {
-      root.querySelector(`.schematic-hit[data-tooth="${selected}"]`)?.classList.add("is-active");
+    for (const tn of selected) {
+      root.querySelector(`.schematic-hit[data-tooth="${tn}"]`)?.classList.add("is-active");
     }
   }, [svg, selected]);
 
@@ -68,26 +85,57 @@ export default function SchematicChart({
         className="schematic-chart-wrap"
         dir="ltr"
         ref={wrapRef}
+        onPointerDown={(e) => {
+          if (e.button !== 0) return;
+          const tn = toothAt(e.target);
+          if (tn == null) return;
+          drag.current = { anchor: tn, x: e.clientX, y: e.clientY, moved: false };
+        }}
+        onPointerMove={(e) => {
+          const d = drag.current;
+          if (!d) return;
+          if (!d.moved && Math.hypot(e.clientX - d.x, e.clientY - d.y) < DRAG_THRESHOLD) return;
+          d.moved = true;
+          const over = toothFromPoint(e.clientX, e.clientY);
+          if (over == null) return;
+          const span = teethBetween(d.anchor, over);   // same-arch run, arch order
+          if (span.length) onSelectionChange(span, over);
+        }}
+        onPointerUp={() => {
+          if (drag.current?.moved) suppressClick.current = true;
+          drag.current = null;
+        }}
         onClick={(e) => {
-          // A click on a canal's root region: when a hemisection/amputation is
-          // active, MOVE the removed root to the clicked one ("durch die Wurzeln
-          // springen"); otherwise cycle that canal's endo state (WF → WF+Stift →
-          // WFi → med → none). Anywhere else selects the tooth.
+          if (suppressClick.current) { suppressClick.current = false; return; }
+          // 1) a surface zone → enter a finding there
+          const surfEl = (e.target as Element | null)?.closest?.("[data-surf]") as HTMLElement | null;
+          if (surfEl?.dataset.tooth && surfEl.dataset.surf) {
+            onSurface(Number(surfEl.dataset.tooth), surfEl.dataset.surf);
+            return;
+          }
+          // 2) a root canal → cycle endo (or move a resected root)
           const canalEl = (e.target as Element | null)?.closest?.("[data-canal]") as HTMLElement | null;
           if (canalEl?.dataset.tooth && canalEl.dataset.canal) {
             const tn = Number(canalEl.dataset.tooth);
             const canal = canalEl.dataset.canal;
             const rr = getToothDisplayState(tn).rootResection;
-            if (rr === "hemisection" || rr === "amputation") {
-              setRootResection(tn, rr, canal);
-            } else {
-              cycleEndoCanal(tn, canal);
-            }
+            if (rr === "hemisection" || rr === "amputation") setRootResection(tn, rr, canal);
+            else cycleEndoCanal(tn, canal);
             return;
           }
+          // 3) otherwise select — plain / shift-range / ctrl-toggle
           const tn = toothAt(e.target);
           if (tn == null) return;
-          onSelect(tn);
+          if (e.shiftKey && primary != null) {
+            const span = teethBetween(primary, tn);
+            onSelectionChange(span.length ? span : [tn], tn);
+          } else if (e.metaKey || e.ctrlKey) {
+            const set = new Set(selected);
+            if (set.has(tn)) set.delete(tn); else set.add(tn);
+            onSelectionChange([...set], tn);
+          } else {
+            onSelectionChange([tn], tn);
+          }
         }}
         onMouseMove={(e) => {
           const tn = toothAt(e.target);

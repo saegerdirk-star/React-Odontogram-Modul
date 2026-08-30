@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.68.0 - 2026-08-30
+
+### Schema: dieselbe Bedienung wie anatomisch — Zähne markieren + Flächen anklicken
+
+Im Schema waren Füllungs-/Kariesflächen nur sehr umständlich einzugeben (Dirk,
+30.08.2026). Jetzt hat die Schema-Ansicht dieselben Bedien-Funktionen wie das
+anatomische Chart — ohne zweite Mutationsspur, alles über `selectedTeeth`,
+`applyShorthand` und das DS-1-Gate:
+
+- **Zähne markieren (Mehrfachauswahl):** Klick / Shift-Bereich / Strg-Umschalten
+  / **Ziehen** über die Zähne, wie im anatomischen Gitter (`teethBetween`,
+  neuer Export `setChartSelection`/`getSelectedTeeth`). Alle markierten Zähne
+  werden hervorgehoben, Batch-Eingaben wirken auf die ganze Auswahl.
+- **Flächen direkt anklicken:** die fünf Zonen der Kauflächen-/Schneidekanten-Box
+  sind jetzt anklickbar (`.schematic-surf-hit`, `data-surf` m/o/d/v/l). Ein Klick
+  setzt dort einen Befund — **Füllung** im gerade gewählten Material, sonst
+  **Karies** (dieselbe „Material scharf → Füllung, sonst Karies"-Logik wie die
+  Tastenfeld-Flächentasten). Der Material-/Stufen-Modus ist aus dem Tastenfeld in
+  die App gehoben, damit Tastenfeld UND Flächenklick denselben Modus teilen.
+
+Reine Bedien-/Darstellungsänderung — kein State/Payload/FHIR, SVG-Fingerprint-
+Parität byte-identisch. Payload bleibt **2.44**.
+
 ## 2.67.0 - 2026-08-30
 
 ### Schema: Schneidekante statt Kaufläche bei Frontzähnen

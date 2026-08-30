@@ -23,7 +23,7 @@
  * labels, material names, hints, tooltips — goes through `t()` and follows the
  * UI language.
  */
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { applyShorthand, setRetention } from "./odontogram";
 import { t } from "./i18n/useI18n";
 
@@ -104,12 +104,16 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-export default function SchematicKeypad({ tooth }: { tooth: number | null }) {
-  // The material chip char (K/A/G/E), or null. And the caries stage K-token, or
-  // null. Mutually exclusive: a surface is either a filling or a caries lesion.
-  const [mat, setMat] = useState<string | null>(null);
-  const [stage, setStage] = useState<string | null>(null);
-
+export default function SchematicKeypad({ tooth, mat, stage, onMat, onStage }: {
+  tooth: number | null;
+  // The armed material chip char (K/A/G/E) or null, and the armed caries stage
+  // K-token or null — LIFTED to App so a surface click on the chart shares the
+  // same "filling vs caries" mode. Mutually exclusive.
+  mat: string | null;
+  stage: string | null;
+  onMat: (ch: string) => void;
+  onStage: (k: string) => void;
+}) {
   const enabled = tooth != null;
   const apply = (token: string) => { if (enabled) applyShorthand(token); };
   // Restoration keys that take a material get the chosen chip, defaulting to
@@ -126,8 +130,8 @@ export default function SchematicKeypad({ tooth }: { tooth: number | null }) {
     if (!enabled) return;
     applyShorthand(mat ? mat + ch : "c" + (stage ?? "") + ch);
   };
-  const pickMat = (ch: string) => { setMat(mat === ch ? null : ch); setStage(null); };
-  const pickStage = (k: string) => { setStage(stage === k ? null : k); setMat(null); };
+  const pickMat = (ch: string) => onMat(ch);
+  const pickStage = (k: string) => onStage(k);
   const applyRetention = (v: string) => { if (enabled && tooth != null) setRetention(tooth, v); };
 
   const hint = mat
