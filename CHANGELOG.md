@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.61.0 - 2026-08-30
+
+### Wurzelkappe / Root cap (charly-Paritäts-Audit, Baustein 7)
+
+charly kennt die „Wurzelkappe" (Kappe auf einem Wurzelrest, z. B. als Auflager
+einer Deckprothese); bei uns blendet ein Wurzelrest (`radix`) die Versorgungs-
+zeile ganz aus, also braucht es eine eigene Angabe. Neuer per-Zahn-Schalter
+**`rootCap`**, nur auf einem `radix`-Substrat setzbar (`rootCapAllowed`).
+
+- Schema: eine Metallkappe (Kuppel) über dem Wurzelrest auf der Zervikallinie.
+- Steuerung/Tooltip/Summary: Kontrollkästchen „Wurzelkappe", nur bei Radix.
+- Anatomisch gibt es (noch) keine Wurzelkappen-Vorlage — die anatomische Ansicht
+  kann den Befund also ohnehin nicht zeigen; er lebt regelkonform im Schema und
+  im Tooltip.
+
+Omit-when-false serialisiert, toleranter Hydrate. Payload **2.38 → 2.39**.
+
 ## 2.60.0 - 2026-08-30
 
 ### Verblockung / Splinting (charly-Paritäts-Audit, Baustein 6)

@@ -83,6 +83,8 @@ export interface ToothRecord {
   restorationType?: string;
   restorationMaterial?: string;
   crownLeakage?: boolean;
+  /** charly „Wurzelkappe": a coping over a root remnant (radix). Omit-when-false. */
+  rootCap?: boolean;
   /** charly BefundAngabeKronerandBefund (+Seite): typed crown margin. */
   crownMarginType?: string;
   crownMarginSide?: string;
@@ -266,7 +268,7 @@ export interface DentalCoreIdentity {
 // filling or caries lesion extends into the cervical region. Omitted entirely
 // when empty, so a document that never records it is byte-identical apart from
 // this version string, and an older document needs no migration.
-export const PAYLOAD_VERSION = "2.38";
+export const PAYLOAD_VERSION = "2.39";
 
 /**
  * The UI-domain document (bead odontogram-3l1, AC2/AC4): a versioned,

@@ -265,6 +265,11 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
     }
     // --- secondary finding symbols (canonical coords, flip WITH the tooth) ---
     const rootLen = apex - cerv;
+    // Wurzelkappe (charly): a metal coping over the top of a root remnant — a
+    // dome on the cervical line bulging into the (empty) crown space.
+    if (s.rootCap && radix) {
+      parts.push(`<path d="M${(cx - w / 2).toFixed(1)},${cerv} Q${cx},${(cerv - 11).toFixed(1)} ${(cx + w / 2).toFixed(1)},${cerv} Z" fill="#c7ccd0" stroke="#7b838c" stroke-width="1.4" stroke-linejoin="round"/>`);
+    }
     // root caries: a red neck band across the root just below the cervical line
     if (s.rootCaries !== "none") {
       const op = s.rootCaries === "active" ? 0.5 : s.rootCaries === "arrested" ? 0.7 : 1;

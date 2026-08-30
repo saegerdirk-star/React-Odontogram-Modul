@@ -547,6 +547,10 @@ function defaultState(){
     restorationType: "none",    // none | crown | inlay | onlay | veneer | bridge
     restorationMaterial: "none", // none | emax | gold | gradia | zircon | metal | metal-ceramic | telescope | temporary
     crownLeakage: false, // marginal leakage on a crown/bridge restoration (SP3b Task 6)
+    // charly „Wurzelkappe": eine Kappe auf einer Wurzel (Radix), z. B. als
+    // Auflager einer Deckprothese. Nur auf einem Wurzelrest sinnvoll — der
+    // Restaurationsblock ist dort ausgeblendet, also eine eigene Angabe.
+    rootCap: false,
     // charly BefundAngabeKronerandBefund + …Seite: der Kronenrand TYPISIERT
     // (überstehend / Karies / Füllung) und die SEITE. crownLeakage sagt nur DASS
     // der Rand undicht ist; diese beiden sagen WAS und WO.
@@ -5340,6 +5344,7 @@ function getStateSummary(toothNo: number): string[]{
     summary.push(t("crownMarginType.label") + ": " + t("crownMarginType.option." + state.crownMarginType) + side);
   }
   if(state.splinted && isToothPresent(state.toothSelection)) summary.push(t("splint.label"));
+  if(state.rootCap && rootCapAllowed(state)) summary.push(t("rootCap.label"));
   if(state.endoResection) summary.push(t("endo.resection"));
   if(state.fissureSealing) summary.push(t("filling.fissureSealing"));
   if(state.parapulpalPin) summary.push(t("endo.parapulpalPin"));
@@ -6024,6 +6029,8 @@ function syncControlsFromState(state: Any){
   $("#crownLeakage").checked = !!state.crownLeakage;
   $("#splinted").checked = !!state.splinted;
   $("#splintedRow").classList.toggle("hidden", !(activeTooth && isToothPresent(state.toothSelection)));
+  $("#rootCap").checked = !!state.rootCap;
+  $("#rootCapRow").classList.toggle("hidden", !(activeTooth && rootCapAllowed(state)));
   const isMilktooth = state.toothSelection === "milktooth";
   const isImplant = state.toothSelection === "implant";
   const underGum = isUnderGum(state.toothSelection);
@@ -6861,6 +6868,26 @@ export function setSplinted(toothNo: number, on: boolean): void {
 }
 export function getSplinted(toothNo: number): boolean {
   return !!toothState.get(toothNo)?.splinted;
+}
+
+/** charly „Wurzelkappe": a coping over a root remnant. Allowed only on a radix
+ *  substrate (the restoration control is hidden there, so this is its own axis).
+ *  Through the DS-1 gate. */
+export function rootCapAllowed(state: Any): boolean {
+  return isToothPresent(state.toothSelection) && state.toothSubstrate === "radix";
+}
+export function setRootCap(toothNo: number, on: boolean): void {
+  const s = toothState.get(toothNo);
+  if(!s || !rootCapAllowed(s)) return;
+  gateToothEdit(toothNo, () => {
+    if(!!s.rootCap === !!on) return false;
+    s.rootCap = !!on;
+    notifyStateChange();
+    return true;
+  });
+}
+export function getRootCap(toothNo: number): boolean {
+  return !!toothState.get(toothNo)?.rootCap;
 }
 
 const VALID_ENDO_CANAL = new Set(["filling", "post", "incomplete", "temporary"]);
@@ -8472,6 +8499,7 @@ function serializeState(s: Any){
     // Schwebebruecke byte-gleich bleibt bis auf die Version.
     ...(s.cantilever ? { cantilever: true } : {}),
     ...(s.splinted ? { splinted: true } : {}),
+    ...(s.rootCap ? { rootCap: true } : {}),
     prosthesis: s.prosthesis,
     mobility: s.mobility,
     toothSubstrate: s.toothSubstrate,
@@ -9099,6 +9127,7 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   s.bridgePillar = !!raw.bridgePillar;
   s.cantilever = !!raw.cantilever;                      // Bead odontogram-5rv
   s.splinted = !!raw.splinted;                          // Verblockung
+  s.rootCap = !!raw.rootCap;                            // Wurzelkappe
   s.prosthesis = validateEnum(raw.prosthesis, VALID_PROSTHESIS, "none");
   s.mobility = validateEnum(raw.mobility, VALID_MOBILITY, s.mobility);
   s.toothSubstrate = validateEnum(raw.toothSubstrate, VALID_TOOTH_SUBSTRATE, s.toothSubstrate);
@@ -14109,6 +14138,11 @@ function wireControls(){
     applyToSelected((s)=>{ if(isToothPresent(s.toothSelection)) s.splinted = on; });
   });
 
+  $("#rootCap").addEventListener("change", (e)=>{
+    const on = (e.target as HTMLInputElement).checked;
+    applyToSelected((s)=>{ if(rootCapAllowed(s)) s.rootCap = on; });
+  });
+
   // Missing closed
   $("#missingClosed").addEventListener("change", (e)=>{
     applyToSelected((s)=>{
@@ -14800,7 +14834,7 @@ export type ToothDisplayState = {
   brokenMesial: boolean; brokenIncisal: boolean; brokenDistal: boolean;
   crownFractureType: string;
   crownMarginType: string; crownMarginSide: string;
-  splinted: boolean;
+  splinted: boolean; rootCap: boolean;
 };
 
 export function getToothDisplayState(toothNo: number): ToothDisplayState {
@@ -14849,6 +14883,7 @@ export function getToothDisplayState(toothNo: number): ToothDisplayState {
     crownMarginType: String(s.crownMarginType ?? "none"),
     crownMarginSide: String(s.crownMarginSide ?? ""),
     splinted: !!s.splinted,
+    rootCap: !!s.rootCap,
   };
 }
 
