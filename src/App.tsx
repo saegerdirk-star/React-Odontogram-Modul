@@ -1336,6 +1336,11 @@ export default function App({
                 <input type="checkbox" id="crownLeakage" />
                 <span>{t("crownLeakage.label")}</span>
               </label>
+              <div id="crownMarginRow" className="row hidden">
+                <span>{t("crownMarginType.label")}</span>
+                <select id="crownMarginTypeSelect"></select>
+                <select id="crownMarginSideSelect"></select>
+              </div>
               <div id="brokenCrownRow" className="row inline-checks contact-row">
                 <label>
                   <input type="checkbox" id="brokenMesial" />

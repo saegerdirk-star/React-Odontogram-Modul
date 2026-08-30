@@ -542,6 +542,11 @@ function defaultState(){
     restorationType: "none",    // none | crown | inlay | onlay | veneer | bridge
     restorationMaterial: "none", // none | emax | gold | gradia | zircon | metal | metal-ceramic | telescope | temporary
     crownLeakage: false, // marginal leakage on a crown/bridge restoration (SP3b Task 6)
+    // charly BefundAngabeKronerandBefund + …Seite: der Kronenrand TYPISIERT
+    // (überstehend / Karies / Füllung) und die SEITE. crownLeakage sagt nur DASS
+    // der Rand undicht ist; diese beiden sagen WAS und WO.
+    crownMarginType: "none", // none | overhang | caries | filling
+    crownMarginSide: "",     // "" | mesial | distal | buccal | lingual
     // SP4 Task 1: pulp/apical/resorption diagnosis axes. pulpLatin/apicalDx
     // are additive scaffolding — not yet rendered/wired to UI or migration;
     // see later SP4 tasks. resorptionType was wired up (render + migration;
@@ -3241,6 +3246,14 @@ function getCrownFractureTypeOptions(): { value: string; label: string }[]{
   return ["none", "crack", "split", "fracture"].map(v =>
     ({ value: v, label: t("crownFractureType.option." + v) }));
 }
+function getCrownMarginTypeOptions(): { value: string; label: string }[]{
+  return ["none", "overhang", "caries", "filling"].map(v =>
+    ({ value: v, label: t("crownMarginType.option." + v) }));
+}
+function getCrownMarginSideOptions(): { value: string; label: string }[]{
+  return [{ value: "", label: t("root.unspecified") }]
+    .concat(["mesial", "distal", "buccal", "lingual"].map(v => ({ value: v, label: t("surface." + v) })));
+}
 function getRootResectionOptions(): { value: string; label: string }[]{
   return Array.from(VALID_ROOT_RESECTION).map(v => ({ value: v, label: t("rootResection.option." + kebabToCamel(v)) }));
 }
@@ -3841,6 +3854,15 @@ function applyStateToSvgSingle(toothNo: Any, svg: Any, state: Any = toothState.g
       setActive(svgGetById(svg, "endo-filling"), true);
       setActive(svgGetById(svg, "endo-metal-pin"), true);
     }
+  }
+
+  // A typed crown-margin finding (charly überstehend/Karies/Füllung) lights the
+  // same anatomical `crown-leakage` slab the boolean crownLeakage axis drives —
+  // so the finding shows anatomically; its TYPE and SIDE live in the Schema view
+  // and the tooltip. Runs AFTER the registry svgLayer pass, which would have set
+  // the slab inactive when crownLeakage itself is false.
+  if(state.crownMarginType && state.crownMarginType !== "none" && crownMarginAllowed(state)){
+    setActive(svgGetById(svg, "crown-leakage"), true);
   }
 
   // 4) Removable prosthesis
@@ -5256,6 +5278,10 @@ function getStateSummary(toothNo: number): string[]{
   // milktooth, under-gum, extraction socket, or radix substrate) must not
   // show this line either. The stored crownLeakage value is left untouched.
   if(state.crownLeakage && !restorationRowHidden(state) && (state.restorationType === "crown" || state.restorationType === "bridge")) summary.push(t("crownLeakage.label"));
+  if(state.crownMarginType && state.crownMarginType !== "none" && crownMarginAllowed(state)){
+    const side = state.crownMarginSide ? " " + t("surface." + state.crownMarginSide) : "";
+    summary.push(t("crownMarginType.label") + ": " + t("crownMarginType.option." + state.crownMarginType) + side);
+  }
   if(state.endoResection) summary.push(t("endo.resection"));
   if(state.fissureSealing) summary.push(t("filling.fissureSealing"));
   if(state.parapulpalPin) summary.push(t("endo.parapulpalPin"));
@@ -6241,6 +6267,9 @@ function syncControlsFromState(state: Any){
   // (mirrors the crownLeakage axis's appliesWhen in src/registry/axes.ts).
   const crownLeakageAllowed = !restorationRowCurrentlyHidden && (state.restorationType === "crown" || state.restorationType === "bridge");
   $("#crownLeakageRow").classList.toggle("hidden", !crownLeakageAllowed);
+  setSelectOptions($("#crownMarginTypeSelect"), getCrownMarginTypeOptions(), state.crownMarginType ?? "none");
+  setSelectOptions($("#crownMarginSideSelect"), getCrownMarginSideOptions(), state.crownMarginSide ?? "");
+  $("#crownMarginRow").classList.toggle("hidden", !crownLeakageAllowed);
   // Bead odontogram-dma: the retention row offers exactly what THIS tooth can
   // carry — one predicate, shared with the setter, so the picker can never show
   // an element the setter would drop. Hidden entirely on a tooth that can hold
@@ -6716,6 +6745,45 @@ export function setCrownFractureType(toothNo: number, value: string): void {
 }
 export function getCrownFractureType(toothNo: number): string {
   return String(toothState.get(toothNo)?.crownFractureType ?? "none");
+}
+
+const VALID_CROWN_MARGIN_TYPE = new Set(["none", "overhang", "caries", "filling"]);
+const VALID_CROWN_MARGIN_SIDE = new Set(["", "mesial", "distal", "buccal", "lingual"]);
+/** A crown/bridge margin finding can be typed (charly überstehend/Karies/Füllung)
+ *  and sided. Gated exactly like crownLeakage (crown/bridge, restoration row
+ *  shown). Setting a type also lights the anatomical `crown-leakage` slab. */
+export function crownMarginAllowed(state: Any): boolean {
+  return !restorationRowHidden(state) && (state.restorationType === "crown" || state.restorationType === "bridge");
+}
+export function setCrownMarginType(toothNo: number, value: string): void {
+  if(!VALID_CROWN_MARGIN_TYPE.has(value)) return;
+  const s = toothState.get(toothNo);
+  if(!s || !crownMarginAllowed(s)) return;
+  gateToothEdit(toothNo, () => {
+    if((s.crownMarginType ?? "none") === value) return false;
+    s.crownMarginType = value;
+    if(value === "none") s.crownMarginSide = "";
+    applyStateToSvg(toothNo);
+    notifyStateChange();
+    return true;
+  });
+}
+export function setCrownMarginSide(toothNo: number, side: string): void {
+  if(!VALID_CROWN_MARGIN_SIDE.has(side)) return;
+  const s = toothState.get(toothNo);
+  if(!s || !crownMarginAllowed(s)) return;
+  gateToothEdit(toothNo, () => {
+    if((s.crownMarginSide ?? "") === side) return false;
+    s.crownMarginSide = side;
+    notifyStateChange();
+    return true;
+  });
+}
+export function getCrownMarginType(toothNo: number): string {
+  return String(toothState.get(toothNo)?.crownMarginType ?? "none");
+}
+export function getCrownMarginSide(toothNo: number): string {
+  return String(toothState.get(toothNo)?.crownMarginSide ?? "");
 }
 
 const VALID_ENDO_CANAL = new Set(["filling", "post", "incomplete", "temporary"]);
@@ -8392,6 +8460,8 @@ function serializeState(s: Any){
     // implant stays byte-identical apart from the version field.
     ...(s.implantPosition && s.implantPosition !== "center" ? { implantPosition: s.implantPosition } : {}),
     ...(s.crownFractureType && s.crownFractureType !== "none" ? { crownFractureType: s.crownFractureType } : {}),
+    ...(s.crownMarginType && s.crownMarginType !== "none" ? { crownMarginType: s.crownMarginType } : {}),
+    ...(s.crownMarginSide ? { crownMarginSide: s.crownMarginSide } : {}),
     // Endo pro Kanal: omit-when-empty (a chart with no per-canal detail stays
     // byte-identical apart from the version field).
     ...(s.endoCanals && Object.keys(s.endoCanals).length ? { endoCanals: s.endoCanals } : {}),
@@ -8793,6 +8863,8 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   s.retention = validateEnum(raw.retention, VALID_RETENTION, "none");
   s.implantPosition = validateEnum(raw.implantPosition, VALID_IMPLANT_POSITION, "center");
   s.crownFractureType = validateEnum(raw.crownFractureType, VALID_CROWN_FRACTURE_TYPE, "none");
+  s.crownMarginType = validateEnum(raw.crownMarginType, VALID_CROWN_MARGIN_TYPE, "none");
+  s.crownMarginSide = validateEnum(raw.crownMarginSide, VALID_CROWN_MARGIN_SIDE, "");
   s.endoCanals = {};
   if(raw.endoCanals && typeof raw.endoCanals === "object"){
     for(const [k, v] of Object.entries(raw.endoCanals as Record<string, unknown>)){
@@ -13788,6 +13860,16 @@ function wireControls(){
     for(const toothNo of betroffen) setCrownFractureType(toothNo, value);
     nachZeichnen(betroffen);
   });
+  buildSelect($("#crownMarginTypeSelect"), getCrownMarginTypeOptions(), (value)=>{
+    const betroffen = Array.from(selectedTeeth) as number[];
+    for(const toothNo of betroffen) setCrownMarginType(toothNo, value);
+    nachZeichnen(betroffen);
+  });
+  buildSelect($("#crownMarginSideSelect"), getCrownMarginSideOptions(), (value)=>{
+    const betroffen = Array.from(selectedTeeth) as number[];
+    for(const toothNo of betroffen) setCrownMarginSide(toothNo, value);
+    nachZeichnen(betroffen);
+  });
 
   buildSelect($("#eruptionSelect"), getEruptionOptions(), (value)=>{
     const betroffen = Array.from(selectedTeeth) as number[];
@@ -14633,6 +14715,7 @@ export type ToothDisplayState = {
   rootResection: string; rootResectionRoot: string; endoResection: boolean;
   brokenMesial: boolean; brokenIncisal: boolean; brokenDistal: boolean;
   crownFractureType: string;
+  crownMarginType: string; crownMarginSide: string;
 };
 
 export function getToothDisplayState(toothNo: number): ToothDisplayState {
@@ -14678,6 +14761,8 @@ export function getToothDisplayState(toothNo: number): ToothDisplayState {
     brokenIncisal: !!s.brokenIncisal,
     brokenDistal: !!s.brokenDistal,
     crownFractureType: String(s.crownFractureType ?? "none"),
+    crownMarginType: String(s.crownMarginType ?? "none"),
+    crownMarginSide: String(s.crownMarginSide ?? ""),
   };
 }
 

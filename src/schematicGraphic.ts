@@ -323,6 +323,18 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
     if (s.crownLeakage && crowned) {
       parts.push(`<line x1="${cx - w / 2}" y1="${cerv}" x2="${cx + w / 2}" y2="${cerv}" stroke="${CARIES}" stroke-width="1.6" stroke-dasharray="2 2"/>`);
     }
+    // typed + sided crown-margin finding (charly überstehend/Karies/Füllung): a
+    // coloured segment on the cervical margin over the affected side (mesial/
+    // distal → half; buccal/lingual → whole), overhang adds a small ledge.
+    if (s.crownMarginType !== "none" && crowned) {
+      const col = s.crownMarginType === "caries" ? CARIES : s.crownMarginType === "overhang" ? "#555" : "#4a7fb5";
+      const mLeft = mesialOnLeft(toothNo);
+      let x1 = cx - w / 2, x2 = cx + w / 2;
+      if (s.crownMarginSide === "mesial") { if (mLeft) x2 = cx; else x1 = cx; }
+      else if (s.crownMarginSide === "distal") { if (mLeft) x1 = cx; else x2 = cx; }
+      parts.push(`<line x1="${x1.toFixed(1)}" y1="${cerv}" x2="${x2.toFixed(1)}" y2="${cerv}" stroke="${col}" stroke-width="2.4" stroke-linecap="round"/>`);
+      if (s.crownMarginType === "overhang") parts.push(`<rect x="${(((x1 + x2) / 2) - 2).toFixed(1)}" y="${(cerv - 1).toFixed(1)}" width="4" height="3" fill="${col}"/>`);
+    }
   }
   // extraction cross over the whole glyph (symmetric → safe to flip)
   if (s.extractionPlan) {

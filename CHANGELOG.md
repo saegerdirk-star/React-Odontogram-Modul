@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.59.0 - 2026-08-30
+
+### Kronenrand-Typisierung + Seite (charly-Paritäts-Audit, Baustein 5)
+
+charly typisiert den Kronenrand (`BefundAngabeKronerandBefund` — überstehend /
+Karies / Füllung) und nennt die Seite; wir hatten nur `crownLeakage` (ja/nein).
+Zwei neue additive Achsen **`crownMarginType`** (`none` | `overhang` | `caries` |
+`filling`) und **`crownMarginSide`** (`""` | mesial | distal | buccal | lingual),
+gegated wie `crownLeakage` (Krone/Brücke, Versorgungszeile sichtbar).
+
+- Anatomisch: ein gesetzter Typ aktiviert dieselbe `crown-leakage`-Ebene, die die
+  ja/nein-Achse zeichnet — der Befund erscheint anatomisch, Typ und Seite stehen
+  im Schema und im Tooltip.
+- Schema: ein eingefärbtes Randsegment auf der Zervikallinie über der betroffenen
+  Seite (mesial/distal = Hälfte, überstehend mit kleinem Absatz).
+- Steuerung: zwei Auswahlfelder neben der Randundichtigkeit.
+
+Omit-when-default serialisiert, toleranter Hydrate, kein neuer `svgLayer` →
+SVG-Parität byte-identisch. Payload **2.36 → 2.37**.
+
 ## 2.58.0 - 2026-08-30
 
 ### Kronenfraktur dreistufig (charly-Paritäts-Audit, Baustein 4)
