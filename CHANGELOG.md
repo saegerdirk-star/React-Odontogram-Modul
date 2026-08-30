@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.65.0 - 2026-08-30
+
+### Kippung/Wanderung/Drehung „zunehmend" (charly-Paritäts-Audit, Baustein 11)
+
+charly markiert orthodontische Bewegungen als „zunehmend" (progressiv); wir
+kannten sie nur an/aus. Neuer Qualifier **`orthoProgressive`** (boolean) auf den
+Ortho-Achsen (Kippung/Wanderung/Drehung), gegated auf `orthoAllowed`.
+
+- Tooltip/Summary: die Drift-/Vertikal-/Rotationszeilen tragen den Zusatz
+  „(zunehmend)"; ist er ohne Bewegung gesetzt, erscheint er als eigene Zeile.
+- Steuerung: Kontrollkästchen „zunehmend" in der Kieferorthopädie-Karte.
+
+Omit-when-false serialisiert, toleranter Hydrate, kein neuer `svgLayer` →
+SVG-Parität byte-identisch. Payload **2.42 → 2.43**.
+
 ## 2.64.0 - 2026-08-30
 
 ### Funktion: Frühkontakt / Gleithindernis / Belastung (charly-Paritäts-Audit, Baustein 10)

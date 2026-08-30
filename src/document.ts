@@ -55,6 +55,8 @@ export interface ToothRecord {
   orthoDrift?: string;
   orthoVertical?: string;
   orthoRotation?: boolean;
+  /** charly „zunehmend": the ortho movement is progressive. Omit-when-false. */
+  orthoProgressive?: boolean;
   /** KFO: Bracket-Seite (buccal default / lingual). Omit-when-buccal. */
   orthoBracketSide?: string;
   brokenMesial?: boolean;
@@ -274,7 +276,7 @@ export interface DentalCoreIdentity {
 // filling or caries lesion extends into the cervical region. Omitted entirely
 // when empty, so a document that never records it is byte-identical apart from
 // this version string, and an older document needs no migration.
-export const PAYLOAD_VERSION = "2.42";
+export const PAYLOAD_VERSION = "2.43";
 
 /**
  * The UI-domain document (bead odontogram-3l1, AC2/AC4): a versioned,

@@ -1452,6 +1452,10 @@ export default function App({
                   <input type="checkbox" id="orthoRotationToggle" />
                   <span>{t("ortho.rotation.label")}</span>
                 </label>
+                <label id="orthoProgressiveRow" className="row inline-check">
+                  <input type="checkbox" id="orthoProgressiveToggle" />
+                  <span>{t("ortho.progressive.label")}</span>
+                </label>
               </section>
             </div>
 

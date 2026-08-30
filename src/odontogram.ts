@@ -518,6 +518,9 @@ function defaultState(){
     orthoDrift: "none", // none | mesial | distal
     orthoVertical: "none", // none | extrusion | intrusion
     orthoRotation: false,
+    // charly „zunehmend": die Kippung/Wanderung/Drehung nimmt zu (progressiv) —
+    // ein Qualifier auf den Ortho-Bewegungen, nicht an/aus wie bisher.
+    orthoProgressive: false,
     orthoBracketSide: "buccal", // KFO: buccal (Standard) | lingual (Lingualtechnik)
     brokenMesial: false,
     brokenIncisal: false,
@@ -5439,10 +5442,14 @@ function getStateSummary(toothNo: number): string[]{
   // the render glyphs and the Ortho UI card use — an implant/missing/pontic
   // tooth must not surface a stored ortho value the chart itself hides.
   if(orthoAllowed(state)){
+    const prog = state.orthoProgressive ? " (" + t("ortho.progressive.label") + ")" : "";
+    const hasMove = state.orthoDrift !== "none" || state.orthoVertical !== "none" || state.orthoRotation === true;
     if(state.orthoAppliance !== "none") summary.push(`${t("ortho.appliance.label")}: ${t("ortho.appliance." + state.orthoAppliance)}`);
-    if(state.orthoDrift !== "none") summary.push(`${t("ortho.drift.label")}: ${t("ortho.drift." + state.orthoDrift)}`);
-    if(state.orthoVertical !== "none") summary.push(`${t("ortho.vertical.label")}: ${t("ortho.vertical." + state.orthoVertical)}`);
-    if(state.orthoRotation === true) summary.push(t("ortho.rotation.label"));
+    if(state.orthoDrift !== "none") summary.push(`${t("ortho.drift.label")}: ${t("ortho.drift." + state.orthoDrift)}${prog}`);
+    if(state.orthoVertical !== "none") summary.push(`${t("ortho.vertical.label")}: ${t("ortho.vertical." + state.orthoVertical)}${prog}`);
+    if(state.orthoRotation === true) summary.push(t("ortho.rotation.label") + prog);
+    // progressive with no movement charted yet: still surface it, so it isn't lost
+    if(state.orthoProgressive && !hasMove) summary.push(t("ortho.progressive.label"));
   }
 
   // Flags
@@ -6084,6 +6091,7 @@ function syncControlsFromState(state: Any){
   // Nur sichtbar, wenn ueberhaupt ein Bracket sitzt - ein Band hat keine Seite.
   $("#orthoBracketSideRow").classList.toggle("hidden", !(orthoAllowed(state) && state.orthoAppliance === "bracket"));
   ($("#orthoRotationToggle") as HTMLInputElement).checked = state.orthoRotation === true;
+  ($("#orthoProgressiveToggle") as HTMLInputElement).checked = state.orthoProgressive === true;
   syncToothDetailControls(state);
   $("#brokenMesial").checked = !!state.brokenMesial;
   $("#brokenIncisal").checked = !!state.brokenIncisal;
@@ -6984,6 +6992,22 @@ export function setOcclusalFunction(toothNo: number, value: string): void {
 }
 export function getOcclusalFunction(toothNo: number): string {
   return String(toothState.get(toothNo)?.occlusalFunction ?? "none");
+}
+
+/** charly „zunehmend": the ortho movement (drift/tipping/rotation) is worsening.
+ *  A qualifier on the ortho axes; gated on orthoAllowed. DS-1 gate. */
+export function setOrthoProgressive(toothNo: number, on: boolean): void {
+  const s = toothState.get(toothNo);
+  if(!s || !orthoAllowed(s)) return;
+  gateToothEdit(toothNo, () => {
+    if(!!s.orthoProgressive === !!on) return false;
+    s.orthoProgressive = !!on;
+    notifyStateChange();
+    return true;
+  });
+}
+export function getOrthoProgressive(toothNo: number): boolean {
+  return !!toothState.get(toothNo)?.orthoProgressive;
 }
 
 /** charly „Wurzelkappe": a coping over a root remnant. Allowed only on a radix
@@ -8638,6 +8662,7 @@ function serializeState(s: Any){
     // Schwebebruecke byte-gleich bleibt bis auf die Version.
     ...(s.cantilever ? { cantilever: true } : {}),
     ...(s.splinted ? { splinted: true } : {}),
+    ...(s.orthoProgressive ? { orthoProgressive: true } : {}),
     ...(s.occlusalSplint ? { occlusalSplint: true } : {}),
     ...(s.occlusalFunction && s.occlusalFunction !== "none" ? { occlusalFunction: s.occlusalFunction } : {}),
     ...(s.rootCap ? { rootCap: true } : {}),
@@ -9256,6 +9281,7 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   s.orthoDrift = validateEnum(raw.orthoDrift, VALID_ORTHO_DRIFT, "none");
   s.orthoVertical = validateEnum(raw.orthoVertical, VALID_ORTHO_VERTICAL, "none");
   s.orthoRotation = raw.orthoRotation === true;
+  s.orthoProgressive = raw.orthoProgressive === true;
   s.orthoBracketSide = validateEnum(raw.orthoBracketSide, VALID_ORTHO_BRACKET_SIDE, "buccal");
   s.brokenMesial = !!raw.brokenMesial;
   s.brokenIncisal = !!raw.brokenIncisal;
@@ -14531,6 +14557,11 @@ function wireControls(){
   $("#orthoRotationToggle").addEventListener("change", (e)=>{
     const on = (e.target as HTMLInputElement).checked;
     applyToSelected((s)=>{ s.orthoRotation = on; });
+  });
+
+  $("#orthoProgressiveToggle").addEventListener("change", (e)=>{
+    const on = (e.target as HTMLInputElement).checked;
+    applyToSelected((s)=>{ if(orthoAllowed(s)) s.orthoProgressive = on; });
   });
 
   // Bridge pillar
