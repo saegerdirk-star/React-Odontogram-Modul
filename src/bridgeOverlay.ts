@@ -150,24 +150,34 @@ export function detectBridgeSpans(getState: GetToothState): number[][] {
   return bridgeRuns(getState, 2);
 }
 
-/** charly „Verblockung": maximal runs of >=2 adjacent teeth flagged `splinted`
- *  within one arch. Same arch-run shape as `bridgeRuns`, but keyed on the splint
- *  flag rather than on being a bridge tooth. A lone splinted tooth is no span. */
-export function detectSplintSpans(getState: GetToothState): number[][] {
+/** Maximal runs of >=minLen adjacent teeth within one arch for which `pred` is
+ *  true. The shared shape behind Verblockung and the occlusal splint. */
+export function detectFlagSpans(
+  getState: GetToothState,
+  pred: (s: BridgeToothState | undefined) => boolean,
+  minLen = 2,
+): number[][] {
   const spans: number[][] = [];
   for(const arch of ARCHES){
     let run: number[] = [];
     for(const tn of arch){
-      if((getState(tn) as { splinted?: boolean } | undefined)?.splinted === true){
-        run.push(tn);
-      }else{
-        if(run.length >= 2) spans.push(run);
-        run = [];
-      }
+      if(pred(getState(tn))) run.push(tn);
+      else { if(run.length >= minLen) spans.push(run); run = []; }
     }
-    if(run.length >= 2) spans.push(run);
+    if(run.length >= minLen) spans.push(run);
   }
   return spans;
+}
+
+/** charly „Verblockung": maximal runs of >=2 adjacent `splinted` teeth. */
+export function detectSplintSpans(getState: GetToothState): number[][] {
+  return detectFlagSpans(getState, (s) => (s as { splinted?: boolean } | undefined)?.splinted === true);
+}
+
+/** charly „Schiene" (occlusal splint / nightguard): runs of adjacent teeth under
+ *  the appliance. minLen 1 — a splint may sit over a single remaining tooth. */
+export function detectOcclusalSplintSpans(getState: GetToothState): number[][] {
+  return detectFlagSpans(getState, (s) => (s as { occlusalSplint?: boolean } | undefined)?.occlusalSplint === true, 1);
 }
 
 // ---------------------------------------------------------------------------

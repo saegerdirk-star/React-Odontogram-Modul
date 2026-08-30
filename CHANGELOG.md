@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.63.0 - 2026-08-30
+
+### Schiene / Occlusal splint (charly-Paritäts-Audit, Baustein 9)
+
+charly kennt die „Schiene" (Aufbiss-/Knirscherschiene); wir hatten sie nicht.
+Neuer per-Zahn-Schalter **`occlusalSplint`** (präsenter Zahn/Implantat); das
+durchgehende Band wird über benachbarte markierte Zähne abgeleitet
+(`detectOcclusalSplintSpans`, minLen 1 — eine Schiene darf über einem einzelnen
+Zahn liegen). Der Span-Detektor ist mit der Verblockung als `detectFlagSpans`
+zusammengeführt.
+
+- Anatomisch: ein transluzentes bläuliches Schutzband über der Okklusal-/
+  Inzisalkante der Zähne (eigenes Overlay `svg.occlusal-splint-overlay`, dieselbe
+  `tileRectFor`-Geometrie → byte-identische Parität). Die Kaukante zeigt zur
+  Kiefermitte, also Kachel-UNTEN im Oberkiefer, -OBEN im Unterkiefer.
+- Schema: dasselbe Band über den Kauflächen-Boxen.
+- Steuerung/Tooltip/Summary: Kontrollkästchen „Schiene".
+
+Omit-when-false serialisiert, toleranter Hydrate. Payload **2.40 → 2.41**.
+
 ## 2.62.0 - 2026-08-30
 
 ### Teilkrone pro Fläche (charly-Paritäts-Audit, Baustein 8)

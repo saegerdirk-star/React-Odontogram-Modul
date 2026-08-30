@@ -517,7 +517,25 @@ function archRows(teeth: number[], getState: GetDisplayState, sideOnTop: boolean
     teeth.forEach(tn => { if (getState(tn).splinted) run.push(tn); else flush(); });
     flush();
   }
-  return nums + rowSide + rowOccl + hits + canalHits + splintBars.join("");
+  // Schiene (occlusal splint): a translucent guard band over the occlusal boxes
+  // of each run of teeth under the appliance (minLen 1 — a splint may sit on one).
+  const splintGuard: string[] = [];
+  {
+    const occlY = sideOnTop ? r2Y : r1Y;   // occlusal row y for this arch
+    const y = occlY + OCCL_H / 2;
+    let run: number[] = [];
+    const flush = () => {
+      if (run.length >= 1) {
+        const i0 = teeth.indexOf(run[0]), i1 = teeth.indexOf(run[run.length - 1]);
+        const x = i0 * CELL_W + 6, wBar = (i1 - i0) * CELL_W + CELL_W - 12;
+        splintGuard.push(`<rect x="${x}" y="${(y - 9).toFixed(1)}" width="${wBar}" height="18" rx="8" fill="#7fb3d5" fill-opacity="0.4" stroke="#4a7fb5" stroke-width="0.75"/>`);
+      }
+      run = [];
+    };
+    teeth.forEach(tn => { if (getState(tn).occlusalSplint) run.push(tn); else flush(); });
+    flush();
+  }
+  return nums + rowSide + rowOccl + hits + canalHits + splintBars.join("") + splintGuard.join("");
 }
 
 /** Full schematic chart as one standalone <svg> string. Upper arch: side glyphs

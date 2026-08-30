@@ -1353,6 +1353,10 @@ export default function App({
                 <input type="checkbox" id="splinted" />
                 <span>{t("splint.label")}</span>
               </label>
+              <label id="occlusalSplintRow" className="row hidden">
+                <input type="checkbox" id="occlusalSplint" />
+                <span>{t("occlusalSplint.label")}</span>
+              </label>
               <label id="rootCapRow" className="row hidden">
                 <input type="checkbox" id="rootCap" />
                 <span>{t("rootCap.label")}</span>

@@ -55,6 +55,7 @@ import {
   UPPER_ARCH, LOWER_ARCH,
   checkBridgeSpans, bridgeSpanNeedsAttention,      // Bead odontogram-5rv
   detectSplintSpans,                                // Verblockung
+  detectOcclusalSplintSpans,                        // Schiene
   type BridgeToothState, type BridgeSpanCheck,
 } from "./bridgeOverlay";
 import { renderGumOverlay } from "./gumOverlay";
@@ -541,6 +542,10 @@ function defaultState(){
     // starr verbunden. Der Overlay-Balken wird über benachbarte verblockte
     // Zähne abgeleitet (detectSplintSpans), wie die Brücken-/Steg-Spanne.
     splinted: false,
+    // charly „Schiene" (Aufbiss-/Knirscherschiene): dieser Zahn liegt unter einer
+    // Okklusionsschiene. Das durchgehende Band wird über die benachbarten
+    // markierten Zähne abgeleitet (detectOcclusalSplintSpans).
+    occlusalSplint: false,
     prosthesis: "none", // none | healing-abutment | locator | locator-denture | bar | bar-denture | removable-partial | removable-full
     mobility: "none", // none | m1 | m2 | m3
     toothSubstrate: "natural",  // natural | radix | broken | crownprep
@@ -1849,7 +1854,55 @@ function updateBridgeOverlay(){
   renderBridgeOverlay({ grid, getState: bridgeStateFor, materialColor: defaultMaterialColor });
   updateRetentionBarOverlay(grid);
   updateSplintOverlay(grid);
+  updateOcclusalSplintOverlay(grid);
   updateOrthoOverlay(grid);
+}
+
+/** Schiene (occlusal splint): a translucent guard band over the occlusal/incisal
+ *  edge of each run of teeth under the appliance. The occlusal edge faces the
+ *  arch midline — tile BOTTOM for the upper arch, TOP for the lower. */
+function updateOcclusalSplintOverlay(grid: HTMLElement | null){
+  if(!grid) return;
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  let overlay = grid.querySelector(":scope > svg.occlusal-splint-overlay") as SVGSVGElement | null;
+  const spans = detectOcclusalSplintSpans((tn) => toothState.get(tn));
+  if(spans.length === 0){
+    if(overlay){ while(overlay.firstChild) overlay.removeChild(overlay.firstChild); }
+    return;
+  }
+  const gridRect = grid.getBoundingClientRect();
+  const rectFor = (tn: number) => tileRectFor(grid, gridRect, tn);
+  if(!overlay){
+    overlay = document.createElementNS(SVG_NS, "svg");
+    overlay.setAttribute("class", "occlusal-splint-overlay");
+    overlay.setAttribute("aria-hidden", "true");
+    grid.appendChild(overlay);
+  }
+  while(overlay.firstChild) overlay.removeChild(overlay.firstChild);
+  const W = Math.max(1, Math.round(gridRect.width));
+  const H = Math.max(1, Math.round(gridRect.height));
+  overlay.setAttribute("width", String(W));
+  overlay.setAttribute("height", String(H));
+  overlay.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  for(const span of spans){
+    const rects = span.map(rectFor).filter((r): r is NonNullable<typeof r> => !!r);
+    if(rects.length < 1) continue;
+    const upper = span[0] < 30;
+    const left = Math.min(...rects.map(r => r.x));
+    const right = Math.max(...rects.map(r => r.x + r.width));
+    const rTop = Math.min(...rects.map(r => r.y));
+    const rH = rects[0].height;
+    const bandH = rH * 0.14;
+    const yMid = rTop + rH * (upper ? 0.86 : 0.14);
+    const bar = document.createElementNS(SVG_NS, "rect");
+    bar.setAttribute("class", "occlusal-splint-overlay-band");
+    bar.setAttribute("x", String(left + 3));
+    bar.setAttribute("y", String(yMid - bandH / 2));
+    bar.setAttribute("width", String(Math.max(1, right - left - 6)));
+    bar.setAttribute("height", String(bandH));
+    bar.setAttribute("rx", String(bandH / 2));
+    overlay.appendChild(bar);
+  }
 }
 
 /** Verblockung: a rigid grey bar across each run of adjacent splinted teeth,
@@ -5347,6 +5400,7 @@ function getStateSummary(toothNo: number): string[]{
     summary.push(t("crownMarginType.label") + ": " + t("crownMarginType.option." + state.crownMarginType) + side);
   }
   if(state.splinted && isToothPresent(state.toothSelection)) summary.push(t("splint.label"));
+  if(state.occlusalSplint && isToothPresent(state.toothSelection)) summary.push(t("occlusalSplint.label"));
   if(state.rootCap && rootCapAllowed(state)) summary.push(t("rootCap.label"));
   if(onlayCoverageAllowed(state) && Array.isArray(state.onlayCoverage) && state.onlayCoverage.length){
     const surfs = state.onlayCoverage.map((sf: string) => t("surface." + sf)).join(", ");
@@ -6036,6 +6090,8 @@ function syncControlsFromState(state: Any){
   $("#crownLeakage").checked = !!state.crownLeakage;
   $("#splinted").checked = !!state.splinted;
   $("#splintedRow").classList.toggle("hidden", !(activeTooth && isToothPresent(state.toothSelection)));
+  $("#occlusalSplint").checked = !!state.occlusalSplint;
+  $("#occlusalSplintRow").classList.toggle("hidden", !(activeTooth && isToothPresent(state.toothSelection)));
   $("#rootCap").checked = !!state.rootCap;
   $("#rootCapRow").classList.toggle("hidden", !(activeTooth && rootCapAllowed(state)));
   {
@@ -6881,6 +6937,22 @@ export function setSplinted(toothNo: number, on: boolean): void {
 }
 export function getSplinted(toothNo: number): boolean {
   return !!toothState.get(toothNo)?.splinted;
+}
+
+/** charly „Schiene": this tooth lies under an occlusal splint. Any present tooth
+ *  or implant. The band is DERIVED over adjacent marked teeth. DS-1 gate. */
+export function setOcclusalSplint(toothNo: number, on: boolean): void {
+  const s = toothState.get(toothNo);
+  if(!s || !isToothPresent(s.toothSelection)) return;
+  gateToothEdit(toothNo, () => {
+    if(!!s.occlusalSplint === !!on) return false;
+    s.occlusalSplint = !!on;
+    notifyStateChange();
+    return true;
+  });
+}
+export function getOcclusalSplint(toothNo: number): boolean {
+  return !!toothState.get(toothNo)?.occlusalSplint;
 }
 
 /** charly „Wurzelkappe": a coping over a root remnant. Allowed only on a radix
@@ -8535,6 +8607,7 @@ function serializeState(s: Any){
     // Schwebebruecke byte-gleich bleibt bis auf die Version.
     ...(s.cantilever ? { cantilever: true } : {}),
     ...(s.splinted ? { splinted: true } : {}),
+    ...(s.occlusalSplint ? { occlusalSplint: true } : {}),
     ...(s.rootCap ? { rootCap: true } : {}),
     ...(Array.isArray(s.onlayCoverage) && s.onlayCoverage.length ? { onlayCoverage: [...s.onlayCoverage] } : {}),
     prosthesis: s.prosthesis,
@@ -9164,6 +9237,7 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   s.bridgePillar = !!raw.bridgePillar;
   s.cantilever = !!raw.cantilever;                      // Bead odontogram-5rv
   s.splinted = !!raw.splinted;                          // Verblockung
+  s.occlusalSplint = !!raw.occlusalSplint;              // Schiene
   s.rootCap = !!raw.rootCap;                            // Wurzelkappe
   s.onlayCoverage = Array.isArray(raw.onlayCoverage)    // Teilkrone pro Fläche
     ? raw.onlayCoverage.filter((x: unknown): x is string => typeof x === "string" && ONLAY_SURFACES.includes(x))
@@ -14183,6 +14257,11 @@ function wireControls(){
     applyToSelected((s)=>{ if(rootCapAllowed(s)) s.rootCap = on; });
   });
 
+  $("#occlusalSplint").addEventListener("change", (e)=>{
+    const on = (e.target as HTMLInputElement).checked;
+    applyToSelected((s)=>{ if(isToothPresent(s.toothSelection)) s.occlusalSplint = on; });
+  });
+
   for(const [sf, cap] of [["mesial","Mesial"],["distal","Distal"],["buccal","Buccal"],["lingual","Lingual"],["occlusal","Occlusal"]]){
     $(`#onlayCov${cap}`).addEventListener("change", ()=>{
       const betroffen = Array.from(selectedTeeth) as number[];
@@ -14882,7 +14961,7 @@ export type ToothDisplayState = {
   brokenMesial: boolean; brokenIncisal: boolean; brokenDistal: boolean;
   crownFractureType: string;
   crownMarginType: string; crownMarginSide: string;
-  splinted: boolean; rootCap: boolean; onlayCoverage: string[];
+  splinted: boolean; occlusalSplint: boolean; rootCap: boolean; onlayCoverage: string[];
 };
 
 export function getToothDisplayState(toothNo: number): ToothDisplayState {
@@ -14931,6 +15010,7 @@ export function getToothDisplayState(toothNo: number): ToothDisplayState {
     crownMarginType: String(s.crownMarginType ?? "none"),
     crownMarginSide: String(s.crownMarginSide ?? ""),
     splinted: !!s.splinted,
+    occlusalSplint: !!s.occlusalSplint,
     rootCap: !!s.rootCap,
     onlayCoverage: Array.isArray(s.onlayCoverage) ? [...s.onlayCoverage] : [],
   };
