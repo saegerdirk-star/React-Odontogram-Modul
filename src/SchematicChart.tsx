@@ -21,6 +21,7 @@ import {
   getToothDisplayState,
   getToothStateSummary,
   cycleEndoCanal,
+  setRootResection,
 } from "./odontogram";
 import { buildSchematicSvg } from "./schematicGraphic";
 
@@ -68,11 +69,20 @@ export default function SchematicChart({
         dir="ltr"
         ref={wrapRef}
         onClick={(e) => {
-          // A click on a canal's root region cycles that canal's endo state
-          // (WF → WF+Stift → WFi → med → none); anywhere else selects the tooth.
+          // A click on a canal's root region: when a hemisection/amputation is
+          // active, MOVE the removed root to the clicked one ("durch die Wurzeln
+          // springen"); otherwise cycle that canal's endo state (WF → WF+Stift →
+          // WFi → med → none). Anywhere else selects the tooth.
           const canalEl = (e.target as Element | null)?.closest?.("[data-canal]") as HTMLElement | null;
           if (canalEl?.dataset.tooth && canalEl.dataset.canal) {
-            cycleEndoCanal(Number(canalEl.dataset.tooth), canalEl.dataset.canal);
+            const tn = Number(canalEl.dataset.tooth);
+            const canal = canalEl.dataset.canal;
+            const rr = getToothDisplayState(tn).rootResection;
+            if (rr === "hemisection" || rr === "amputation") {
+              setRootResection(tn, rr, canal);
+            } else {
+              cycleEndoCanal(tn, canal);
+            }
             return;
           }
           const tn = toothAt(e.target);

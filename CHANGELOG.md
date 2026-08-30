@@ -1,5 +1,30 @@
 # Changelog
 
+## 2.57.0 - 2026-08-30
+
+### Hemisektion / Amputation / Prämolarisierung + WSR im Schema (Paritäts-Audit, Baustein 3)
+
+Die resektiven Befunde konnte bisher nur die anatomische Ansicht zeigen
+(Hemisektion als Clip/Overlay, WSR über die `endo-resection`-Ebene). Nach der
+Regel „immer anatomisch UND Schema" jetzt auch schematisch:
+
+- **Hemisektion / Amputation:** die entfernte Wurzel (`rootResectionRoot`) wird
+  als blasser gestrichelter Stumpf mit rotem Schnitt am Hals gezeichnet, die
+  übrigen Wurzeln bleiben; ihr Kanal wird nicht mehr gefüllt. Badge `Hem`/`Amp`.
+- **Prämolarisierung:** keine Wurzel entfernt — eine vertikale Trennlinie durch
+  Krone und Wurzeln. Badge `Prä`.
+- **WSR (`endoResection`):** die Wurzelspitze wird gekappt — jede erhaltene Wurzel
+  kürzer, ein roter Schnitt quer über den Apex; eine Wurzelfüllung reicht nicht
+  über den Schnitt hinaus. Badge `WSR` (kombiniert mit Hem/Amp/Prä als `Hem·WSR`).
+- **„Durch die Wurzeln springen":** bei aktiver Hemisektion/Amputation verschiebt
+  ein Klick auf eine Wurzel im Schema die entfernte Wurzel dorthin
+  (`setRootResection`) — sonst zykelt der Klick wie bisher den Endo-Kanal. Keine
+  zweite Mutationsspur, DS-1-Gate bleibt.
+
+`rootResection`/`rootResectionRoot`/`endoResection` sind jetzt in
+`getToothDisplayState` projiziert. Reine Darstellung, kein neues Feld → Payload
+bleibt **2.35**, kein `svgLayer` → SVG-Parität byte-identisch.
+
 ## 2.56.0 - 2026-08-30
 
 ### Endo pro Wurzel/Kanal (charly-Paritäts-Audit, Baustein 2)

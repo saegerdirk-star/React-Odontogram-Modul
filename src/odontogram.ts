@@ -14592,6 +14592,7 @@ export type ToothDisplayState = {
   calculus: boolean; retention: string;
   implantPosition: string;
   endoCanals: Record<string, string[]>;
+  rootResection: string; rootResectionRoot: string; endoResection: boolean;
 };
 
 export function getToothDisplayState(toothNo: number): ToothDisplayState {
@@ -14630,6 +14631,9 @@ export function getToothDisplayState(toothNo: number): ToothDisplayState {
     endoCanals: Object.fromEntries(
       Object.entries((s.endoCanals ?? {}) as Record<string, string[]>).map(([k, v]) => [k, [...(v ?? [])]]),
     ),
+    rootResection: String(s.rootResection ?? "none"),
+    rootResectionRoot: String(s.rootResectionRoot ?? ""),
+    endoResection: !!s.endoResection,
   };
 }
 

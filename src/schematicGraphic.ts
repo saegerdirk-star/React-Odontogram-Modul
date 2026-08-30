@@ -145,6 +145,15 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
   const parts: string[] = [];
   const stroke = `fill="#fff" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"`;
   let anyFill = false, anyPost = false;  // endo canals set these; the anno badge reads them (fn scope)
+  // Resections (fn scope so the endo-canal loop below can respect them):
+  //  - WSR (endoResection): the apex is cut, the tooth stays whole → each root
+  //    is drawn SHORTER and a red line marks the cut.
+  //  - Hemisection/Amputation: one root (rootResectionRoot) is REMOVED → its
+  //    root is drawn as a faint stump and its canal is not filled.
+  const roots = rootsOf(toothNo);
+  const removes = s.rootResection === "hemisection" || s.rootResection === "amputation";
+  const removedIdx = removes && s.rootResectionRoot ? roots.indexOf(s.rootResectionRoot) : -1;
+  const apexEff = s.endoResection ? cerv + (apex - cerv) * 0.76 : apex;
 
   if (missing && !pontic) {
     // ghost outline only
@@ -176,7 +185,31 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
         const wTop = both ? 13 : 20, wBot = both ? 6 : 9;
         for (const dx of dxs) parts.push(`<path d="${screwPath(cx + dx, wTop, wBot, cerv, apex)}" fill="#dfe4e8" stroke="#8a9096" stroke-width="1.5" stroke-linejoin="round"/>`);
       } else {
-        for (const d of rootPaths(cx, w, cerv, apex, n)) parts.push(`<path d="${d}" ${stroke}/>`);
+        const rds = rootPaths(cx, w, cerv, apexEff, n);
+        const rcenters = rootCenters(cx, w, n);
+        const rootHalf = (w / n) / 2;
+        rds.forEach((d, i) => {
+          if (i === removedIdx) {
+            // removed root: faint dashed stump + a red cut line at the neck
+            const stumpBot = cerv + (apex - cerv) * 0.18;
+            parts.push(`<path d="${rootPaths(cx, w, cerv, stumpBot, n)[i]}" fill="#f2f2f2" stroke="#c9c9c9" stroke-width="1.2" stroke-dasharray="2 2"/>`);
+            parts.push(`<line x1="${(rcenters[i] - rootHalf).toFixed(1)}" y1="${(cerv + 1).toFixed(1)}" x2="${(rcenters[i] + rootHalf).toFixed(1)}" y2="${(cerv + 1).toFixed(1)}" stroke="#b70000" stroke-width="2" stroke-linecap="round"/>`);
+            return;
+          }
+          parts.push(`<path d="${d}" ${stroke}/>`);
+        });
+        // WSR: a red resection line across the shortened apex of each retained root
+        if (s.endoResection) {
+          rcenters.forEach((rc, i) => {
+            if (i === removedIdx) return;
+            parts.push(`<line x1="${(rc - rootHalf * 0.9).toFixed(1)}" y1="${apexEff.toFixed(1)}" x2="${(rc + rootHalf * 0.9).toFixed(1)}" y2="${apexEff.toFixed(1)}" stroke="#b70000" stroke-width="2" stroke-linecap="round"/>`);
+          });
+        }
+        // premolarisation: both roots kept, the tooth is SPLIT — a vertical
+        // separation line through crown and roots (no root removed).
+        if (s.rootResection === "premolarisation" && n >= 2) {
+          parts.push(`<line x1="${cx}" y1="${(top + 3).toFixed(1)}" x2="${cx}" y2="${(apexEff - 2).toFixed(1)}" stroke="#8a6d3b" stroke-width="1.4" stroke-dasharray="3 2"/>`);
+        }
       }
     }
     // veneer: colour the buccal face (a strip on the crown)
@@ -236,6 +269,7 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
     const legacy = legacyEndoFindings(s.endo);
     if (!implant) {
       canals.forEach((name, i) => {
+        if (i === removedIdx) return;   // a removed root has no canal to fill
         const f = (s.endoCanals[name] && s.endoCanals[name].length) ? s.endoCanals[name] : legacy;
         if (!f.length) return;
         const rx = centers[i] ?? cx;
@@ -243,11 +277,13 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
           anyFill = true;
           const frac = f.includes("incomplete") ? 0.82 : 0.94;
           const col = f.includes("temporary") ? ENDO_TEMP : ENDO_FILL;
-          parts.push(`<line x1="${rx.toFixed(1)}" y1="${cerv + 1}" x2="${rx.toFixed(1)}" y2="${(cerv + rootLen * frac).toFixed(1)}" stroke="${col}" stroke-width="2.4" stroke-linecap="round"/>`);
+          const yb = Math.min(cerv + rootLen * frac, apexEff - 1);   // don't overshoot a WSR cut
+          parts.push(`<line x1="${rx.toFixed(1)}" y1="${cerv + 1}" x2="${rx.toFixed(1)}" y2="${yb.toFixed(1)}" stroke="${col}" stroke-width="2.4" stroke-linecap="round"/>`);
         }
         if (f.includes("post")) {
           anyPost = true;
-          parts.push(`<line x1="${rx.toFixed(1)}" y1="${cerv + 1}" x2="${rx.toFixed(1)}" y2="${(cerv + rootLen * 0.5).toFixed(1)}" stroke="${ENDO_POST}" stroke-width="3.6" stroke-linecap="round"/>`);
+          const yb = Math.min(cerv + rootLen * 0.5, apexEff - 1);
+          parts.push(`<line x1="${rx.toFixed(1)}" y1="${cerv + 1}" x2="${rx.toFixed(1)}" y2="${yb.toFixed(1)}" stroke="${ENDO_POST}" stroke-width="3.6" stroke-linecap="round"/>`);
         }
       });
     }
@@ -297,6 +333,13 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
   }
   const mob = { m1: "I", m2: "II", m3: "III" }[s.mobility] ?? "";
   if (mob) anno.push(`<text x="5" y="${SIDE_H - 4}" font-size="10" fill="#666">${mob}</text>`);
+  // resection labels (top-left): Hem/Amp/Prä for a split/removed root, WSR for
+  // an apicoectomy — both can apply (a hemisected tooth can also carry a WSR).
+  const resTxt = [
+    s.rootResection === "hemisection" ? "Hem" : s.rootResection === "amputation" ? "Amp" : s.rootResection === "premolarisation" ? "Prä" : "",
+    s.endoResection ? "WSR" : "",
+  ].filter(Boolean).join("·");
+  if (resTxt) anno.push(`<text x="5" y="14" font-size="9" fill="#b70000">${resTxt}</text>`);
 
   return g + anno.join("");
 }
