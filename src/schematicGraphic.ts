@@ -399,7 +399,7 @@ function occlBox(toothNo: number, s: ToothDisplayState): string {
   const anterior = isAnteriorTooth(toothNo);
   const bw = 44, cx = CELL_W / 2, cy = OCCL_H / 2;
   const boxW = bw, boxH = anterior ? 30 : bw;
-  const inW = anterior ? 30 : 18, inH = anterior ? 9 : 18;
+  const inW = anterior ? 26 : 18, inH = anterior ? 9 : 18;
   const x0 = cx - boxW / 2, y0 = cy - boxH / 2;
   const ix0 = cx - inW / 2, iy0 = cy - inH / 2;
   const outerRx = anterior ? 6 : 8, innerRx = anterior ? 3 : 4;
