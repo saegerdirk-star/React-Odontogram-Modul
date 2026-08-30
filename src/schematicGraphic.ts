@@ -312,21 +312,16 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
     // otherwise a filled disc (granuloma / Beherdung).
     if (s.apicalDx !== "normal") {
       const ay = apex - 5, r = 6.5;
-      // charly: a lesion on a NAMED root sits at that root's apex, not the centre.
-      const aroots = rootsOf(toothNo);
-      const acenters = rootCenters(cx, w, aroots.length || 1);
-      const ai = s.apicalRoot ? aroots.indexOf(s.apicalRoot) : -1;
-      const ax = ai >= 0 ? acenters[ai] : cx;
       if (s.periapicalType === "cyst") {
-        parts.push(`<circle cx="${ax}" cy="${ay}" r="${r}" fill="#fff" stroke="${CARIES}" stroke-width="1.6"/>`);
+        parts.push(`<circle cx="${cx}" cy="${ay}" r="${r}" fill="#fff" stroke="${CARIES}" stroke-width="1.6"/>`);
       } else if (s.apicalDx.includes("abscess")) {
         const rays = Array.from({ length: 8 }, (_, k) => {
           const a = (k / 8) * Math.PI * 2;
-          return `<line x1="${(ax + Math.cos(a) * r).toFixed(1)}" y1="${(ay + Math.sin(a) * r).toFixed(1)}" x2="${(ax + Math.cos(a) * (r + 3)).toFixed(1)}" y2="${(ay + Math.sin(a) * (r + 3)).toFixed(1)}" stroke="${CARIES}" stroke-width="1.2"/>`;
+          return `<line x1="${(cx + Math.cos(a) * r).toFixed(1)}" y1="${(ay + Math.sin(a) * r).toFixed(1)}" x2="${(cx + Math.cos(a) * (r + 3)).toFixed(1)}" y2="${(ay + Math.sin(a) * (r + 3)).toFixed(1)}" stroke="${CARIES}" stroke-width="1.2"/>`;
         }).join("");
-        parts.push(`${rays}<circle cx="${ax}" cy="${ay}" r="${r}" fill="${CARIES}" opacity="0.85"/>`);
+        parts.push(`${rays}<circle cx="${cx}" cy="${ay}" r="${r}" fill="${CARIES}" opacity="0.85"/>`);
       } else {
-        parts.push(`<circle cx="${ax}" cy="${ay}" r="${r}" fill="${CARIES}" opacity="0.8"/>`);
+        parts.push(`<circle cx="${cx}" cy="${ay}" r="${r}" fill="${CARIES}" opacity="0.8"/>`);
       }
     }
     // crown marginal leakage: a red dashed line on the cervical margin

@@ -579,10 +579,6 @@ function defaultState(){
     pulpDx: "normal", // normal | reversible-pulpitis | irreversible-pulpitis | necrosis (replaces the legacy `pulpInflam` boolean)
     pulpLatin: "none", // none | pulpa-sana | hyperaemia-pulpae | pulpitis-acuta-serosa | pulpitis-acuta-purulenta | pulpitis-chronica-clausa | pulpitis-chronica-ulcerosa | pulpitis-chronica-hyperplastica | necrosis-pulpae | gangraena-pulpae
     apicalDx: "normal", // normal | symptomatic-apical-periodontitis | asymptomatic-apical-periodontitis | acute-apical-abscess | chronic-apical-abscess | condensing-osteitis
-    // charly führt die apikale Beherdung PRO WURZEL. Wir behalten apicalDx je
-    // Zahn, benennen aber optional die betroffene WURZEL — das Bild sitzt dann
-    // an deren Apex statt in der Mitte. "" = ganzer Zahn / nicht angegeben.
-    apicalRoot: "",
     resorptionType: "none", // none | internal | external-cervical (replaces the legacy `rootResorption` boolean)
     // SP5 Task 1: caries fields foundation. `rootCaries` is a normal enum axis.
     // `radiographicDepth` is a per-surface scalar map (independent of the visual
@@ -2748,7 +2744,6 @@ function apicalDiagnosisLabel(state: Any): string | null {
   if(state.periapicalType && state.periapicalType !== "none"){
     label += " (" + t("periapical.type." + kebabToCamel(state.periapicalType)) + ")";
   }
-  if(state.apicalRoot) label += wurzelZusatz(state.apicalRoot);   // charly: pro Wurzel
   return label;
 }
 function resorptionDiagnosisLabel(state: Any): string | null {
@@ -6212,11 +6207,6 @@ function syncControlsFromState(state: Any){
   if($("#periapicalTypeSelect").value !== state.periapicalType){
     state.periapicalType = $("#periapicalTypeSelect").value;
   }
-  // Apikal pro Wurzel: which root carries the lesion — only on a multi-rooted
-  // tooth with an apical diagnosis charted.
-  const apicalRootVisible = !!activeTooth && (state.apicalDx ?? "normal") !== "normal" && rootsOf(activeTooth).length > 1;
-  setSelectOptions($("#apicalRootSelect"), getRootOptions(activeTooth), state.apicalRoot ?? "");
-  $("#apicalRootRow").classList.toggle("hidden", !apicalRootVisible || isPlan);
   $("#calculusToggle").checked = !!state.calculus;
   const calculusAllowed = state.toothSelection === "tooth-base" || state.toothSelection === "milktooth";
   $("#calculusRow").classList.toggle("hidden", !calculusAllowed);
@@ -7018,26 +7008,6 @@ export function setOrthoProgressive(toothNo: number, on: boolean): void {
 }
 export function getOrthoProgressive(toothNo: number): boolean {
   return !!toothState.get(toothNo)?.orthoProgressive;
-}
-
-/** charly: the apical lesion sits on a NAMED root (multi-rooted tooth). Only
- *  when an apical diagnosis is charted and the root belongs to this tooth; ""
- *  clears it. Gated before the DS-1 gate. */
-export function setApicalRoot(toothNo: number, root: string): void {
-  const s = toothState.get(toothNo);
-  if(!s) return;
-  const roots = rootsOf(toothNo);
-  const val = root && roots.includes(root) ? root : "";
-  if(val && (s.apicalDx ?? "normal") === "normal") return;   // no lesion to place
-  gateToothEdit(toothNo, () => {
-    if((s.apicalRoot ?? "") === val) return false;
-    s.apicalRoot = val;
-    notifyStateChange();
-    return true;
-  });
-}
-export function getApicalRoot(toothNo: number): string {
-  return String(toothState.get(toothNo)?.apicalRoot ?? "");
 }
 
 /** charly „Wurzelkappe": a coping over a root remnant. Allowed only on a radix
@@ -8692,7 +8662,6 @@ function serializeState(s: Any){
     // Schwebebruecke byte-gleich bleibt bis auf die Version.
     ...(s.cantilever ? { cantilever: true } : {}),
     ...(s.splinted ? { splinted: true } : {}),
-    ...(s.apicalRoot ? { apicalRoot: s.apicalRoot } : {}),
     ...(s.orthoProgressive ? { orthoProgressive: true } : {}),
     ...(s.occlusalSplint ? { occlusalSplint: true } : {}),
     ...(s.occlusalFunction && s.occlusalFunction !== "none" ? { occlusalFunction: s.occlusalFunction } : {}),
@@ -9313,7 +9282,6 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   s.orthoVertical = validateEnum(raw.orthoVertical, VALID_ORTHO_VERTICAL, "none");
   s.orthoRotation = raw.orthoRotation === true;
   s.orthoProgressive = raw.orthoProgressive === true;
-  s.apicalRoot = typeof raw.apicalRoot === "string" ? raw.apicalRoot : ""; // Apikal pro Wurzel
   s.orthoBracketSide = validateEnum(raw.orthoBracketSide, VALID_ORTHO_BRACKET_SIDE, "buccal");
   s.brokenMesial = !!raw.brokenMesial;
   s.brokenIncisal = !!raw.brokenIncisal;
@@ -14167,12 +14135,6 @@ function wireControls(){
     for(const toothNo of betroffen) setRootResection(toothNo, getRootResection(toothNo), wurzel);
     nachZeichnen(betroffen);
   });
-  $("#apicalRootSelect").addEventListener("change", (e)=>{
-    const wurzel = (e.target as HTMLSelectElement).value;
-    const betroffen = Array.from(selectedTeeth) as number[];
-    for(const toothNo of betroffen) setApicalRoot(toothNo, wurzel);
-    nachZeichnen(betroffen);
-  });
 
   buildSelect($("#crownFractureTypeSelect"), getCrownFractureTypeOptions(), (value)=>{
     const betroffen = Array.from(selectedTeeth) as number[];
@@ -15058,7 +15020,7 @@ export type ToothDisplayState = {
   caries: string[]; cariesSeverity: Record<string, number>;
   fillingSurfaces: string[]; fillingSurfaceMaterials: Record<string, string>;
   rootCaries: string; endo: string;
-  pulpDx: string; apicalDx: string; apicalRoot: string; periapicalType: string;
+  pulpDx: string; apicalDx: string; periapicalType: string;
   extractionPlan: boolean; crownNeeded: boolean; crownReplace: boolean;
   crownLeakage: boolean; mobility: string; bridgePillar: boolean;
   cantilever: boolean; eruptionStage: string; prosthesis: string;
@@ -15093,7 +15055,6 @@ export function getToothDisplayState(toothNo: number): ToothDisplayState {
     endo: String(s.endo ?? "none"),
     pulpDx: String(s.pulpDx ?? "normal"),
     apicalDx: String(s.apicalDx ?? "normal"),
-    apicalRoot: String(s.apicalRoot ?? ""),
     periapicalType: String(s.periapicalType ?? "none"),
     extractionPlan: !!s.extractionPlan,
     crownNeeded: !!s.crownNeeded,
