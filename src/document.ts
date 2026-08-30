@@ -76,6 +76,8 @@ export interface ToothRecord {
   splinted?: boolean;
   /** charly „Schiene": this tooth lies under an occlusal splint. Omit-when-false. */
   occlusalSplint?: boolean;
+  /** charly Funktion: premature|interference|overload occlusal finding. Omit-when-none. */
+  occlusalFunction?: string;
   // Bead odontogram-0n8: wie weit ein SICHTBARER Zahn durchgebrochen ist.
   // Weggelassen, wenn "none".
   eruptionStage?: string;
@@ -272,7 +274,7 @@ export interface DentalCoreIdentity {
 // filling or caries lesion extends into the cervical region. Omitted entirely
 // when empty, so a document that never records it is byte-identical apart from
 // this version string, and an older document needs no migration.
-export const PAYLOAD_VERSION = "2.41";
+export const PAYLOAD_VERSION = "2.42";
 
 /**
  * The UI-domain document (bead odontogram-3l1, AC2/AC4): a versioned,

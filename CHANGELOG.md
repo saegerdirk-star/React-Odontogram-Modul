@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.64.0 - 2026-08-30
+
+### Funktion: Frühkontakt / Gleithindernis / Belastung (charly-Paritäts-Audit, Baustein 10)
+
+charly führt okklusale Funktionsbefunde; wir hatten sie nicht. Neue additive
+Achse **`occlusalFunction`** (`none` | `premature` = Frühkontakt | `interference`
+= Gleithindernis | `overload` = Belastung) je präsentem Zahn.
+
+- Schema: ein roter Marker auf der Kaufläche — Frühkontakt als Punkt,
+  Gleithindernis als Winkel, Belastung als Ring.
+- Steuerung/Tooltip/Summary: Auswahlfeld „Funktion".
+- Anatomisch gibt es dafür keine Vorlage — der Befund lebt regelkonform im
+  Schema und im Tooltip.
+
+Omit-when-`none` serialisiert, toleranter Hydrate, kein `svgLayer` → SVG-Parität
+byte-identisch. Payload **2.41 → 2.42**.
+
 ## 2.63.0 - 2026-08-30
 
 ### Schiene / Occlusal splint (charly-Paritäts-Audit, Baustein 9)

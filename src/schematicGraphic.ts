@@ -448,6 +448,15 @@ function occlBox(toothNo: number, s: ToothDisplayState): string {
     + `<line x1="${ix0 + inner}" y1="${iy0}" x2="${ix0 + inner + t}" y2="${iy0 - t}"/>`
     + `<line x1="${ix0}" y1="${iy0 + inner}" x2="${ix0 - t}" y2="${iy0 + inner + t}"/>`
     + `<line x1="${ix0 + inner}" y1="${iy0 + inner}" x2="${ix0 + inner + t}" y2="${iy0 + inner + t}"/></g>`);
+  // charly Funktion: an occlusal function marker at the table centre — premature
+  // contact = a red dot, interference = a red chevron, overload = a red ring.
+  const fn = s.occlusalFunction;
+  if (fn && fn !== "none") {
+    const red = "#c62828";
+    if (fn === "premature") parts.push(`<circle cx="${cx}" cy="${cy}" r="3.4" fill="${red}"/>`);
+    else if (fn === "interference") parts.push(`<path d="M${cx - 4},${cy - 4} L${cx + 3},${cy} L${cx - 4},${cy + 4}" fill="none" stroke="${red}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`);
+    else parts.push(`<circle cx="${cx}" cy="${cy}" r="5" fill="none" stroke="${red}" stroke-width="2"/>`);
+  }
   return parts.join("");
 }
 

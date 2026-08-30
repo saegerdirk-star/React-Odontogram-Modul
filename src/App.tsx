@@ -1357,6 +1357,10 @@ export default function App({
                 <input type="checkbox" id="occlusalSplint" />
                 <span>{t("occlusalSplint.label")}</span>
               </label>
+              <div id="occlusalFunctionRow" className="row hidden">
+                <span>{t("occlusalFunction.label")}</span>
+                <select id="occlusalFunctionSelect"></select>
+              </div>
               <label id="rootCapRow" className="row hidden">
                 <input type="checkbox" id="rootCap" />
                 <span>{t("rootCap.label")}</span>

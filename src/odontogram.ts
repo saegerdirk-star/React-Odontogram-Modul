@@ -546,6 +546,9 @@ function defaultState(){
     // Okklusionsschiene. Das durchgehende Band wird über die benachbarten
     // markierten Zähne abgeleitet (detectOcclusalSplintSpans).
     occlusalSplint: false,
+    // charly Funktion: Frühkontakt (premature) / Gleithindernis (interference) /
+    // Belastung (overload). Eine okklusale Funktionsangabe pro Zahn.
+    occlusalFunction: "none", // none | premature | interference | overload
     prosthesis: "none", // none | healing-abutment | locator | locator-denture | bar | bar-denture | removable-partial | removable-full
     mobility: "none", // none | m1 | m2 | m3
     toothSubstrate: "natural",  // natural | radix | broken | crownprep
@@ -3363,6 +3366,10 @@ function getCrownFractureTypeOptions(): { value: string; label: string }[]{
   return ["none", "crack", "split", "fracture"].map(v =>
     ({ value: v, label: t("crownFractureType.option." + v) }));
 }
+function getOcclusalFunctionOptions(): { value: string; label: string }[]{
+  return ["none", "premature", "interference", "overload"].map(v =>
+    ({ value: v, label: t("occlusalFunction.option." + v) }));
+}
 function getCrownMarginTypeOptions(): { value: string; label: string }[]{
   return ["none", "overhang", "caries", "filling"].map(v =>
     ({ value: v, label: t("crownMarginType.option." + v) }));
@@ -5401,6 +5408,9 @@ function getStateSummary(toothNo: number): string[]{
   }
   if(state.splinted && isToothPresent(state.toothSelection)) summary.push(t("splint.label"));
   if(state.occlusalSplint && isToothPresent(state.toothSelection)) summary.push(t("occlusalSplint.label"));
+  if(state.occlusalFunction && state.occlusalFunction !== "none" && isToothPresent(state.toothSelection)){
+    summary.push(t("occlusalFunction.label") + ": " + t("occlusalFunction.option." + state.occlusalFunction));
+  }
   if(state.rootCap && rootCapAllowed(state)) summary.push(t("rootCap.label"));
   if(onlayCoverageAllowed(state) && Array.isArray(state.onlayCoverage) && state.onlayCoverage.length){
     const surfs = state.onlayCoverage.map((sf: string) => t("surface." + sf)).join(", ");
@@ -6092,6 +6102,8 @@ function syncControlsFromState(state: Any){
   $("#splintedRow").classList.toggle("hidden", !(activeTooth && isToothPresent(state.toothSelection)));
   $("#occlusalSplint").checked = !!state.occlusalSplint;
   $("#occlusalSplintRow").classList.toggle("hidden", !(activeTooth && isToothPresent(state.toothSelection)));
+  setSelectOptions($("#occlusalFunctionSelect"), getOcclusalFunctionOptions(), state.occlusalFunction ?? "none");
+  $("#occlusalFunctionRow").classList.toggle("hidden", !(activeTooth && isToothPresent(state.toothSelection)));
   $("#rootCap").checked = !!state.rootCap;
   $("#rootCapRow").classList.toggle("hidden", !(activeTooth && rootCapAllowed(state)));
   {
@@ -6953,6 +6965,25 @@ export function setOcclusalSplint(toothNo: number, on: boolean): void {
 }
 export function getOcclusalSplint(toothNo: number): boolean {
   return !!toothState.get(toothNo)?.occlusalSplint;
+}
+
+const VALID_OCCLUSAL_FUNCTION = new Set(["none", "premature", "interference", "overload"]);
+/** charly Funktion: an occlusal function finding — Frühkontakt (premature
+ *  contact), Gleithindernis (excursive interference), Belastung (overload).
+ *  Present tooth or implant. DS-1 gate. */
+export function setOcclusalFunction(toothNo: number, value: string): void {
+  if(!VALID_OCCLUSAL_FUNCTION.has(value)) return;
+  const s = toothState.get(toothNo);
+  if(!s || !isToothPresent(s.toothSelection)) return;
+  gateToothEdit(toothNo, () => {
+    if((s.occlusalFunction ?? "none") === value) return false;
+    s.occlusalFunction = value;
+    notifyStateChange();
+    return true;
+  });
+}
+export function getOcclusalFunction(toothNo: number): string {
+  return String(toothState.get(toothNo)?.occlusalFunction ?? "none");
 }
 
 /** charly „Wurzelkappe": a coping over a root remnant. Allowed only on a radix
@@ -8608,6 +8639,7 @@ function serializeState(s: Any){
     ...(s.cantilever ? { cantilever: true } : {}),
     ...(s.splinted ? { splinted: true } : {}),
     ...(s.occlusalSplint ? { occlusalSplint: true } : {}),
+    ...(s.occlusalFunction && s.occlusalFunction !== "none" ? { occlusalFunction: s.occlusalFunction } : {}),
     ...(s.rootCap ? { rootCap: true } : {}),
     ...(Array.isArray(s.onlayCoverage) && s.onlayCoverage.length ? { onlayCoverage: [...s.onlayCoverage] } : {}),
     prosthesis: s.prosthesis,
@@ -9238,6 +9270,7 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   s.cantilever = !!raw.cantilever;                      // Bead odontogram-5rv
   s.splinted = !!raw.splinted;                          // Verblockung
   s.occlusalSplint = !!raw.occlusalSplint;              // Schiene
+  s.occlusalFunction = validateEnum(raw.occlusalFunction, VALID_OCCLUSAL_FUNCTION, "none"); // Funktion
   s.rootCap = !!raw.rootCap;                            // Wurzelkappe
   s.onlayCoverage = Array.isArray(raw.onlayCoverage)    // Teilkrone pro Fläche
     ? raw.onlayCoverage.filter((x: unknown): x is string => typeof x === "string" && ONLAY_SURFACES.includes(x))
@@ -14262,6 +14295,12 @@ function wireControls(){
     applyToSelected((s)=>{ if(isToothPresent(s.toothSelection)) s.occlusalSplint = on; });
   });
 
+  buildSelect($("#occlusalFunctionSelect"), getOcclusalFunctionOptions(), (value)=>{
+    const betroffen = Array.from(selectedTeeth) as number[];
+    for(const toothNo of betroffen) setOcclusalFunction(toothNo, value);
+    nachZeichnen(betroffen);
+  });
+
   for(const [sf, cap] of [["mesial","Mesial"],["distal","Distal"],["buccal","Buccal"],["lingual","Lingual"],["occlusal","Occlusal"]]){
     $(`#onlayCov${cap}`).addEventListener("change", ()=>{
       const betroffen = Array.from(selectedTeeth) as number[];
@@ -14961,7 +15000,8 @@ export type ToothDisplayState = {
   brokenMesial: boolean; brokenIncisal: boolean; brokenDistal: boolean;
   crownFractureType: string;
   crownMarginType: string; crownMarginSide: string;
-  splinted: boolean; occlusalSplint: boolean; rootCap: boolean; onlayCoverage: string[];
+  splinted: boolean; occlusalSplint: boolean; occlusalFunction: string;
+  rootCap: boolean; onlayCoverage: string[];
 };
 
 export function getToothDisplayState(toothNo: number): ToothDisplayState {
@@ -15011,6 +15051,7 @@ export function getToothDisplayState(toothNo: number): ToothDisplayState {
     crownMarginSide: String(s.crownMarginSide ?? ""),
     splinted: !!s.splinted,
     occlusalSplint: !!s.occlusalSplint,
+    occlusalFunction: String(s.occlusalFunction ?? "none"),
     rootCap: !!s.rootCap,
     onlayCoverage: Array.isArray(s.onlayCoverage) ? [...s.onlayCoverage] : [],
   };
