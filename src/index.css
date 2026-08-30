@@ -1487,6 +1487,11 @@ select:focus{
 .schematic-hit{cursor:pointer; stroke:transparent; stroke-width:1.5; transition:stroke .08s}
 .schematic-hit:hover{stroke:#9bbcff}
 .schematic-hit.is-active{stroke:#3b7bff; stroke-width:2}
+/* Per-canal endo: a click on a root region cycles that canal (WF -> WF+Stift ->
+   WFi -> Einlage -> leer). Laid over the column hit; its own pointer + hover so
+   a root reads as clickable without tinting the drawing. */
+.schematic-canal-hit{cursor:pointer; stroke:transparent; stroke-width:1.5; transition:stroke .08s}
+.schematic-canal-hit:hover{stroke:#d98f4a}
 
 /* Hover read-out: the full finding text (getToothStateSummary), the same lines
    the anatomical tile tooltip carries. Fixed to the cursor. */

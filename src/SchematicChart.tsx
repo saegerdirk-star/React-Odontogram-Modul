@@ -20,6 +20,7 @@ import {
   onStateChange,
   getToothDisplayState,
   getToothStateSummary,
+  cycleEndoCanal,
 } from "./odontogram";
 import { buildSchematicSvg } from "./schematicGraphic";
 
@@ -67,6 +68,13 @@ export default function SchematicChart({
         dir="ltr"
         ref={wrapRef}
         onClick={(e) => {
+          // A click on a canal's root region cycles that canal's endo state
+          // (WF → WF+Stift → WFi → med → none); anywhere else selects the tooth.
+          const canalEl = (e.target as Element | null)?.closest?.("[data-canal]") as HTMLElement | null;
+          if (canalEl?.dataset.tooth && canalEl.dataset.canal) {
+            cycleEndoCanal(Number(canalEl.dataset.tooth), canalEl.dataset.canal);
+            return;
+          }
           const tn = toothAt(e.target);
           if (tn == null) return;
           onSelect(tn);

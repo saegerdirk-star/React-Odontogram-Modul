@@ -486,6 +486,12 @@ function defaultState(){
     mods: new Set(),
     periapicalType: "none", // none | granuloma | cyst | abscess (qualifies mods "inflammation")
     endo: "none", // none | endo-medical-filling | endo-filling | endo-glass-pin | endo-metal-pin
+    // Endo pro Wurzel/Kanal (charly WURZELZUSTAND: je Wurzel ein Set). Keyed by
+    // root name (rootsOf; single-rooted → "single"), value = subset of
+    // ["filling","post","incomplete","temporary"] — WF und Stift koexistieren,
+    // ein Kanal gefüllt, ein anderer nicht. Leer/absent = Kanal unbehandelt.
+    // Vorrangig vor dem `endo`-Skalar, der als whole-tooth-Fallback bleibt.
+    endoCanals: {} as Record<string, string[]>,
     caries: new Set(),
     cariesActiveDepth: 2, // canonical ICDAS code (2 = superficial representative)
     // SP6 Task 1: the single unified per-surface caries severity (0..6). Read as
@@ -3104,6 +3110,47 @@ export function isEndoValue(value: string): boolean {
   return value !== "none" && VALID_ENDO.has(value);
 }
 
+// Per-canal endo (endoCanals) collapsed to ONE whole-tooth endo value, so the
+// anatomical view — whose endo artwork is one layer per finding-type across all
+// canals — shows the tooth as treated even when only per-canal detail is
+// charted. The Schema view shows WHICH canal; this makes both views agree. The
+// legacy scalar `state.endo` wins when set; otherwise the union of the canals.
+export function effectiveEndo(state: Any): string {
+  if(state.endo && state.endo !== "none") return state.endo;
+  const flat = (Object.values((state.endoCanals ?? {}) as Record<string, string[]>) as string[][]).flat();
+  if(!flat.length) return "none";
+  if(flat.includes("post")) return "endo-metal-pin";
+  if(flat.includes("filling")) return "endo-filling";
+  if(flat.includes("incomplete")) return "endo-filling-incomplete";
+  if(flat.includes("temporary")) return "endo-medical-filling";
+  return "none";
+}
+
+// Per-canal endo as ONE line of language-neutral clinical shorthand, like the
+// schematic badge: canal by anatomical abbreviation (mb/db/p/m/d/b/l), finding
+// by WF (filling) / St (post) / WFi (incomplete) / Med (temporary). Kept out of
+// i18n on purpose — these abbreviations are the same in every dental language,
+// and a 12-language expansion for a detail line is not worth it. "" when none.
+const ENDO_CANAL_ABBR: Record<string, string> = {
+  mesiobuccal: "mb", distobuccal: "db", palatal: "p", mesial: "m",
+  distal: "d", buccal: "b", lingual: "l", single: "",
+};
+const ENDO_CANAL_FIND_ABBR: Record<string, string> = {
+  filling: "WF", post: "St", incomplete: "WFi", temporary: "Med",
+};
+export function endoCanalSummaryParts(state: Any): string {
+  const map = (state.endoCanals ?? {}) as Record<string, string[]>;
+  const parts: string[] = [];
+  for(const [canal, finds] of Object.entries(map)){
+    if(!finds?.length) continue;
+    const marks = finds.map(f => ENDO_CANAL_FIND_ABBR[f]).filter(Boolean).join("·");
+    if(!marks) continue;
+    const c = ENDO_CANAL_ABBR[canal] ?? canal;
+    parts.push(c ? `${c}: ${marks}` : marks);
+  }
+  return parts.join(" · ");
+}
+
 // SP7 Task 4: the merged selector's displayed value. A treated tooth shows its
 // endo value; otherwise the pulp value collapsed to the active detail level.
 export function pulpEndoDisplayValue(state: Any): string {
@@ -3292,7 +3339,7 @@ const ENDO_TINT: Record<string, string> = {
 /** The colour the drawn pulp is filled with, or "" when it is untreated and
  *  healthy. A treated tooth wins over a diagnosis: it has no vital pulp. */
 function pulpTint(s: Any): string {
-  if(s?.endo && s.endo !== "none") return ENDO_TINT[s.endo] || ENDO_TINT["endo-filling"];
+  { const eff = effectiveEndo(s); if(eff !== "none") return ENDO_TINT[eff] || ENDO_TINT["endo-filling"]; }
   if(s?.pulpLatin && s.pulpLatin !== "none" && PULP_TINT[s.pulpLatin]) return PULP_TINT[s.pulpLatin];
   if(s?.pulpDx && s.pulpDx !== "normal") return PULP_TINT[s.pulpDx] || PULP_TINT["irreversible-pulpitis"];
   return "";
@@ -3489,7 +3536,7 @@ function applyStateToSvgSingle(toothNo: Any, svg: Any, state: Any = toothState.g
   const pulpTierMild = state.pulpDx === "reversible-pulpitis" || state.pulpLatin === "hyperaemia-pulpae";
   // SP7: a root-treated tooth has no vital pulp — its endo artwork represents
   // the canal, so suppress both pulp glyphs.
-  const endoTreated = state.endo !== "none";
+  const endoTreated = effectiveEndo(state) !== "none";
 
   // base visibility toggle
   setActive(svgGetById(svg, "base"), showBase);
@@ -3771,16 +3818,17 @@ function applyStateToSvgSingle(toothNo: Any, svg: Any, state: Any = toothState.g
 
   // 3) Endo exclusivity (only if tooth present)
   if(isToothPresent(state.toothSelection) && !underGum && !extraction){
-    if(state.endo === "endo-medical-filling"){
+    const eff = effectiveEndo(state);
+    if(eff === "endo-medical-filling"){
       setActive(svgGetById(svg, "endo-medical-filling"), true);
-    } else if(state.endo === "endo-filling"){
+    } else if(eff === "endo-filling"){
       setActive(svgGetById(svg, "endo-filling"), true);
-    } else if(state.endo === "endo-glass-pin"){
+    } else if(eff === "endo-glass-pin"){
       setActive(svgGetById(svg, "endo-filling"), true);
       setActive(svgGetById(svg, "endo-glass-pin"), true);
-    } else if(state.endo === "endo-filling-incomplete"){
+    } else if(eff === "endo-filling-incomplete"){
       setActive(svgGetById(svg, "endo-filling-incomplete"), true);
-    } else if(state.endo === "endo-metal-pin"){
+    } else if(eff === "endo-metal-pin"){
       setActive(svgGetById(svg, "endo-filling"), true);
       setActive(svgGetById(svg, "endo-metal-pin"), true);
     }
@@ -5086,17 +5134,20 @@ function getStateSummary(toothNo: number): string[]{
     summary.push(t("retention.telescope"));
   }
 
-  // Endo
-  if(state.endo !== "none"){
+  // Endo — the whole-tooth status line uses the effective value, so a tooth
+  // charted ONLY per canal still shows a status here (both views agree).
+  const endoEff = effectiveEndo(state);
+  if(endoEff !== "none"){
     const endoKey = {
       "endo-medical-filling": "endo.option.medicalFilling",
       "endo-filling": "endo.option.filling",
       "endo-filling-incomplete": "endo.option.incompleteFilling",
       "endo-glass-pin": "endo.option.glassPin",
       "endo-metal-pin": "endo.option.metalPin",
-    }[state.endo];
+    }[endoEff];
     if(endoKey) summary.push(t(endoKey));
   }
+  { const parts = endoCanalSummaryParts(state); if(parts) summary.push(`Endo: ${parts}`); }
 
   // Filling
   if(state.fillingMaterial !== "none"){
@@ -6635,6 +6686,41 @@ export function setImplantPosition(toothNo: number, value: string): void {
 }
 export function getImplantPosition(toothNo: number): string {
   return String(toothState.get(toothNo)?.implantPosition ?? "center");
+}
+
+const VALID_ENDO_CANAL = new Set(["filling", "post", "incomplete", "temporary"]);
+/** Set a single canal's endo findings (charly WURZELZUSTAND per root). The three
+ *  fill-types (filling/incomplete/temporary) are mutually exclusive; `post`
+ *  coexists (WF + Stift). Empty clears the canal. Through the DS-1 gate. */
+export function setEndoCanal(toothNo: number, canal: string, findings: string[]): void {
+  const s = toothState.get(toothNo);
+  if(!s || !canal) return;
+  const clean = (findings ?? []).filter(f => VALID_ENDO_CANAL.has(f));
+  const fills = ["filling", "incomplete", "temporary"].filter(f => clean.includes(f));
+  const norm = [...(fills.length ? [fills[fills.length - 1]] : []), ...(clean.includes("post") ? ["post"] : [])];
+  gateToothEdit(toothNo, () => {
+    const cur = (s.endoCanals?.[canal] ?? []) as string[];
+    if(cur.length === norm.length && cur.every((v, i) => v === norm[i])) return false;
+    if(!s.endoCanals) s.endoCanals = {};
+    if(norm.length) s.endoCanals[canal] = norm; else delete s.endoCanals[canal];
+    applyStateToSvg(toothNo);
+    notifyStateChange();
+    return true;
+  });
+}
+export function getEndoCanals(toothNo: number): Record<string, string[]> {
+  const src = (toothState.get(toothNo)?.endoCanals ?? {}) as Record<string, string[]>;
+  return Object.fromEntries(Object.entries(src).map(([k, v]) => [k, [...v]]));
+}
+// Clinical cycle for a click on a canal: untreated → WF → WF+Stift → WFi (insuff.)
+// → med. Einlage → untreated. `setEndoCanal` normalises, so passing these is safe.
+const ENDO_CANAL_CYCLE: string[][] = [[], ["filling"], ["filling", "post"], ["incomplete"], ["temporary"]];
+/** Advance one canal to the next state in the clinical cycle — the schematic's
+ *  "click a root / press wf to step through the canals" gesture. */
+export function cycleEndoCanal(toothNo: number, canal: string): void {
+  const cur = (toothState.get(toothNo)?.endoCanals?.[canal] ?? []) as string[];
+  const idx = ENDO_CANAL_CYCLE.findIndex(c => c.length === cur.length && c.every((v, i) => v === cur[i]));
+  setEndoCanal(toothNo, canal, ENDO_CANAL_CYCLE[(idx + 1) % ENDO_CANAL_CYCLE.length]);
 }
 
 // ---- Touch: Zoom Popover ----
@@ -8275,6 +8361,9 @@ function serializeState(s: Any){
     // Implantatposition: omit-when-"center", so a chart with no repositioned
     // implant stays byte-identical apart from the version field.
     ...(s.implantPosition && s.implantPosition !== "center" ? { implantPosition: s.implantPosition } : {}),
+    // Endo pro Kanal: omit-when-empty (a chart with no per-canal detail stays
+    // byte-identical apart from the version field).
+    ...(s.endoCanals && Object.keys(s.endoCanals).length ? { endoCanals: s.endoCanals } : {}),
     // Bead odontogram-0n8: omit-when-none - eine Karte ohne Wechselgebiss
     // bleibt byte-gleich bis auf die Version.
     ...(s.eruptionStage && s.eruptionStage !== "none" ? { eruptionStage: s.eruptionStage } : {}),
@@ -8672,6 +8761,15 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   // key, which reads as "no retention element recorded".
   s.retention = validateEnum(raw.retention, VALID_RETENTION, "none");
   s.implantPosition = validateEnum(raw.implantPosition, VALID_IMPLANT_POSITION, "center");
+  s.endoCanals = {};
+  if(raw.endoCanals && typeof raw.endoCanals === "object"){
+    for(const [k, v] of Object.entries(raw.endoCanals as Record<string, unknown>)){
+      if(Array.isArray(v)){
+        const c = v.filter((x): x is string => typeof x === "string" && VALID_ENDO_CANAL.has(x));
+        if(c.length) s.endoCanals[k] = c;
+      }
+    }
+  }
   s.retentionSide = validateEnum(raw.retentionSide, VALID_RETENTION_SIDE, "none");
   // Bead odontogram-0n8: tolerant wie jede Enum-Achse. Dass ein nicht
   // durchgebrochener Zahn keine Stufe TRAEGT, erzwingt der Setter, nicht der
@@ -14493,6 +14591,7 @@ export type ToothDisplayState = {
   cantilever: boolean; eruptionStage: string; prosthesis: string;
   calculus: boolean; retention: string;
   implantPosition: string;
+  endoCanals: Record<string, string[]>;
 };
 
 export function getToothDisplayState(toothNo: number): ToothDisplayState {
@@ -14528,6 +14627,9 @@ export function getToothDisplayState(toothNo: number): ToothDisplayState {
     calculus: !!s.calculus,
     retention: String(s.retention ?? "none"),
     implantPosition: String(s.implantPosition ?? "center"),
+    endoCanals: Object.fromEntries(
+      Object.entries((s.endoCanals ?? {}) as Record<string, string[]>).map(([k, v]) => [k, [...(v ?? [])]]),
+    ),
   };
 }
 

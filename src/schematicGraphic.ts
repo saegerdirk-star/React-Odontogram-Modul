@@ -45,6 +45,26 @@ const CROWN_COLORS: Record<string, string> = {
   emax: "#e2d6c4", gold: "#e0a80d", gradia: "#57b285", zircon: "#cfe3ee",
   metal: "#8fb3e0", "metal-ceramic": "#bbd975", telescope: "#d8c9a0", temporary: "#c8b392",
 };
+// endo per canal (charly WURZELZUSTAND): filling/temporary/incomplete + post.
+const ENDO_FILL = "#d98f4a", ENDO_TEMP = "#bcd4ec", ENDO_POST = "#8a9096";
+/** Canal names for a tooth — rootsOf, or ["single"] for a single-rooted tooth.
+ *  The key set of `endoCanals`. */
+export function toothCanals(toothNo: number): string[] {
+  const r = rootsOf(toothNo);
+  return r.length ? r : ["single"];
+}
+/** Map the legacy whole-tooth `endo` scalar to a per-canal findings array, so a
+ *  tooth without per-canal detail still renders as before (uniform on every canal). */
+function legacyEndoFindings(endo: string): string[] {
+  switch (endo) {
+    case "endo-filling": return ["filling"];
+    case "endo-filling-incomplete": return ["incomplete"];
+    case "endo-medical-filling": return ["temporary"];
+    case "endo-glass-pin":
+    case "endo-metal-pin": return ["post"];
+    default: return [];
+  }
+}
 
 function isMolar(toothNo: number): boolean {
   const d = toothNo % 10;
@@ -124,6 +144,7 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
 
   const parts: string[] = [];
   const stroke = `fill="#fff" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"`;
+  let anyFill = false, anyPost = false;  // endo canals set these; the anno badge reads them (fn scope)
 
   if (missing && !pontic) {
     // ghost outline only
@@ -206,15 +227,33 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
       const op = s.rootCaries === "active" ? 0.5 : s.rootCaries === "arrested" ? 0.7 : 1;
       parts.push(`<rect x="${cx - w / 2}" y="${cerv}" width="${w}" height="6" fill="${CARIES}" opacity="${op}"/>`);
     }
-    // endo: filled canal(s) / pins down each root centre
-    if (s.endo !== "none" && !implant) {
-      const pin = s.endo === "endo-glass-pin" || s.endo === "endo-metal-pin";
-      const frac = pin ? 0.5 : s.endo === "endo-filling-incomplete" ? 0.82 : 0.94;
-      const col = pin ? "#8a9096" : "#d98f4a";
-      for (const rx of rootCenters(cx, w, n)) parts.push(`<line x1="${rx.toFixed(1)}" y1="${cerv + 1}" x2="${rx.toFixed(1)}" y2="${(cerv + rootLen * frac).toFixed(1)}" stroke="${col}" stroke-width="2.4" stroke-linecap="round"/>`);
+    // endo PER CANAL: each root's canal carries a findings set {filling,
+    // temporary, incomplete, post}. WF and post coexist (both drawn); an
+    // untreated canal draws nothing (visible as an empty root). Falls back to
+    // the legacy whole-tooth `endo` scalar when no per-canal detail is charted.
+    const canals = toothCanals(toothNo);
+    const centers = rootCenters(cx, w, canals.length);
+    const legacy = legacyEndoFindings(s.endo);
+    if (!implant) {
+      canals.forEach((name, i) => {
+        const f = (s.endoCanals[name] && s.endoCanals[name].length) ? s.endoCanals[name] : legacy;
+        if (!f.length) return;
+        const rx = centers[i] ?? cx;
+        if (f.includes("filling") || f.includes("temporary") || f.includes("incomplete")) {
+          anyFill = true;
+          const frac = f.includes("incomplete") ? 0.82 : 0.94;
+          const col = f.includes("temporary") ? ENDO_TEMP : ENDO_FILL;
+          parts.push(`<line x1="${rx.toFixed(1)}" y1="${cerv + 1}" x2="${rx.toFixed(1)}" y2="${(cerv + rootLen * frac).toFixed(1)}" stroke="${col}" stroke-width="2.4" stroke-linecap="round"/>`);
+        }
+        if (f.includes("post")) {
+          anyPost = true;
+          parts.push(`<line x1="${rx.toFixed(1)}" y1="${cerv + 1}" x2="${rx.toFixed(1)}" y2="${(cerv + rootLen * 0.5).toFixed(1)}" stroke="${ENDO_POST}" stroke-width="3.6" stroke-linecap="round"/>`);
+        }
+      });
     }
+    const endoTreated = anyFill || anyPost;
     // diseased pulp (only when not endo-treated): a red dot at the crown base
-    if (s.pulpDx !== "normal" && s.endo === "none") {
+    if (s.pulpDx !== "normal" && !endoTreated) {
       parts.push(`<circle cx="${cx}" cy="${cerv - 5}" r="3" fill="${CARIES}"/>`);
     }
     // apical lesion at the root apex, three-way (Dirk, 24.08.2026): a cyst is a
@@ -252,8 +291,8 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
   const anno: string[] = [];
   const badge = crowned ? (rt === "bridge" ? "B" : "K") : rt === "veneer" ? "V" : rt === "onlay" ? "On" : rt === "inlay" ? "I" : "";
   if (badge) anno.push(`<text x="${CELL_W - 5}" y="14" text-anchor="end" font-size="11" font-weight="600" fill="${INK}">${badge}</text>`);
-  if (s.endo !== "none" && !implant) {
-    const t = (s.endo === "endo-glass-pin" || s.endo === "endo-metal-pin") ? "St" : "WF";
+  if (!implant && (anyFill || anyPost)) {
+    const t = anyFill && anyPost ? "WF·St" : anyPost ? "St" : "WF";
     anno.push(`<text x="${CELL_W - 5}" y="${SIDE_H - 4}" text-anchor="end" font-size="9" fill="#b5722f">${t}</text>`);
   }
   const mob = { m1: "I", m2: "II", m3: "III" }[s.mobility] ?? "";
@@ -353,7 +392,26 @@ function archRows(teeth: number[], getState: GetDisplayState, sideOnTop: boolean
   const archH = NUM_H + SIDE_H + OCCL_H;
   const hits = teeth.map((tn, i) =>
     `<rect class="schematic-hit" data-tooth="${tn}" x="${i * CELL_W}" y="0" width="${CELL_W}" height="${archH}" rx="6" fill="transparent"/>`).join("");
-  return nums + rowSide + rowOccl + hits;
+  // Endo pro Kanal (odontogram-ip3 Folge): a hit rect over each canal's ROOT
+  // region, laid ON TOP of the column rect. A click there cycles that canal
+  // (data-canal); a click anywhere else still selects the tooth. Only on a
+  // present natural/milk tooth — an implant has no canals.
+  const canalHits = teeth.map((tn, i) => {
+    const s = getState(tn);
+    if(s.toothSelection !== "tooth-base" && s.toothSelection !== "milktooth") return "";
+    const canals = toothCanals(tn), n = canals.length, w = crownWidth(tn);
+    const centers = rootCenters(CELL_W / 2, w, n);
+    const pad = (SIDE_H - TOOTH_LEN) / 2;
+    const cerv = pad + TOOTH_LEN * CROWN_FRAC, apex = pad + TOOTH_LEN;
+    const seg = w / n, rh = apex - cerv;
+    const rootTop = isUpperTooth(tn) ? SIDE_H - apex : cerv;   // upper is flipped → roots up
+    const sideY = sideOnTop ? r1Y : r2Y;
+    return canals.map((name, j) => {
+      const x = i * CELL_W + (centers[j] - seg / 2);
+      return `<rect class="schematic-canal-hit" data-tooth="${tn}" data-canal="${name}" x="${x.toFixed(1)}" y="${(sideY + rootTop).toFixed(1)}" width="${seg.toFixed(1)}" height="${rh.toFixed(1)}" fill="transparent"/>`;
+    }).join("");
+  }).join("");
+  return nums + rowSide + rowOccl + hits + canalHits;
 }
 
 /** Full schematic chart as one standalone <svg> string. Upper arch: side glyphs

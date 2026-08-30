@@ -1,5 +1,34 @@
 # Changelog
 
+## 2.56.0 - 2026-08-30
+
+### Endo pro Wurzel/Kanal (charly-Paritäts-Audit, Baustein 2)
+
+Zweiter Baustein aus dem Paritäts-Audit (Dirk, 30.08.2026): charly führt den
+Wurzelzustand **pro Wurzel** (Kanal-`EnumSet` FÜLLUNG/STIFT/FÜLLUNG_INSUFFIZIENT/
+FÜLLUNG_TEMPORÄR), wir bisher nur einen Wert für den ganzen Zahn. Neue additive
+Achse **`endoCanals`** (`Record<Kanal, Befund[]>`) — jeder Kanal für sich, WF und
+Stift **koexistieren**, ein Kanal kann gefüllt sein während ein anderer es nicht
+ist. Kanäle heißen nach ihrer Wurzel (`toothCanals`: oben mb/db/palatinal, unten
+mesial/distal, einwurzlig `single`).
+
+**In beiden Ansichten (Regel „immer anatomisch UND Schema"):**
+- **Schema:** jeder Kanal einzeln gezeichnet — WF (orange) und Stift (grau,
+  koronale Hälfte, dicker) übereinander, unvollständige Füllung kürzer, temporäre
+  Einlage hellblau; Badge `WF` / `St` / `WF·St`. **Klick auf eine Wurzel im
+  Schema** schaltet diesen Kanal durch (WF → WF+Stift → WFi → Einlage → leer) —
+  über `cycleEndoCanal`, keine zweite Mutationsspur, DS-1-Gate bleibt.
+- **Anatomisch:** die vorhandene Endo-Zeichnung wird aus der **Vereinigung** der
+  Kanäle abgeleitet (`effectiveEndo`), damit ein nur-pro-Kanal befundeter Zahn
+  auch anatomisch als behandelt erscheint. Die anatomische Vorlage hat je Befund
+  eine Ebene über alle Kanäle — welcher Kanal, sagt das Schema.
+
+Tooltip/Whole-Mouth-Summary bekommen eine sprachneutrale Kanal-Detailzeile
+(`Endo: mb: WF·St · db: WFi`). Fällt auf den alten Ganzzahn-`endo`-Skalar zurück,
+wenn kein Kanal-Detail befundet ist. Omit-when-empty serialisiert, toleranter
+Hydrate (unbekannte Kanal-Befunde verworfen). Payload **2.34 → 2.35**. Kein
+`svgLayer` → SVG-Fingerprint-Parität byte-identisch.
+
 ## 2.55.0 - 2026-08-29
 
 ### Implantatposition (charly-Paritäts-Audit, Baustein 1)

@@ -1,0 +1,88 @@
+// Part of React Advanced Odontogram - https://github.com/ZoliQua/React-Odontogram-Modul
+// Cognovis fork - https://github.com/cognovis/React-Odontogram-Modul
+// Dirk Saeger, Malte Sussdorff 2026
+//
+// Endo pro Wurzel/Kanal (charly WURZELZUSTAND per root). Additive axis
+// `endoCanals: Record<canal, findings[]>`; WF and post (Stift) coexist, a canal
+// can be filled while another is not. Falls back to the legacy whole-tooth
+// `endo` scalar when no per-canal detail is charted.
+import { describe, it, expect } from "vitest";
+import {
+  __setToothStateForTest,
+  getToothDisplayState,
+  getStatusChart,
+  cycleEndoCanal,
+  effectiveEndo,
+  endoCanalSummaryParts,
+} from "../odontogram";
+import { buildSchematicSvg, toothCanals } from "../schematicGraphic";
+
+describe("endo per canal — model + serialization", () => {
+  it("defaults to empty and is omitted from serialization", () => {
+    __setToothStateForTest(37, {});
+    expect(getToothDisplayState(37).endoCanals).toEqual({});
+    expect(getStatusChart().teeth["37"]?.endoCanals).toBeUndefined();
+  });
+
+  it("stores and serializes per-canal findings (WF + post coexist)", () => {
+    __setToothStateForTest(16, { endoCanals: { mesiobuccal: ["filling", "post"], distobuccal: ["incomplete"] } });
+    expect(getToothDisplayState(16).endoCanals).toEqual({ mesiobuccal: ["filling", "post"], distobuccal: ["incomplete"] });
+    expect(getStatusChart().teeth["16"]?.endoCanals).toEqual({ mesiobuccal: ["filling", "post"], distobuccal: ["incomplete"] });
+  });
+
+  it("drops invalid canal findings on hydrate", () => {
+    __setToothStateForTest(26, { endoCanals: { palatal: ["filling", "bogus"], mesiobuccal: [] } });
+    expect(getToothDisplayState(26).endoCanals).toEqual({ palatal: ["filling"] });
+  });
+
+  it("names canals by root, or 'single' for a single-rooted tooth", () => {
+    expect(toothCanals(16)).toEqual(["mesiobuccal", "distobuccal", "palatal"]);
+    expect(toothCanals(36)).toEqual(["mesial", "distal"]);
+    expect(toothCanals(11)).toEqual(["single"]);
+  });
+});
+
+describe("endo per canal — schematic rendering", () => {
+  it("draws WF + post on one canal and shows the WF·St badge", () => {
+    __setToothStateForTest(46, { endoCanals: { mesial: ["filling", "post"] } });
+    const svg = buildSchematicSvg(getToothDisplayState);
+    expect(svg).toContain("WF·St");
+    expect(svg).toContain("#8a9096"); // post metal
+    expect(svg).toContain("#d98f4a"); // filling orange
+  });
+
+  it("falls back to the legacy whole-tooth endo scalar", () => {
+    __setToothStateForTest(45, { endo: "endo-filling" });
+    const svg = buildSchematicSvg(getToothDisplayState);
+    expect(svg).toContain("WF");
+  });
+});
+
+describe("endo per canal — both-views derivation + interaction", () => {
+  it("effectiveEndo collapses per-canal findings to a whole-tooth value", () => {
+    // Post wins (metal pin), else filling, else incomplete, else temporary.
+    expect(effectiveEndo({ endoCanals: { mesial: ["incomplete"], distal: ["filling", "post"] } })).toBe("endo-metal-pin");
+    expect(effectiveEndo({ endoCanals: { mesial: ["filling"] } })).toBe("endo-filling");
+    expect(effectiveEndo({ endoCanals: { mesial: ["incomplete"] } })).toBe("endo-filling-incomplete");
+    expect(effectiveEndo({ endoCanals: { mesial: ["temporary"] } })).toBe("endo-medical-filling");
+    expect(effectiveEndo({ endoCanals: {} })).toBe("none");
+    // The legacy scalar still wins when set.
+    expect(effectiveEndo({ endo: "endo-glass-pin", endoCanals: { mesial: ["filling"] } })).toBe("endo-glass-pin");
+  });
+
+  it("summary emits a language-neutral per-canal line", () => {
+    expect(endoCanalSummaryParts({ endoCanals: { mesiobuccal: ["filling", "post"], distobuccal: ["incomplete"] } }))
+      .toBe("mb: WF·St · db: WFi");
+    expect(endoCanalSummaryParts({ endoCanals: {} })).toBe("");
+  });
+
+  it("cycleEndoCanal steps a canal WF → WF+post → WFi → temporary → empty", () => {
+    __setToothStateForTest(36, {});
+    const read = () => (getStatusChart().teeth["36"]?.endoCanals?.mesial ?? undefined);
+    cycleEndoCanal(36, "mesial"); expect(read()).toEqual(["filling"]);
+    cycleEndoCanal(36, "mesial"); expect(read()).toEqual(["filling", "post"]);
+    cycleEndoCanal(36, "mesial"); expect(read()).toEqual(["incomplete"]);
+    cycleEndoCanal(36, "mesial"); expect(read()).toEqual(["temporary"]);
+    cycleEndoCanal(36, "mesial"); expect(read()).toBeUndefined(); // back to empty (omitted)
+  });
+});
