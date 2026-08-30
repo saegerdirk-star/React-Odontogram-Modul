@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.62.0 - 2026-08-30
+
+### Teilkrone pro Fläche (charly-Paritäts-Audit, Baustein 8)
+
+charly führt die Teilkrone (Onlay) pro Fläche (`TEILKRONE1-4`); wir kannten das
+Onlay nur als Ganzes. Neue additive Achse **`onlayCoverage: string[]`** — welche
+Flächen die Teilkrone bedeckt (Teilmenge aus mesial/distal/buccal/lingual/
+occlusal). Leer = ganze Kaufläche (bisheriges Verhalten). Nur auf einem Onlay
+setzbar (`onlayCoverageAllowed`).
+
+- Schema: die bedeckten Flächen der Kaufläche werden im Kronenmaterial-Ton
+  eingefärbt (auf die abgerundete Box geclippt) — eine Teilbedeckung liest sich
+  als Teilbedeckung.
+- Steuerung: fünf Flächen-Kontrollkästchen, nur bei Onlay sichtbar.
+- Tooltip/Summary: die bedeckten Flächen als Liste.
+
+Omit-when-empty serialisiert, toleranter Hydrate (ungültige Flächen verworfen),
+kein neuer `svgLayer` → SVG-Parität byte-identisch. Payload **2.39 → 2.40**.
+
 ## 2.61.0 - 2026-08-30
 
 ### Wurzelkappe / Root cap (charly-Paritäts-Audit, Baustein 7)

@@ -546,6 +546,9 @@ function defaultState(){
     toothSubstrate: "natural",  // natural | radix | broken | crownprep
     restorationType: "none",    // none | crown | inlay | onlay | veneer | bridge
     restorationMaterial: "none", // none | emax | gold | gradia | zircon | metal | metal-ceramic | telescope | temporary
+    // charly TEILKRONE1-4: welche FLÄCHEN die Teilkrone (Onlay) bedeckt. Leer =
+    // ganze Kaufläche (das bisherige Verhalten); sonst nur die genannten Flächen.
+    onlayCoverage: [] as string[],
     crownLeakage: false, // marginal leakage on a crown/bridge restoration (SP3b Task 6)
     // charly „Wurzelkappe": eine Kappe auf einer Wurzel (Radix), z. B. als
     // Auflager einer Deckprothese. Nur auf einem Wurzelrest sinnvoll — der
@@ -5345,6 +5348,10 @@ function getStateSummary(toothNo: number): string[]{
   }
   if(state.splinted && isToothPresent(state.toothSelection)) summary.push(t("splint.label"));
   if(state.rootCap && rootCapAllowed(state)) summary.push(t("rootCap.label"));
+  if(onlayCoverageAllowed(state) && Array.isArray(state.onlayCoverage) && state.onlayCoverage.length){
+    const surfs = state.onlayCoverage.map((sf: string) => t("surface." + sf)).join(", ");
+    summary.push(t("onlayCoverage.label") + ": " + surfs);
+  }
   if(state.endoResection) summary.push(t("endo.resection"));
   if(state.fissureSealing) summary.push(t("filling.fissureSealing"));
   if(state.parapulpalPin) summary.push(t("endo.parapulpalPin"));
@@ -6031,6 +6038,12 @@ function syncControlsFromState(state: Any){
   $("#splintedRow").classList.toggle("hidden", !(activeTooth && isToothPresent(state.toothSelection)));
   $("#rootCap").checked = !!state.rootCap;
   $("#rootCapRow").classList.toggle("hidden", !(activeTooth && rootCapAllowed(state)));
+  {
+    const cov: string[] = Array.isArray(state.onlayCoverage) ? state.onlayCoverage : [];
+    const caps: Record<string, string> = { mesial: "Mesial", distal: "Distal", buccal: "Buccal", lingual: "Lingual", occlusal: "Occlusal" };
+    for(const sf of Object.keys(caps)) $(`#onlayCov${caps[sf]}`).checked = cov.includes(sf);
+    $("#onlayCoverageRow").classList.toggle("hidden", !(activeTooth && onlayCoverageAllowed(state)));
+  }
   const isMilktooth = state.toothSelection === "milktooth";
   const isImplant = state.toothSelection === "implant";
   const underGum = isUnderGum(state.toothSelection);
@@ -6888,6 +6901,29 @@ export function setRootCap(toothNo: number, on: boolean): void {
 }
 export function getRootCap(toothNo: number): boolean {
   return !!toothState.get(toothNo)?.rootCap;
+}
+
+const ONLAY_SURFACES = ["mesial", "distal", "buccal", "lingual", "occlusal"];
+/** charly TEILKRONE per surface: which surfaces the partial crown (onlay) covers.
+ *  Empty = the whole occlusal table (the prior behaviour). Only on an onlay. */
+export function onlayCoverageAllowed(state: Any): boolean {
+  return state.restorationType === "onlay";
+}
+export function toggleOnlaySurface(toothNo: number, surface: string): void {
+  if(!ONLAY_SURFACES.includes(surface)) return;
+  const s = toothState.get(toothNo);
+  if(!s || !onlayCoverageAllowed(s)) return;
+  gateToothEdit(toothNo, () => {
+    const cur: string[] = Array.isArray(s.onlayCoverage) ? s.onlayCoverage : [];
+    const has = cur.includes(surface);
+    s.onlayCoverage = has ? cur.filter((x: string) => x !== surface) : [...cur, surface];
+    notifyStateChange();
+    return true;
+  });
+}
+export function getOnlayCoverage(toothNo: number): string[] {
+  const v = toothState.get(toothNo)?.onlayCoverage;
+  return Array.isArray(v) ? [...v] : [];
 }
 
 const VALID_ENDO_CANAL = new Set(["filling", "post", "incomplete", "temporary"]);
@@ -8500,6 +8536,7 @@ function serializeState(s: Any){
     ...(s.cantilever ? { cantilever: true } : {}),
     ...(s.splinted ? { splinted: true } : {}),
     ...(s.rootCap ? { rootCap: true } : {}),
+    ...(Array.isArray(s.onlayCoverage) && s.onlayCoverage.length ? { onlayCoverage: [...s.onlayCoverage] } : {}),
     prosthesis: s.prosthesis,
     mobility: s.mobility,
     toothSubstrate: s.toothSubstrate,
@@ -9128,6 +9165,9 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   s.cantilever = !!raw.cantilever;                      // Bead odontogram-5rv
   s.splinted = !!raw.splinted;                          // Verblockung
   s.rootCap = !!raw.rootCap;                            // Wurzelkappe
+  s.onlayCoverage = Array.isArray(raw.onlayCoverage)    // Teilkrone pro Fläche
+    ? raw.onlayCoverage.filter((x: unknown): x is string => typeof x === "string" && ONLAY_SURFACES.includes(x))
+    : [];
   s.prosthesis = validateEnum(raw.prosthesis, VALID_PROSTHESIS, "none");
   s.mobility = validateEnum(raw.mobility, VALID_MOBILITY, s.mobility);
   s.toothSubstrate = validateEnum(raw.toothSubstrate, VALID_TOOTH_SUBSTRATE, s.toothSubstrate);
@@ -14143,6 +14183,14 @@ function wireControls(){
     applyToSelected((s)=>{ if(rootCapAllowed(s)) s.rootCap = on; });
   });
 
+  for(const [sf, cap] of [["mesial","Mesial"],["distal","Distal"],["buccal","Buccal"],["lingual","Lingual"],["occlusal","Occlusal"]]){
+    $(`#onlayCov${cap}`).addEventListener("change", ()=>{
+      const betroffen = Array.from(selectedTeeth) as number[];
+      for(const toothNo of betroffen) toggleOnlaySurface(toothNo, sf);
+      nachZeichnen(betroffen);
+    });
+  }
+
   // Missing closed
   $("#missingClosed").addEventListener("change", (e)=>{
     applyToSelected((s)=>{
@@ -14834,7 +14882,7 @@ export type ToothDisplayState = {
   brokenMesial: boolean; brokenIncisal: boolean; brokenDistal: boolean;
   crownFractureType: string;
   crownMarginType: string; crownMarginSide: string;
-  splinted: boolean; rootCap: boolean;
+  splinted: boolean; rootCap: boolean; onlayCoverage: string[];
 };
 
 export function getToothDisplayState(toothNo: number): ToothDisplayState {
@@ -14884,6 +14932,7 @@ export function getToothDisplayState(toothNo: number): ToothDisplayState {
     crownMarginSide: String(s.crownMarginSide ?? ""),
     splinted: !!s.splinted,
     rootCap: !!s.rootCap,
+    onlayCoverage: Array.isArray(s.onlayCoverage) ? [...s.onlayCoverage] : [],
   };
 }
 

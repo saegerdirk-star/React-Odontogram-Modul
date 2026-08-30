@@ -421,6 +421,23 @@ function occlBox(toothNo: number, s: ToothDisplayState): string {
     parts.push(`<clipPath id="${clipId}"><rect x="${x0}" y="${y0}" width="${bw}" height="${bw}" rx="8"/></clipPath>`);
     parts.push(`<g clip-path="url(#${clipId})">${zonePaths.join("")}</g>`);
   }
+  // Teilkrone pro Fläche (charly TEILKRONE1-4): mark the surfaces a partial crown
+  // (onlay) covers with the crown material tone, so a partial onlay reads as
+  // partial. Empty coverage = whole table, drawn as the "On" badge alone.
+  if (s.restorationType === "onlay" && s.onlayCoverage.length) {
+    const col = CROWN_COLORS[s.restorationMaterial] ?? "#cbb26b";
+    const occlShape = `M${ix0},${iy0} h${inner} v${inner} h${-inner} Z`;
+    const surfShape: Record<string, string> = {
+      buccal: topShape, lingual: botShape, occlusal: occlShape,
+      [onLeft ? "mesial" : "distal"]: leftShape,
+      [onLeft ? "distal" : "mesial"]: rightShape,
+    };
+    const clipId = `onlayClip-${toothNo}`;
+    const covered = s.onlayCoverage.map(surf => surfShape[surf]).filter(Boolean)
+      .map(d => `<path d="${d}" fill="${col}" opacity="0.6" stroke="${INK}" stroke-width="0.8"/>`).join("");
+    parts.push(`<clipPath id="${clipId}"><rect x="${x0}" y="${y0}" width="${bw}" height="${bw}" rx="8"/></clipPath>`);
+    parts.push(`<g clip-path="url(#${clipId})">${covered}</g>`);
+  }
   const oc = surfaceColor("occlusal", s);
   parts.push(`<rect x="${x0}" y="${y0}" width="${bw}" height="${bw}" rx="8" fill="none" stroke="${INK}" stroke-width="1.5"/>`);
   parts.push(`<rect x="${ix0}" y="${iy0}" width="${inner}" height="${inner}" rx="4" fill="${oc ?? "#fff"}" stroke="${INK}" stroke-width="1.2"/>`);
