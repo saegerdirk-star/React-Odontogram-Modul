@@ -143,7 +143,17 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
     // edge, not the natural roots. Otherwise the data-driven root count.
     if (!pontic) {
       if (implant) {
-        parts.push(`<path d="${screwPath(cx, 20, 9, cerv, apex)}" fill="#dfe4e8" stroke="#8a9096" stroke-width="1.5" stroke-linejoin="round"/>`);
+        // Implantatposition: center | mesial | distal | both. mesial faces the
+        // arch midline (mesialOnLeft, quadrant 2/3). "both" draws two narrower
+        // screws (mesial + distal); the others one, offset by position.
+        const off = (w / 2) * 0.55;
+        const mx = mesialOnLeft(toothNo) ? -off : off;
+        const both = s.implantPosition === "both";
+        const dxs = s.implantPosition === "mesial" ? [mx]
+          : s.implantPosition === "distal" ? [-mx]
+          : both ? [mx, -mx] : [0];
+        const wTop = both ? 13 : 20, wBot = both ? 6 : 9;
+        for (const dx of dxs) parts.push(`<path d="${screwPath(cx + dx, wTop, wBot, cerv, apex)}" fill="#dfe4e8" stroke="#8a9096" stroke-width="1.5" stroke-linejoin="round"/>`);
       } else {
         for (const d of rootPaths(cx, w, cerv, apex, n)) parts.push(`<path d="${d}" ${stroke}/>`);
       }

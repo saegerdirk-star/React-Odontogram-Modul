@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.55.0 - 2026-08-29
+
+### Implantatposition (charly-Paritäts-Audit, Baustein 1)
+
+Erster Baustein aus dem Paritäts-Audit gegen charlys entschlüsselten
+Befundvorrat (Dirk, 29.08.2026): jede Darstellung, die die anatomische Ansicht
+kann, muss auch das Schema können. Neue per-Zahn-Achse **`implantPosition`**
+(`center` | `mesial` | `distal` | `both`; charly `BefundAngabeImplantat`
+MITTIG/MESIAL/DISTAL/MESIAL_UND_DISTAL) — wo das Implantat im Zahnfach steht.
+
+- Gegatet auf Implantat (`toothSelection === "implant"`), Setter `setImplantPosition`
+  über das DS-1-Gate, Bedien-Select `#implantPositionSelect` im Implantat-Block
+  (dieselbe Sichtbarkeits-Gatterung wie `#periImplantRow`).
+- **Beide Ansichten:** anatomisch wird das Implantat versetzt (ein `translate`
+  VOR die bestehende `implantate.py`-Matrix, damit „senkrecht+mittig" erhalten
+  bleibt); im Schema wird die Schraube versetzt, `both` zeichnet zwei Schrauben.
+  Transform ist nicht im SVG-Fingerprint → **Parität byte-identisch** (`center`
+  = kein Transform).
+- Tooltip/Summary-Zeile; in `getToothDisplayState` projiziert.
+- Serialisierung **omit-when-`center`**; Payload **2.33 → 2.34** (additiv,
+  ältere Dokumente brauchen keine Migration). i18n (EN + DE, restliche Sprachen
+  Fallback EN).
+
 ## 2.54.0 - 2026-08-24
 
 ### Schematische Befund-Ansicht (Phase 2, Bearbeitung)

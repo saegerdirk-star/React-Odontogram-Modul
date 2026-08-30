@@ -1559,6 +1559,13 @@ export default function App({
                   <span>{t("periImplant.label")}</span>
                   <select id="periImplantSelect"></select>
                 </div>
+                {/* Implantatposition (charly BefundAngabeImplantat) — wo das
+                    Implantat im Zahnfach steht. Nur auf einem Implantat gezeigt,
+                    dieselbe Sichtbarkeits-Gatterung wie #periImplantRow. */}
+                <div id="implantPositionRow" className="row hidden">
+                  <span>{t("implantPosition.label")}</span>
+                  <select id="implantPositionSelect"></select>
+                </div>
                 {/* odontogram-im1: which implant is in the tooth. Its own block
                     rather than more entries in the restoration list, and shown
                     only on an implant — the same gate `#periImplantRow` uses.

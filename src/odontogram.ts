@@ -560,6 +560,10 @@ function defaultState(){
     // peri-implant disease axis. none | mucositis | peri-implantitis-mild |
     // peri-implantitis-moderate | peri-implantitis-severe.
     periImplant: "none",
+    // Implantatposition (charly BefundAngabeImplantat: MITTIG/MESIAL/DISTAL/
+    // MESIAL_UND_DISTAL). Wo das Implantat im Zahnfach steht — nur bei
+    // toothSelection === "implant" wirksam. center | mesial | distal | both.
+    implantPosition: "center",
     // SP-perio PG-C Task 2: two per-tooth categorical DATA axes (registry/FHIR/
     // payload only; the Dental Chart rows/UI land in PG-C Task 3). Both default
     // "none" and are omit-when-none on serialize; NO svgLayer, so neither renders.
@@ -2617,6 +2621,12 @@ function periImplantSummaryLabel(state: Any): string | null {
   if(!state.periImplant || state.periImplant === "none") return null;
   return t("periImplant." + kebabToCamel(state.periImplant));
 }
+function implantPositionSummaryLabel(state: Any): string | null {
+  if(state.toothSelection !== "implant") return null;
+  const p = state.implantPosition ?? "center";
+  if(p === "center") return null;
+  return t("implantPosition.label") + ": " + t("implantPosition." + p);
+}
 // SP-perio PG-C Task 3: CEJ visibility + root concavity — periodontal
 // root-surface data axes (T2 shipped set/get, no svgLayer). Surfaced the same
 // way as periImplantSummaryLabel/getToothRecessionType above: a periodontal
@@ -3321,6 +3331,10 @@ function getPeriImplantOptions(): { value: string; label: string }[]{
   return Array.from(VALID_PERI_IMPLANT).map(v => ({ value: v, label: t("periImplant." + kebabToCamel(v)) }));
 }
 
+function getImplantPositionOptions(): { value: string; label: string }[]{
+  return ["center", "mesial", "distal", "both"].map(v => ({ value: v, label: t("implantPosition." + v) }));
+}
+
 // Pure mutation for #periImplantSelect's change handler — mirrors
 // applyRestorationSelection's role/shape and __applyRestorationSelectionForTest.
 function applyPeriImplantSelection(s: Any, value: string){
@@ -3486,6 +3500,24 @@ function applyStateToSvgSingle(toothNo: Any, svg: Any, state: Any = toothState.g
 
   if(isImplant){
     setActive(svgGetById(svg, "implant-base"), true);
+    // Implantatposition: shift the implant group mesial/distal. It carries its
+    // own matrix (implantate.py, "senkrecht+mittig"); we PREPEND a translate so
+    // that matrix is untouched. Captured once so re-renders don't accumulate.
+    // "both" stays centred here — the single template implant can't split; the
+    // schematic draws two. Transform is not in the SVG fingerprint → parity-safe.
+    const implG = svgGetById(svg, "implant") as SVGGraphicsElement | null;
+    if(implG){
+      const baseTf = implG.getAttribute("data-impl-base-tf")
+        ?? (implG.setAttribute("data-impl-base-tf", implG.getAttribute("transform") ?? ""), implG.getAttribute("transform") ?? "");
+      const pos = state.implantPosition ?? "center";
+      const q = Math.floor(toothNo / 10);
+      const upper = q === 1 || q === 2;
+      const mesialRight = q === 1 || q === 4;          // mesial toward midline = +x on screen
+      const screenDir = pos === "mesial" ? (mesialRight ? 1 : -1)
+        : pos === "distal" ? (mesialRight ? -1 : 1) : 0;
+      const dx = (upper ? screenDir : -screenDir) * 8;  // lower jaw is rotate180 → invert x
+      implG.setAttribute("transform", dx ? `translate(${dx} 0) ${baseTf}` : baseTf);
+    }
   }else if(isMilktooth){
     setActive(svgGetById(svg, "milktooth-base"), true);
     setActive(svgGetById(svg, "milktooth-beauty"), true);
@@ -5128,6 +5160,7 @@ function getStateSummary(toothNo: number): string[]{
   // groups with periodontal findings), so push it here explicitly to keep the
   // tooltip showing it, alongside the other periodontal presence lines.
   { const pi = periImplantSummaryLabel(state); if(pi) summary.push(pi); }
+  { const ip = implantPositionSummaryLabel(state); if(ip) summary.push(ip); }
   // SP-perio PG-C Task 1: derived Cairo recession TYPE (RT1-3), a periodontal
   // presence line alongside peri-implant status above — never stored, just
   // read via getToothRecessionType (see its doc comment for the rule).
@@ -5940,6 +5973,9 @@ function syncControlsFromState(state: Any){
     state.periImplant = $("#periImplantSelect").value;
   }
   syncPeriImplantVisibility($("#periImplantRow"), $("#modsChecks"), state.toothSelection);
+  // Implantatposition — same implant-only gate as #periImplantRow.
+  setSelectOptions($("#implantPositionSelect"), getImplantPositionOptions(), state.implantPosition ?? "center");
+  $("#implantPositionRow")?.classList.toggle("hidden", state.toothSelection !== "implant");
   syncImplantProduct(state);
   syncRestorationProduct(state);   // Bead odontogram-99h
   syncFillingProduct(activeTooth);  // Bead odontogram-99h, zweiter Teil
@@ -6580,6 +6616,26 @@ export function selectToothInChart(toothNo: number): void {
 /** The currently active (single) tooth, or null. Read-only; the schematic
  *  keypad uses it to label itself and to gate its buttons. */
 export function getActiveTooth(): number | null { return activeTooth; }
+
+const VALID_IMPLANT_POSITION = new Set(["center", "mesial", "distal", "both"]);
+/** Implantatposition (charly BefundAngabeImplantat) — where the fixture sits in
+ *  the socket. Gated to implant teeth (guard BEFORE the DS-1 gate, like
+ *  setRetention). center | mesial | distal | both. Renders in both views. */
+export function setImplantPosition(toothNo: number, value: string): void {
+  if(!VALID_IMPLANT_POSITION.has(value)) return;
+  const s = toothState.get(toothNo);
+  if(!s || s.toothSelection !== "implant") return;
+  gateToothEdit(toothNo, () => {
+    if((s.implantPosition ?? "center") === value) return false;
+    s.implantPosition = value;
+    applyStateToSvg(toothNo);
+    notifyStateChange();
+    return true;
+  });
+}
+export function getImplantPosition(toothNo: number): string {
+  return String(toothState.get(toothNo)?.implantPosition ?? "center");
+}
 
 // ---- Touch: Zoom Popover ----
 function showZoomPopover(toothNo: number){
@@ -8216,6 +8272,9 @@ function serializeState(s: Any){
     // stays byte-identical apart from the version field.
     ...(s.retention && s.retention !== "none" ? { retention: s.retention } : {}),
     ...(s.retentionSide && s.retentionSide !== "none" ? { retentionSide: s.retentionSide } : {}),
+    // Implantatposition: omit-when-"center", so a chart with no repositioned
+    // implant stays byte-identical apart from the version field.
+    ...(s.implantPosition && s.implantPosition !== "center" ? { implantPosition: s.implantPosition } : {}),
     // Bead odontogram-0n8: omit-when-none - eine Karte ohne Wechselgebiss
     // bleibt byte-gleich bis auf die Version.
     ...(s.eruptionStage && s.eruptionStage !== "none" ? { eruptionStage: s.eruptionStage } : {}),
@@ -8612,6 +8671,7 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   // Bead odontogram-dma: additive enum axes; a legacy payload carries neither
   // key, which reads as "no retention element recorded".
   s.retention = validateEnum(raw.retention, VALID_RETENTION, "none");
+  s.implantPosition = validateEnum(raw.implantPosition, VALID_IMPLANT_POSITION, "center");
   s.retentionSide = validateEnum(raw.retentionSide, VALID_RETENTION_SIDE, "none");
   // Bead odontogram-0n8: tolerant wie jede Enum-Achse. Dass ein nicht
   // durchgebrochener Zahn keine Stufe TRAEGT, erzwingt der Setter, nicht der
@@ -13690,6 +13750,10 @@ function wireControls(){
     applyToSelected((s)=>{ applyPeriImplantSelection(s, value); });
   });
 
+  buildSelect($("#implantPositionSelect"), getImplantPositionOptions(), (value)=>{
+    applyToSelected((s)=>{ if(s.toothSelection === "implant") s.implantPosition = value; });
+  });
+
   // Extraction wound
   $("#extractionWound").addEventListener("change", (e)=>{
     applyToSelected((s)=>{
@@ -14428,6 +14492,7 @@ export type ToothDisplayState = {
   crownLeakage: boolean; mobility: string; bridgePillar: boolean;
   cantilever: boolean; eruptionStage: string; prosthesis: string;
   calculus: boolean; retention: string;
+  implantPosition: string;
 };
 
 export function getToothDisplayState(toothNo: number): ToothDisplayState {
@@ -14462,6 +14527,7 @@ export function getToothDisplayState(toothNo: number): ToothDisplayState {
     prosthesis: String(s.prosthesis ?? "none"),
     calculus: !!s.calculus,
     retention: String(s.retention ?? "none"),
+    implantPosition: String(s.implantPosition ?? "center"),
   };
 }
 
