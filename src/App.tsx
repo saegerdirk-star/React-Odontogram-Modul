@@ -1341,6 +1341,10 @@ export default function App({
                 <select id="crownMarginTypeSelect"></select>
                 <select id="crownMarginSideSelect"></select>
               </div>
+              <label id="splintedRow" className="row hidden">
+                <input type="checkbox" id="splinted" />
+                <span>{t("splint.label")}</span>
+              </label>
               <div id="brokenCrownRow" className="row inline-checks contact-row">
                 <label>
                   <input type="checkbox" id="brokenMesial" />

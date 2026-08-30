@@ -476,7 +476,26 @@ function archRows(teeth: number[], getState: GetDisplayState, sideOnTop: boolean
       return `<rect class="schematic-canal-hit" data-tooth="${tn}" data-canal="${name}" x="${x.toFixed(1)}" y="${(sideY + rootTop).toFixed(1)}" width="${seg.toFixed(1)}" height="${rh.toFixed(1)}" fill="transparent"/>`;
     }).join("");
   }).join("");
-  return nums + rowSide + rowOccl + hits + canalHits;
+  // Verblockung: a grey bar over each run of >=2 adjacent splinted teeth in this
+  // arch, near the crown (occlusal-facing) edge of the side row — the same finding
+  // the anatomical splint overlay draws.
+  const splintBars: string[] = [];
+  {
+    const sideY = sideOnTop ? r1Y : r2Y;
+    const y = sideY + SIDE_H * (sideOnTop ? 0.72 : 0.28);
+    let run: number[] = [];
+    const flush = () => {
+      if (run.length >= 2) {
+        const i0 = teeth.indexOf(run[0]), i1 = teeth.indexOf(run[run.length - 1]);
+        const x = i0 * CELL_W + 8, wBar = (i1 - i0) * CELL_W + CELL_W - 16;
+        splintBars.push(`<rect x="${x}" y="${(y - 2.5).toFixed(1)}" width="${wBar}" height="5" rx="2.5" fill="#8a9096" stroke="#5c6166" stroke-width="0.75"/>`);
+      }
+      run = [];
+    };
+    teeth.forEach(tn => { if (getState(tn).splinted) run.push(tn); else flush(); });
+    flush();
+  }
+  return nums + rowSide + rowOccl + hits + canalHits + splintBars.join("");
 }
 
 /** Full schematic chart as one standalone <svg> string. Upper arch: side glyphs

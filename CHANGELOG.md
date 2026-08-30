@@ -1,5 +1,23 @@
 # Changelog
 
+## 2.60.0 - 2026-08-30
+
+### Verblockung / Splinting (charly-Paritäts-Audit, Baustein 6)
+
+charly führt die „Verblockung" (starre Verbindung benachbarter Zähne); wir hatten
+sie nicht. Neuer per-Zahn-Schalter **`splinted`** (präsenter Zahn oder Implantat);
+der verbindende Balken wird über benachbarte verblockte Zähne ABGELEITET
+(`detectSplintSpans`, wie die Brücken-/Steg-Spanne — ein einzelner Zahn ist keine
+Spanne).
+
+- Anatomisch: ein grauer starrer Balken über der Spanne in einem eigenen
+  Overlay (`svg.splint-overlay`), dieselbe Kachelgeometrie wie Brücke/Steg
+  (`tileRectFor`) → deckungsgleich, byte-identische SVG-Parität.
+- Schema: derselbe Balken über den Kronen der verblockten Reihe.
+- Steuerung/Tooltip/Summary: Kontrollkästchen „Verblockung", eigene Zeile.
+
+Omit-when-false serialisiert, toleranter Hydrate. Payload **2.37 → 2.38**.
+
 ## 2.59.0 - 2026-08-30
 
 ### Kronenrand-Typisierung + Seite (charly-Paritäts-Audit, Baustein 5)

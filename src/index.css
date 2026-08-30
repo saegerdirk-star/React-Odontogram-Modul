@@ -2627,6 +2627,10 @@ select:focus{
 /* FILLED, not stroked: a cast clasp tapers from the connector to the tip, and
    a stroke has one width from end to end. */
 .retention-overlay-clasp{fill:#1a1a1a; stroke:none}
+/* Verblockung: a rigid metal bar joining the splinted crowns. Grey, distinct
+   from the purple retention bar; over the tiles like the other overlays. */
+#toothGrid > svg.splint-overlay{position:absolute; inset:0; pointer-events:none; z-index:3}
+.splint-overlay-bar{fill:#8a9096; stroke:#5c6166; stroke-width:.75}
 
 /* KFO-Overlay (Etappe 2): Bracket, Bogen, Band in Endkoordinaten konstruiert.
    Ueber den Kacheln, unter der Retention/Fraktur-Ebene ist egal - es ueber-

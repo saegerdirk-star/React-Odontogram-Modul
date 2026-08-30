@@ -54,6 +54,7 @@ import {
   defaultMaterialColor,
   UPPER_ARCH, LOWER_ARCH,
   checkBridgeSpans, bridgeSpanNeedsAttention,      // Bead odontogram-5rv
+  detectSplintSpans,                                // Verblockung
   type BridgeToothState, type BridgeSpanCheck,
 } from "./bridgeOverlay";
 import { renderGumOverlay } from "./gumOverlay";
@@ -536,6 +537,10 @@ function defaultState(){
     // fehlenden Pfeiler stuende dauerhaft an einer fertigen Arbeit. charly
     // fuehrt sie ebenfalls als eigenen Eintrag ("SB Schwebebruecke").
     cantilever: false,
+    // charly „Verblockung" (Splinting): dieser Zahn ist mit seinen Nachbarn
+    // starr verbunden. Der Overlay-Balken wird über benachbarte verblockte
+    // Zähne abgeleitet (detectSplintSpans), wie die Brücken-/Steg-Spanne.
+    splinted: false,
     prosthesis: "none", // none | healing-abutment | locator | locator-denture | bar | bar-denture | removable-partial | removable-full
     mobility: "none", // none | m1 | m2 | m3
     toothSubstrate: "natural",  // natural | radix | broken | crownprep
@@ -1836,7 +1841,59 @@ function updateBridgeOverlay(){
   renderGumOverlay(grid);
   renderBridgeOverlay({ grid, getState: bridgeStateFor, materialColor: defaultMaterialColor });
   updateRetentionBarOverlay(grid);
+  updateSplintOverlay(grid);
   updateOrthoOverlay(grid);
+}
+
+/** Verblockung: a rigid grey bar across each run of adjacent splinted teeth,
+ *  drawn in its own overlay with the SAME tile geometry the bridge/retention
+ *  overlays read (`tileRectFor`). Sits near the occlusal third (splints are
+ *  bonded coronally), clear of the gingival retention bar. */
+function updateSplintOverlay(grid: HTMLElement | null){
+  if(!grid) return;
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  let overlay = grid.querySelector(":scope > svg.splint-overlay") as SVGSVGElement | null;
+  const spans = detectSplintSpans((tn) => toothState.get(tn));
+  if(spans.length === 0){
+    if(overlay){ while(overlay.firstChild) overlay.removeChild(overlay.firstChild); }
+    return;
+  }
+  const gridRect = grid.getBoundingClientRect();
+  const rectFor = (tn: number) => tileRectFor(grid, gridRect, tn);
+  if(!overlay){
+    overlay = document.createElementNS(SVG_NS, "svg");
+    overlay.setAttribute("class", "splint-overlay");
+    overlay.setAttribute("aria-hidden", "true");
+    grid.appendChild(overlay);
+  }
+  while(overlay.firstChild) overlay.removeChild(overlay.firstChild);
+  const W = Math.max(1, Math.round(gridRect.width));
+  const H = Math.max(1, Math.round(gridRect.height));
+  overlay.setAttribute("width", String(W));
+  overlay.setAttribute("height", String(H));
+  overlay.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  for(const span of spans){
+    // tileRectFor returns GridRelativeRect {x,y,width,height} — already
+    // grid-relative, so no further gridRect subtraction.
+    const rects = span.map(rectFor).filter((r): r is NonNullable<typeof r> => !!r);
+    if(rects.length < 2) continue;
+    const upper = span[0] < 30;                       // upper quadrants 1/2
+    const left = Math.min(...rects.map(r => r.x));
+    const right = Math.max(...rects.map(r => r.x + r.width));
+    const rTop = Math.min(...rects.map(r => r.y));
+    const rH = rects[0].height;
+    // coronal third: for the upper arch that is the LOWER part of the tile,
+    // for the lower arch the UPPER part (crowns face the occlusal plane).
+    const y = rTop + rH * (upper ? 0.66 : 0.30);
+    const bar = document.createElementNS(SVG_NS, "rect");
+    bar.setAttribute("class", "splint-overlay-bar");
+    bar.setAttribute("x", String(left + 6));
+    bar.setAttribute("y", String(y - 2.5));
+    bar.setAttribute("width", String(Math.max(1, right - left - 12)));
+    bar.setAttribute("height", "5");
+    bar.setAttribute("rx", "2.5");
+    overlay.appendChild(bar);
+  }
 }
 
 /** Bead odontogram-dma: (re)draw the derived bar (Steg) over `#toothGrid`.
@@ -5282,6 +5339,7 @@ function getStateSummary(toothNo: number): string[]{
     const side = state.crownMarginSide ? " " + t("surface." + state.crownMarginSide) : "";
     summary.push(t("crownMarginType.label") + ": " + t("crownMarginType.option." + state.crownMarginType) + side);
   }
+  if(state.splinted && isToothPresent(state.toothSelection)) summary.push(t("splint.label"));
   if(state.endoResection) summary.push(t("endo.resection"));
   if(state.fissureSealing) summary.push(t("filling.fissureSealing"));
   if(state.parapulpalPin) summary.push(t("endo.parapulpalPin"));
@@ -5964,6 +6022,8 @@ function syncControlsFromState(state: Any){
   $("#missingClosed").checked = !!state.missingClosed;
   $("#bridgePillar").checked = !!state.bridgePillar;
   $("#crownLeakage").checked = !!state.crownLeakage;
+  $("#splinted").checked = !!state.splinted;
+  $("#splintedRow").classList.toggle("hidden", !(activeTooth && isToothPresent(state.toothSelection)));
   const isMilktooth = state.toothSelection === "milktooth";
   const isImplant = state.toothSelection === "implant";
   const underGum = isUnderGum(state.toothSelection);
@@ -6784,6 +6844,23 @@ export function getCrownMarginType(toothNo: number): string {
 }
 export function getCrownMarginSide(toothNo: number): string {
   return String(toothState.get(toothNo)?.crownMarginSide ?? "");
+}
+
+/** charly „Verblockung" (Splinting): a rigid connection to the neighbours. Any
+ *  present tooth or implant may be splinted; the connecting bar is DERIVED over
+ *  adjacent splinted teeth. Through the DS-1 gate. */
+export function setSplinted(toothNo: number, on: boolean): void {
+  const s = toothState.get(toothNo);
+  if(!s || !isToothPresent(s.toothSelection)) return;
+  gateToothEdit(toothNo, () => {
+    if(!!s.splinted === !!on) return false;
+    s.splinted = !!on;
+    notifyStateChange();
+    return true;
+  });
+}
+export function getSplinted(toothNo: number): boolean {
+  return !!toothState.get(toothNo)?.splinted;
 }
 
 const VALID_ENDO_CANAL = new Set(["filling", "post", "incomplete", "temporary"]);
@@ -8394,6 +8471,7 @@ function serializeState(s: Any){
     // Bead odontogram-5rv: nur wenn gesetzt, damit eine Karte ohne
     // Schwebebruecke byte-gleich bleibt bis auf die Version.
     ...(s.cantilever ? { cantilever: true } : {}),
+    ...(s.splinted ? { splinted: true } : {}),
     prosthesis: s.prosthesis,
     mobility: s.mobility,
     toothSubstrate: s.toothSubstrate,
@@ -9020,6 +9098,7 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   s.missingClosed = !!raw.missingClosed;
   s.bridgePillar = !!raw.bridgePillar;
   s.cantilever = !!raw.cantilever;                      // Bead odontogram-5rv
+  s.splinted = !!raw.splinted;                          // Verblockung
   s.prosthesis = validateEnum(raw.prosthesis, VALID_PROSTHESIS, "none");
   s.mobility = validateEnum(raw.mobility, VALID_MOBILITY, s.mobility);
   s.toothSubstrate = validateEnum(raw.toothSubstrate, VALID_TOOTH_SUBSTRATE, s.toothSubstrate);
@@ -14025,6 +14104,11 @@ function wireControls(){
     });
   });
 
+  $("#splinted").addEventListener("change", (e)=>{
+    const on = (e.target as HTMLInputElement).checked;
+    applyToSelected((s)=>{ if(isToothPresent(s.toothSelection)) s.splinted = on; });
+  });
+
   // Missing closed
   $("#missingClosed").addEventListener("change", (e)=>{
     applyToSelected((s)=>{
@@ -14716,6 +14800,7 @@ export type ToothDisplayState = {
   brokenMesial: boolean; brokenIncisal: boolean; brokenDistal: boolean;
   crownFractureType: string;
   crownMarginType: string; crownMarginSide: string;
+  splinted: boolean;
 };
 
 export function getToothDisplayState(toothNo: number): ToothDisplayState {
@@ -14763,6 +14848,7 @@ export function getToothDisplayState(toothNo: number): ToothDisplayState {
     crownFractureType: String(s.crownFractureType ?? "none"),
     crownMarginType: String(s.crownMarginType ?? "none"),
     crownMarginSide: String(s.crownMarginSide ?? ""),
+    splinted: !!s.splinted,
   };
 }
 
