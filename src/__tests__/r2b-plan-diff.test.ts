@@ -92,6 +92,22 @@ describe("getPlanChanges() — status vs. plan diff engine", () => {
     ]);
   });
 
+  it("status without a root post + plan metal post -> an independent root-post change", () => {
+    __setToothStateForTest(24, { toothSelection: "tooth-base", endo: "endo-filling-incomplete", rootPostType: "none" });
+    setChartMode("plan");
+    __setToothStateForTest(24, { toothSelection: "tooth-base", endo: "endo-filling-incomplete", rootPostType: "metal" });
+    setChartMode("status");
+
+    expect(getPlanChanges().filter((c) => c.toothNo === 24 && c.axis === "rootPostType")).toEqual([
+      {
+        toothNo: 24,
+        axis: "rootPostType",
+        from: t("planChange.none"),
+        to: t("rootPost.option.metal"),
+      },
+    ]);
+  });
+
   it("multiple axes on one tooth -> multiple entries; multiple teeth -> grouped/ordered by tooth number", () => {
     // Tooth 36: two axes change (restoration + substrate).
     __setToothStateForTest(36, { toothSelection: "tooth-base", toothSubstrate: "natural", restorationType: "none" });

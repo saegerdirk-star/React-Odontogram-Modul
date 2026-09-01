@@ -17,7 +17,7 @@ import {
   getBaselineExamination, getPreExistingAxes, getChangesSinceBaseline, isToothPreExisting,
   setChartMode,
 } from "../odontogram";
-import { setI18nLanguage } from "../i18n/useI18n";
+import { setI18nLanguage, t } from "../i18n/useI18n";
 
 beforeEach(() => {
   __resetChartStateForTest();
@@ -174,6 +174,41 @@ describe("the two findings the plan diff does not carry", () => {
     // The plan diff is a treatment-plan question and never grew these two.
     expect(getPlanChanges().some((c) => c.axis === "fillings" || c.axis === "caries")).toBe(false);
     mode("status");
+  });
+});
+
+describe("the independent root-post axis", () => {
+  it("counts a root post recorded at intake as pre-existing", () => {
+    __setToothStateForTest(24, {
+      toothSelection: "tooth-base",
+      endo: "endo-filling-incomplete",
+      rootPostType: "metal",
+    });
+    captureExamination({ effectiveDateTime: "2026-01-15" });
+
+    expect(getPreExistingAxes(24)).toContain("rootPostType");
+  });
+
+  it("reports a root post added after intake without changing the root filling", () => {
+    __setToothStateForTest(24, {
+      toothSelection: "tooth-base",
+      endo: "endo-filling-incomplete",
+      rootPostType: "none",
+    });
+    captureExamination({ effectiveDateTime: "2026-01-15" });
+    __setToothStateForTest(24, {
+      toothSelection: "tooth-base",
+      endo: "endo-filling-incomplete",
+      rootPostType: "metal",
+    });
+
+    expect(getChangesSinceBaseline().filter((c) => c.toothNo === 24 && c.axis === "rootPostType"))
+      .toEqual([{
+        toothNo: 24,
+        axis: "rootPostType",
+        from: t("planChange.none"),
+        to: t("rootPost.option.metal"),
+      }]);
   });
 });
 

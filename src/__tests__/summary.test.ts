@@ -81,4 +81,10 @@ describe('SP9: whole-mouth surfaces clinical axes', () => {
     const pr = getOdontogramSummary().sections.find((sec) => sec.key === 'prosthetics')!;
     expect(pr.items.join(' | ')).toContain(t('crownLeakage.label'));
   });
+  it('includes an independent root post even without a root filling', () => {
+    setI18nLanguage('en');
+    __setToothStateForTest(37, { toothSelection: 'tooth-base', endo: 'none', rootPostType: 'metal' });
+    const en = getOdontogramSummary().sections.find((sec) => sec.key === 'endo')!;
+    expect(en.items.find((item) => item.startsWith('37 '))).toContain(t('rootPost.option.metal'));
+  });
 });

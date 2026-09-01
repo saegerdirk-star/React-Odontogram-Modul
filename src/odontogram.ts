@@ -3253,15 +3253,15 @@ export function isEndoValue(value: string): boolean {
 // anatomical view — whose endo artwork is one layer per finding-type across all
 // canals — shows the tooth as treated even when only per-canal detail is
 // charted. The Schema view shows WHICH canal; this makes both views agree. The
-// The scalar filling state wins when set; legacy combined post values project
+// scalar filling state wins when set; legacy combined post values project
 // to a complete filling here and to their material in effectiveRootPostType().
 export function effectiveEndo(state: Any): string {
   if(state.endo === "endo-glass-pin" || state.endo === "endo-metal-pin") return "endo-filling";
   if(state.endo && state.endo !== "none") return state.endo;
   const flat = (Object.values((state.endoCanals ?? {}) as Record<string, string[]>) as string[][]).flat();
   if(!flat.length) return "none";
-  if(flat.includes("incomplete")) return "endo-filling-incomplete";
   if(flat.includes("filling")) return "endo-filling";
+  if(flat.includes("incomplete")) return "endo-filling-incomplete";
   if(flat.includes("temporary")) return "endo-medical-filling";
   if(flat.includes("post")) return "endo-filling";
   return "none";
@@ -3274,6 +3274,14 @@ export function effectiveRootPostType(state: Any): string {
   if(state.endo === "endo-metal-pin") return "metal";
   const flat = (Object.values((state.endoCanals ?? {}) as Record<string, string[]>) as string[][]).flat();
   return flat.includes("post") ? "metal" : "none";
+}
+
+/** Localized independent root-post finding, or null when none is recorded. */
+function rootPostSummaryLabel(state: Any): string | null {
+  const rootPostType = effectiveRootPostType(state);
+  return rootPostType !== "none"
+    ? t(`rootPost.option.${kebabToCamel(rootPostType)}`)
+    : null;
 }
 
 // Per-canal endo as ONE line of language-neutral clinical shorthand, like the
@@ -5325,8 +5333,7 @@ function getStateSummary(toothNo: number): string[]{
     }[endoEff];
     if(endoKey) summary.push(t(endoKey));
   }
-  const rootPostType = effectiveRootPostType(state);
-  if(rootPostType !== "none") summary.push(t(`rootPost.option.${kebabToCamel(rootPostType)}`));
+  { const rootPost = rootPostSummaryLabel(state); if(rootPost) summary.push(rootPost); }
   { const parts = endoCanalSummaryParts(state); if(parts) summary.push(`Endo: ${parts}`); }
 
   // Filling
@@ -9864,6 +9871,10 @@ const DIFF_AXES: { key: string; labelKey: string; label: (s: Any) => string }[] 
       }
       return pulpDiagnosisLabel(s) ?? t("planChange.none");
     },
+  },
+  {
+    key: "rootPostType", labelKey: "rootPost.label",
+    label: (s) => rootPostSummaryLabel(s) ?? t("planChange.none"),
   },
   {
     key: "apical", labelKey: "planChange.axis.apical",
@@ -15375,13 +15386,17 @@ export function getOdontogramSummary(): OdontogramSummary {
       }
     }
 
-    // Endo
-    if((s.endo && s.endo !== "none") || s.endoResection){
-      let name = SUMMARY_ENDO_KEY[s.endo] ? t(SUMMARY_ENDO_KEY[s.endo]) : "";
-      if(s.endo === "endo-resection") name = t("toothInfo.resected");
-      else if(s.endoResection) name = name ? `${name}, ${t("toothInfo.resected")}` : t("toothInfo.resected");
-      endo.push(`${lbl(toothNo)} (${name})`);
-    }
+    // Endo and the independent root-post material share the treatment section,
+    // but remain separate findings so a post-only state is not summary-invisible.
+    const endoParts: string[] = [];
+    const endoValue = effectiveEndo(s);
+    const endoKey = SUMMARY_ENDO_KEY[endoValue];
+    if(endoKey) endoParts.push(t(endoKey));
+    if(endoValue === "endo-resection") endoParts.push(t("toothInfo.resected"));
+    else if(s.endoResection) endoParts.push(t("toothInfo.resected"));
+    const rootPost = rootPostSummaryLabel(s);
+    if(rootPost) endoParts.push(rootPost);
+    if(endoParts.length) endo.push(`${lbl(toothNo)} (${endoParts.join(", ")})`);
 
     // Prosthetics (fixed restorations — crown/inlay/onlay/veneer/bridge — +
     // implant attachments / removable / bar-retained dentures via `prosthesis`)

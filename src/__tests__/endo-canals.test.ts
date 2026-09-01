@@ -63,7 +63,7 @@ describe("endo per canal — both-views derivation + interaction", () => {
   it("effectiveEndo collapses per-canal findings to a whole-tooth value", () => {
     // Filling state and post material are independent projections.
     const mixed = { endoCanals: { mesial: ["incomplete"], distal: ["filling", "post"] } };
-    expect(effectiveEndo(mixed)).toBe("endo-filling-incomplete");
+    expect(effectiveEndo(mixed)).toBe("endo-filling");
     expect(effectiveRootPostType(mixed)).toBe("metal");
     expect(effectiveEndo({ endoCanals: { mesial: ["filling"] } })).toBe("endo-filling");
     expect(effectiveEndo({ endoCanals: { mesial: ["incomplete"] } })).toBe("endo-filling-incomplete");
