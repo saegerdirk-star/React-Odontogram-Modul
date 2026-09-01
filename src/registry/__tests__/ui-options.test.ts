@@ -27,5 +27,5 @@ describe("registry stable option lists match today's option functions", () => {
   it("root post permanent", () => expect(optionsFor("rootPostType").map(o => o.value)).toEqual([
     "none", "glass-fiber", "metal"]));
   it("root post milktooth", () => expect(optionsFor("rootPostType", { isMilktooth: true }).map(o => o.value)).toEqual([
-    "none"]));
+    "none", "glass-fiber", "metal"]));
 });

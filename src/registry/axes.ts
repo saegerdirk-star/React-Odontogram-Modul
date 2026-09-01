@@ -63,8 +63,8 @@ export const AXES: ClinicalAxis[] = [
     }),
     uiOptions: [
       { value: "none", labelKey: "rootPost.option.none" },
-      { value: "glass-fiber", labelKey: "rootPost.option.glassFiber", when: (c) => !c.isMilktooth },
-      { value: "metal", labelKey: "rootPost.option.metal", when: (c) => !c.isMilktooth },
+      { value: "glass-fiber", labelKey: "rootPost.option.glassFiber" },
+      { value: "metal", labelKey: "rootPost.option.metal" },
     ] },
   { id: "toothSubstrate", field: "toothSubstrate", kind: "enum", valueGroup: "toothSubstrate",
     skipValue: "natural", finding: { local: "tooth-substrate", display: "Tooth substrate" },

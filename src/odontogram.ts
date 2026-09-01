@@ -6328,7 +6328,10 @@ function syncControlsFromState(state: Any){
   // endo only if tooth present
   const endoDisabled = !isToothPresent(state.toothSelection) || underGum || extraction;
   setDisabled($("#pulpEndoSelect"), endoDisabled);
-  setDisabled($("#rootPostSelect"), endoDisabled || isMilktooth);
+  // Imported milk-tooth posts are valid in the document, Dental Core mapping,
+  // and shipped primary-tooth artwork. Keep the control enabled so it honestly
+  // represents and can clear/change the value already shown on the tooth.
+  setDisabled($("#rootPostSelect"), endoDisabled);
   setDisabled($("#apicalDxSelect"), endoDisabled);
   setDisabled($("#resorptionSelect"), endoDisabled);
   setDisabled($("#endoResection"), endoDisabled);

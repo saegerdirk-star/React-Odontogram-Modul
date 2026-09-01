@@ -349,7 +349,7 @@ Eine Spanne folgt dem **Bogen**, nicht der Geometrie (`odontogram-apn`): über d
 **Endodontische Optionen (bleibende Zähne):**
 `none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`
 
-**Wurzelstift-Material (bleibende Zähne, unabhängig von `endo`):**
+**Wurzelstift-Material (vorhandene Zähne, unabhängig von `endo`):**
 `none`, `glass-fiber`, `metal`
 
 **Endodontische Optionen (Milchzähne):**

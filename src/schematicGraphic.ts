@@ -282,11 +282,16 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
     const canals = toothCanals(toothNo);
     const centers = rootCenters(cx, w, canals.length);
     const legacy = legacyEndoFindings(s.endo);
+    const hasPerCanalDetail = Object.values(s.endoCanals).some((findings) => findings.length > 0);
     if (!implant) {
       canals.forEach((name, i) => {
         if (i === removedIdx) return;   // a removed root has no canal to fill
         const canalFindings = (s.endoCanals[name] && s.endoCanals[name].length) ? s.endoCanals[name] : legacy;
-        const f = s.rootPostType !== "none" && !canalFindings.includes("post")
+        // A whole-tooth root-post value is a fallback only. Once any canal has
+        // explicit detail, draw posts exclusively where that detail says
+        // `post`; synthesizing the global value into every canal destroys the
+        // per-canal distinction the schematic view exists to show.
+        const f = !hasPerCanalDetail && s.rootPostType !== "none" && !canalFindings.includes("post")
           ? [...canalFindings, "post"]
           : canalFindings;
         if (!f.length) return;

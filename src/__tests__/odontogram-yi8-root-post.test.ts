@@ -2,8 +2,9 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { PAYLOAD_VERSION } from "../document";
-import { buildDentalCoreBundle, parseDentalCoreBundle } from "../fhir";
+import { buildDentalCoreBundle, parseDentalCoreBundle, UnsupportedDentalCoreContentError } from "../fhir";
 import type { OdontogramExportPayload, ToothRecord } from "../fhir/types";
+import { optionsFor } from "../registry/uiOptions";
 import {
   __collectExportPayloadForTest,
   __getToothStateForTest,
@@ -23,6 +24,10 @@ const options = {
 const testFileUrl = import.meta.url;
 const svgText = readFileSync(
   fileURLToPath(new URL("../assets/teeth-svgs/11.svg", testFileUrl)),
+  "utf8",
+);
+const primarySvgText = readFileSync(
+  fileURLToPath(new URL("../assets/teeth-svgs/51.svg", testFileUrl)),
   "utf8",
 );
 
@@ -69,6 +74,33 @@ describe("Dental Core 0.6 odontogram axes", () => {
     ].includes(code ?? ""))).toHaveLength(4);
     expect(parseDentalCoreBundle(bundle)?.teeth["11"]).toEqual(source.teeth["11"]);
     expect(parseDentalCoreBundle(bundle)?.teeth["12"]).toBeUndefined();
+  });
+
+  it("roundtrips a multi-root fracture orientation while omitting only its unsupported root qualifier", () => {
+    const source: OdontogramExportPayload = {
+      version: PAYLOAD_VERSION,
+      globals: {},
+      teeth: {
+        "16": {
+          rootFracture: "horizontal",
+          rootFractureRoot: "palatal",
+        },
+      },
+    };
+
+    const parsed = parseDentalCoreBundle(buildDentalCoreBundle(source, options));
+    expect(parsed?.teeth["16"]).toEqual({ rootFracture: "horizontal" });
+    expect(parsed?.teeth["16"]).not.toHaveProperty("rootFractureRoot");
+  });
+
+  it("does not infer a root-fracture orientation from an unqualified root name", () => {
+    const source: OdontogramExportPayload = {
+      version: PAYLOAD_VERSION,
+      globals: {},
+      teeth: { "16": { rootFractureRoot: "palatal" } },
+    };
+
+    expect(() => buildDentalCoreBundle(source, options)).toThrow(UnsupportedDentalCoreContentError);
   });
 
   it.each(["glass-fiber", "metal"])(
@@ -161,5 +193,21 @@ describe("orthogonal root-post document and render model", () => {
     expect(activeIds).toContain("endo-filling-incomplete");
     expect(activeIds).toContain(postLayer);
     expect(activeIds).not.toContain("endo-filling");
+  });
+
+  it("preserves an imported milk-tooth post in state, control options, and rendering", () => {
+    __resetChartStateForTest();
+    __hydrateImportedChartsForTest({
+      version: PAYLOAD_VERSION,
+      globals: {},
+      teeth: { "11": { toothSelection: "milktooth", rootPostType: "metal" } },
+    });
+
+    const state = getToothDisplayState(11);
+    expect(state).toMatchObject({ toothSelection: "milktooth", rootPostType: "metal" });
+    expect(optionsFor("rootPostType", { isMilktooth: true }).map((option) => option.value))
+      .toEqual(["none", "glass-fiber", "metal"]);
+    expect(__renderActiveLayers(primarySvgText, 11, state).map((layer) => layer.id))
+      .toContain("endo-metal-pin");
   });
 });

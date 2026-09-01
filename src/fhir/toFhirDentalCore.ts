@@ -181,6 +181,23 @@ function hasClinicalValue(value: unknown, field?: string): boolean {
   return true;
 }
 
+/**
+ * Project the UI record onto Dental Core's admitted tooth contract.
+ *
+ * Dental Core 0.6 represents root-fracture orientation, but has no carrier for
+ * the optional root qualifier used by multi-root odontogram teeth. Preserve the
+ * oriented finding and deliberately omit only that qualifier. A qualifier
+ * without an oriented fracture remains unsupported and must still fail the
+ * completeness gate; guessing an orientation from a root name would change the
+ * clinical meaning.
+ */
+function projectDentalCoreTooth(record: ToothRecord): ToothRecord {
+  const normalized = normalizeLegacyRootPost(record);
+  if (!normalized.rootFracture || normalized.rootFracture === "none" || !normalized.rootFractureRoot) return normalized;
+  const { rootFractureRoot: _omittedRootQualifier, ...projected } = normalized;
+  return projected;
+}
+
 function validProfileField(field: keyof ToothRecord, value: unknown): boolean {
   if (["calculus", "crownLeakage"].includes(field)) return typeof value === "boolean";
   if (["extractionPlan", "crownReplace", "crownNeeded"].includes(field)) return typeof value === "boolean";
@@ -807,9 +824,9 @@ export function buildDentalCoreBundle(payload: OdontogramExportPayload, options:
   const source = payload && typeof payload === "object" ? payload : ({ version: "", teeth: {} } as OdontogramExportPayload);
   const safe: OdontogramExportPayload = {
     ...source,
-    teeth: Object.fromEntries(Object.entries(source.teeth ?? {}).map(([fdi, record]) => [fdi, normalizeLegacyRootPost(record)])),
+    teeth: Object.fromEntries(Object.entries(source.teeth ?? {}).map(([fdi, record]) => [fdi, projectDentalCoreTooth(record)])),
     ...(source.plan
-      ? { plan: Object.fromEntries(Object.entries(source.plan).map(([fdi, record]) => [fdi, normalizeLegacyRootPost(record)])) }
+      ? { plan: Object.fromEntries(Object.entries(source.plan).map(([fdi, record]) => [fdi, projectDentalCoreTooth(record)])) }
       : {}),
   };
   const identity = new DentalCoreIdentityResolver(safe);

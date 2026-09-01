@@ -9,6 +9,7 @@
 import { describe, it, expect } from "vitest";
 import {
   __setToothStateForTest,
+  __resetChartStateForTest,
   getToothDisplayState,
   getStatusChart,
   cycleEndoCanal,
@@ -56,6 +57,26 @@ describe("endo per canal — schematic rendering", () => {
     __setToothStateForTest(45, { endo: "endo-filling" });
     const svg = buildSchematicSvg(getToothDisplayState);
     expect(svg).toContain("WF");
+  });
+
+  it("does not synthesize a whole-tooth post into every explicitly detailed canal", () => {
+    __resetChartStateForTest();
+    __setToothStateForTest(16, {
+      rootPostType: "metal",
+      endoCanals: {
+        mesiobuccal: ["filling"],
+        distobuccal: ["post"],
+      },
+    });
+    const svg = buildSchematicSvg(getToothDisplayState);
+    expect(svg.match(/stroke="#8a9096" stroke-width="3\.6"/g)).toHaveLength(1);
+  });
+
+  it("synthesizes a whole-tooth post across roots only without per-canal detail", () => {
+    __resetChartStateForTest();
+    __setToothStateForTest(16, { rootPostType: "metal", endoCanals: {} });
+    const svg = buildSchematicSvg(getToothDisplayState);
+    expect(svg.match(/stroke="#8a9096" stroke-width="3\.6"/g)).toHaveLength(3);
   });
 });
 

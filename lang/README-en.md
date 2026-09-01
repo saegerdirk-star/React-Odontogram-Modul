@@ -348,7 +348,7 @@ yes, across the jaw never.
 **Endodontic options (permanent teeth):**
 `none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`
 
-**Root-post material (permanent teeth, independent from `endo`):**
+**Root-post material (present teeth, independent from `endo`):**
 `none`, `glass-fiber`, `metal`
 
 **Endodontic options (milk teeth):**
