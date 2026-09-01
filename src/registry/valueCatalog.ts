@@ -273,6 +273,11 @@ export const LOCAL_VALUE_MAPS: Record<string, Record<string, CodeEntry>> = {
     "vertical": { code: "vertical", display: "Vertical root fracture" },
     "horizontal": { code: "horizontal", display: "Horizontal root fracture" },
   },
+  rootPostType: {
+    "none": { code: "none", display: "No root post" },
+    "glass-fiber": { code: "glass-fiber", display: "Glass fiber root post" },
+    "metal": { code: "metal", display: "Metal root post" },
+  },
   // Bead odontogram-ca0: die drei resektiven Verfahren am mehrwurzeligen Zahn.
   //
   // NICHT dasselbe wie `endoResection` - das ist die Wurzelspitzenresektion,

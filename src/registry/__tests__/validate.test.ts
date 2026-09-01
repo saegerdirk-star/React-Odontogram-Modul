@@ -7,6 +7,7 @@ import { validValues, validSurfaces } from "../validate";
 const EXPECT: Record<string, string[]> = {
   toothSelection: ["none","tooth-base","milktooth","implant","tooth-under-gum","no-tooth-after-extraction","not-erupted"],
   endo: ["none","endo-medical-filling","endo-filling","endo-filling-incomplete","endo-glass-pin","endo-metal-pin"],
+  rootPostType: ["none","glass-fiber","metal"],
   fillingMaterial: ["none","amalgam","composite","gic","temporary"],
   mobility: ["none","m1","m2","m3"],
   toothSubstrate: ["natural","radix","broken","crownprep"],

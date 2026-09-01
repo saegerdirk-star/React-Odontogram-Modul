@@ -1560,6 +1560,10 @@ export default function App({
                   <span>{t("pulpEndo.label")}</span>
                   <select id="pulpEndoSelect"></select>
                 </div>
+                <div id="rootPostRow" className="row">
+                  <span>{t("rootPost.label")}</span>
+                  <select id="rootPostSelect"></select>
+                </div>
                 <div id="apicalDxRow" className="row">
                   <span>{t("apical.dxLabel")}</span>
                   <select id="apicalDxSelect"></select>

@@ -13,6 +13,7 @@ import {
   getStatusChart,
   cycleEndoCanal,
   effectiveEndo,
+  effectiveRootPostType,
   endoCanalSummaryParts,
 } from "../odontogram";
 import { buildSchematicSvg, toothCanals } from "../schematicGraphic";
@@ -60,14 +61,17 @@ describe("endo per canal — schematic rendering", () => {
 
 describe("endo per canal — both-views derivation + interaction", () => {
   it("effectiveEndo collapses per-canal findings to a whole-tooth value", () => {
-    // Post wins (metal pin), else filling, else incomplete, else temporary.
-    expect(effectiveEndo({ endoCanals: { mesial: ["incomplete"], distal: ["filling", "post"] } })).toBe("endo-metal-pin");
+    // Filling state and post material are independent projections.
+    const mixed = { endoCanals: { mesial: ["incomplete"], distal: ["filling", "post"] } };
+    expect(effectiveEndo(mixed)).toBe("endo-filling-incomplete");
+    expect(effectiveRootPostType(mixed)).toBe("metal");
     expect(effectiveEndo({ endoCanals: { mesial: ["filling"] } })).toBe("endo-filling");
     expect(effectiveEndo({ endoCanals: { mesial: ["incomplete"] } })).toBe("endo-filling-incomplete");
     expect(effectiveEndo({ endoCanals: { mesial: ["temporary"] } })).toBe("endo-medical-filling");
     expect(effectiveEndo({ endoCanals: {} })).toBe("none");
-    // The legacy scalar still wins when set.
-    expect(effectiveEndo({ endo: "endo-glass-pin", endoCanals: { mesial: ["filling"] } })).toBe("endo-glass-pin");
+    // Legacy combined values project onto both modern axes.
+    expect(effectiveEndo({ endo: "endo-glass-pin", endoCanals: { mesial: ["filling"] } })).toBe("endo-filling");
+    expect(effectiveRootPostType({ endo: "endo-glass-pin" })).toBe("glass-fiber");
   });
 
   it("summary emits a language-neutral per-canal line", () => {

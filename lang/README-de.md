@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.68.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.69.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -144,7 +144,7 @@ Oder laden Sie sie mit einem rein clientseitigen dynamischen Import: `dynamic(()
 - 🌉 Brückenzähne rendern sowohl die Kronenkappe als auch den Sattel-Verbinder; ein Mehrzahn-Brückenspann-Overlay rendert einen durchgehenden, bogenbewussten Verbinder über aufeinanderfolgende Brückenzähne (Glieder + Pfeiler) sowie die dazwischenliegenden Zahnzwischenräume (Ober- und Unterkiefer verwenden gespiegelte Sattelgeometrie, sodass der Verbinder auf beiden Bögen ausgerichtet bleibt), im PNG/JPG/SVG-Export enthalten; das Anwenden einer Brücke über eine Statusvorlage berechnet das Overlay sofort neu
 - 🔍 Karieskartierung auf 6 Flächen: mesial, distal, bukkal, lingual, okklusal, subkronal
 - 🪥 Füllungsmaterialien pro Fläche: Amalgam, Komposit, GIZ, provisorisch
-- 🏥 Ein zusammengeführter „Pulpa-/Endo-Status"-Auswähler (gruppiert: vitale Pulpa vs. behandelt/endodontisch): endodontische Zustände (medikamentöse Füllung, Wurzelfüllung, inkomplette Wurzelfüllung, Glasfaserstift, Metallstift) und die AAE-Pulpadiagnose (`pulpDx`: normal / reversible / irreversible Pulpitis / Nekrose) schließen sich gegenseitig aus — ein wurzelbehandelter Zahn (`endo` gesetzt) kann nicht gleichzeitig eine vitale Pulpadiagnose tragen; bei einer Behandlung wird `pulpDx` auf `normal` normalisiert und das Glyph für die erkrankte Pulpa unterdrückt. Reversible Pulpitis rendert ein reduziertes Pulpa-Glyph. Eine optionale 3-stufige Pulpa-Detailstufe (`pulpDetailLevel`: simple / AAE / praktisches Latein) zeigt über `pulpLatin` 9 praktische lateinische Pulpa-Subtypen an (pulpa sana … gangraena pulpae); Resektion und parapulpaler Stift bleiben eigenständige Sonderindikatoren
+- 🏥 Ein zusammengeführter „Pulpa-/Endo-Status"-Auswähler (gruppiert: vitale Pulpa vs. behandelt/endodontisch) für medikamentöse, vollständige oder inkomplette Wurzelfüllungen sowie ein eigenständiger Auswähler für das Wurzelstift-Material: endodontische Behandlung und AAE-Pulpadiagnose (`pulpDx`: normal / reversible / irreversible Pulpitis / Nekrose) schließen sich gegenseitig aus — ein wurzelbehandelter Zahn (`endo` gesetzt) kann nicht gleichzeitig eine vitale Pulpadiagnose tragen; bei einer Behandlung wird `pulpDx` auf `normal` normalisiert und das Glyph für die erkrankte Pulpa unterdrückt. Reversible Pulpitis rendert ein reduziertes Pulpa-Glyph. Eine optionale 3-stufige Pulpa-Detailstufe (`pulpDetailLevel`: simple / AAE / praktisches Latein) zeigt über `pulpLatin` 9 praktische lateinische Pulpa-Subtypen an (pulpa sana … gangraena pulpae); Resektion und parapulpaler Stift bleiben eigenständige Sonderindikatoren
 - 🦴 Apikale Diagnose (`apicalDx`: symptomatische/asymptomatische apikale Parodontitis, akuter/chronischer apikaler Abszess, kondensierende Osteitis) steuert direkt den periapikalen Glyphen; ein Granulom-/Zysten-Läsionssubtyp-Qualifikator wird nur unter symptomatischer/asymptomatischer apikaler Parodontitis angezeigt (der redundante „Abszess"-Subtyp wurde entfernt — er ist bereits durch die apikale Diagnose abgedeckt)
 - 🩹 Zusammengeführte Karte „Wurzel und Parodontium" (ein einzelner ausklappbarer Abschnitt für Wurzel-/periapikale und parodontale Befunde)
 - ⚕️ Modifikationen: periapikale Entzündung (nur bei fehlenden/Extraktionsalveolen-Zähnen angezeigt; bei vorhandenen Zähnen ausgeblendet, wo `apicalDx` allein den periapikalen Glyphen steuert, sowie bei Implantaten, wo `periImplant` dies übernimmt), Parodontalerkrankung, Mobilitätsgrade (M1/M2/M3, bei Implantaten ausgeblendet)
@@ -274,7 +274,7 @@ Oder laden Sie sie mit einem rein clientseitigen dynamischen Import: `dynamic(()
 - **Kieferorthopädie-Karte:** Apparatur, mesiale/distale Drift, vertikale Bewegung (Extrusion/Intrusion), Rotations-Umschalter — angezeigt bei einem vorhandenen natürlichen Zahn
 - **Karies-Karte:** Dropdown für den Kariestiefe-Modus, Subkronal-Karies-Checkbox, Dropdown für den Wurzelkaries-Schweregrad sowie der B/M/O/D/L-Flächenauswähler für Karies mit einem kontextabhängigen ICDAS-Tiefe-/CARS-Popup und einem Badge für die radiologische Tiefe
 - **Füllungen-Karte:** Dropdown für das Füllungsmaterial, Flächenauswähler für Füllungen (mit Material pro Fläche), Flächenindikator für Füllungsdefekte (marginal/Fraktur/Abrieb), Hinweise zu Sekundärkaries und Füllungsdefekten
-- **Wurzel-und-Parodontium-Karte:** zusammengeführter „Pulpa-/Endo-Status"-Auswähler, Auswähler für apikale Diagnose, Auswähler für periapikalen Läsionssubtyp (nur symptomatische/asymptomatische apikale Parodontitis), Auswähler für den Wurzelresorptionstyp, Auswähler für den Mobilitätsgrad, Auswähler für den periimplantären Status (nur Implantate)
+- **Wurzel-und-Parodontium-Karte:** zusammengeführter „Pulpa-/Endo-Status"-Auswähler, eigenständiger Auswähler für das Wurzelstift-Material, Auswähler für apikale Diagnose, Auswähler für periapikalen Läsionssubtyp (nur symptomatische/asymptomatische apikale Parodontitis), Auswähler für den Wurzelresorptionstyp, Auswähler für den Mobilitätsgrad, Auswähler für den periimplantären Status (nur Implantate)
 - **Spezielle Indikatoren:** Extraktionsplan/-wunde, Lücke geschlossen, Fissurenversiegelung, Kontaktpunktverlust, Zahnstein, parapulpaler Stift, Endo-Resektion, Brückenpfeiler
 
 ### ⌨️ Befundeingabe über Kürzel
@@ -347,7 +347,10 @@ Eine Spanne folgt dem **Bogen**, nicht der Geometrie (`odontogram-apn`): über d
 **Kronenrand-Undichtigkeit** (`crownLeakage`; boolean): nur sichtbar, wenn `restorationType` gleich `crown` oder `bridge` ist; aktiviert die `crown-leakage`-Bildebene.
 
 **Endodontische Optionen (bleibende Zähne):**
-`none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`, `endo-glass-pin`, `endo-metal-pin`
+`none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`
+
+**Wurzelstift-Material (bleibende Zähne, unabhängig von `endo`):**
+`none`, `glass-fiber`, `metal`
 
 **Endodontische Optionen (Milchzähne):**
 `none`, `endo-medical-filling`
@@ -585,7 +588,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion is a pure optional projection of the UI-domain document. It has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.5.0`. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date and refuses exports that would lose populated clinical state; a Dental Core session rejects Legacy, unsupported, or malformed bundles.
+FHIR conversion is a pure optional projection of the UI-domain document. It has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.6.0` from the exact `@cognovis/fhir-release@0.2.4` projection. Root posts use the orthogonal `rootPostType` axis and remain representable beside every root-filling state; legacy `endo-glass-pin` and `endo-metal-pin` values migrate to `endo-filling` plus the corresponding post material. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date and refuses exports that would lose populated clinical state; a Dental Core session rejects Legacy, unsupported, or malformed bundles.
 
 **Aidbox-Live-Modus (Entwicklung, ab 2.50.0):**
 

@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
-[![Version](https://img.shields.io/badge/version-2.68.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
+[![Version](https://img.shields.io/badge/version-2.69.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](https://raw.githubusercontent.com/ZoliQua/React-Odontogram-Modul/main/src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
 
@@ -97,7 +97,7 @@ every module-level entry point (`exportStatus`, `importStatus`, `getStatusChart`
 
 ### FHIR is a pure, optional projection
 
-FHIR conversion is a pure adapter over the UI-domain document: it performs no DOM access, network I/O, wall-clock reads, randomness, transport, persistence, or authentication. Standalone sessions use the upstream-compatible `legacy` codec by default. Configure `dental-core` explicitly for `de.cognovis.fhir.dental.core#0.5.0`; a Dental Core session rejects Legacy input rather than falling back, and rejects an export when populated clinical state has no admitted Core carrier.
+FHIR conversion is a pure adapter over the UI-domain document: it performs no DOM access, network I/O, wall-clock reads, randomness, transport, persistence, or authentication. Standalone sessions use the upstream-compatible `legacy` codec by default. Configure `dental-core` explicitly for `de.cognovis.fhir.dental.core#0.6.0`, consumed from the exact `@cognovis/fhir-release@0.2.4` projection; a Dental Core session rejects Legacy input rather than falling back, and rejects an export when populated clinical state has no admitted Core carrier. Root posts use the orthogonal `rootPostType` axis (`none`, `glass-fiber`, `metal`) and therefore remain representable beside every `endo` filling state, including `endo-filling-incomplete`. Legacy `endo-glass-pin` and `endo-metal-pin` values remain readable and migrate to `endo-filling` plus the corresponding post material.
 
 The optional `buildFhirBundle` and `parseFhirBundle` helpers accept the same codec selection when a host does not use a session.
 

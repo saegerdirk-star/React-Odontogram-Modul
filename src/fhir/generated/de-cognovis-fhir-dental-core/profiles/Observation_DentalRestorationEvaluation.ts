@@ -51,7 +51,7 @@ export type DentalRestorationEvaluationProfileRaw = {
     status: ("registered" | "preliminary" | "final" | "amended" | "corrected" | "cancelled" | "entered-in-error" | "unknown");
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-restoration-evaluation (pkg: de.cognovis.fhir.dental.core#0.5.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-restoration-evaluation (pkg: de.cognovis.fhir.dental.core#0.6.0)
 export class DentalRestorationEvaluationProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-restoration-evaluation";
 

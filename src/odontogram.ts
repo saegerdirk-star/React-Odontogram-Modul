@@ -487,7 +487,8 @@ function defaultState(){
     endoResection: false,
     mods: new Set(),
     periapicalType: "none", // none | granuloma | cyst | abscess (qualifies mods "inflammation")
-    endo: "none", // none | endo-medical-filling | endo-filling | endo-glass-pin | endo-metal-pin
+    endo: "none", // none | endo-medical-filling | endo-filling | endo-filling-incomplete
+    rootPostType: "none", // none | glass-fiber | metal; independent from endo
     // Endo pro Wurzel/Kanal (charly WURZELZUSTAND: je Wurzel ein Set). Keyed by
     // root name (rootsOf; single-rooted → "single"), value = subset of
     // ["filling","post","incomplete","temporary"] — WF und Stift koexistieren,
@@ -3252,16 +3253,27 @@ export function isEndoValue(value: string): boolean {
 // anatomical view — whose endo artwork is one layer per finding-type across all
 // canals — shows the tooth as treated even when only per-canal detail is
 // charted. The Schema view shows WHICH canal; this makes both views agree. The
-// legacy scalar `state.endo` wins when set; otherwise the union of the canals.
+// The scalar filling state wins when set; legacy combined post values project
+// to a complete filling here and to their material in effectiveRootPostType().
 export function effectiveEndo(state: Any): string {
+  if(state.endo === "endo-glass-pin" || state.endo === "endo-metal-pin") return "endo-filling";
   if(state.endo && state.endo !== "none") return state.endo;
   const flat = (Object.values((state.endoCanals ?? {}) as Record<string, string[]>) as string[][]).flat();
   if(!flat.length) return "none";
-  if(flat.includes("post")) return "endo-metal-pin";
-  if(flat.includes("filling")) return "endo-filling";
   if(flat.includes("incomplete")) return "endo-filling-incomplete";
+  if(flat.includes("filling")) return "endo-filling";
   if(flat.includes("temporary")) return "endo-medical-filling";
+  if(flat.includes("post")) return "endo-filling";
   return "none";
+}
+
+/** Resolve the independent root-post material, including canal-detail input. */
+export function effectiveRootPostType(state: Any): string {
+  if(state.rootPostType && state.rootPostType !== "none") return state.rootPostType;
+  if(state.endo === "endo-glass-pin") return "glass-fiber";
+  if(state.endo === "endo-metal-pin") return "metal";
+  const flat = (Object.values((state.endoCanals ?? {}) as Record<string, string[]>) as string[][]).flat();
+  return flat.includes("post") ? "metal" : "none";
 }
 
 // Per-canal endo as ONE line of language-neutral clinical shorthand, like the
@@ -3369,6 +3381,12 @@ function getRootOptions(toothNo: number | null): { value: string; label: string 
 }
 function getRootFractureOptions(): { value: string; label: string }[]{
   return Array.from(VALID_ROOT_FRACTURE).map(v => ({ value: v, label: t("rootFracture.option." + kebabToCamel(v)) }));
+}
+function getRootPostOptions(isMilktooth: boolean): { value: string; label: string }[]{
+  return optionsFor("rootPostType", { isMilktooth }).map((option) => ({
+    value: option.value,
+    label: t(option.labelKey),
+  }));
 }
 function getCrownFractureTypeOptions(): { value: string; label: string }[]{
   return ["none", "crack", "split", "fracture"].map(v =>
@@ -3977,15 +3995,12 @@ function applyStateToSvgSingle(toothNo: Any, svg: Any, state: Any = toothState.g
       setActive(svgGetById(svg, "endo-medical-filling"), true);
     } else if(eff === "endo-filling"){
       setActive(svgGetById(svg, "endo-filling"), true);
-    } else if(eff === "endo-glass-pin"){
-      setActive(svgGetById(svg, "endo-filling"), true);
-      setActive(svgGetById(svg, "endo-glass-pin"), true);
     } else if(eff === "endo-filling-incomplete"){
       setActive(svgGetById(svg, "endo-filling-incomplete"), true);
-    } else if(eff === "endo-metal-pin"){
-      setActive(svgGetById(svg, "endo-filling"), true);
-      setActive(svgGetById(svg, "endo-metal-pin"), true);
     }
+    const post = effectiveRootPostType(state);
+    setActive(svgGetById(svg, "endo-glass-pin"), post === "glass-fiber");
+    setActive(svgGetById(svg, "endo-metal-pin"), post === "metal");
   }
 
   // A typed crown-margin finding (charly überstehend/Karies/Füllung) lights the
@@ -5310,6 +5325,8 @@ function getStateSummary(toothNo: number): string[]{
     }[endoEff];
     if(endoKey) summary.push(t(endoKey));
   }
+  const rootPostType = effectiveRootPostType(state);
+  if(rootPostType !== "none") summary.push(t(`rootPost.option.${kebabToCamel(rootPostType)}`));
   { const parts = endoCanalSummaryParts(state); if(parts) summary.push(`Endo: ${parts}`); }
 
   // Filling
@@ -6191,6 +6208,7 @@ function syncControlsFromState(state: Any){
   // enforces the mutual-exclusion invariant, so no post-sync normalization is
   // needed here (unlike the old #endoSelect block this replaces).
   buildPulpEndoSelect($("#pulpEndoSelect"), isMilktooth, pulpEndoDisplayValue(state), isPlan);
+  setSelectOptions($("#rootPostSelect"), getRootPostOptions(isMilktooth), state.rootPostType ?? "none");
   setSelectOptions($("#fillingSelect"), getFillingOptions(isMilktooth), state.fillingMaterial);
   if($("#fillingSelect").value !== state.fillingMaterial){
     state.fillingMaterial = $("#fillingSelect").value;
@@ -6303,6 +6321,7 @@ function syncControlsFromState(state: Any){
   // endo only if tooth present
   const endoDisabled = !isToothPresent(state.toothSelection) || underGum || extraction;
   setDisabled($("#pulpEndoSelect"), endoDisabled);
+  setDisabled($("#rootPostSelect"), endoDisabled || isMilktooth);
   setDisabled($("#apicalDxSelect"), endoDisabled);
   setDisabled($("#resorptionSelect"), endoDisabled);
   setDisabled($("#endoResection"), endoDisabled);
@@ -6820,6 +6839,8 @@ function refreshAllSelectOptions(){
   // in this function).
   const pulpEndoEl = $("#pulpEndoSelect");
   if(pulpEndoEl) buildPulpEndoSelect(pulpEndoEl, isMilktooth, pulpEndoEl.value);
+  const rootPostEl = $("#rootPostSelect");
+  if(rootPostEl) setSelectOptions(rootPostEl, getRootPostOptions(isMilktooth), rootPostEl.value);
   const apicalEl = $("#apicalDxSelect");
   if(apicalEl) setSelectOptions(apicalEl, getApicalDxOptions(), apicalEl.value);
   const resorptionEl = $("#resorptionSelect");
@@ -8785,6 +8806,7 @@ function serializeState(s: Any){
     // Endo pro Kanal: omit-when-empty (a chart with no per-canal detail stays
     // byte-identical apart from the version field).
     ...(s.endoCanals && Object.keys(s.endoCanals).length ? { endoCanals: s.endoCanals } : {}),
+    ...(s.rootPostType && s.rootPostType !== "none" ? { rootPostType: s.rootPostType } : {}),
     // Bead odontogram-0n8: omit-when-none - eine Karte ohne Wechselgebiss
     // bleibt byte-gleich bis auf die Version.
     ...(s.eruptionStage && s.eruptionStage !== "none" ? { eruptionStage: s.eruptionStage } : {}),
@@ -8814,6 +8836,7 @@ function serializeState(s: Any){
 // Allowed values for imported state fields
 export const VALID_TOOTH_SELECTION = validValues("toothSelection");
 export const VALID_ENDO = validValues("endo");
+export const VALID_ROOT_POST_TYPE = validValues("rootPostType");
 export const VALID_FILLING_MATERIAL = validValues("fillingMaterial");
 export const VALID_PROSTHESIS = validValues("prosthesis");
 export const VALID_MOBILITY = validValues("mobility");
@@ -9109,6 +9132,11 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
     }
   }
   s.endo = validateEnum(raw.endo, VALID_ENDO, s.endo);
+  s.rootPostType = validateEnum(raw.rootPostType, VALID_ROOT_POST_TYPE, "none");
+  if(s.endo === "endo-glass-pin" || s.endo === "endo-metal-pin"){
+    if(s.rootPostType === "none") s.rootPostType = s.endo === "endo-glass-pin" ? "glass-fiber" : "metal";
+    s.endo = "endo-filling";
+  }
   // SP7: enforce the endo/pulp mutual-exclusion invariant on read. A tooth with
   // any endodontic treatment (endo !== "none") has no vital pulp, so it cannot
   // carry a pulpitis/necrosis diagnosis. Normalize to "normal" (also clears any
@@ -14138,6 +14166,9 @@ function wireControls(){
       applyToSelected((s)=>{ pulpEndoOnSelect(s, value); });
     });
   }
+  buildSelect($("#rootPostSelect"), getRootPostOptions(false), (value)=>{
+    applyToSelected((s)=>{ s.rootPostType = value; });
+  });
 
   // Bead odontogram-fu1: die beiden Pruefungen. Sie gehen NICHT ueber
   // applyToSelected, sondern je Zahn ueber setSensibility/setPercussion -
@@ -15073,7 +15104,7 @@ export type ToothDisplayState = {
   restorationType: string; restorationMaterial: string;
   caries: string[]; cariesSeverity: Record<string, number>;
   fillingSurfaces: string[]; fillingSurfaceMaterials: Record<string, string>;
-  rootCaries: string; endo: string;
+  rootCaries: string; endo: string; rootPostType: string;
   pulpDx: string; apicalDx: string; apicalRoot: string; periapicalType: string;
   extractionPlan: boolean; crownNeeded: boolean; crownReplace: boolean;
   crownLeakage: boolean; mobility: string; bridgePillar: boolean;
@@ -15107,6 +15138,7 @@ export function getToothDisplayState(toothNo: number): ToothDisplayState {
     fillingSurfaceMaterials: rec(s.fillingSurfaceMaterials) as Record<string, string>,
     rootCaries: String(s.rootCaries ?? "none"),
     endo: String(s.endo ?? "none"),
+    rootPostType: String(s.rootPostType ?? "none"),
     pulpDx: String(s.pulpDx ?? "normal"),
     apicalDx: String(s.apicalDx ?? "normal"),
     apicalRoot: String(s.apicalRoot ?? ""),

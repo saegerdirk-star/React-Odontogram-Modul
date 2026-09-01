@@ -29,6 +29,11 @@ import {
   DENTAL_CORE_PACKAGE_SHA512,
   DENTAL_CORE_PACKAGE_VERSION,
   DENTAL_CORE_PROFILE_URLS,
+  DENTAL_CORE_CLOSURE_ENTRY,
+  FHIR_RELEASE_PROJECTION_CLOSURE_DIGEST,
+  FHIR_RELEASE_PROJECTION_IDENTITY,
+  FHIR_RELEASE_PROJECTION_PACKAGE,
+  FHIR_RELEASE_PROJECTION_VERSION,
 } from "../fhir/generated/dental-core-contract";
 import type { FhirDialect, OdontogramExportPayload } from "../fhir/types";
 import { createOdontogramSession } from "../index";
@@ -111,8 +116,18 @@ function clinicalFixture(): OdontogramExportPayload {
 describe("generated Dental Core contract", () => {
   it("pins the immutable published package and exposes its profiles and terminology", () => {
     expect(DENTAL_CORE_PACKAGE_NAME).toBe("de.cognovis.fhir.dental.core");
-    expect(DENTAL_CORE_PACKAGE_VERSION).toBe("0.5.0");
+    expect(DENTAL_CORE_PACKAGE_VERSION).toBe("0.6.0");
     expect(DENTAL_CORE_PACKAGE_SHA512).toHaveLength(128);
+    expect(FHIR_RELEASE_PROJECTION_PACKAGE).toBe("@cognovis/fhir-release");
+    expect(FHIR_RELEASE_PROJECTION_VERSION).toBe("0.2.4");
+    expect(FHIR_RELEASE_PROJECTION_IDENTITY).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(FHIR_RELEASE_PROJECTION_CLOSURE_DIGEST).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(DENTAL_CORE_CLOSURE_ENTRY).toMatchObject({
+      packageId: "de.cognovis.fhir.dental.core",
+      version: "0.6.0",
+      scope: "estate",
+      integrity: expect.stringMatching(/^sha512-/),
+    });
     expect(DENTAL_CORE_PROFILE_URLS["dental-chart-state"]).toBe(`${DENTAL_CORE}/StructureDefinition/dental-chart-state`);
     expect(DENTAL_CORE_CODE_SYSTEM_URLS["dental-chart-property"]).toBe(PROPERTY_SYSTEM);
     expect(DENTAL_CORE_CODE_SYSTEM_URLS["dental-chart-value"]).toBe(VALUE_SYSTEM);
@@ -123,6 +138,27 @@ describe("generated Dental Core contract", () => {
         expect(DENTAL_CORE_CODE_SYSTEM_CODES["dental-chart-value"]).toContain(value);
       }
     }
+    expect(DENTAL_CORE_CODE_SYSTEM_CODES["dental-chart-property"]).toEqual(expect.arrayContaining([
+      "pulp-sensibility-test",
+      "percussion-test",
+      "tooth-eruption-stage",
+      "root-fracture",
+      "root-post-type",
+    ]));
+    expect(DENTAL_CORE_CODE_SYSTEM_CODES["dental-chart-value"]).toEqual(expect.arrayContaining([
+      "vital",
+      "no-response",
+      "questionable",
+      "negative",
+      "sensitive",
+      "emerging",
+      "half-crown",
+      "full-crown",
+      "vertical",
+      "horizontal",
+      "glass-fiber-post",
+      "metal-post",
+    ]));
   });
 
   it("exports the Dental Core compatibility constants from the public FHIR entry point", () => {
@@ -373,7 +409,8 @@ describe("configured FHIR codecs", () => {
           teeth: { "16": { [mapping.field]: mapping.kind === "set" ? [value] : value } },
         };
         const parsed = parseFhirBundle(buildFhirBundle(source, options), { dialect: "dental-core" });
-        expect(parsed.teeth["16"]?.[mapping.field], `${mapping.field}=${String(value)}`).toEqual(source.teeth["16"]?.[mapping.field]);
+        const expected = mapping.omitDefault && value === mapping.defaultValue ? undefined : source.teeth["16"]?.[mapping.field];
+        expect(parsed.teeth["16"]?.[mapping.field], `${mapping.field}=${String(value)}`).toEqual(expected);
       }
     }
   });

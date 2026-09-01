@@ -240,6 +240,7 @@ describe("Ganzer Zahn", () => {
     expect(parseShorthand("wf").edits).toEqual([{ kind: "axis", field: "endo", value: "endo-filling" }]);
     expect(parseShorthand("WFi").edits).toEqual([{ kind: "axis", field: "endo", value: "endo-filling-incomplete" }]);
     expect(parseShorthand("Twf").edits).toEqual([{ kind: "axis", field: "endo", value: "endo-medical-filling" }]);
+    expect(parseShorthand("Sti").edits).toEqual([{ kind: "axis", field: "rootPostType", value: "metal" }]);
     expect(parseShorthand("Res").edits).toEqual([{ kind: "axis", field: "endoResection", value: true }]);
   });
 });
@@ -312,7 +313,7 @@ describe("Die Tabelle selbst", () => {
     }
     const bekannt = new Set([
       "toothSelection", "toothSubstrate", "restorationType", "restorationMaterial",
-      "endo", "endoResection", "apicalDx", "periapicalType",
+      "endo", "rootPostType", "endoResection", "apicalDx", "periapicalType",
       "extractionPlan", "missingClosed", "prosthesis",
       "sensibility", "percussion", "rootFracture", "rootResection",
       "eruptionStage", "calculus",

@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.68.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.69.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -343,7 +343,10 @@ A tartomány a **fogívet** követi, nem a geometriát (`odontogram-apn`): a kö
 **Korona szegélyi rés** (`crownLeakage`; logikai): csak akkor jelenik meg, ha a `restorationType` értéke `crown` vagy `bridge`; aktiválja a `crown-leakage` grafikai réteget.
 
 **Endodonciai lehetőségek (maradó fogak):**
-`none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`, `endo-glass-pin`, `endo-metal-pin`
+`none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`
+
+**Gyökércsap anyaga (maradó fogak, az `endo` értékétől függetlenül):**
+`none`, `glass-fiber`, `metal`
 
 **Endodonciai lehetőségek (tejfogak):**
 `none`, `endo-medical-filling`
@@ -580,7 +583,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion is optional and has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.5.0`. A Dental Core session rejects Legacy, malformed, or unsupported input and refuses exports that would lose populated clinical state.
+FHIR conversion is optional and has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.6.0` from the exact `@cognovis/fhir-release@0.2.4` projection. Root posts use the orthogonal `rootPostType` axis and remain representable beside every root-filling state; legacy `endo-glass-pin` and `endo-metal-pin` values migrate to `endo-filling` plus the corresponding post material. A Dental Core session rejects Legacy, malformed, or unsupported input and refuses exports that would lose populated clinical state.
 
 **Aidbox élő mód (fejlesztés, 2.50.0-tól):**
 

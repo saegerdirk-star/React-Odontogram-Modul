@@ -59,7 +59,7 @@ export type DentalOrthodonticFindingProfileRaw = {
     status: ("registered" | "preliminary" | "final" | "amended" | "corrected" | "cancelled" | "entered-in-error" | "unknown");
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-orthodontic-finding (pkg: de.cognovis.fhir.dental.core#0.5.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-orthodontic-finding (pkg: de.cognovis.fhir.dental.core#0.6.0)
 export class DentalOrthodonticFindingProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-orthodontic-finding";
 

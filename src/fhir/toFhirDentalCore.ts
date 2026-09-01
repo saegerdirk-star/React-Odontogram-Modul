@@ -13,7 +13,7 @@ import { DentalProcedureProfile } from "./generated/de-cognovis-fhir-dental-core
 import { DentalRiskEvidenceProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalRiskEvidence";
 import { DentalServiceRequestProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/ServiceRequest_DentalServiceRequest";
 import { DentalToothStateProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalToothState";
-import { CHART_MAPPINGS, COMPONENT_SYSTEM, DENTAL_CORE, DENTAL_CORE_BUNDLE_IDENTIFIER, DENTAL_CORE_PROFILES, FDI_SYSTEM, isDentalCoreDiagnosis, isDentalCoreFdi, isDentalCoreRiskValue, PROPERTY_SYSTEM, PROVENANCE_SYSTEM, VALUE_SYSTEM } from "./dentalCoreContract";
+import { CHART_MAPPINGS, COMPONENT_SYSTEM, DENTAL_CORE, DENTAL_CORE_BUNDLE_IDENTIFIER, DENTAL_CORE_PROFILES, FDI_SYSTEM, isDentalCoreDiagnosis, isDentalCoreFdi, isDentalCoreRiskValue, normalizeLegacyRootPost, PROPERTY_SYSTEM, PROVENANCE_SYSTEM, VALUE_SYSTEM } from "./dentalCoreContract";
 import { LOCAL_SYSTEM, resolveSmokingStatus } from "./codesystems";
 import { LOCAL_VALUE_MAPS } from "../registry/valueCatalog";
 
@@ -349,6 +349,7 @@ function chartComponents(record: ToothRecord): Observation["component"] {
     const present = Object.prototype.hasOwnProperty.call(record, mapping.field);
     if (!present) continue;
     const raw = record[mapping.field];
+    if (mapping.omitDefault && raw === mapping.defaultValue) continue;
     if (mapping.kind === "boolean") {
       if (typeof raw !== "boolean") continue;
       const coded = mapping.values?.true;
@@ -803,7 +804,14 @@ function sharedResourceEntries(payload: OdontogramExportPayload, options: FhirEx
 }
 
 export function buildDentalCoreBundle(payload: OdontogramExportPayload, options: FhirExportOptions = {}): Bundle {
-  const safe = payload && typeof payload === "object" ? payload : ({ version: "", teeth: {} } as OdontogramExportPayload);
+  const source = payload && typeof payload === "object" ? payload : ({ version: "", teeth: {} } as OdontogramExportPayload);
+  const safe: OdontogramExportPayload = {
+    ...source,
+    teeth: Object.fromEntries(Object.entries(source.teeth ?? {}).map(([fdi, record]) => [fdi, normalizeLegacyRootPost(record)])),
+    ...(source.plan
+      ? { plan: Object.fromEntries(Object.entries(source.plan).map(([fdi, record]) => [fdi, normalizeLegacyRootPost(record)])) }
+      : {}),
+  };
   const identity = new DentalCoreIdentityResolver(safe);
   assertDentalCoreComplete(safe, options, identity);
   const entries: BundleEntry[] = [];

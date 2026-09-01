@@ -52,14 +52,14 @@ describe("SP7 Task 4: merged pulp/endo selector", () => {
     expect(groups.length).toBe(2);
     // Group 1: vital pulp diagnoses, at the active detail level (default "aae" -> 4).
     expect(groups[0].children.length).toBe(pulpSelectOptionValues(getPulpDetailLevel()).length);
-    // Group 2: treated endo options — "none" is excluded, everything else present.
-    expect(groups[1].children.length).toBe(VALID_ENDO.size - 1);
+    // Group 2 contains only current filling-state values. Legacy post enums
+    // remain readable but are authored through the independent root-post axis.
     const groupTwoValues = Array.from(groups[1].children).map(o => (o as HTMLOptionElement).value);
-    expect(groupTwoValues).not.toContain("none");
-    for(const v of VALID_ENDO){
-      if(v === "none") continue;
-      expect(groupTwoValues).toContain(v);
-    }
+    expect(groupTwoValues).toEqual([
+      "endo-medical-filling",
+      "endo-filling",
+      "endo-filling-incomplete",
+    ]);
 
     expect(sel.value).toBe("normal");
   });

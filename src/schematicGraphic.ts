@@ -61,7 +61,7 @@ function legacyEndoFindings(endo: string): string[] {
     case "endo-filling-incomplete": return ["incomplete"];
     case "endo-medical-filling": return ["temporary"];
     case "endo-glass-pin":
-    case "endo-metal-pin": return ["post"];
+    case "endo-metal-pin": return ["filling", "post"];
     default: return [];
   }
 }
@@ -285,7 +285,10 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
     if (!implant) {
       canals.forEach((name, i) => {
         if (i === removedIdx) return;   // a removed root has no canal to fill
-        const f = (s.endoCanals[name] && s.endoCanals[name].length) ? s.endoCanals[name] : legacy;
+        const canalFindings = (s.endoCanals[name] && s.endoCanals[name].length) ? s.endoCanals[name] : legacy;
+        const f = s.rootPostType !== "none" && !canalFindings.includes("post")
+          ? [...canalFindings, "post"]
+          : canalFindings;
         if (!f.length) return;
         const rx = centers[i] ?? cx;
         if (f.includes("filling") || f.includes("temporary") || f.includes("incomplete")) {

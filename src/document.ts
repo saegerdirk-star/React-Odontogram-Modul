@@ -13,6 +13,8 @@ export interface ToothRecord {
   mods?: string[];
   periapicalType?: string;
   endo?: string;
+  /** Root-post material, independent from the root-filling state. */
+  rootPostType?: string;
   /** charly WURZELZUSTAND per root: {canal: [filling|post|incomplete|temporary]}. */
   endoCanals?: Record<string, string[]>;
   caries?: string[];
@@ -83,6 +85,10 @@ export interface ToothRecord {
   // Bead odontogram-0n8: wie weit ein SICHTBARER Zahn durchgebrochen ist.
   // Weggelassen, wenn "none".
   eruptionStage?: string;
+  rootFracture?: string;
+  rootFractureRoot?: string;
+  sensibility?: string;
+  percussion?: string;
   prosthesis?: string;
   mobility?: string;
   toothSubstrate?: string;
@@ -234,6 +240,8 @@ export interface DentalCoreIdentity {
 }
 
 /** The payload/document version this engine writes. Readers accept earlier versions. */
+// 2.45 (odontogram-yi8): additive `rootPostType` axis. Legacy endo post enum
+// values migrate to `endo-filling` plus the matching independent post value.
 // 2.22 (odontogram-8vu): additive `not-erupted` tooth selection; no migration.
 // 2.30 (odontogram-0n8): additive - `eruptionStage` (emerging / half-crown /
 // full-crown), how far a VISIBLE tooth has come through, graded by the portion
@@ -278,7 +286,7 @@ export interface DentalCoreIdentity {
 // filling or caries lesion extends into the cervical region. Omitted entirely
 // when empty, so a document that never records it is byte-identical apart from
 // this version string, and an older document needs no migration.
-export const PAYLOAD_VERSION = "2.44";
+export const PAYLOAD_VERSION = "2.45";
 
 /**
  * The UI-domain document (bead odontogram-3l1, AC2/AC4): a versioned,

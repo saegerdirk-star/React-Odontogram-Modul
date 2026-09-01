@@ -41,6 +41,7 @@ export interface ChartMapping {
   property: string;
   kind: "boolean" | "enum" | "set";
   defaultValue?: string;
+  omitDefault?: boolean;
   values?: Record<string, string>;
 }
 
@@ -75,6 +76,11 @@ export const CHART_MAPPINGS: readonly ChartMapping[] = [
   { field: "resorptionType", property: "root-resorption-type", kind: "enum", defaultValue: "none", values: identity("none", "internal", "external-cervical") },
   { field: "retention", property: "prosthesis-retention-element", kind: "enum", defaultValue: "none", values: identity("none", "clasp", "attachment", "bar-abutment") },
   { field: "retentionSide", property: "retention-engaged-side", kind: "enum", defaultValue: "none", values: identity("none", "mesial", "distal", "both") },
+  { field: "sensibility", property: "pulp-sensibility-test", kind: "enum", defaultValue: "none", omitDefault: true, values: identity("none", "vital", "no-response", "questionable") },
+  { field: "percussion", property: "percussion-test", kind: "enum", defaultValue: "none", omitDefault: true, values: identity("none", "negative", "sensitive") },
+  { field: "eruptionStage", property: "tooth-eruption-stage", kind: "enum", defaultValue: "none", omitDefault: true, values: identity("none", "emerging", "half-crown", "full-crown") },
+  { field: "rootFracture", property: "root-fracture", kind: "enum", defaultValue: "none", omitDefault: true, values: identity("none", "vertical", "horizontal") },
+  { field: "rootPostType", property: "root-post-type", kind: "enum", defaultValue: "none", omitDefault: true, values: { none: "none", "glass-fiber": "glass-fiber-post", metal: "metal-post" } },
 ] as const;
 
 for (const mapping of CHART_MAPPINGS) {
@@ -89,4 +95,17 @@ for (const mapping of CHART_MAPPINGS) {
   const mappings = mappingsByProperty.get(mapping.property) ?? [];
   mappings.push(mapping);
   mappingsByProperty.set(mapping.property, mappings);
+}
+
+/** Split the former combined endodontic post values into two orthogonal axes. */
+export function normalizeLegacyRootPost(record: ToothRecord): ToothRecord {
+  if (record.endo !== "endo-glass-pin" && record.endo !== "endo-metal-pin") return record;
+  const inferredPost = record.endo === "endo-glass-pin" ? "glass-fiber" : "metal";
+  return {
+    ...record,
+    endo: "endo-filling",
+    rootPostType: record.rootPostType && record.rootPostType !== "none"
+      ? record.rootPostType
+      : inferredPost,
+  };
 }

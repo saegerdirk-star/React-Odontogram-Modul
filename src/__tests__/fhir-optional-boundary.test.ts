@@ -104,10 +104,13 @@ describe("optional FHIR package boundary", () => {
 
   it("pins and verifies the released Dental Core generation input", () => {
     const generator = source("tools/generate-dental-core-types.mjs");
+    const packageJson = JSON.parse(source("package.json")) as { devDependencies?: Record<string, string> };
 
-    expect(generator).toContain('name: "de.cognovis.fhir.dental.core", version: "0.5.0"');
-    expect(generator).toContain("https://npm.cognovis.de/de.cognovis.fhir.dental.core/-/de.cognovis.fhir.dental.core-0.5.0.tgz");
-    expect(generator).toContain("81ed6290f278c4a2668d6079e443cdee4aaf1a2aa63ea9e19e1aaff208b68ec4b0f5a062fabe22bc6f672555b0c974fef7d64282d3277cad14ff4cd1b1b45835");
+    expect(packageJson.devDependencies?.["@cognovis/fhir-release"]).toBe("0.2.4");
+    expect(generator).toContain('name: "@cognovis/fhir-release", version: "0.2.4"');
+    expect(generator).toContain("cognovis-fhir-release.manifest.json");
+    expect(generator).toContain('entry.packageId === "de.cognovis.fhir.dental.core" && entry.scope === "estate"');
+    expect(generator).toContain('dentalCoreClosure.version !== "0.6.0"');
     expect(generator).toContain("dental-core-contract.ts");
     expect(generator).not.toMatch(removedDialectPattern);
     expect(generator).not.toMatch(/de\.cognovis\.fhir\.dental"/i);

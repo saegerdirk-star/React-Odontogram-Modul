@@ -28,6 +28,7 @@ import {
   isDentalCoreRiskValue,
   isDentalCoreValue,
   mappingsByProperty,
+  normalizeLegacyRootPost,
   PROPERTY_SYSTEM,
   PROVENANCE_SYSTEM,
   VALUE_SYSTEM,
@@ -787,5 +788,9 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
     payload.examination = { ...payload.examination, subject: expectedSubject, effectiveDateTime: [...effectiveDates][0] };
   }
   if (Object.keys(identities).length) payload.fhirIdentity = { resources: identities };
+  for (const [fdi, record] of Object.entries(payload.teeth)) payload.teeth[fdi] = normalizeLegacyRootPost(record);
+  if (payload.plan) {
+    for (const [fdi, record] of Object.entries(payload.plan)) payload.plan[fdi] = normalizeLegacyRootPost(record);
+  }
   return payload;
 }

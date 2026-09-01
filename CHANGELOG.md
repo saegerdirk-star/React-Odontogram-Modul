@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.69.0 - 2026-09-01
+
+### Dental Core 0.6 odontogram axes and independent root posts
+
+- Consume `de.cognovis.fhir.dental.core#0.6.0` from the exact
+  `@cognovis/fhir-release@0.2.4` projection and regenerate the published
+  profiles and terminology contract with closure identity and integrity
+  assertions.
+- Project pulp sensibility, percussion, tooth eruption stage, oriented root
+  fracture, and root-post material through the new Dental Core chart
+  properties.
+- Add `rootPostType` (`none` | `glass-fiber` | `metal`) as an axis independent
+  from `endo`, including its control, summary, anatomical layers, schematic
+  renderer, serialization, FHIR import/export, and Charly shorthand mapping.
+  An incomplete root filling and either post material can now coexist without
+  loss.
+- Read legacy `endo-glass-pin` and `endo-metal-pin` values at JSON and Dental
+  Core boundaries, migrate them to `endo-filling` plus the corresponding post
+  material, and never write the combined values again.
+
+Payload **2.44 -> 2.45**.
+
 ## 2.68.0 - 2026-08-30
 
 ### Schema: dieselbe Bedienung wie anatomisch — Zähne markieren + Flächen anklicken

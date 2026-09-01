@@ -28,7 +28,7 @@ export type DentalModelAnalysisPanelProfileRaw = {
     hasMember: Reference<"MolecularSequence" | "Observation" | "QuestionnaireResponse">[];
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-model-analysis-panel (pkg: de.cognovis.fhir.dental.core#0.5.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-model-analysis-panel (pkg: de.cognovis.fhir.dental.core#0.6.0)
 export class DentalModelAnalysisPanelProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-model-analysis-panel";
 

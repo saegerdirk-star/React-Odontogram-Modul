@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.68.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-2.69.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -142,7 +142,7 @@ Or load it with a client-only dynamic import: `dynamic(() => import("./Odontogra
 - 🌉 Bridge teeth render both the crown cap and the saddle connector; a multi-tooth bridge-span overlay renders one continuous, arch-aware connector across consecutive bridge teeth (pontics + abutments) and the inter-tooth gaps between them (upper vs. lower arch use mirrored saddle geometry, keeping the connector aligned on both arches), included in PNG/JPG/SVG export; applying a bridge via a Statuses preset recomputes the overlay immediately
 - 🔍 Caries charting on 6 surfaces: mesial, distal, buccal, lingual, occlusal, subcrown
 - 🪥 Filling materials per surface: amalgam, composite, GIC, temporary
-- 🏥 One merged "Pulp / Endo status" selector (grouped: vital pulp vs. treated/endo): endodontic states (medicinal filling, root canal filling, incomplete root filling, glass fiber post, metal post) and AAE pulp diagnosis (`pulpDx`: normal / reversible / irreversible pulpitis / necrosis) are mutually exclusive — a root-treated tooth (`endo` set) cannot also carry a vital pulp diagnosis; on treatment, `pulpDx` is normalized to `normal` and the diseased-pulp glyph is suppressed. Reversible pulpitis renders a reduced pulp glyph. An optional 3-level pulp detail setting (`pulpDetailLevel`: simple / AAE / practical-Latin) surfaces 9 practical-Latin pulp subtypes (pulpa sana … gangraena pulpae) via `pulpLatin`; resection and parapulpal pin remain separate special indicators
+- 🏥 One merged "Pulp / Endo status" selector (grouped: vital pulp vs. treated/endo) for medicinal, complete, or incomplete root filling, plus an independent root-post material selector: endodontic treatment and AAE pulp diagnosis (`pulpDx`: normal / reversible / irreversible pulpitis / necrosis) are mutually exclusive — a root-treated tooth (`endo` set) cannot also carry a vital pulp diagnosis; on treatment, `pulpDx` is normalized to `normal` and the diseased-pulp glyph is suppressed. Reversible pulpitis renders a reduced pulp glyph. An optional 3-level pulp detail setting (`pulpDetailLevel`: simple / AAE / practical-Latin) surfaces 9 practical-Latin pulp subtypes (pulpa sana … gangraena pulpae) via `pulpLatin`; resection and parapulpal pin remain separate special indicators
 - 🦴 Apical diagnosis (`apicalDx`: symptomatic/asymptomatic apical periodontitis, acute/chronic apical abscess, condensing osteitis) drives the periapical glyph directly; a granuloma/cyst lesion-subtype qualifier is shown only under symptomatic/asymptomatic apical periodontitis (the redundant "abscess" subtype was dropped — it's already covered by the apical diagnosis)
 - 🩹 Merged "Root and periodontium" card (single collapsible section for root/periapical and periodontal findings)
 - ⚕️ Modifications: periapical inflammation (shown only on missing/extraction-socket teeth; hidden on present teeth, where `apicalDx` alone drives the periapical glyph, and on implants, where `periImplant` covers it), periodontal disease, mobility grades (M1/M2/M3, hidden on implants)
@@ -273,7 +273,7 @@ Or load it with a client-only dynamic import: `dynamic(() => import("./Odontogra
 - **Orthodontics card:** appliance, mesial/distal drift, vertical movement (extrusion/intrusion), rotation toggle — shown on a present natural tooth
 - **Caries card:** caries-depth mode dropdown, subcrown caries checkbox, root-caries severity dropdown, and the B/M/O/D/L per-surface caries picker with a contextual ICDAS-depth/CARS popup and a radiographic-depth badge
 - **Fillings card:** filling-material dropdown, per-surface filling picker (with per-surface material), per-surface filling-defect indicator (marginal/fracture/wear), subcaries and filling-defect hint notes
-- **Root and periodontium card:** merged "Pulp / Endo status" selector, apical diagnosis selector, periapical lesion subtype selector (symptomatic/asymptomatic apical periodontitis only), root resorption type selector, mobility grade selector, peri-implant status selector (implants only)
+- **Root and periodontium card:** merged "Pulp / Endo status" selector, independent root-post material selector, apical diagnosis selector, periapical lesion subtype selector (symptomatic/asymptomatic apical periodontitis only), root resorption type selector, mobility grade selector, peri-implant status selector (implants only)
 - **Special indicators:** extraction plan/wound, missing-closed, fissure sealing, contact-point loss, calculus, parapulpal pin, endo resection, bridge pillar
 
 ### ⌨️ Charting by shorthand
@@ -346,7 +346,10 @@ yes, across the jaw never.
 **Crown marginal leakage** (`crownLeakage`; boolean): shown only when `restorationType` is `crown` or `bridge`; activates the `crown-leakage` artwork layer.
 
 **Endodontic options (permanent teeth):**
-`none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`, `endo-glass-pin`, `endo-metal-pin`
+`none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`
+
+**Root-post material (permanent teeth, independent from `endo`):**
+`none`, `glass-fiber`, `metal`
 
 **Endodontic options (milk teeth):**
 `none`, `endo-medical-filling`
@@ -584,7 +587,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion is a pure optional projection of the UI-domain document. It has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.5.0`. `buildDentalCoreBundle` accepts an effective date from the caller, examination context, or `case.examDate`; it projects the IG carrier contract across tooth and root caries, restorations, endodontic and diagnostic findings, periodontal and peri-implant findings, implants, treatment requests, assessments, and notes. Diabetes, HbA1c, smoking, and edentulous resources remain host-owned and are never minted by this codec; populated document fields require their existing Condition or Observation entries in `exportOptions.sharedResources`. The smoking-status Observation (LOINC 72166-2) may carry either the LOINC LL2201-3 / IPS Current Smoking Status answer codes or the engine-local codes. Compatibility constants are exported from `react-advanced-odontogram/fhir`; unsupported or malformed bundles are rejected instead of silently losing content.
+FHIR conversion is a pure optional projection of the UI-domain document. It has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.6.0` from the exact `@cognovis/fhir-release@0.2.4` projection. Root posts use the orthogonal `rootPostType` axis and remain representable beside every root-filling state; legacy `endo-glass-pin` and `endo-metal-pin` values migrate to `endo-filling` plus the corresponding post material. `buildDentalCoreBundle` accepts an effective date from the caller, examination context, or `case.examDate`; it projects the IG carrier contract across tooth and root caries, restorations, endodontic and diagnostic findings, periodontal and peri-implant findings, implants, treatment requests, assessments, and notes. Diabetes, HbA1c, smoking, and edentulous resources remain host-owned and are never minted by this codec; populated document fields require their existing Condition or Observation entries in `exportOptions.sharedResources`. The smoking-status Observation (LOINC 72166-2) may carry either the LOINC LL2201-3 / IPS Current Smoking Status answer codes or the engine-local codes. Compatibility constants are exported from `react-advanced-odontogram/fhir`; unsupported or malformed bundles are rejected instead of silently losing content.
 
 **Aidbox live mode (development, from 2.50.0):**
 
@@ -776,7 +779,8 @@ The export creates a JSON file (version `2.20`; imports also accept legacy `1.4`
 - `restorationMaterial` - restoration material (emax/gold/gradia/zircon/metal/metal-ceramic/telescope/temporary), paired with `restorationType`
 - `prosthesis` - removable/attachment axis (none/healing-abutment/locator/locator-denture/bar/bar-denture/removable-partial/removable-full), mutually exclusive with a fixed `restorationType` of crown/bridge
 - `crownLeakage` - crown marginal-leakage flag, meaningful only when `restorationType` is crown or bridge
-- `endo` - endodontic state; mutually exclusive with `pulpDx` (surfaced together via one merged "Pulp / Endo status" picker — treating a tooth normalizes `pulpDx` to `normal`)
+- `endo` - endodontic filling state; mutually exclusive with `pulpDx` (surfaced together via one merged "Pulp / Endo status" picker — treating a tooth normalizes `pulpDx` to `normal`)
+- `rootPostType` - root-post material (`none`, `glass-fiber`, `metal`), independent from `endo`
 - `mods` - modifications array (inflammation, parodontal); `inflammation` is retired from the UI on present teeth (`apicalDx` drives the glyph there) but still applies to missing/extraction-socket teeth
 - `caries` - active caries surfaces
 - `cariesActiveDepth` - the ICDAS depth value staged by the caries-depth picker when a new surface is applied (not a per-surface stored value; see `cariesSeverity` for the stored per-surface field)
