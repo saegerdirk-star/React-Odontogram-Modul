@@ -54,7 +54,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "live:provision": "node --experimental-strip-types tools/live-provision.ts",
+    "live:provision": "jiti tools/live-provision.ts",
     "prototype:kfo": "vite --open '/prototypes/kfo-view/?variant=A'",
     "build": "tsc -b && vite build",
     "build:lib": "vite build --config vite.lib.config.ts",

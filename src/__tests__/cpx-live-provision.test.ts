@@ -10,12 +10,17 @@ import { execSync } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { PAYLOAD_VERSION } from "../document";
+import type { OdontogramDocument } from "../document";
+import { buildWritePlan } from "../live/writePlan";
 import {
   SCOPED_CLIENT_ID,
   SCOPED_POLICY_ID,
+  chooseLoadableDentalPatient,
   composeScopedEnv,
   desiredAccessPolicy,
   desiredClient,
+  readExistingScopedSecret,
   rejectAdminEquivalentClient,
   resolveHomeCheckout,
   resolveOperatorCredentials,
@@ -158,6 +163,68 @@ describe("odontogram-cpx AC2: scoped live-mode provision", () => {
       "POLARIS_DIR",
       join("code", "polaris", "platform"),
     )).toBe("/opt/polaris/platform");
+  });
+
+  it("does not choose a patient whose only dental Observations the codec rejects", () => {
+    const rejected = {
+      id: "dent-001",
+      resources: [
+        { resourceType: "Patient", id: "dent-001" },
+        {
+          resourceType: "Observation",
+          id: "dent-001-obs-caries",
+          meta: { profile: ["https://fhir.cognovis.de/dental-core/StructureDefinition/dental-caries-finding"] },
+          status: "final",
+          code: { text: "caries" },
+          subject: { reference: "Patient/dent-001" },
+        },
+      ],
+    };
+    const foreignOnly = {
+      id: "foreign-only",
+      resources: [
+        { resourceType: "Patient", id: "foreign-only" },
+        {
+          resourceType: "Observation",
+          id: "charly-tooth-11",
+          meta: { profile: ["https://fhir.cognovis.de/dental/StructureDefinition/dental-finding"] },
+          status: "final",
+          code: { coding: [{ system: "https://fhir.cognovis.de/dental/CodeSystem/ze-befund", code: "4198" }] },
+          subject: { reference: "Patient/foreign-only" },
+        },
+      ],
+    };
+    const chartedDocument = {
+      version: PAYLOAD_VERSION,
+      globals: {},
+      teeth: { "16": { caries: ["caries-occlusal"], cariesSeverity: { occlusal: 5 } } },
+    } as OdontogramDocument;
+    const chartedResources = buildWritePlan({
+      document: chartedDocument,
+      patientId: "charted",
+      effectiveDateTime: "2026-09-02",
+    }).ops.map((op) => op.resource as Record<string, unknown>);
+    const charted = {
+      id: "charted",
+      resources: [{ resourceType: "Patient", id: "charted" }, ...chartedResources],
+    };
+
+    expect(chooseLoadableDentalPatient([rejected, foreignOnly, charted])).toBe("charted");
+    expect(chooseLoadableDentalPatient([rejected, foreignOnly])).toBe("foreign-only");
+    expect(() => chooseLoadableDentalPatient([rejected])).toThrow(/parse|Dental Core|reject/i);
+  });
+
+  it("mints a Client secret only when GET confirms the Client is absent", () => {
+    expect(readExistingScopedSecret(200, { secret: "kept-secret" })).toEqual({
+      reuse: true,
+      secret: "kept-secret",
+    });
+    expect(readExistingScopedSecret(404, {})).toEqual({ reuse: false });
+    expect(() => readExistingScopedSecret(500, { issue: [{ diagnostics: "boom" }] }))
+      .toThrow(/500|refusing|mint|secret/i);
+    expect(() => readExistingScopedSecret(401, {})).toThrow(/401|refusing|mint|secret/i);
+    expect(() => readExistingScopedSecret(403, {})).toThrow(/403|refusing|mint|secret/i);
+    expect(() => readExistingScopedSecret(200, { id: SCOPED_CLIENT_ID })).toThrow(/secret|refusing|mint/i);
   });
 
   it("does not encode a machine-absolute home path in committed source", () => {

@@ -13,6 +13,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { assembleLoadResult, SEARCHED_RESOURCE_TYPES } from "../src/live/load";
 
 export const SCOPED_CLIENT_ID = "odontogram-live";
 export const SCOPED_POLICY_ID = "odontogram-live-dental";
@@ -29,6 +30,7 @@ const HOME_REETFURT_RELATIVE = join("code", "mvz-reetfurt");
 const HOME_POLARIS_RELATIVE = join("code", "polaris", "platform");
 const POLARIS_OPERATOR_ENV = "packages/pvs-x-isynet/.env";
 const DENTAL_OBSERVATION_PROFILE = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-tooth-state";
+const DENTAL_CARIES_PROFILE = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-caries-finding";
 const DENTAL_CONDITION_PROFILE = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-periodontal-diagnosis";
 
 export interface ScopedEnvValues {
@@ -264,21 +266,122 @@ function generateSecret(): string {
   return randomBytes(24).toString("base64url");
 }
 
+export function chooseLoadableDentalPatient(
+  candidates: Array<{ id: string; resources: Array<Record<string, unknown>> }>,
+): string {
+  let empty: string | undefined;
+  for (const candidate of candidates) {
+    const result = assembleLoadResult({ patientId: candidate.id, resources: candidate.resources });
+    if (!result.report.parsed) continue;
+    const admittedBeyondPatient = result.report.dentalCore > 1
+      || Object.keys(result.document?.teeth ?? {}).length > 0;
+    if (admittedBeyondPatient) return candidate.id;
+    if (!empty) empty = candidate.id;
+  }
+  if (empty) return empty;
+  throw new Error("No Patient whose assembled Dental Core chart parses in this Reetfurt instance");
+}
+
+export function readExistingScopedSecret(
+  status: number,
+  resource: unknown,
+): { reuse: true; secret: string } | { reuse: false } {
+  if (status === 200) {
+    const secret = cleaned((resource as { secret?: string } | null)?.secret);
+    if (secret) return { reuse: true, secret };
+    throw new Error(`GET Client/${SCOPED_CLIENT_ID} returned 200 without a secret; refusing to mint a replacement`);
+  }
+  if (status === 404) return { reuse: false };
+  throw new Error(`GET Client/${SCOPED_CLIENT_ID} failed: ${status}; refusing to mint a new secret`);
+}
+
 function subjectPatientId(resource: unknown): string | undefined {
   const reference = (resource as { subject?: { reference?: string } } | null)?.subject?.reference;
   const match = typeof reference === "string" ? reference.match(/^Patient\/([A-Za-z0-9.-]{1,64})$/) : null;
   return match?.[1];
 }
 
-async function searchFirst(
-  baseUrl: string,
+function bundleResources(resource: unknown): Array<Record<string, unknown>> {
+  const entries = (resource as { entry?: Array<{ resource?: Record<string, unknown> }> } | null)?.entry ?? [];
+  return entries.map((entry) => entry.resource).filter((item): item is Record<string, unknown> => Boolean(item));
+}
+
+function nextSearchPath(fhir: string, resource: unknown): string | undefined {
+  const href = (resource as { link?: Array<{ relation?: string; url?: string }> } | null)
+    ?.link
+    ?.find((link) => link.relation === "next")
+    ?.url;
+  if (!href) return undefined;
+  const base = fhir.replace(/\/+$/, "");
+  if (href.startsWith(base)) return href.slice(base.length) || "/";
+  try {
+    const url = new URL(href);
+    const prefix = new URL(`${base}/`);
+    if (url.origin !== prefix.origin) return undefined;
+    return `${url.pathname.replace(/\/fhir$/, "").replace(/^\/fhir/, "")}${url.search}`;
+  } catch {
+    return undefined;
+  }
+}
+
+async function searchResources(
+  fhir: string,
   credentials: OperatorCredentials,
   path: string,
-): Promise<unknown | undefined> {
-  const result = await operatorRequest(baseUrl, credentials, "GET", path);
-  if (result.status !== 200) return undefined;
-  const bundle = result.resource as { entry?: Array<{ resource?: unknown }> };
-  return bundle.entry?.find((entry) => entry.resource)?.resource;
+): Promise<Array<Record<string, unknown>>> {
+  const found: Array<Record<string, unknown>> = [];
+  let current: string | undefined = path;
+  for (let page = 0; current && page < 20; page += 1) {
+    const result = await operatorRequest(fhir, credentials, "GET", current);
+    if (result.status !== 200) break;
+    found.push(...bundleResources(result.resource));
+    current = nextSearchPath(fhir, result.resource);
+  }
+  return found;
+}
+
+async function collectCandidatePatientIds(
+  fhir: string,
+  credentials: OperatorCredentials,
+): Promise<string[]> {
+  const searches = [
+    `/Observation?_profile=${encodeURIComponent(DENTAL_OBSERVATION_PROFILE)}&_count=50&_sort=_id`,
+    `/Observation?_profile=${encodeURIComponent(DENTAL_CARIES_PROFILE)}&_count=50&_sort=_id`,
+    `/Observation?_count=50&_sort=_id`,
+    `/Condition?_profile=${encodeURIComponent(DENTAL_CONDITION_PROFILE)}&_count=20&_sort=_id`,
+    `/Condition?_count=20&_sort=_id`,
+  ];
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  for (const path of searches) {
+    for (const resource of await searchResources(fhir, credentials, path)) {
+      const id = subjectPatientId(resource);
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      ids.push(id);
+    }
+  }
+  return ids;
+}
+
+async function loadPatientCollection(
+  fhir: string,
+  credentials: OperatorCredentials,
+  patientId: string,
+): Promise<Array<Record<string, unknown>> | undefined> {
+  const patient = await operatorRequest(fhir, credentials, "GET", `/Patient/${patientId}`);
+  if (patient.status !== 200 || !patient.resource || typeof patient.resource !== "object") {
+    return undefined;
+  }
+  const resources: Array<Record<string, unknown>> = [patient.resource as Record<string, unknown>];
+  for (const resourceType of SEARCHED_RESOURCE_TYPES) {
+    resources.push(...await searchResources(
+      fhir,
+      credentials,
+      `/${resourceType}?subject=${encodeURIComponent(`Patient/${patientId}`)}&_count=200&_sort=_id`,
+    ));
+  }
+  return resources;
 }
 
 export async function discoverDentalPatient(
@@ -286,27 +389,13 @@ export async function discoverDentalPatient(
   credentials: OperatorCredentials,
 ): Promise<string> {
   const fhir = `${baseUrl.replace(/\/+$/, "")}/fhir`;
-  const observation = await searchFirst(
-    fhir,
-    credentials,
-    `/Observation?_profile=${encodeURIComponent(DENTAL_OBSERVATION_PROFILE)}&_count=5&_sort=_id`,
-  ) ?? await searchFirst(fhir, credentials, "/Observation?_count=20&_sort=_id");
-  const condition = observation
-    ? undefined
-    : await searchFirst(
-      fhir,
-      credentials,
-      `/Condition?_profile=${encodeURIComponent(DENTAL_CONDITION_PROFILE)}&_count=5&_sort=_id`,
-    ) ?? await searchFirst(fhir, credentials, "/Condition?_count=20&_sort=_id");
-  const patientId = subjectPatientId(observation) ?? subjectPatientId(condition);
-  if (!patientId) {
-    throw new Error("No Patient with dental Observation or Condition resources in this Reetfurt instance");
+  const candidateIds = await collectCandidatePatientIds(fhir, credentials);
+  const evaluated: Array<{ id: string; resources: Array<Record<string, unknown>> }> = [];
+  for (const id of candidateIds) {
+    const resources = await loadPatientCollection(fhir, credentials, id);
+    if (resources) evaluated.push({ id, resources });
   }
-  const patient = await operatorRequest(fhir, credentials, "GET", `/Patient/${patientId}`);
-  if (patient.status !== 200) {
-    throw new Error(`Dental Patient ${patientId} could not be read back from this instance`);
-  }
-  return patientId;
+  return chooseLoadableDentalPatient(evaluated);
 }
 
 export async function reconcileScopedResources(
@@ -315,15 +404,9 @@ export async function reconcileScopedResources(
 ): Promise<{ client: AidboxClientResource; policy: AidboxAccessPolicyResource; createdSecret: boolean }> {
   const fhir = `${baseUrl.replace(/\/+$/, "")}/fhir`;
   const existing = await operatorRequest(fhir, credentials, "GET", `/Client/${SCOPED_CLIENT_ID}`);
-  let secret = generateSecret();
-  let createdSecret = true;
-  if (existing.status === 200) {
-    const current = existing.resource as { secret?: string };
-    if (cleaned(current.secret)) {
-      secret = current.secret as string;
-      createdSecret = false;
-    }
-  }
+  const existingSecret = readExistingScopedSecret(existing.status, existing.resource);
+  const secret = existingSecret.reuse ? existingSecret.secret : generateSecret();
+  const createdSecret = !existingSecret.reuse;
   const client = desiredClient(secret);
   rejectAdminEquivalentClient(client);
   const writtenClient = await operatorRequest(fhir, credentials, "PUT", `/Client/${SCOPED_CLIENT_ID}`, client);

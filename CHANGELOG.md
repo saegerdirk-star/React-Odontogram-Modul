@@ -22,6 +22,9 @@
   machine-absolute home path.
 - The scoped AccessPolicy uses Aidbox-native `#/pattern` URIs and `$one-of`.
   The stored `$regex` / `$enum` shape did not grant.
+- `live:provision` writes a default Patient only when the same partition +
+  `parseDentalCoreBundle` path as live mode accepts the assembled collection.
+  A Client GET that is not 404 no longer mints a replacement secret.
 
 The praxis-store image identity recorded for this workflow is tag
 `state-e196b7bb4f12`, digest
