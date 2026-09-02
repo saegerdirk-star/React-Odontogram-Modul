@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.72.0 - 2026-08-31
+
+### Dock-Materialien (Zirkon/NEM, Kunststoff) + Inlay-Flächen für den Kostenplan
+
+- **Material-Chips:** „Komposit" heißt jetzt **Kunststoff** (Dirk), und **Zirkon**
+  (`zircon`) sowie **NEM** (`metal`) sind als eigene Chips dazugekommen.
+- **Inlay-Flächen (`inlayCoverage`), wichtig für den HKP:** ein Restaurations-
+  material auf Flächen ist ein Inlay — die Engine legt die Flächen jetzt in
+  `inlayCoverage` ab (früher verworfen), analog zu `onlayCoverage`. Damit ist
+  „Inlay n-flächig, Material X" für den Kostenplan hinterlegt. Der Weg
+  funktioniert per Maus (Material vorwählen → Flächen anklicken) und Tastatur
+  (`G od` → Gold-Inlay o+d); zusätzlich fünf Flächen-Kästchen in der Karte.
+  Schema färbt die Inlay-Flächen im Materialton. Payload 2.44 → 2.45.
+
 ## 2.71.3 - 2026-08-31
 
 ### Schema: Chart + Befund-Dock passen zusammen auf einen Laptop-Bildschirm

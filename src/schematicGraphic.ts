@@ -464,6 +464,22 @@ function occlBox(toothNo: number, s: ToothDisplayState): string {
     parts.push(`<clipPath id="${clipId}"><rect x="${x0}" y="${y0}" width="${boxW}" height="${boxH}" rx="${outerRx}"/></clipPath>`);
     parts.push(`<g clip-path="url(#${clipId})">${covered}</g>`);
   }
+  // Inlay-Flächen (Dirk 31.08.2026): dieselbe Darstellung — die Flächen, die das
+  // Inlay umfasst, im Restaurationsmaterial-Ton (für den Kostenplan hinterlegt).
+  if (s.restorationType === "inlay" && s.inlayCoverage.length) {
+    const col = CROWN_COLORS[s.restorationMaterial] ?? "#cbb26b";
+    const occlShape = `M${ix0},${iy0} h${inW} v${inH} h${-inW} Z`;
+    const surfShape: Record<string, string> = {
+      buccal: topShape, lingual: botShape, occlusal: occlShape,
+      [onLeft ? "mesial" : "distal"]: leftShape,
+      [onLeft ? "distal" : "mesial"]: rightShape,
+    };
+    const clipId = `inlayClip-${toothNo}`;
+    const covered = s.inlayCoverage.map(surf => surfShape[surf]).filter(Boolean)
+      .map(d => `<path d="${d}" fill="${col}" opacity="0.55" stroke="${INK}" stroke-width="0.8"/>`).join("");
+    parts.push(`<clipPath id="${clipId}"><rect x="${x0}" y="${y0}" width="${boxW}" height="${boxH}" rx="${outerRx}"/></clipPath>`);
+    parts.push(`<g clip-path="url(#${clipId})">${covered}</g>`);
+  }
   const oc = surfaceColor("occlusal", s);
   parts.push(`<rect x="${x0}" y="${y0}" width="${boxW}" height="${boxH}" rx="${outerRx}" fill="none" stroke="${INK}" stroke-width="1.5"/>`);
   // Centre: the molar occlusal square, or the anterior incisal-edge bar. The bar

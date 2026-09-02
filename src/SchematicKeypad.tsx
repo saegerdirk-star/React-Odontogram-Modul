@@ -30,10 +30,12 @@ import { t } from "./i18n/useI18n";
 type Btn = { label: string; token?: string; titleKey: string; mat?: boolean };
 
 const MATERIALS: { label: string; ch: string; labelKey: string }[] = [
-  { label: "Kst", ch: "K", labelKey: "schematic.keypad.mat.composite" },
+  { label: "Kst", ch: "K", labelKey: "schematic.keypad.mat.composite" },   // Kunststoff
   { label: "Am", ch: "A", labelKey: "schematic.keypad.mat.amalgam" },
   { label: "G", ch: "G", labelKey: "schematic.keypad.mat.gold" },
   { label: "Ker", ch: "E", labelKey: "schematic.keypad.mat.ceramic" },
+  { label: "Zir", ch: "Zir", labelKey: "schematic.keypad.mat.zircon" },
+  { label: "NEM", ch: "NEM", labelKey: "schematic.keypad.mat.nem" },
 ];
 // charly's five caries stages K1…K5 → cariesSeverity 2…6 (SHORTHAND_DE); the
 // K-token is what rides into the shorthand string (`cK3o`).

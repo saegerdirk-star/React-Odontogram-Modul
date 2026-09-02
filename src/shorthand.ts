@@ -62,6 +62,7 @@ export type ShorthandEdit =
   | { kind: "axis"; field: string; value: string | boolean }
   | { kind: "surfaces"; target: "filling"; surfaces: SurfaceKey[]; material: string }
   | { kind: "surfaces"; target: "caries"; surfaces: SurfaceKey[]; severity: number | null }
+  | { kind: "surfaces"; target: "inlay-coverage"; surfaces: SurfaceKey[] }
   | { kind: "denture" }
   | { kind: "reset" };
 
@@ -235,6 +236,11 @@ export const SHORTHAND_DE: Record<string, Entry> = {
   "K":    { kind: "material", material: "Kst" },
   "G":    { kind: "material", material: "G" },
   "E":    { kind: "material", material: "Ker" },
+  // Zirkon und NEM (Dirk, 31.08.2026): reine Restaurationsmaterialien, im Dock
+  // als Chip. Als MEHRSTELLIGE Token (longest-match) kollidieren sie nicht mit
+  // den Einzeltasten — "NEM" schlägt vor "E"/"M", "Zir" vor "Zst".
+  "Zir":  { kind: "material", material: "Zir" },
+  "NEM":  { kind: "material", material: "NEM" },
 };
 
 /** Keys we understand and cannot store yet, each with the bead that will give
@@ -255,7 +261,7 @@ export const SHORTHAND_PENDING: Record<string, string> = {
  *
  *  Keeping both readings on ONE key is what lets `Kst mo` be a composite
  *  filling and `Kst e` a replacement in Gradia, from the same keystroke. */
-export type MaterialKey = "Am" | "Kst" | "GIZ" | "G" | "Ker";
+export type MaterialKey = "Am" | "Kst" | "GIZ" | "G" | "Ker" | "Zir" | "NEM";
 
 export interface MaterialReading {
   /** `fillingMaterial` value, or null when this material is never a direct filling. */
@@ -266,10 +272,12 @@ export interface MaterialReading {
 
 export const MATERIALS: Record<MaterialKey, MaterialReading> = {
   Am:  { filling: "amalgam",   restoration: null },
-  Kst: { filling: "composite", restoration: "gradia" },
+  Kst: { filling: "composite", restoration: "gradia" },   // Kunststoff (Verblendung/Krone)
   GIZ: { filling: "gic",       restoration: null },
   G:   { filling: null,        restoration: "gold" },
-  Ker: { filling: null,        restoration: "emax" },
+  Ker: { filling: null,        restoration: "emax" },      // Keramik (e.max)
+  Zir: { filling: null,        restoration: "zircon" },    // Zirkon
+  NEM: { filling: null,        restoration: "metal" },     // Nicht-Edelmetall
 };
 
 // -----------------------------------------------------------------------------
@@ -346,9 +354,12 @@ export function parseShorthand(input: string, ctx: ShorthandContext = {}): Short
       edits.push({ kind: "surfaces", target: "filling", surfaces: run, material: MATERIALS[material].filling! });
     } else if(material && MATERIALS[material].restoration){
       // A material that is never a direct filling, applied to surfaces: an
-      // inlay carrying it, not a filling.
+      // inlay carrying it, not a filling. The SURFACES are the inlay's extent —
+      // stored in inlayCoverage so the cost plan can bill "inlay n-flächig"
+      // (Dirk, 31.08.2026); previously they were dropped.
       edits.push({ kind: "axis", field: "restorationType", value: "inlay" });
       edits.push({ kind: "axis", field: "restorationMaterial", value: MATERIALS[material].restoration! });
+      if(run.length > 0) edits.push({ kind: "surfaces", target: "inlay-coverage", surfaces: run });
     } else {
       // Surfaces with no material chosen. charly cannot reach this state — the
       // block always has something selected — so it is a caller error, and we

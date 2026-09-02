@@ -88,13 +88,15 @@ describe("Das Material steht VOR dem Befund und bleibt stehen", () => {
     ]);
   });
 
-  it("Gold auf Flaechen ist KEINE Fuellung, sondern ein Inlay", () => {
+  it("Gold auf Flaechen ist KEINE Fuellung, sondern ein Inlay — samt Flaechen", () => {
     // charly sagt dasselbe, ohne es auszusprechen: seine eigene Planungstabelle
-    // schreibt "Fuellung n-flaechig Gold / Teilkrone".
+    // schreibt "Fuellung n-flaechig Gold / Teilkrone". Die FLAECHEN werden als
+    // inlayCoverage mitgeschrieben (Kostenplan, Dirk 31.08.2026).
     const r = parseShorthand("G od");
     expect(r.edits).toEqual([
       { kind: "axis", field: "restorationType", value: "inlay" },
       { kind: "axis", field: "restorationMaterial", value: "gold" },
+      { kind: "surfaces", target: "inlay-coverage", surfaces: ["occlusal", "distal"] },
     ]);
   });
 
