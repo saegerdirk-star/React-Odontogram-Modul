@@ -167,6 +167,9 @@ describe("UI-2 Task 1: Periodontal settings tab", () => {
       // in, so the general -> panels -> toothDetails run the two tests above
       // pin stays intact.
       "colours",
+      // Bead odontogram-t8y: keyboard-shorthand tab, restored to the registry
+      // (Dirk 02.09.2026) and likewise appended.
+      "shorthand",
     ]);
   });
 

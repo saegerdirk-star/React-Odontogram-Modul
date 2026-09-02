@@ -18,7 +18,7 @@ import type {
 // Bead odontogram-sjr: the palette is engine state; the modal is its control
 // surface, so it reads and writes it directly rather than through SettingsState.
 import {
-  getRestorationColours, getRestorationPalette, setRestorationColour, resetRestorationColours,
+  getRestorationColours, isRestorationPaletteDefault, setRestorationColour, resetRestorationColours,
   getShorthandEnabled, setShorthandEnabled, getShorthandTabWalk, setShorthandTabWalk,
   getToothDepth, setToothDepth,
 } from "./odontogram";
@@ -44,6 +44,8 @@ export type SettingsState = {
   onToggleDark: () => void;
   toothInfo: boolean;
   onToothInfo: (value: boolean) => void;
+  befundDock?: boolean;
+  onBefundDock?: (value: boolean) => void;
   secondaryCariesMode: SecondaryCariesMode;
   onSecondaryCariesMode: (value: SecondaryCariesMode) => void;
   icdas: boolean;
@@ -265,7 +267,9 @@ function ToggleRow({
 function ColourTab({ t }: { t: (k: string, v?: Record<string, unknown>) => string }) {
   const [, bump] = useState(0);
   const colours = getRestorationColours();
-  const dirty = Object.keys(getRestorationPalette()).length > 0;
+  // "Reset to defaults" is enabled only when something differs from the fork
+  // default palette (the shipped standard), not merely when any colour is set.
+  const dirty = !isRestorationPaletteDefault();
   return (
     <>
       <p className="settings-desc">{t("settings.colours.desc")}</p>
@@ -367,6 +371,7 @@ function ShorthandTab({ t }: { t: TFn }) {
         checked={walk}
         onChange={(v) => { setShorthandTabWalk(v); bump(n => n + 1); }}
       />
+      <p className="settings-note">{t("settings.shorthand.multiSelectNote")}</p>
       <div className="settings-shorthand-table" aria-disabled={!on}>
         {gruppen.map(g => (
           <section key={g.titleKey}>
@@ -446,6 +451,13 @@ export const SETTINGS_TABS: SettingsTab[] = [
           descKey="settings.toothInfo.desc"
           checked={s.toothInfo}
           onChange={s.onToothInfo}
+        />
+        <ToggleRow
+          t={t}
+          label={t("settings.befundDock")}
+          descKey="settings.befundDock.desc"
+          checked={!!s.befundDock}
+          onChange={s.onBefundDock ?? (() => {})}
         />
         <div className="odon-settings-row odon-settings-row-disabled" aria-disabled="true">
           <div className="odon-settings-row-text">
@@ -635,6 +647,16 @@ export const SETTINGS_TABS: SettingsTab[] = [
     id: "colours",
     titleKey: "settings.tab.colours",
     render: ({ t }) => <ColourTab t={t} />,
+  },
+  {
+    // Bead odontogram-t8y: keyboard shorthand switches + the key reference
+    // table. Restored to the registry (Dirk 02.09.2026) — the ShorthandTab
+    // component existed but had been dropped from SETTINGS_TABS, so the two
+    // switches and the key list were unreachable. Appended like "colours" so
+    // the general -> panels -> toothDetails order pins stay intact.
+    id: "shorthand",
+    titleKey: "settings.tab.shorthand",
+    render: ({ t }) => <ShorthandTab t={t} />,
   },
 ];
 

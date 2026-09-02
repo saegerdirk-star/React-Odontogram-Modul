@@ -38,7 +38,7 @@ import {
 import {
   RESTORATION_PALETTE, applyRestorationPalette, getRestorationPalette as paletteValues,
   setRestorationColourValue, resetRestorationPaletteValues, setRestorationPaletteValues,
-  restorationColour, paletteEntry,
+  restorationColour, paletteEntry, restorationPaletteIsDefault as paletteIsDefault,
 } from "./restorationPalette";
 // Bead odontogram-dma: retention gating + bar-span derivation, kept DOM-free.
 import {
@@ -562,6 +562,14 @@ function defaultState(){
     // charly TEILKRONE1-4: welche FLÄCHEN die Teilkrone (Onlay) bedeckt. Leer =
     // ganze Kaufläche (das bisherige Verhalten); sonst nur die genannten Flächen.
     onlayCoverage: [] as string[],
+    // Inlay-Flächen (Dirk, 31.08.2026, wichtig für den Kostenplan): WELCHE
+    // Flächen das Inlay umfasst (MO/OD/MOD…). Ein Inlay ist eine mehrflächige
+    // Restauration, keine Füllung — die Engine muss die Flächen kennen, um es im
+    // HKP als „Inlay n-flächig" abzurechnen.
+    inlayCoverage: [] as string[],
+    // Veneer-Flächen (Dirk, 31.08.2026): welche Flächen das Veneer bedeckt
+    // (labial, ggf. inzisal/approximal) — für den Kostenplan, wie inlayCoverage.
+    veneerCoverage: [] as string[],
     crownLeakage: false, // marginal leakage on a crown/bridge restoration (SP3b Task 6)
     // charly „Wurzelkappe": eine Kappe auf einer Wurzel (Radix), z. B. als
     // Auflager einer Deckprothese. Nur auf einem Wurzelrest sinnvoll — der
@@ -5449,6 +5457,14 @@ function getStateSummary(toothNo: number): string[]{
     const surfs = state.onlayCoverage.map((sf: string) => t("surface." + sf)).join(", ");
     summary.push(t("onlayCoverage.label") + ": " + surfs);
   }
+  if(inlayCoverageAllowed(state) && Array.isArray(state.inlayCoverage) && state.inlayCoverage.length){
+    const surfs = state.inlayCoverage.map((sf: string) => t("surface." + sf)).join(", ");
+    summary.push(t("inlayCoverage.label") + ": " + surfs);
+  }
+  if(veneerCoverageAllowed(state) && Array.isArray(state.veneerCoverage) && state.veneerCoverage.length){
+    const surfs = state.veneerCoverage.map((sf: string) => t("surface." + sf)).join(", ");
+    summary.push(t("veneerCoverage.label") + ": " + surfs);
+  }
   if(state.endoResection) summary.push(t("endo.resection"));
   if(state.fissureSealing) summary.push(t("filling.fissureSealing"));
   if(state.parapulpalPin) summary.push(t("endo.parapulpalPin"));
@@ -6145,10 +6161,16 @@ function syncControlsFromState(state: Any){
   $("#rootCap").checked = !!state.rootCap;
   $("#rootCapRow").classList.toggle("hidden", !(activeTooth && rootCapAllowed(state)));
   {
-    const cov: string[] = Array.isArray(state.onlayCoverage) ? state.onlayCoverage : [];
     const caps: Record<string, string> = { mesial: "Mesial", distal: "Distal", buccal: "Buccal", lingual: "Lingual", occlusal: "Occlusal" };
-    for(const sf of Object.keys(caps)) $(`#onlayCov${caps[sf]}`).checked = cov.includes(sf);
+    const onCov: string[] = Array.isArray(state.onlayCoverage) ? state.onlayCoverage : [];
+    for(const sf of Object.keys(caps)) $(`#onlayCov${caps[sf]}`).checked = onCov.includes(sf);
     $("#onlayCoverageRow").classList.toggle("hidden", !(activeTooth && onlayCoverageAllowed(state)));
+    const inCov: string[] = Array.isArray(state.inlayCoverage) ? state.inlayCoverage : [];
+    for(const sf of Object.keys(caps)) $(`#inlayCov${caps[sf]}`).checked = inCov.includes(sf);
+    $("#inlayCoverageRow").classList.toggle("hidden", !(activeTooth && inlayCoverageAllowed(state)));
+    const veCov: string[] = Array.isArray(state.veneerCoverage) ? state.veneerCoverage : [];
+    for(const sf of Object.keys(caps)) $(`#veneerCov${caps[sf]}`).checked = veCov.includes(sf);
+    $("#veneerCoverageRow").classList.toggle("hidden", !(activeTooth && veneerCoverageAllowed(state)));
   }
   const isMilktooth = state.toothSelection === "milktooth";
   const isImplant = state.toothSelection === "implant";
@@ -6887,6 +6909,33 @@ function updateSelectionUI(){
     syncControlsFromState(defaultState());
     setControlsEnabled(false);
   }
+  const at = (activeTooth && selectedTeeth.has(activeTooth)) ? activeTooth : null;
+  for(const cb of chartSelectionObservers) { try{ cb(at); }catch{ /* observer must not break selection */ } }
+}
+
+// A React view (the Befund-Dock) subscribes here to learn the active tooth in
+// ANY view — a plain selection fires no state-change, so this is the bridge.
+const chartSelectionObservers = new Set<(toothNo: number | null) => void>();
+export function onChartSelectionChange(cb: (toothNo: number | null) => void): () => void {
+  chartSelectionObservers.add(cb);
+  return () => { chartSelectionObservers.delete(cb); };
+}
+
+// Befund-Dock (Dirk 30.08.2026): show the finding keypad BELOW the anatomical
+// chart too (not only the schematic view). Session flag, controlled by the
+// Settings switch (`settings.befundDock`).
+//
+// Defaults ON in this fork (Dirk 02.09.2026), for the same reason the shorthand
+// flags do: this is Dirk's chart and he wants charly's always-visible finding
+// dock under the odontogram. A host that wants the tall right control panel
+// instead flips it at mount with `setBefundDockEnabled(false)`. Session state
+// like `perioViewMode`, never part of the payload.
+let befundDockEnabled = true;
+export function getBefundDockEnabled(): boolean { return befundDockEnabled; }
+export function setBefundDockEnabled(on: boolean): void {
+  if(befundDockEnabled === !!on) return;
+  befundDockEnabled = !!on;
+  notifyStateChange();
 }
 
 /** Select a single tooth from a view OUTSIDE the grid — the schematic chart
@@ -7128,6 +7177,50 @@ export function toggleOnlaySurface(toothNo: number, surface: string): void {
 }
 export function getOnlayCoverage(toothNo: number): string[] {
   const v = toothState.get(toothNo)?.onlayCoverage;
+  return Array.isArray(v) ? [...v] : [];
+}
+
+/** Inlay-Flächen (Dirk, 31.08.2026): welche Flächen das Inlay umfasst. Nur auf
+ *  einem Inlay; die Engine braucht sie für den Kostenplan („Inlay n-flächig"). */
+export function inlayCoverageAllowed(state: Any): boolean {
+  return state.restorationType === "inlay";
+}
+export function toggleInlaySurface(toothNo: number, surface: string): void {
+  if(!ONLAY_SURFACES.includes(surface)) return;
+  const s = toothState.get(toothNo);
+  if(!s || !inlayCoverageAllowed(s)) return;
+  gateToothEdit(toothNo, () => {
+    const cur: string[] = Array.isArray(s.inlayCoverage) ? s.inlayCoverage : [];
+    const has = cur.includes(surface);
+    s.inlayCoverage = has ? cur.filter((x: string) => x !== surface) : [...cur, surface];
+    notifyStateChange();
+    return true;
+  });
+}
+export function getInlayCoverage(toothNo: number): string[] {
+  const v = toothState.get(toothNo)?.inlayCoverage;
+  return Array.isArray(v) ? [...v] : [];
+}
+
+/** Veneer-Flächen (Dirk, 31.08.2026): welche Flächen das Veneer bedeckt — für
+ *  den Kostenplan. Nur auf einem Veneer. */
+export function veneerCoverageAllowed(state: Any): boolean {
+  return state.restorationType === "veneer";
+}
+export function toggleVeneerSurface(toothNo: number, surface: string): void {
+  if(!ONLAY_SURFACES.includes(surface)) return;
+  const s = toothState.get(toothNo);
+  if(!s || !veneerCoverageAllowed(s)) return;
+  gateToothEdit(toothNo, () => {
+    const cur: string[] = Array.isArray(s.veneerCoverage) ? s.veneerCoverage : [];
+    const has = cur.includes(surface);
+    s.veneerCoverage = has ? cur.filter((x: string) => x !== surface) : [...cur, surface];
+    notifyStateChange();
+    return true;
+  });
+}
+export function getVeneerCoverage(toothNo: number): string[] {
+  const v = toothState.get(toothNo)?.veneerCoverage;
   return Array.isArray(v) ? [...v] : [];
 }
 
@@ -8070,6 +8163,25 @@ let shorthandBuffer = "";
 export function getShorthandMaterial(): MaterialKey | null { return shorthandMaterial; }
 export function getShorthandBuffer(): string { return shorthandBuffer; }
 
+// The Befund-Dock's material chip and the keyboard's material MODE are one and
+// the same (Dirk, 31.08.2026): arming a material in the dock arms it for the
+// keyboard too, so typing `k`/`b`/… then applies the finding IN that material —
+// in Status and, above all, in Plan mode (where the work is entered). The dock
+// keys are single letters (K/A/G/E); the mode stores charly's MaterialKey.
+const DOCK_CHAR_TO_MATERIAL: Record<string, MaterialKey> = { A: "Am", K: "Kst", G: "G", E: "Ker", Zir: "Zir", NEM: "NEM" };
+const MATERIAL_TO_DOCK_CHAR: Record<string, string> = { Am: "A", Kst: "K", G: "G", Ker: "E", Zir: "Zir", NEM: "NEM" };
+export function setShorthandMaterial(ch: string | null): void {
+  const next = (ch && DOCK_CHAR_TO_MATERIAL[ch]) ? DOCK_CHAR_TO_MATERIAL[ch] : null;
+  if(shorthandMaterial === next) return;
+  shorthandMaterial = next;
+  syncShorthandReadout();
+  notifyStateChange();   // so the dock chip mirrors a keyboard-armed material
+}
+/** The armed material as a dock chip char (K/A/G/E), or null. */
+export function getShorthandMaterialChar(): string | null {
+  return shorthandMaterial ? (MATERIAL_TO_DOCK_CHAR[shorthandMaterial] ?? null) : null;
+}
+
 function shorthandReadoutEl(): HTMLElement | null {
   return document.getElementById("shorthandBuffer");
 }
@@ -8153,6 +8265,20 @@ function writeShorthandEdit(s: Any, edit: ShorthandEdit, toothNo: number): void 
       s.caries.add(`caries-${surf}`);
       if(edit.severity !== null) s.cariesSeverity.set(surf, edit.severity);
     }
+    return;
+  }
+  if(edit.kind === "surfaces" && edit.target === "restoration-coverage"){
+    // Surfaces of a partial restoration (restoration material + surfaces): they
+    // are the restoration's extent, stored for the cost plan (Dirk, 31.08.2026).
+    // Which coverage depends on what the tooth already is — a veneer stays a
+    // veneer, an onlay an onlay; anything else becomes an inlay.
+    const rt = s.restorationType;
+    const field = rt === "veneer" ? "veneerCoverage" : rt === "onlay" ? "onlayCoverage" : "inlayCoverage";
+    if(rt !== "veneer" && rt !== "onlay" && rt !== "inlay") s.restorationType = "inlay";
+    const cur: string[] = Array.isArray(s[field]) ? s[field] : [];
+    const set = new Set<string>(cur);
+    for(const surf of edit.surfaces) set.add(surf);
+    s[field] = [...set];
     return;
   }
 }
@@ -8746,6 +8872,8 @@ function serializeState(s: Any){
     ...(s.occlusalFunction && s.occlusalFunction !== "none" ? { occlusalFunction: s.occlusalFunction } : {}),
     ...(s.rootCap ? { rootCap: true } : {}),
     ...(Array.isArray(s.onlayCoverage) && s.onlayCoverage.length ? { onlayCoverage: [...s.onlayCoverage] } : {}),
+    ...(Array.isArray(s.inlayCoverage) && s.inlayCoverage.length ? { inlayCoverage: [...s.inlayCoverage] } : {}),
+    ...(Array.isArray(s.veneerCoverage) && s.veneerCoverage.length ? { veneerCoverage: [...s.veneerCoverage] } : {}),
     prosthesis: s.prosthesis,
     mobility: s.mobility,
     toothSubstrate: s.toothSubstrate,
@@ -9388,6 +9516,12 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   s.onlayCoverage = Array.isArray(raw.onlayCoverage)    // Teilkrone pro Fläche
     ? raw.onlayCoverage.filter((x: unknown): x is string => typeof x === "string" && ONLAY_SURFACES.includes(x))
     : [];
+  s.inlayCoverage = Array.isArray(raw.inlayCoverage)    // Inlay-Flächen
+    ? raw.inlayCoverage.filter((x: unknown): x is string => typeof x === "string" && ONLAY_SURFACES.includes(x))
+    : [];
+  s.veneerCoverage = Array.isArray(raw.veneerCoverage)  // Veneer-Flächen
+    ? raw.veneerCoverage.filter((x: unknown): x is string => typeof x === "string" && ONLAY_SURFACES.includes(x))
+    : [];
   s.prosthesis = validateEnum(raw.prosthesis, VALID_PROSTHESIS, "none");
   s.mobility = validateEnum(raw.mobility, VALID_MOBILITY, s.mobility);
   s.toothSubstrate = validateEnum(raw.toothSubstrate, VALID_TOOTH_SUBSTRATE, s.toothSubstrate);
@@ -9978,12 +10112,17 @@ export function setRestorationColour(key: string, hex: string | null): void {
   notifyStateChange();
 }
 
-/** Drop every choice; the chart returns to the shipped palette. */
+/** Restore the fork default palette (Dirk's colours); the chart returns to the
+ *  standard set. */
 export function resetRestorationColours(): void {
   if(!resetRestorationPaletteValues()) return;
   syncRestorationPalette();
   notifyStateChange();
 }
+
+/** Whether the palette equals the fork default — nothing customised beyond it.
+ *  Drives the "Reset to defaults" button's enabled state. */
+export function isRestorationPaletteDefault(): boolean { return paletteIsDefault(); }
 
 /** The chosen colours, for a host that persists practice preferences. */
 export function getRestorationPalette(): Record<string, string> { return paletteValues(); }
@@ -10862,6 +11001,18 @@ export function getCantilever(toothNo: number): boolean {
  *  liest nur Zustand, aendert nichts, zeichnet nichts. */
 export function getBridgeSpanChecks(): BridgeSpanCheck[] {
   return checkBridgeSpans(bridgeStateFor);
+}
+
+/** Kostenplan-relevante Zusammenfassung der Brücken im aktiven Chart (Dirk,
+ *  31.08.2026): Anzahl der SPANNEN, GLIEDER (pontics) und PFEILER (abutments) —
+ *  reine Ableitung. Die FESTZUSCHUSS-Berechnung gehört NICHT hierher, sondern in
+ *  die hkp-engine, die diese Struktur (via FHIR) konsumiert; die Library bleibt
+ *  abrechnungs-agnostisch. */
+export function getBridgeSummary(): { spans: number; pontics: number; abutments: number } {
+  const checks = getBridgeSpanChecks();
+  const abut = new Set<number>(), pont = new Set<number>();
+  for(const c of checks){ c.abutments.forEach(a => abut.add(a)); c.pontics.forEach(p => pont.add(p)); }
+  return { spans: checks.length, pontics: pont.size, abutments: abut.size };
 }
 
 /** Ob dieser Zahn zu einer Spanne gehoert, die einen Hinweis verdient - ein
@@ -14433,6 +14584,16 @@ function wireControls(){
       for(const toothNo of betroffen) toggleOnlaySurface(toothNo, sf);
       nachZeichnen(betroffen);
     });
+    $(`#inlayCov${cap}`).addEventListener("change", ()=>{
+      const betroffen = Array.from(selectedTeeth) as number[];
+      for(const toothNo of betroffen) toggleInlaySurface(toothNo, sf);
+      nachZeichnen(betroffen);
+    });
+    $(`#veneerCov${cap}`).addEventListener("change", ()=>{
+      const betroffen = Array.from(selectedTeeth) as number[];
+      for(const toothNo of betroffen) toggleVeneerSurface(toothNo, sf);
+      nachZeichnen(betroffen);
+    });
   }
 
   // Missing closed
@@ -14955,6 +15116,10 @@ export async function initOdontogram(){
   wireControls();
   await buildGrid(token);
   if(!initialized || token !== initToken) return;
+  // Paint the (fork default) restoration palette onto the freshly built grid.
+  // Upstream shipped an empty palette, so init wrote nothing; this fork seeds
+  // Dirk's colours, which must be pushed onto the cascade once #toothGrid exists.
+  syncRestorationPalette();
   if(!i18nUnsubscribe){
     i18nUnsubscribe = onI18nChange(()=>refreshLocalizedContent());
   }
@@ -15138,7 +15303,7 @@ export type ToothDisplayState = {
   crownFractureType: string;
   crownMarginType: string; crownMarginSide: string;
   splinted: boolean; occlusalSplint: boolean; occlusalFunction: string;
-  rootCap: boolean; onlayCoverage: string[];
+  rootCap: boolean; onlayCoverage: string[]; inlayCoverage: string[]; veneerCoverage: string[];
 };
 
 export function getToothDisplayState(toothNo: number): ToothDisplayState {
@@ -15193,6 +15358,8 @@ export function getToothDisplayState(toothNo: number): ToothDisplayState {
     occlusalFunction: String(s.occlusalFunction ?? "none"),
     rootCap: !!s.rootCap,
     onlayCoverage: Array.isArray(s.onlayCoverage) ? [...s.onlayCoverage] : [],
+    inlayCoverage: Array.isArray(s.inlayCoverage) ? [...s.inlayCoverage] : [],
+    veneerCoverage: Array.isArray(s.veneerCoverage) ? [...s.veneerCoverage] : [],
   };
 }
 
@@ -15532,6 +15699,11 @@ export function getOdontogramSummary(): OdontogramSummary {
   const uneruptedList = unerupted.length
     ? t("toothInfo.uneruptedList", { count: unerupted.length, list: unerupted.map(lbl).join(", ") })
     : null;
+
+  // Brücken-Kennzahlen für den Kostenplan (Dirk, 31.08.2026): Spannen / Glieder /
+  // Pfeiler, oben in der Prothetik-Sektion. Die Festzuschuss-Rechnung selbst
+  // liegt in der hkp-engine, nicht hier.
+  { const b = getBridgeSummary(); if(b.spans > 0) prosthetics.unshift(t("bridge.summary", { spans: b.spans, pontics: b.pontics, abutments: b.abutments })); }
 
   const sections: OdontogramSummarySection[] = [
     { key: "caries", heading: t("toothInfo.caries"), items: caries, emptyText: t("toothInfo.cariesEmpty") },

@@ -46,6 +46,192 @@
 
 Payload **2.44 -> 2.46**. Package **2.68.0 -> 3.0.0**.
 
+## 2.72.6 - 2026-09-02
+
+### Restaurations-Farbpalette: Dirks Palette ist der Standard
+
+Die ausgelieferte Standard-Palette sind jetzt Dirks eigene Restaurationsfarben
+(Cognovis-Fork): u.a. Metall als Schiefer-Graublau, Teleskop grün, Teleskop
+innen Taupe, Glasionomer als Ocker/Braun, provisorische Füllung graugrün,
+Prothesenzahn kräftiger, Gold/Zirkon/emax leicht angepasst. Jeder kann in
+Einstellungen → Colours weiterhin jede Farbe ändern; „Reset to defaults" führt
+jetzt auf DIESE Palette. Reine Session-/Praxis-Präferenz, nicht Teil der Payload
+— ein anderswo geöffneter Fall rendert in DEREN Praxisfarben. Eine wirklich
+leere Palette (`setRestorationPalette({})`) bleibt byte-identisch, sodass die
+Paritäts-Fingerprints unverändert sind.
+
+## 2.72.5 - 2026-09-02
+
+### Kürzel-Einstellungen wiederhergestellt
+
+- Der Kürzel-Tab (Tastatur-Kürzel) war aus der Einstellungs-Registry gefallen —
+  die Komponente existierte, war aber nicht eingehängt, sodass die beiden
+  Schalter (Kürzel-Eingabe, Tab-Lauf) und die Tastenübersicht unerreichbar
+  waren. Wieder als letzter Tab eingehängt.
+- Dabei einen Altfehler in den Kürzel-Texten behoben: die Platzhalter
+  `{m}`/`{n}`/`{list}` nutzten einfache statt doppelter geschweifter Klammern
+  und wurden nie ersetzt — die Material-Zeilen zeigten „Material {m}" statt des
+  Materials. In allen zwölf Sprachen korrigiert.
+- Neue Hinweiszeile im Kürzel-Tab: **mehrere Zähne markieren geht immer**,
+  unabhängig von den Kürzel-Schaltern — Ziehen über die Zähne oder
+  Shift/Strg-Klick; ein Tastendruck wirkt dann auf alle markierten Zähne. Die
+  Mehrfachauswahl hängt nur an `readOnly`, nie an der Kürzel-Eingabe.
+
+## 2.72.4 - 2026-09-02
+
+### Befund-Dock ist Fork-Voreinstellung
+
+Das anatomische Befund-Dock (Befund-Tastenfeld unter dem verkleinerten
+Odontogramm) ist in diesem Fork jetzt standardmäßig AN — aus demselben Grund wie
+die Kürzel-Schalter: Dirks Praxis will charlys stets sichtbare Befund-Bedienung.
+Der Schalter dafür sitzt in Einstellungen → Allgemein („Befund-Dock
+(anatomisch)"); ein Host, der lieber die rechte Bedienspalte behält, legt ihn
+beim Mount mit `setBefundDockEnabled(false)` um. Session-Zustand wie
+`perioViewMode`, nicht Teil der Payload — Payload, SVG-Fingerprint und FHIR
+bleiben unverändert.
+
+## 2.72.3 - 2026-09-02
+
+### Befund-Dock: Hover-Tooltips + Details-Schublade
+
+- Jede Dock-Taste erklärt sich beim Überfahren mit einer gestylten Hover-Karte
+  (`data-tip`) statt des nativen, verzögerten Titel-Tooltips; die Erklärung
+  bleibt für Screenreader als `aria-label` erhalten.
+- Neuer „Details"-Umschalter im anatomischen Befund-Dock blendet das volle
+  Bedienpanel als Band unter dem Dock ein (die selten gebrauchten Optionen) —
+  gespiegelt vom „Alle Optionen"-Schalter der schematischen Ansicht. Rein
+  session-lokal, keine Payload-/Render-/FHIR-Änderung.
+
+## 2.72.2 - 2026-08-31
+
+### Brücken-Kennzahlen (Spannen/Glieder/Pfeiler) für den Kostenplan
+
+Neuer Getter `getBridgeSummary()` (Anzahl Spannen/Glieder/Pfeiler, abgeleitet aus
+`getBridgeSpanChecks`) und eine Brücken-Zeile in der Prothetik-Sektion der
+Zusammenfassung. Die hkp-engine kann die Struktur damit abgreifen. Die
+FESTZUSCHUSS-Berechnung selbst bleibt bewusst außerhalb dieser Library (in der
+hkp-engine) — die Bibliothek ist abrechnungs-agnostisch (Bead angelegt).
+
+## 2.72.1 - 2026-08-31
+
+### Veneer-Flächen + kontextabhängige Restaurationsflächen
+
+Wie das Inlay braucht auch das **Veneer** seine Flächen für den Kostenplan: neues
+`veneerCoverage`. Und die „Material + Flächen"-Geste ist jetzt kontextabhängig —
+die Flächen landen in der Coverage der VORHANDENEN Teilrestauration (Veneer bleibt
+Veneer, Onlay bleibt Onlay); nur ein Zahn ohne solche Restauration wird zum Inlay.
+Steuerung (Flächen-Kästchen), Schema-Färbung und Summary analog zum Inlay.
+Payload 2.45 → 2.46.
+
+## 2.72.0 - 2026-08-31
+
+### Dock-Materialien (Zirkon/NEM, Kunststoff) + Inlay-Flächen für den Kostenplan
+
+- **Material-Chips:** „Komposit" heißt jetzt **Kunststoff** (Dirk), und **Zirkon**
+  (`zircon`) sowie **NEM** (`metal`) sind als eigene Chips dazugekommen.
+- **Inlay-Flächen (`inlayCoverage`), wichtig für den HKP:** ein Restaurations-
+  material auf Flächen ist ein Inlay — die Engine legt die Flächen jetzt in
+  `inlayCoverage` ab (früher verworfen), analog zu `onlayCoverage`. Damit ist
+  „Inlay n-flächig, Material X" für den Kostenplan hinterlegt. Der Weg
+  funktioniert per Maus (Material vorwählen → Flächen anklicken) und Tastatur
+  (`G od` → Gold-Inlay o+d); zusätzlich fünf Flächen-Kästchen in der Karte.
+  Schema färbt die Inlay-Flächen im Materialton. Payload 2.44 → 2.45.
+
+## 2.71.3 - 2026-08-31
+
+### Schema: Chart + Befund-Dock passen zusammen auf einen Laptop-Bildschirm
+
+Die Schema-SVG hat kein festes width-Attribut mehr; die Größe wird per CSS durch
+zwei Grenzen gesetzt — max-width (72%) UND max-height (40vh). Damit wird der
+Chart an die Fensterhöhe gekoppelt, sodass auf einem MacBook das komplette
+Zahnschema UND die ganze Befundeingabe (Dock) zusammen ohne Scrollen sichtbar
+sind (Dirk, 31.08.2026). Dock etwas kompakter (Abstände).
+
+## 2.71.2 - 2026-08-31
+
+### Schema: Zähne kompakter (mind. 25% kleiner)
+
+Die Schema-Darstellung füllt nicht mehr die volle Breite, sondern 72% davon
+(zentriert) — die Zähne sind damit unabhängig von der Fensterbreite verlässlich
+~28% kleiner (Dirk, 31.08.2026). Die frühere Breiten-Kappe (1680) wieder auf
+1400 zurückgenommen.
+
+## 2.71.1 - 2026-08-31
+
+### Schema: ersetzte Zähne (herausnehmbare Prothese) werden gezeichnet
+
+Eine Teleskop-/Modellguss-/Vollprothese ersetzt fehlende Zähne; im Schema wurden
+diese ersetzten Zähne gar nicht angezeigt (nur als fehlend-Geist), obwohl die
+anatomische Ansicht sie zeichnet (Dirk, 31.08.2026). Jetzt rendert das Schema
+einen fehlenden Zahn mit `prosthesis` removable-partial/full als Prothesenzahn —
+schwebende Krone in Prothesenfarbe, Draufsicht als gefüllter Kasten, Badge „e".
+
+## 2.71.0 - 2026-08-31
+
+### Befund-Dock: vorgewähltes Material gilt auch für die Tastatur (Status + Plan)
+
+Dirk, 31.08.2026: ist im Dock ein Material vorgewählt, soll die Eingabe der
+Befundtaste (`k`, `b`, …) den Zahn direkt in diesem Material versorgen — vor allem
+in der PLANUNG, wo normalerweise eingetragen wird (der Befund kommt aus dem PVS).
+
+Das Dock-Material-Chip und der Tastatur-Kürzel-Modus (`shorthandMaterial`) sind
+jetzt EINS: `setShorthandMaterial`/`getShorthandMaterialChar` (Char K/A/G/E ↔
+`MaterialKey`); ein Klick auf das Chip armt beides, und ein per Tastatur gewähltes
+Material spiegelt sich zurück aufs Chip. Da alles über `applyShorthand` →
+`applyToSelected` → DS-1-Gate läuft, wirkt es unverändert in Status UND Plan.
+`k` ohne Material zeigt weiter „Choose a material first".
+
+## 2.70.2 - 2026-08-31
+
+### Befund-Dock: Geschiebe (attachment) bei Retention ergänzt
+
+Im Retention-Dock fehlte das Geschiebe — jetzt Kl · Gesch · Steg. `attachment`
+ist wie gehabt auf Krone/Brücke gegated.
+
+## 2.70.1 - 2026-08-31
+
+### Befund-Dock: Zahninfo unter das Dock, auch im Schema
+
+Die „Tooth information"-Box saß zwischen Chart und Dock (Dirk, 31.08.2026: stört)
+— sie steht jetzt UNTER dem Befund-Dock. Und die Anordnung (Chart → Dock →
+Zahninfo) gilt jetzt auch in der Schema-Ansicht, wo bisher keine Zahninfo-Box
+war. Reine Umsortierung im Layout.
+
+## 2.70.0 - 2026-08-31
+
+### Befund-Dock (Schritt 2): anatomische Ansicht + größere Schema-Zähne
+
+Zweiter Schritt des Layout-Umbaus (Dirk, 31.08.2026):
+
+- **Anatomisches Befund-Dock** (hinter einem Settings-Schalter „Befund-Dock
+  (anatomisch)", Default AUS): in der Odontogramm-Ansicht sitzt das Befund-Dock
+  jetzt UNTER dem Zahngitter statt der hohen rechten Steuerspalte — genau wie im
+  Schema, aber mit deinen gezeichneten Zähnen. Das Zahngitter wird verkleinert
+  (`zoom` 0.82), damit Chart + Dock ohne Scrollen zusammen im Blick sind; die
+  Overlays (Zahnfleisch, Brücke, Retention) sind Kinder von `#toothGrid` und
+  skalieren mit, bleiben also deckungsgleich. Neuer Auswahl-Beobachter
+  (`onChartSelectionChange`) speist den aktiven Zahn ins Dock — dieselbe
+  Bedienlogik (`applyShorthand` + DS-1-Gate).
+- **Schema-Zähne ~20 % größer**: die Breiten-Kappe der Schema-Darstellung von
+  1400 auf 1680 px angehoben (größere Zähne auf breiten Monitoren).
+
+Reine Präsentation/Bedienung — kein State/Payload/FHIR, Parität byte-identisch.
+Die „Details"-Schublade für den langen Schwanz seltener Optionen folgt als
+nächster Schritt.
+
+## 2.69.0 - 2026-08-31
+
+### Befund-Dock (Schritt 1): das Schema-Tastenfeld als Karten-Dock
+
+Erster Schritt des Layout-Umbaus (Dirk, 30.08.2026 — Bedienung wie in charly,
+alle Schalter unter dem Schema in Reichweite): das immer sichtbare Schema-
+Tastenfeld ist von einer Zeilenliste zu einem **gruppierten Karten-Dock** umgebaut
+— Karten Status / Restauration & Material / Flächen & Karies / Endo & Wurzel /
+Retention / Pulpa, in einem responsiven Raster, jede Taste mit Tooltip. Reine
+Präsentation (kein neues Verhalten, gleiche `applyShorthand`-Pfade). Nächster
+Schritt: dasselbe Dock unter der anatomischen Ansicht (hinter einem Schalter),
+mit verkleinertem Zahngitter und einer „Details"-Schublade für Selteneres.
+
 ## 2.68.0 - 2026-08-30
 
 ### Schema: dieselbe Bedienung wie anatomisch — Zähne markieren + Flächen anklicken

@@ -2,7 +2,7 @@
 // Created by Zoltan Dul (https://github.com/ZoliQua) 2025-2026
 
 import { useEffect, useRef, useState } from "react";
-import { destroyOdontogram, initOdontogram, setNumberingSystem, clearSelection, setOcclusalVisible, setWisdomVisible, setShowBase, setHealthyPulpVisible, registerPlugins, setPluginState, getPluginState, getToothStateSummary, getOdontogramSummary, formatToothLabel, onStateChange, setReadOnly, getReadOnly, setNotesEnabled, getNotesEnabled, setIcdasEnabled, getIcdasEnabled, setPulpDetailLevel, getPulpDetailLevel, setSecondaryCariesMode, getSecondaryCariesMode, setRootCariesMode, getRootCariesMode, setRadiographicDepthMode, getRadiographicDepthMode, setCariesDepthEnabled, getCariesDepthEnabled, setWearDetailLevel, getWearDetailLevel, setDiscolorationDetailLevel, getDiscolorationDetailLevel, setSurfaceNotation, getSurfaceNotation, exportFhir, exportImage, exportSvg, setImportFormat, openPerioOverlay, closePerioOverlay, isPerioOverlayOpen, getPerioViewMode, setPerioViewMode, getPerioRowVisibility, setPerioRowVisibility, getPerioIndexNameMode, setPerioIndexNameMode, isDualStateConfirmPending, acceptDualStateConfirm, cancelDualStateConfirm, hasAnyPerioData, getImportAsBaseline, setImportAsBaseline, getChartMode, setChartMode, getStatusChart, getPlanChart, setPlanChart, getPlanChanges, exportStatus, importStatus, exportPdf, exportPerioImage, exportPerioSvg, selectToothInChart, setChartSelection, applyShorthand } from "./odontogram";
+import { destroyOdontogram, initOdontogram, setNumberingSystem, clearSelection, setOcclusalVisible, setWisdomVisible, setShowBase, setHealthyPulpVisible, registerPlugins, setPluginState, getPluginState, getToothStateSummary, getOdontogramSummary, formatToothLabel, onStateChange, setReadOnly, getReadOnly, setNotesEnabled, getNotesEnabled, setIcdasEnabled, getIcdasEnabled, setPulpDetailLevel, getPulpDetailLevel, setSecondaryCariesMode, getSecondaryCariesMode, setRootCariesMode, getRootCariesMode, setRadiographicDepthMode, getRadiographicDepthMode, setCariesDepthEnabled, getCariesDepthEnabled, setWearDetailLevel, getWearDetailLevel, setDiscolorationDetailLevel, getDiscolorationDetailLevel, setSurfaceNotation, getSurfaceNotation, exportFhir, exportImage, exportSvg, setImportFormat, openPerioOverlay, closePerioOverlay, isPerioOverlayOpen, getPerioViewMode, setPerioViewMode, getPerioRowVisibility, setPerioRowVisibility, getPerioIndexNameMode, setPerioIndexNameMode, isDualStateConfirmPending, acceptDualStateConfirm, cancelDualStateConfirm, hasAnyPerioData, getImportAsBaseline, setImportAsBaseline, getChartMode, setChartMode, getStatusChart, getPlanChart, setPlanChart, getPlanChanges, exportStatus, importStatus, exportPdf, exportPerioImage, exportPerioSvg, selectToothInChart, setChartSelection, applyShorthand, onChartSelectionChange, getBefundDockEnabled, setBefundDockEnabled, setShorthandMaterial, getShorthandMaterialChar } from "./odontogram";
 export { clearSelection, setOcclusalVisible, setWisdomVisible, setShowBase, setHealthyPulpVisible, registerPlugins, setPluginState, getPluginState, getToothStateSummary, getOdontogramSummary, formatToothLabel, onStateChange, setReadOnly, getReadOnly, setNotesEnabled, getNotesEnabled, setIcdasEnabled, getIcdasEnabled, setPulpDetailLevel, getPulpDetailLevel, setSecondaryCariesMode, getSecondaryCariesMode, setRootCariesMode, getRootCariesMode, setRadiographicDepthMode, getRadiographicDepthMode, setCariesDepthEnabled, getCariesDepthEnabled, setWearDetailLevel, getWearDetailLevel, setDiscolorationDetailLevel, getDiscolorationDetailLevel, setSurfaceNotation, getSurfaceNotation, exportFhir, exportImage, exportSvg, setImportFormat, getPerioViewMode, setPerioViewMode, getPerioRowVisibility, setPerioRowVisibility, getPerioIndexNameMode, setPerioIndexNameMode, isDualStateConfirmPending, acceptDualStateConfirm, cancelDualStateConfirm, getImportAsBaseline, setImportAsBaseline, initOdontogram, destroyOdontogram, setNumberingSystem, getChartMode, setChartMode, getStatusChart, getPlanChart, setPlanChart, getPlanChanges, openPerioOverlay, closePerioOverlay, isPerioOverlayOpen, hasAnyPerioData, exportStatus, importStatus, exportPdf, exportPerioImage, exportPerioSvg };
 export { default as PerioChart } from "./PerioChart";
 // Bead odontogram-3l1: the controlled-integration surface (UI-domain document
@@ -344,6 +344,10 @@ export default function App({
   // flipped by the "All options" toggle in the schematic header, reveals them.
   // Session-only UI state, never touches the case.
   const [schematicShowAll, setSchematicShowAll] = useState<boolean>(false);
+  // Anatomical Befund-Dock "Details" drawer: reveals the full card panel below
+  // the dock (the long tail of rare options), mirroring the schematic view's
+  // "All options" toggle. Session-only.
+  const [dockShowAll, setDockShowAll] = useState<boolean>(false);
   // The tooth picked in the schematic view. Held here (not read from the engine)
   // so BOTH the chart (highlight) and the keypad (enable/label) react to a click
   // — a plain selection does not fire onStateChange, so the keypad can't learn
@@ -364,8 +368,24 @@ export default function App({
   // graded caries; neither → default caries. Mutually exclusive.
   const [armedMat, setArmedMat] = useState<string | null>(null);
   const [armedStage, setArmedStage] = useState<string | null>(null);
-  const onArmMat = (ch: string) => { setArmedMat((m) => (m === ch ? null : ch)); setArmedStage(null); };
-  const onArmStage = (k: string) => { setArmedStage((s) => (s === k ? null : k)); setArmedMat(null); };
+  // The material chip drives BOTH the mouse (dock/surface clicks) AND the
+  // keyboard shorthand mode (setShorthandMaterial), so a preselected material is
+  // applied when the finding key (k/b/…) is typed — in Status and Plan.
+  const onArmMat = (ch: string) => {
+    const next = armedMat === ch ? null : ch;
+    setArmedMat(next); setArmedStage(null); setShorthandMaterial(next);
+  };
+  const onArmStage = (k: string) => {
+    const next = armedStage === k ? null : k;
+    setArmedStage(next); setArmedMat(null); setShorthandMaterial(null);
+  };
+  // Mirror a keyboard-armed material back onto the dock chip, so the two stay in
+  // sync whichever way the material was chosen.
+  useEffect(() => {
+    const refresh = () => { const ch = getShorthandMaterialChar(); setArmedMat(ch); if (ch) setArmedStage(null); };
+    refresh();
+    return onStateChange(refresh);
+  }, []);
   // Click on an occlusal surface zone → enter a finding there. Ensure the clicked
   // tooth is in the selection first (so the edit lands on it), then apply the
   // same shorthand token the keypad's surface keys emit.
@@ -373,6 +393,14 @@ export default function App({
     if (!schematicSelection.includes(tn)) { setChartSelection([tn], tn); setSchematicSelection([tn]); setSchematicTooth(tn); }
     applyShorthand(armedMat ? armedMat + ch : "c" + (armedStage ?? "") + ch);
   };
+
+  // Befund-Dock in the ANATOMICAL view (Dirk 30.08.2026): the finding keypad
+  // below the odontogram, not only in the schematic view. Behind a Settings
+  // flag while it matures. `anatTooth` mirrors the grid's active tooth via the
+  // engine's selection observer (a plain selection fires no onStateChange).
+  const [dockEnabled, setDockEnabled] = useState<boolean>(() => getBefundDockEnabled());
+  const [anatTooth, setAnatTooth] = useState<number | null>(null);
+  useEffect(() => onChartSelectionChange(setAnatTooth), []);
   // UI-2 Task 1: mirror the two Settings -> Periodontal tab module flags into
   // React state, same precedent as `viewMode` mirroring `perioViewMode` above
   // — kept in sync via the shared `onStateChange` subscription so a host
@@ -395,6 +423,7 @@ export default function App({
   // when the periodontal chart lives in a dialog.
   const isOrthoView = activeView === "ortho";
   const isSchematicView = activeView === "schematic";
+  const isOdontogramView = activeView === "odontogram";
   // DS-1 Task 2: mirror the module-level "a status edit on a planned tooth is
   // awaiting confirmation" flag into React state via the existing onStateChange
   // subscription (requestDualStateConfirm / accept / cancel all notify), so the
@@ -627,6 +656,13 @@ export default function App({
     return onStateChange(refresh);
   }, []);
 
+  // Mirror the Befund-Dock flag into React state (setBefundDockEnabled notifies).
+  useEffect(() => {
+    const refresh = () => setDockEnabled(getBefundDockEnabled());
+    refresh();
+    return onStateChange(refresh);
+  }, []);
+
   // UI-2 Task 1: mirror the module-level perioRowVisibility/perioIndexNameMode
   // flags into React state the same way perioViewMode is mirrored above.
   useEffect(() => {
@@ -675,6 +711,8 @@ export default function App({
     onToggleDark: toggleDark,
     toothInfo: toothInfoOn,
     onToothInfo: (v) => setToothInfoOn(v),
+    befundDock: dockEnabled,
+    onBefundDock: (v) => setBefundDockEnabled(v),
     secondaryCariesMode: secondaryMode,
     onSecondaryCariesMode: (v) => { setSecondaryMode(v); setSecondaryCariesMode(v); },
     icdas: icdasOn,
@@ -725,6 +763,54 @@ export default function App({
       />
     );
   }
+
+  // The whole-mouth "Tooth information" read-back. Placed BELOW the Befund-Dock
+  // (Dirk 31.08.2026) rather than between chart and dock, and shared by the
+  // anatomical dock-mode and the schematic view.
+  const toothInfoCard = (toothInfoOn && summary) ? (
+    <section className="tooth-info card" aria-label={t("toothInfo.title")}>
+      <div className="card-title">{t("toothInfo.title")}</div>
+      <p className="tooth-info-overview">{summary.overview}</p>
+      {summary.permanentList && <p className="tooth-info-list">{summary.permanentList}</p>}
+      {summary.missingList && <p className="tooth-info-list">{summary.missingList}</p>}
+      {summary.individualNotes && (
+        <div id="toothInfoNotes" className="tooth-info-notes">
+          <span className="tooth-info-heading">{summary.individualNotes.heading}:</span>
+          {summary.individualNotes.items.map((n, i) => (
+            <p key={i} className="tooth-info-note-item">{n}</p>
+          ))}
+        </div>
+      )}
+      {summary.sections.map((sec) => (
+        <p key={sec.key} className="tooth-info-line">
+          <span className="tooth-info-heading">{sec.heading}:</span>{" "}
+          {sec.items.length
+            ? sec.items.join(", ")
+            : <span className="tooth-info-empty">{sec.emptyText}</span>}
+        </p>
+      ))}
+      {summary.plannedChanges && summary.plannedChanges.length > 0 && (
+        <div id="plannedChangesBox" className="planned-changes">
+          <div className="tooth-info-heading">{t("toothInfo.plannedChanges")}</div>
+          {summary.plannedChanges.map((c, i) => (
+            <p key={`${c.toothNo}-${c.axis}-${i}`} className="planned-changes-item">
+              {formatToothLabel(c.toothNo)}: {t(`planChange.axis.${c.axis}`)} {c.from} → {c.to}
+            </p>
+          ))}
+        </div>
+      )}
+      {summary.implants && (
+        <p className="tooth-info-line">
+          <span className="tooth-info-heading">{summary.implants.heading}:</span>{" "}
+          {summary.implants.text}
+        </p>
+      )}
+      <p className="tooth-info-line">
+        <span className="tooth-info-heading">{summary.periodontalTitle}:</span>{" "}
+        {summary.periodontalText}
+      </p>
+    </section>
+  ) : null;
 
   return (
     <div ref={themeRootRef} className="odontogram-root" dir={isRtl(lang) ? "rtl" : "ltr"} lang={lang}>
@@ -846,7 +932,7 @@ export default function App({
         </div>
       </header>
 
-      <main className={"layout" + (isSchematicView ? " schematic-edit" : "") + (isSchematicView && schematicShowAll ? " schematic-edit-all" : "")}>
+      <main className={"layout" + (isSchematicView ? " schematic-edit" : "") + (isSchematicView && schematicShowAll ? " schematic-edit-all" : "") + (dockEnabled && isOdontogramView ? " dock-mode" : "") + (dockEnabled && isOdontogramView && dockShowAll ? " dock-mode-all" : "")}>
         {/* ONE switcher for every clinical view (bead odontogram-c51).
             ------------------------------------------------------------------
             The periodontal segment is the only one that depends on the
@@ -1136,53 +1222,36 @@ export default function App({
           </div>
           <div id="toothGrid" className="tooth-grid" dir="ltr" aria-label={t("chart.aria.toothGrid")}></div>
         </section>
-        {toothInfoOn && summary && (
-          <section className="tooth-info card" aria-label={t("toothInfo.title")}>
-            <div className="card-title">{t("toothInfo.title")}</div>
-            <p className="tooth-info-overview">{summary.overview}</p>
-            {summary.permanentList && <p className="tooth-info-list">{summary.permanentList}</p>}
-            {summary.missingList && <p className="tooth-info-list">{summary.missingList}</p>}
-            {summary.individualNotes && (
-              <div id="toothInfoNotes" className="tooth-info-notes">
-                <span className="tooth-info-heading">{summary.individualNotes.heading}:</span>
-                {summary.individualNotes.items.map((n, i) => (
-                  <p key={i} className="tooth-info-note-item">
-                    {n}
-                  </p>
-                ))}
-              </div>
-            )}
-            {summary.sections.map((sec) => (
-              <p key={sec.key} className="tooth-info-line">
-                <span className="tooth-info-heading">{sec.heading}:</span>{" "}
-                {sec.items.length
-                  ? sec.items.join(", ")
-                  : <span className="tooth-info-empty">{sec.emptyText}</span>}
-              </p>
-            ))}
-            {summary.plannedChanges && summary.plannedChanges.length > 0 && (
-              <div id="plannedChangesBox" className="planned-changes">
-                <div className="tooth-info-heading">{t("toothInfo.plannedChanges")}</div>
-                {summary.plannedChanges.map((c, i) => (
-                  <p key={`${c.toothNo}-${c.axis}-${i}`} className="planned-changes-item">
-                    {formatToothLabel(c.toothNo)}: {t(`planChange.axis.${c.axis}`)} {c.from} → {c.to}
-                  </p>
-                ))}
-              </div>
-            )}
-            {summary.implants && (
-              <p className="tooth-info-line">
-                <span className="tooth-info-heading">{summary.implants.heading}:</span>{" "}
-                {summary.implants.text}
-              </p>
-            )}
-            <p className="tooth-info-line">
-              <span className="tooth-info-heading">{summary.periodontalTitle}:</span>{" "}
-              {summary.periodontalText}
-            </p>
-          </section>
-        )}
+        {/* Non-dock mode keeps the read-back under the chart; in dock mode it
+            moves BELOW the dock (rendered after the befund-dock-column). */}
+        {!(dockEnabled && isOdontogramView) && toothInfoCard}
         </div>
+        {dockEnabled && isOdontogramView && (
+          <div className="befund-dock-column" dir="ltr">
+            <div className="schematic-toolbar">
+              <span className="schematic-hint">{t("dock.hint")}</span>
+              <button
+                type="button"
+                id="dockShowAllToggle"
+                className={"btn btn-ghost btn-sm" + (dockShowAll ? " is-active" : "")}
+                aria-pressed={dockShowAll}
+                onClick={() => setDockShowAll((v) => !v)}
+              >
+                {dockShowAll ? t("schematic.compact") : t("schematic.showAll")}
+              </button>
+            </div>
+            {!dockShowAll && (
+              <SchematicKeypad
+                tooth={anatTooth}
+                mat={armedMat}
+                stage={armedStage}
+                onMat={onArmMat}
+                onStage={onArmStage}
+              />
+            )}
+            {toothInfoCard}
+          </div>
+        )}
         {isPerioView && (
           <div className="dental-chart-column" dir="ltr">
             <PerioChart inline />
@@ -1229,6 +1298,7 @@ export default function App({
                 onStage={onArmStage}
               />
             )}
+            {!schematicShowAll && toothInfoCard}
           </div>
         )}
         <aside className="panel" style={isOrthoView ? { display: "none" } : undefined}>
@@ -1348,6 +1418,22 @@ export default function App({
                 <label><input type="checkbox" id="onlayCovBuccal" /><span>{t("surface.buccal")}</span></label>
                 <label><input type="checkbox" id="onlayCovLingual" /><span>{t("surface.lingual")}</span></label>
                 <label><input type="checkbox" id="onlayCovOcclusal" /><span>{t("surface.occlusal")}</span></label>
+              </div>
+              <div id="inlayCoverageRow" className="row inline-checks hidden">
+                <span>{t("inlayCoverage.label")}</span>
+                <label><input type="checkbox" id="inlayCovMesial" /><span>{t("surface.mesial")}</span></label>
+                <label><input type="checkbox" id="inlayCovDistal" /><span>{t("surface.distal")}</span></label>
+                <label><input type="checkbox" id="inlayCovBuccal" /><span>{t("surface.buccal")}</span></label>
+                <label><input type="checkbox" id="inlayCovLingual" /><span>{t("surface.lingual")}</span></label>
+                <label><input type="checkbox" id="inlayCovOcclusal" /><span>{t("surface.occlusal")}</span></label>
+              </div>
+              <div id="veneerCoverageRow" className="row inline-checks hidden">
+                <span>{t("veneerCoverage.label")}</span>
+                <label><input type="checkbox" id="veneerCovMesial" /><span>{t("surface.mesial")}</span></label>
+                <label><input type="checkbox" id="veneerCovDistal" /><span>{t("surface.distal")}</span></label>
+                <label><input type="checkbox" id="veneerCovBuccal" /><span>{t("surface.buccal")}</span></label>
+                <label><input type="checkbox" id="veneerCovLingual" /><span>{t("surface.lingual")}</span></label>
+                <label><input type="checkbox" id="veneerCovOcclusal" /><span>{t("surface.occlusal")}</span></label>
               </div>
               {/* Bead odontogram-dma: what holds a removable denture to this
                   tooth. Its own row rather than more entries in the restoration

@@ -172,9 +172,47 @@ export function resolveEntry(entry: PaletteEntry, picked: string): string[] {
 // Session state
 // ---------------------------------------------------------------------------
 
-/** Chosen colours by entry key. A key absent means "the shipped default", so
- *  an untouched palette writes NOTHING and every fallback applies. */
-let chosen: Record<string, string> = {};
+/**
+ * Cognovis fork default palette — Dirk's own restoration colours (02.09.2026),
+ * read out of his configured session. The library ships THIS as the standard;
+ * anyone can still change any colour in Settings -> Colours, and "Reset to
+ * defaults" restores this palette (not upstream's). Session/practice state, NOT
+ * part of the payload — a case opened elsewhere renders in THAT practice's
+ * colours, exactly as bead odontogram-sjr intended.
+ *
+ * The nine flat/lightened entries are Dirk's EXACT picks (the lightened
+ * telescope derives its anterior connector, verified: #03bd00 -> #09ff05). The
+ * emax ramp is derived from a single pick and cannot be reproduced bit-exact
+ * from its stops alone; #d1bda0 is his end tone, so the picker swatch is exact
+ * and the sweep lands within ~1 unit of what he configured.
+ */
+export const FORK_DEFAULT_PALETTE: Record<string, string> = {
+  gold: "#dfa507",
+  zircon: "#abc9d8",
+  metal: "#656e7b",
+  telescope: "#03bd00",
+  telescopeInner: "#9b8c8c",
+  gic: "#ae7f3d",
+  fillTemporary: "#608a83",
+  amalgam: "#626060",
+  dentureTooth: "#41c86c",
+  emax: "#d1bda0",
+};
+
+/** Chosen colours by entry key. Seeded with the fork default palette; a key
+ *  absent means "the shipped asset default". `applyRestorationPalette` still
+ *  only writes what is present, and `setRestorationPaletteValues({})` clears it
+ *  to a genuinely empty palette (the byte-identical unconfigured state the
+ *  parity contract rests on). */
+let chosen: Record<string, string> = { ...FORK_DEFAULT_PALETTE };
+
+/** Whether the palette currently equals the fork default (nothing customised
+ *  beyond it) — drives the "Reset to defaults" button's enabled state. */
+export function restorationPaletteIsDefault(): boolean {
+  const keys = Object.keys(FORK_DEFAULT_PALETTE);
+  if(Object.keys(chosen).length !== keys.length) return false;
+  return keys.every((k) => chosen[k] === FORK_DEFAULT_PALETTE[k]);
+}
 
 /** The entry a key names, or `undefined`. */
 export function paletteEntry(key: string): PaletteEntry | undefined { return BY_KEY.get(key); }
@@ -209,11 +247,12 @@ export function setRestorationColourValue(key: string, hex: string | null): bool
   return true;
 }
 
-/** Drop every choice. Returns whether anything was chosen. */
+/** Restore the fork default palette ("Reset to defaults"). Returns whether the
+ *  palette actually changed, so a no-op reset skips the repaint. */
 export function resetRestorationPaletteValues(): boolean {
-  const had = Object.keys(chosen).length > 0;
-  chosen = {};
-  return had;
+  const changed = !restorationPaletteIsDefault();
+  chosen = { ...FORK_DEFAULT_PALETTE };
+  return changed;
 }
 
 /** Replace the whole palette (host restore). Unknown keys and bad colours are

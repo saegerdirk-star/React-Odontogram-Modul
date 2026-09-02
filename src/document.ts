@@ -100,6 +100,10 @@ export interface ToothRecord {
   restorationMaterial?: string;
   /** charly TEILKRONE1-4: surfaces a partial crown (onlay) covers. Omit-when-empty. */
   onlayCoverage?: string[];
+  /** Inlay surfaces (Dirk 31.08.2026): the surfaces an inlay covers, for the HKP. Omit-when-empty. */
+  inlayCoverage?: string[];
+  /** Veneer surfaces (Dirk 31.08.2026): the surfaces a veneer covers, for the HKP. Omit-when-empty. */
+  veneerCoverage?: string[];
   crownLeakage?: boolean;
   /** charly „Wurzelkappe": a coping over a root remnant (radix). Omit-when-false. */
   rootCap?: boolean;
