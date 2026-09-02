@@ -1543,10 +1543,22 @@ select:focus{
    is hidden — exactly the schematic layout, but for the drawn chart. The drawn
    tiles are zoomed down so chart + dock fit without scrolling; the overlays are
    children of #toothGrid, so they scale with it and stay aligned. */
-.layout.dock-mode aside.panel{display:none}
+.layout.dock-mode:not(.dock-mode-all) aside.panel{display:none}
 .layout.dock-mode .chart-column{grid-column:1 / -1}
 .layout.dock-mode .befund-dock-column{grid-column:1 / -1; min-width:0}
 .layout.dock-mode #toothGrid{zoom:0.82}
+/* "Details" drawer: the full card panel relocated below the dock, full-width
+   as a horizontal band — same treatment as the schematic view's All-options. */
+.layout.dock-mode.dock-mode-all aside.panel{grid-column:1 / -1; display:block; margin-top:4px}
+.layout.dock-mode.dock-mode-all .panel-body{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
+  align-items:start;
+  gap:12px;
+  max-height:46vh;
+  overflow:auto;
+  padding-right:4px;
+}
 
 /* The compact keypad. */
 .schematic-keypad{
@@ -1572,12 +1584,40 @@ select:focus{
 }
 .keypad-keys{display:flex; flex-wrap:wrap; gap:6px; align-items:center}
 .keypad-btn{
+  position:relative;
   min-inline-size:40px; block-size:32px; padding:0 10px;
   border:1px solid var(--line, #d8dde3); border-radius:8px;
   background:#fff; color:#222; font-size:13px; font-weight:600; cursor:pointer;
   transition:border-color .08s, color .08s, background .08s;
 }
 .keypad-btn:hover:not(:disabled){border-color:#3b7bff; color:#3b7bff}
+/* Hover-Karte, die den Schalter erklärt (Dirk 31.08.2026) — data-tip statt
+   nativem title, damit sie stilisiert und ohne 1-s-Verzögerung erscheint. */
+.keypad-btn[data-tip]::after{
+  content:attr(data-tip);
+  position:absolute; left:50%; bottom:calc(100% + 8px); transform:translateX(-50%);
+  z-index:60; width:max-content; max-width:220px; text-align:center;
+  padding:6px 9px; border-radius:6px;
+  background:#1f2937; color:#fff; font-size:12px; font-weight:500; line-height:1.35;
+  white-space:normal; box-shadow:0 4px 14px rgba(0,0,0,.18);
+  opacity:0; visibility:hidden; pointer-events:none;
+  transition:opacity .12s ease, visibility 0s linear .12s;
+}
+.keypad-btn[data-tip]::before{
+  content:""; position:absolute; left:50%; bottom:calc(100% + 3px); transform:translateX(-50%);
+  z-index:60; border:5px solid transparent; border-top-color:#1f2937;
+  opacity:0; visibility:hidden; pointer-events:none;
+  transition:opacity .12s ease, visibility 0s linear .12s;
+}
+.keypad-btn[data-tip]:hover:not(:disabled)::after,
+.keypad-btn[data-tip]:hover:not(:disabled)::before,
+.keypad-btn[data-tip]:focus-visible::after,
+.keypad-btn[data-tip]:focus-visible::before{
+  opacity:1; visibility:visible; transition-delay:.3s,.3s;
+}
+@media (prefers-reduced-motion: reduce){
+  .keypad-btn[data-tip]::after,.keypad-btn[data-tip]::before{transition:none}
+}
 .keypad-btn:active:not(:disabled){background:#eef4ff}
 .keypad-btn:disabled{opacity:.4; cursor:default}
 .keypad-surf{min-inline-size:34px}

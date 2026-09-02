@@ -344,6 +344,10 @@ export default function App({
   // flipped by the "All options" toggle in the schematic header, reveals them.
   // Session-only UI state, never touches the case.
   const [schematicShowAll, setSchematicShowAll] = useState<boolean>(false);
+  // Anatomical Befund-Dock "Details" drawer: reveals the full card panel below
+  // the dock (the long tail of rare options), mirroring the schematic view's
+  // "All options" toggle. Session-only.
+  const [dockShowAll, setDockShowAll] = useState<boolean>(false);
   // The tooth picked in the schematic view. Held here (not read from the engine)
   // so BOTH the chart (highlight) and the keypad (enable/label) react to a click
   // — a plain selection does not fire onStateChange, so the keypad can't learn
@@ -928,7 +932,7 @@ export default function App({
         </div>
       </header>
 
-      <main className={"layout" + (isSchematicView ? " schematic-edit" : "") + (isSchematicView && schematicShowAll ? " schematic-edit-all" : "") + (dockEnabled && isOdontogramView ? " dock-mode" : "")}>
+      <main className={"layout" + (isSchematicView ? " schematic-edit" : "") + (isSchematicView && schematicShowAll ? " schematic-edit-all" : "") + (dockEnabled && isOdontogramView ? " dock-mode" : "") + (dockEnabled && isOdontogramView && dockShowAll ? " dock-mode-all" : "")}>
         {/* ONE switcher for every clinical view (bead odontogram-c51).
             ------------------------------------------------------------------
             The periodontal segment is the only one that depends on the
@@ -1224,13 +1228,27 @@ export default function App({
         </div>
         {dockEnabled && isOdontogramView && (
           <div className="befund-dock-column" dir="ltr">
-            <SchematicKeypad
-              tooth={anatTooth}
-              mat={armedMat}
-              stage={armedStage}
-              onMat={onArmMat}
-              onStage={onArmStage}
-            />
+            <div className="schematic-toolbar">
+              <span className="schematic-hint">{t("dock.hint")}</span>
+              <button
+                type="button"
+                id="dockShowAllToggle"
+                className={"btn btn-ghost btn-sm" + (dockShowAll ? " is-active" : "")}
+                aria-pressed={dockShowAll}
+                onClick={() => setDockShowAll((v) => !v)}
+              >
+                {dockShowAll ? t("schematic.compact") : t("schematic.showAll")}
+              </button>
+            </div>
+            {!dockShowAll && (
+              <SchematicKeypad
+                tooth={anatTooth}
+                mat={armedMat}
+                stage={armedStage}
+                onMat={onArmMat}
+                onStage={onArmStage}
+              />
+            )}
             {toothInfoCard}
           </div>
         )}

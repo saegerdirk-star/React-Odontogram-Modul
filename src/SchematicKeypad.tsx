@@ -154,7 +154,7 @@ export default function SchematicKeypad({ tooth, mat, stage, onMat, onStage }: {
       : t("schematic.keypad.hint.caries");
 
   const btn = (b: Btn) => (
-    <button key={b.label} type="button" className="keypad-btn" title={t(b.titleKey)}
+    <button key={b.label} type="button" className="keypad-btn" aria-label={t(b.titleKey)} data-tip={t(b.titleKey)}
       disabled={!enabled} onClick={() => (b.mat ? applyResto(b) : apply(b.token!))}>
       {b.label}
     </button>
@@ -178,7 +178,7 @@ export default function SchematicKeypad({ tooth, mat, stage, onMat, onStage }: {
           <Row label="">{RESTO_BTNS.map(btn)}</Row>
           <Row label={t("schematic.keypad.row.material")}>
             {MATERIALS.map((m) => (
-              <button key={m.ch} type="button" title={t(m.labelKey)} disabled={!enabled}
+              <button key={m.ch} type="button" aria-label={t(m.labelKey)} data-tip={t(m.labelKey)} disabled={!enabled}
                 className={"keypad-btn keypad-mat" + (mat === m.ch ? " is-active" : "")}
                 onClick={() => pickMat(m.ch)}>
                 {t(m.labelKey)}
@@ -190,7 +190,7 @@ export default function SchematicKeypad({ tooth, mat, stage, onMat, onStage }: {
         <Group title={t("schematic.keypad.row.surfaces")}>
           <Row label="">
             {SURFACES.map((s) => (
-              <button key={s.ch} type="button" className="keypad-btn keypad-surf" title={t(s.titleKey)}
+              <button key={s.ch} type="button" className="keypad-btn keypad-surf" aria-label={t(s.titleKey)} data-tip={t(s.titleKey)}
                 disabled={!enabled} onClick={() => applySurface(s.ch)}>
                 {s.label}
               </button>
@@ -198,8 +198,8 @@ export default function SchematicKeypad({ tooth, mat, stage, onMat, onStage }: {
           </Row>
           <Row label={t("schematic.keypad.row.caries")}>
             {CARIES_STAGES.map((k) => (
-              <button key={k} type="button" title={t("schematic.keypad.t.cariesStage", { n: k.slice(1) })}
-                disabled={!enabled}
+              <button key={k} type="button" aria-label={t("schematic.keypad.t.cariesStage", { n: k.slice(1) })}
+                data-tip={t("schematic.keypad.t.cariesStage", { n: k.slice(1) })} disabled={!enabled}
                 className={"keypad-btn keypad-stage" + (stage === k ? " is-active" : "")}
                 onClick={() => pickStage(k)}>
                 {k}
@@ -217,7 +217,7 @@ export default function SchematicKeypad({ tooth, mat, stage, onMat, onStage }: {
         <Group title={t("schematic.keypad.row.retention")}>
           <Row label="">
             {RETENTION_BTNS.map((r) => (
-              <button key={r.value} type="button" className="keypad-btn" title={t(r.titleKey)}
+              <button key={r.value} type="button" className="keypad-btn" aria-label={t(r.titleKey)} data-tip={t(r.titleKey)}
                 disabled={!enabled} onClick={() => applyRetention(r.value)}>
                 {r.label}
               </button>

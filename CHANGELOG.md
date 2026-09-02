@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.72.3 - 2026-09-02
+
+### Befund-Dock: Hover-Tooltips + Details-Schublade
+
+- Jede Dock-Taste erklärt sich beim Überfahren mit einer gestylten Hover-Karte
+  (`data-tip`) statt des nativen, verzögerten Titel-Tooltips; die Erklärung
+  bleibt für Screenreader als `aria-label` erhalten.
+- Neuer „Details"-Umschalter im anatomischen Befund-Dock blendet das volle
+  Bedienpanel als Band unter dem Dock ein (die selten gebrauchten Optionen) —
+  gespiegelt vom „Alle Optionen"-Schalter der schematischen Ansicht. Rein
+  session-lokal, keine Payload-/Render-/FHIR-Änderung.
+
 ## 2.72.2 - 2026-08-31
 
 ### Brücken-Kennzahlen (Spannen/Glieder/Pfeiler) für den Kostenplan
