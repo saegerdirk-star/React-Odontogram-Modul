@@ -1,4 +1,4 @@
-# Aidbox live mode (bead odontogram-6fi)
+# Aidbox live mode (bead odontogram-cpx)
 
 A second app entry beside the library: given an Aidbox URL, a scoped machine
 client and a PatientID, it loads that patient's odontogram from a running
@@ -9,12 +9,43 @@ It is a **development tool served by the Vite dev server**, not a product. The
 published library artifact does not contain it and does not depend on the SDK
 (see "Boundary" below).
 
+The owner-native server is an isolated **Reetfurt local-UAT** instance, not
+MIRA, not PolarIS runtime services, and not the shared isynet Aidbox on
+`:8081`. The PolarIS checkout that still exposes `scripts/aidbox-stack.py` is
+`$HOME/code/polaris/platform` — `~/code/polaris` is a monorepo and
+fails `uat:local`. Always export `POLARIS_DIR=$HOME/code/polaris/platform`.
+
+The praxis-store image identity for this workflow is recorded in
+`mvz-reetfurt/config/praxis-store-image.json` (tag `state-e196b7bb4f12`, digest
+`sha256:dbd47a9fc72d7454916db2711237c0aa792651aead5b6d25493fac2fb2b43da2`).
+That file is not copied into this repository.
+
 ## Running it
 
 ```sh
-cp .env.example .env       # fill in the scoped client's secret and a patient id
+cd $HOME/code/mvz-reetfurt
+POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local up --instance odontogram-cpx
+POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local status --instance odontogram-cpx
+
+cd /path/to/React-Odontogram-Modul
+npm run live:provision -- --instance odontogram-cpx
 npm run dev                # then open http://localhost:5173/live.html
 ```
+
+`live:provision` reads the persisted Reetfurt binding, uses operator
+credentials from `AIDBOX_ADMIN_ID` / `AIDBOX_ADMIN_PASSWORD` or the PolarIS
+isynet env file (never `VITE_*`), creates or reconciles `Client/odontogram-live`
+and `AccessPolicy/odontogram-live-dental`, and writes only the scoped browser
+keys into the ignored `.env`. The default Patient is the first whose assembled
+collection parses through the same partition + `parseDentalCoreBundle` path as
+`live.html`; a seed Observation that wears a Dental Core profile but is not a
+valid 0.6 instance is skipped. A second run leaves the effective Client and
+AccessPolicy unchanged when the existing Client still carries a plaintext
+secret. A non-404 Client GET fails closed instead of rotating the secret,
+including a 200 whose `secret` is an Aidbox digest (`__sha256:…`) — that
+value is not retrievable as a browser password. The command runs through
+`jiti` so the provisioner can reuse `src/live/load.ts` without a second
+TypeScript resolver.
 
 `?patient=<id>` on the URL always wins over `VITE_DEFAULT_PATIENT_ID`. A missing
 or incomplete configuration renders a setup hint naming every missing key — it
@@ -46,17 +77,19 @@ That is acceptable for a scoped development client against a local Aidbox, and
 it is exactly why it must never be more than that. `.env` is git-ignored;
 `.env.example` carries no secret.
 
-## Which SDK factory, and why not the facade
+## Which SDK factory, and why not the PolarIS facade
 
-`@polaris/sdk/fhir` re-exports a `createFhirDeClient` that performs an ADR-027
+`@polaris/sdk/fhir` re-exports a `createFhirClient` that performs an ADR-027
 de-identification IG drift check at boot, by reading `/ImplementationGuide`.
-The scoped client cannot read that endpoint — measured against the local Aidbox
-on 2026-08-23: `GET /fhir/Patient` answers `200`, `GET /fhir/ImplementationGuide`
-answers `403` — so the facade cannot boot against it, and widening the client to
-admin scope is precisely what this bead forbids. `src/live/aidbox.ts` therefore
-uses the base factory from `@polaris/fhir-de`, which performs no boot call. The
-transport SPI, `createFetchTransport` and `extractNextPageUrl` are the same code
-either way.
+The scoped client cannot read that endpoint — measured against a local Aidbox:
+`GET /fhir/Patient` answers `200`, `GET /fhir/ImplementationGuide` answers
+`403` — so that PolarIS facade cannot boot against it, and widening the client
+to admin scope is precisely what this mode forbids. `src/live/aidbox.ts`
+therefore uses `createFhirClient` from `@cognovis/fhir-sdk/client`, which
+performs no boot call. The deprecated `createFhirDeClient` alias is the same
+factory. `createAidboxFhirClient` is a client-credentials factory and is not
+used. The transport SPI, `createFetchTransport` and `extractNextPageUrl` are
+used unchanged.
 
 ## How a load works
 
@@ -318,12 +351,12 @@ saved chart:
 
 ## Boundary (AC4)
 
-The published artifact stays free of `@polaris/*`:
+The published artifact stays free of the FHIR client SDK:
 
-* both SDK packages are **devDependencies**; `dependencies` in `package.json` is
-  unchanged;
-* `@polaris` is imported by nothing outside `src/live`, and `fetch` is called by
-  exactly one module, `src/live/aidbox.ts`;
+* `@cognovis/fhir-sdk` is a **devDependency**; `dependencies` in `package.json`
+  is unchanged;
+* that package is imported by nothing outside `src/live`, and the transport
+  lives in exactly one module, `src/live/aidbox.ts`;
 * `src/live` is excluded from `tsconfig.build.json` and from the `vite-plugin-dts`
   include, so no SDK type reaches `dist`;
 * `files` is still `["dist"]`, so neither `live.html` nor `src/live` is published;
@@ -334,7 +367,7 @@ The published artifact stays free of `@polaris/*`:
 
 ### The install-time cost of that boundary
 
-The `@polaris` packages come from the Cognovis registry; the repo-local `.npmrc`
+`@cognovis/fhir-sdk` comes from the Cognovis registry; the repo-local `.npmrc`
 maps the scope, and authentication comes from the developer's own `~/.npmrc`.
 
 **This is not free for anyone who only wants the library.** Because the packages

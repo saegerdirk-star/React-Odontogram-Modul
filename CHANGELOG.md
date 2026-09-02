@@ -1,5 +1,36 @@
 # Changelog
 
+## 3.1.0 - 2026-09-02
+
+### Isolated Reetfurt live mode
+
+- Live mode talks to Aidbox through `@cognovis/fhir-sdk/client` (`createFhirClient`
+  + HTTP Basic `createFetchTransport`). `@polaris/fhir-de` and `@polaris/sdk` are
+  no longer dependencies.
+- `npm run live:provision -- --instance <id>` consumes the named Reetfurt
+  `uat:local` binding, reconciles the scoped `odontogram-live` Client and
+  `odontogram-live-dental` AccessPolicy with operator credentials from the
+  environment or PolarIS env file, discovers a Patient that already has dental
+  resources, and writes only those scoped `VITE_*` keys into the ignored `.env`.
+- `.env.example` stays secret-free. Admin credentials never enter `VITE_*`.
+- Docs describe the owner-native Reetfurt workflow. The published library
+  boundary is unchanged: `src/live` stays a Vite app beside the package,
+  `@cognovis/fhir-sdk` is a devDependency, `files` remains `["dist"]`.
+- `live:provision` defaults the Reetfurt and PolarIS checkouts from
+  `$HOME/code/mvz-reetfurt` and `$HOME/code/polaris/platform`. `REETFURT_DIR`
+  and `POLARIS_DIR` still override. Committed source no longer encodes a
+  machine-absolute home path.
+- The scoped AccessPolicy uses Aidbox-native `#/pattern` URIs and `$one-of`.
+  The stored `$regex` / `$enum` shape did not grant.
+- `live:provision` writes a default Patient only when the same partition +
+  `parseDentalCoreBundle` path as live mode accepts the assembled collection.
+  A Client GET that is not 404 no longer mints a replacement secret.
+
+The praxis-store image identity recorded for this workflow is tag
+`state-e196b7bb4f12`, digest
+`sha256:dbd47a9fc72d7454916db2711237c0aa792651aead5b6d25493fac2fb2b43da2`
+(`mvz-reetfurt/config/praxis-store-image.json`). That file is not copied here.
+
 ## 3.0.0 - 2026-09-02
 
 ### Breaking: Dental Core is the sole FHIR contract

@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-3.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-3.1.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -591,7 +591,7 @@ FHIR conversion is a pure optional projection of the UI-domain document. Dental 
 
 **Aidbox live mode (development, from 2.50.0):**
 
-A second dev-server entry, `live.html` (`src/live`), loads one patient's chart straight from a running Aidbox, renders it in the ordinary shell through the session API above, and writes changes back as Dental Core resources under deterministic ids, so a re-save updates instead of duplicating. Configure it through a git-ignored `.env` (copy `.env.example`) naming a **scoped machine client only** — never an admin credential. It is a development tool, not part of the published package: the `@polaris` SDK packages are devDependencies, `dependencies` is unchanged, and neither `src/live` nor `live.html` is published. Setup, the load/save mechanics, and the documented delta to the charly adapter's dialect are in [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). Note that installing this repository's devDependencies now requires a credential for `npm.cognovis.de` (see the doc); `npm ci --omit=dev` and consuming the published package do not.
+A second dev-server entry, `live.html` (`src/live`), loads one patient's chart straight from an isolated Reetfurt local-UAT Aidbox, renders it in the ordinary shell through the session API above, and writes changes back as Dental Core resources under deterministic ids, so a re-save updates instead of duplicating. Start a named Reetfurt instance (`POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local up --instance <id>` in the mvz-reetfurt checkout), then run `npm run live:provision -- --instance <id>` to create the scoped `odontogram-live` machine client and write the git-ignored `.env`. Never put an admin credential in `VITE_*`. It is a development tool, not part of the published package: `@cognovis/fhir-sdk` is a devDependency, `dependencies` is unchanged, and neither `src/live` nor `live.html` is published. Setup, the load/save mechanics, and the documented delta to the charly adapter's dialect are in [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). Installing this repository's devDependencies still requires a credential for `npm.cognovis.de`; `npm ci --omit=dev` and consuming the published package do not.
 
 **Dated examinations, assessment status and peri-implant capture (from 2.4.0):**
 

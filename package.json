@@ -1,6 +1,6 @@
 {
   "name": "react-advanced-odontogram",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "license": "MIT",
   "type": "module",
   "description": "Interactive, SVG-based dental odontogram (dental chart) editor for React + TypeScript — multi-surface caries/filling charting, endodontic/prosthetic/periodontal states, FDI/Universal/Palmer numbering, HL7 FHIR R4 export/import, and ICDAS scoring.",
@@ -54,6 +54,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "live:provision": "jiti tools/live-provision.ts",
     "prototype:kfo": "vite --open '/prototypes/kfo-view/?variant=A'",
     "build": "tsc -b && vite build",
     "build:lib": "vite build --config vite.lib.config.ts",
@@ -88,10 +89,9 @@
   "devDependencies": {
     "@cognovis/codegen": "0.1.1",
     "@cognovis/fhir-release": "0.2.4",
+    "@cognovis/fhir-sdk": "0.2.0",
     "@eslint/js": "^9.39.2",
     "@microsoft/api-extractor": "^7.58.12",
-    "@polaris/fhir-de": "^2026.8.3",
-    "@polaris/sdk": "^2026.8.3",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/jsdom": "^28.0.0",

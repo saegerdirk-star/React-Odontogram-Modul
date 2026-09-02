@@ -63,8 +63,9 @@ function SetupHint({ missing, invalid }: { missing: string[]; invalid: string[] 
     <div style={{ ...panel, maxWidth: "48rem", margin: "2rem auto" }}>
       <h1 style={{ fontSize: "1.1rem", margin: "0 0 0.5rem" }}>Aidbox live mode is not configured</h1>
       <p style={{ margin: "0 0 0.5rem" }}>
-        Copy <code>.env.example</code> to <code>.env</code> and supply the missing values, then restart the dev server.
-        A patient can also be named on the URL as <code>?patient=&lt;id&gt;</code>.
+        Run <code>npm run live:provision -- --instance &lt;id&gt;</code> against a named Reetfurt local-UAT
+        instance, or copy <code>.env.example</code> to <code>.env</code> and supply the missing scoped values,
+        then restart the dev server. A patient can also be named on the URL as <code>?patient=&lt;id&gt;</code>.
       </p>
       <ul>{missing.map((key) => <li key={key}><code>{key}</code></li>)}</ul>
       {invalid.length > 0 && (
