@@ -16,19 +16,15 @@
 - Reject foreign and malformed non-Dental-Core Bundles explicitly instead of
   trying another representation. The exact `@cognovis/fhir-release@0.2.4`
   projection and generated Dental Core contract remain pinned and verified.
-- Preserve migration for legacy JSON documents and older Dental Core chart
-  values `endo-glass-pin` / `endo-metal-pin`; new JSON and FHIR output keep
-  root filling and `rootPostType` independent.
-- Keep a migrated tooth-level root post visible in the schematic when explicit
-  canal filling detail has no canal-level post, without projecting the post
-  into every canal.
-
-Payload **2.45 -> 2.46**. Package **2.69.0 -> 3.0.0**.
-
-## 2.69.0 - 2026-09-01
-
-### Dental Core 0.6 odontogram axes and independent root posts
-
+- Reject FHIR export with `UnsupportedDentalCoreContentError` instead of
+  silently dropping populated editor fields for which Dental Core 0.6.0 has no
+  admitted carrier: `papillaLoss`, `endoCanals`, `rootResection` and
+  `rootResectionRoot`, `implantPosition`, `crownMarginType` and
+  `crownMarginSide`, `crownFractureType`, `splinted`, `occlusalSplint`,
+  `occlusalFunction`, `rootCap`, `cantilever`, `onlayCoverage`, `apicalRoot`,
+  `orthoProgressive`, a lingual `orthoBracketSide`, and plugin `customStates`.
+  Charts that populate any of these fields remain valid odontogram documents
+  but cannot be exported faithfully through the sole Dental Core FHIR contract.
 - Consume `de.cognovis.fhir.dental.core#0.6.0` from the exact
   `@cognovis/fhir-release@0.2.4` projection and regenerate the published
   profiles and terminology contract with closure identity and integrity
@@ -41,11 +37,14 @@ Payload **2.45 -> 2.46**. Package **2.69.0 -> 3.0.0**.
   renderer, serialization, FHIR import/export, and Charly shorthand mapping.
   An incomplete root filling and either post material can now coexist without
   loss.
-- Read legacy `endo-glass-pin` and `endo-metal-pin` values at JSON and Dental
-  Core boundaries, migrate them to `endo-filling` plus the corresponding post
-  material, and never write the combined values again.
+- Preserve migration for legacy JSON documents and older Dental Core chart
+  values `endo-glass-pin` / `endo-metal-pin`; new JSON and FHIR output keep
+  root filling and `rootPostType` independent.
+- Keep a migrated tooth-level root post visible in the schematic when explicit
+  canal filling detail has no canal-level post, without projecting the post
+  into every canal.
 
-Payload **2.44 -> 2.45**.
+Payload **2.44 -> 2.46**. Package **2.68.0 -> 3.0.0**.
 
 ## 2.68.0 - 2026-08-30
 

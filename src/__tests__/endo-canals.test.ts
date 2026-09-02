@@ -82,6 +82,31 @@ describe("endo per canal — schematic rendering", () => {
     expect(svg.match(/stroke="#8a9096" stroke-width="3\.6"/g)).toHaveLength(1);
   });
 
+  it("does not let foreign canal detail suppress a tooth-level post", () => {
+    __resetChartStateForTest();
+    __setToothStateForTest(46, {
+      rootPostType: "metal",
+      endoCanals: { palatal: ["filling"] },
+    });
+    const svg = buildSchematicSvg(getToothDisplayState);
+    expect(svg.match(/stroke="#8a9096" stroke-width="3\.6"/g)).toHaveLength(2);
+  });
+
+  it("places a fallback tooth-level post on a retained root", () => {
+    __resetChartStateForTest();
+    __setToothStateForTest(16, {
+      rootPostType: "metal",
+      rootResection: "hemisection",
+      rootResectionRoot: "mesiobuccal",
+      endoCanals: {
+        mesiobuccal: ["filling"],
+        distobuccal: ["filling"],
+      },
+    });
+    const svg = buildSchematicSvg(getToothDisplayState);
+    expect(svg.match(/stroke="#8a9096" stroke-width="3\.6"/g)).toHaveLength(1);
+  });
+
   it("synthesizes a whole-tooth post across roots only without per-canal detail", () => {
     __resetChartStateForTest();
     __setToothStateForTest(16, { rootPostType: "metal", endoCanals: {} });

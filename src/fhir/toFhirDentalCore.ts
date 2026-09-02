@@ -201,7 +201,8 @@ function hasClinicalValue(value: unknown, field?: string): boolean {
 function projectDentalCoreTooth(record: ToothRecord): ToothRecord {
   const normalized = normalizeLegacyRootPost(record);
   if (!normalized.rootFracture || normalized.rootFracture === "none" || !normalized.rootFractureRoot) return normalized;
-  const { rootFractureRoot: _omittedRootQualifier, ...projected } = normalized;
+  const projected: ToothRecord = { ...normalized };
+  delete projected.rootFractureRoot;
   return projected;
 }
 

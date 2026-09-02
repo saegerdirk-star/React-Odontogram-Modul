@@ -282,10 +282,11 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
     const canals = toothCanals(toothNo);
     const centers = rootCenters(cx, w, canals.length);
     const legacy = legacyEndoFindings(s.endo);
-    const hasPerCanalDetail = Object.values(s.endoCanals).some((findings) => findings.length > 0);
+    const retainedCanals = canals.filter((_name, index) => index !== removedIdx);
+    const hasPerCanalDetail = canals.some((name) => s.endoCanals[name]?.length > 0);
     const hasExplicitCanalPost = canals.some((name) => s.endoCanals[name]?.includes("post"));
     const fallbackPostCanal = hasPerCanalDetail && !hasExplicitCanalPost && s.rootPostType !== "none"
-      ? canals.find((name) => s.endoCanals[name]?.length > 0)
+      ? retainedCanals.find((name) => s.endoCanals[name]?.length > 0) ?? retainedCanals[0]
       : undefined;
     if (!implant) {
       canals.forEach((name, i) => {
