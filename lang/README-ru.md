@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-3.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-3.1.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -587,7 +587,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **Живой режим Aidbox (разработка, начиная с 2.50.0):**
 
-Вторая точка входа dev-сервера, `live.html` (`src/live`), загружает карту одного пациента напрямую из запущенного Aidbox, отображает её в обычной оболочке через описанный выше API сессии и записывает изменения обратно как ресурсы Dental Core с детерминированными id, так что повторное сохранение обновляет, а не дублирует. Настраивается через исключённый из системы контроля версий `.env` (копия `.env.example`), в котором указывается **только клиент-машина с ограниченной областью действия** — никогда учётные данные администратора. Это инструмент разработки, не входящий в опубликованный пакет: пакеты SDK `@polaris` — devDependencies, `dependencies` не меняется, и ни `src/live`, ни `live.html` не публикуются. Настройка, механика загрузки/сохранения и задокументированное отличие от диалекта адаптера charly описаны в [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). Обратите внимание: установка devDependencies этого репозитория теперь требует учётных данных для `npm.cognovis.de` (см. документ); `npm ci --omit=dev` и использование опубликованного пакета этого не требуют.
+Вторая точка входа dev-сервера, `live.html` (`src/live`), загружает карту одного пациента напрямую из изолированного Reetfurt local-UAT Aidbox, отображает её в обычной оболочке через описанный выше API сессии и записывает изменения обратно как ресурсы Dental Core с детерминированными id, так что повторное сохранение обновляет, а не дублирует. Сначала запустите именованный экземпляр Reetfurt (`POLARIS_DIR=/Users/malte/code/polaris/platform bun run uat:local up --instance <id>` в checkout mvz-reetfurt), затем выполните `npm run live:provision -- --instance <id>`: это создаст ограниченного машинного клиента `odontogram-live` и запишет исключённый из контроля версий `.env`. Учётные данные администратора никогда не помещают в `VITE_*`. Это инструмент разработки, не входящий в опубликованный пакет: `@cognovis/fhir-sdk` — devDependency, `dependencies` не меняется, и ни `src/live`, ни `live.html` не публикуются. Настройка, механика загрузки/сохранения и задокументированное отличие от диалекта адаптера charly описаны в [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). Обратите внимание: установка devDependencies этого репозитория теперь требует учётных данных для `npm.cognovis.de` (см. документ); `npm ci --omit=dev` и использование опубликованного пакета этого не требуют.
 
 **Датированные обследования, статус оценки и периимплантатная фиксация (с 2.4.0):**
 

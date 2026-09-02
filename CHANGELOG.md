@@ -1,5 +1,27 @@
 # Changelog
 
+## 3.1.0 - 2026-09-02
+
+### Isolated Reetfurt live mode
+
+- Live mode talks to Aidbox through `@cognovis/fhir-sdk/client` (`createFhirClient`
+  + HTTP Basic `createFetchTransport`). `@polaris/fhir-de` and `@polaris/sdk` are
+  no longer dependencies.
+- `npm run live:provision -- --instance <id>` consumes the named Reetfurt
+  `uat:local` binding, reconciles the scoped `odontogram-live` Client and
+  `odontogram-live-dental` AccessPolicy with operator credentials from the
+  environment or PolarIS env file, discovers a Patient that already has dental
+  resources, and writes only those scoped `VITE_*` keys into the ignored `.env`.
+- `.env.example` stays secret-free. Admin credentials never enter `VITE_*`.
+- Docs describe the owner-native Reetfurt workflow. The published library
+  boundary is unchanged: `src/live` stays a Vite app beside the package,
+  `@cognovis/fhir-sdk` is a devDependency, `files` remains `["dist"]`.
+
+The praxis-store image identity recorded for this workflow is tag
+`state-3cc52d646206`, digest
+`sha256:1062bb7528e071cb87b58e13da40a6a9c0469dd8ba9b2a4a190d46d8f5c04f1b`
+(`mvz-reetfurt/config/praxis-store-image.json`). That file is not copied here.
+
 ## 3.0.0 - 2026-09-02
 
 ### Breaking: Dental Core is the sole FHIR contract

@@ -27,9 +27,9 @@ export default defineConfig({
       entryRoot: './src',
       tsconfigPath: './tsconfig.build.json',
       include: ['src'],
-      // `src/live` is the Aidbox live-mode dev app (bead odontogram-6fi). It is
-      // an entry beside the library, never a part of it: excluded here so no
-      // @polaris SDK type can reach the published declarations.
+      // `src/live` is the Aidbox live-mode dev app. It is an entry beside the
+      // library, never a part of it: excluded here so no FHIR client SDK type
+      // can reach the published declarations.
       exclude: ['src/main.tsx', 'src/live/**', 'src/**/__tests__/**', 'src/**/*.test.ts', 'src/**/*.test.tsx'],
     }),
   ],

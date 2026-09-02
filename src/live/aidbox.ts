@@ -7,18 +7,20 @@
 // reach and the published artifact does not contain — the odontogram itself
 // stays free of transport, exactly as bead odontogram-3l1 fixed it.
 //
-// WHICH FACTORY, AND WHY. `@polaris/sdk/fhir` re-exports a `createFhirDeClient`
+// WHICH FACTORY, AND WHY. `@polaris/sdk/fhir` re-exports a `createFhirClient`
 // that performs an ADR-027 de-identification IG drift check at boot by reading
 // `/ImplementationGuide`. The `odontogram-live` machine client is scoped by
 // AccessPolicy to Patient/Observation/Condition/ServiceRequest/CarePlan and
-// cannot read that endpoint, so the SDK facade cannot boot against it — and
-// widening the client to admin scope is exactly what this bead forbids. The
-// base factory in `@polaris/fhir-de` performs no boot call and is used instead;
-// the transport SPI, `createFetchTransport` and `extractNextPageUrl` are the
-// same code either way.
+// cannot read that endpoint, so that PolarIS facade cannot boot against it —
+// and widening the client to admin scope is exactly what this mode forbids.
+// `@cognovis/fhir-sdk/client` `createFhirClient` performs no boot call; the
+// deprecated `createFhirDeClient` alias is the same factory. The transport
+// SPI, `createFetchTransport` and `extractNextPageUrl` are used unchanged.
+// `createAidboxFhirClient` is not used: it is a client-credentials factory and
+// is not the HTTP Basic scoped browser client.
 
-import { createFetchTransport, createFhirDeClient, extractNextPageUrl } from "@polaris/fhir-de";
-import type { FhirTransport } from "@polaris/fhir-de";
+import { createFetchTransport, createFhirClient, extractNextPageUrl } from "@cognovis/fhir-sdk/client";
+import type { FhirTransport } from "@cognovis/fhir-sdk/client";
 import type { LiveConfig } from "./config";
 
 /** Aidbox's FHIR endpoint sits under `/fhir` on the configured base URL. */
@@ -185,7 +187,7 @@ const PassThroughPatient = {
 };
 
 export function createAidboxGateway(config: LiveConfig, transport: FhirTransport = createAidboxTransport(config)): AidboxGateway {
-  const client = createFhirDeClient({ baseUrl: fhirBaseUrl(config.baseUrl), transport });
+  const client = createFhirClient({ baseUrl: fhirBaseUrl(config.baseUrl), transport });
   const patients = client.forProfile(PassThroughPatient, "Patient");
   return {
     // `read` answers null on 404 — a patient id that does not exist is a

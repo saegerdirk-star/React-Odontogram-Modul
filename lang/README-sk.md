@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-3.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-3.1.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -584,7 +584,7 @@ Konverzia FHIR je čistá voliteľná projekcia dokumentu používateľského ro
 
 **Aidbox live režim (vývoj, od 2.50.0):**
 
-Druhý vstupný bod vývojového servera, `live.html` (`src/live`), načíta kartu jedného pacienta priamo z bežiaceho Aidboxu, zobrazí ju v bežnom rozhraní cez vyššie uvedené session API a zapisuje zmeny späť ako zdroje Dental Core pod deterministickými id, takže opätovné uloženie aktualizuje namiesto duplikovania. Nastavuje sa cez `.env` vylúčené z verzionovania (kópia `.env.example`), ktoré určuje **výhradne strojového klienta s obmedzeným rozsahom** — nikdy administrátorské poverenie. Je to vývojový nástroj, nie súčasť publikovaného balíka: balíky SDK `@polaris` sú devDependencies, `dependencies` sa nemení a ani `src/live`, ani `live.html` sa nepublikujú. Nastavenie, mechanika načítania/uloženia a zdokumentovaný rozdiel voči dialektu adaptéra charly sú v [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). Upozornenie: inštalácia devDependencies tohto repozitára teraz vyžaduje poverenie pre `npm.cognovis.de` (pozri dokument); `npm ci --omit=dev` a používanie publikovaného balíka ho nevyžadujú.
+Druhý vstupný bod vývojového servera, `live.html` (`src/live`), načíta kartu jedného pacienta priamo z izolovaného Reetfurt local-UAT Aidboxu, zobrazí ju v bežnom rozhraní cez vyššie uvedené session API a zapisuje zmeny späť ako zdroje Dental Core pod deterministickými id, takže opätovné uloženie aktualizuje namiesto duplikovania. Najprv spustite pomenovanú inštanciu Reetfurt (`POLARIS_DIR=/Users/malte/code/polaris/platform bun run uat:local up --instance <id>` v checkoute mvz-reetfurt), potom `npm run live:provision -- --instance <id>`: tým sa vytvorí obmedzený strojový klient `odontogram-live` a zapíše sa `.env` vylúčené z verzionovania. Administrátorské poverenie nikdy nepatrí do `VITE_*`. Je to vývojový nástroj, nie súčasť publikovaného balíka: `@cognovis/fhir-sdk` je devDependency, `dependencies` sa nemení a ani `src/live`, ani `live.html` sa nepublikujú. Nastavenie, mechanika načítania/uloženia a zdokumentovaný rozdiel voči dialektu adaptéra charly sú v [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). Upozornenie: inštalácia devDependencies tohto repozitára teraz vyžaduje poverenie pre `npm.cognovis.de` (pozri dokument); `npm ci --omit=dev` a používanie publikovaného balíka ho nevyžadujú.
 
 **Datované vyšetrenia, stav posúdenia a peri-implantátový záznam (od 2.4.0):**
 
