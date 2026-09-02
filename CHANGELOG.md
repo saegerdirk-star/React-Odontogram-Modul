@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.69.0 - 2026-08-31
+
+### Befund-Dock (Schritt 1): das Schema-Tastenfeld als Karten-Dock
+
+Erster Schritt des Layout-Umbaus (Dirk, 30.08.2026 — Bedienung wie in charly,
+alle Schalter unter dem Schema in Reichweite): das immer sichtbare Schema-
+Tastenfeld ist von einer Zeilenliste zu einem **gruppierten Karten-Dock** umgebaut
+— Karten Status / Restauration & Material / Flächen & Karies / Endo & Wurzel /
+Retention / Pulpa, in einem responsiven Raster, jede Taste mit Tooltip. Reine
+Präsentation (kein neues Verhalten, gleiche `applyShorthand`-Pfade). Nächster
+Schritt: dasselbe Dock unter der anatomischen Ansicht (hinter einem Schalter),
+mit verkleinertem Zahngitter und einer „Details"-Schublade für Selteneres.
+
 ## 2.68.0 - 2026-08-30
 
 ### Schema: dieselbe Bedienung wie anatomisch — Zähne markieren + Flächen anklicken

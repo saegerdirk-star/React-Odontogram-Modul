@@ -1538,13 +1538,19 @@ select:focus{
 }
 .schematic-keypad.is-disabled .keypad-row-label,
 .schematic-keypad.is-disabled .keypad-hint{opacity:.6}
-.keypad-head{display:flex; gap:12px; align-items:baseline; margin-bottom:8px}
+.keypad-head{display:flex; gap:12px; align-items:baseline; margin-bottom:10px}
 .keypad-title{font-weight:700; font-size:15px}
 .keypad-active{color:var(--muted, #667); font-size:13px}
-.keypad-row{display:flex; align-items:center; gap:10px; margin:5px 0}
+/* Befund-Dock (Dirk 30.08.2026): the rows are grouped into titled cards laid
+   out in a responsive grid, so all findings sit below the chart in reach. */
+.keypad-groups{display:grid; grid-template-columns:repeat(auto-fit,minmax(232px,1fr)); gap:10px 12px; align-items:start}
+.keypad-group{background:var(--panel, #fff); border:1px solid var(--line, #d8dde3); border-radius:11px; padding:9px 10px 10px}
+.keypad-group-title{font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted, #667); margin:0 0 8px; font-weight:700}
+.keypad-row{display:flex; flex-direction:column; align-items:flex-start; gap:5px; margin:7px 0 0}
+.keypad-row:first-of-type{margin-top:0}
 .keypad-row-label{
-  inline-size:118px; flex:none; text-align:right;
-  color:var(--muted, #667); font-size:12px;
+  inline-size:auto; flex:none; text-align:start;
+  color:var(--muted, #667); font-size:10px; letter-spacing:.05em; text-transform:uppercase;
 }
 .keypad-keys{display:flex; flex-wrap:wrap; gap:6px; align-items:center}
 .keypad-btn{

@@ -98,8 +98,18 @@ const PULP_BTNS: Btn[] = [
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="keypad-row">
-      <span className="keypad-row-label">{label}</span>
+      {label ? <span className="keypad-row-label">{label}</span> : null}
       <div className="keypad-keys">{children}</div>
+    </div>
+  );
+}
+
+/** A titled dock card grouping related rows (Befund-Dock, Dirk 30.08.2026). */
+function Group({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="keypad-group">
+      <h3 className="keypad-group-title">{title}</h3>
+      {children}
     </div>
   );
 }
@@ -155,48 +165,67 @@ export default function SchematicKeypad({ tooth, mat, stage, onMat, onStage }: {
           {enabled ? t("schematic.keypad.tooth", { n: tooth }) : t("schematic.keypad.pickTooth")}
         </span>
       </div>
-      <Row label={t("schematic.keypad.row.state")}>{STATE_BTNS.map(btn)}</Row>
-      <Row label={t("schematic.keypad.row.eruption")}>{ERUPTION_BTNS.map(btn)}</Row>
-      <Row label={t("schematic.keypad.row.material")}>
-        {MATERIALS.map((m) => (
-          <button key={m.ch} type="button" title={t(m.labelKey)} disabled={!enabled}
-            className={"keypad-btn keypad-mat" + (mat === m.ch ? " is-active" : "")}
-            onClick={() => pickMat(m.ch)}>
-            {t(m.labelKey)}
-          </button>
-        ))}
-      </Row>
-      <Row label={t("schematic.keypad.row.caries")}>
-        {CARIES_STAGES.map((k) => (
-          <button key={k} type="button" title={t("schematic.keypad.t.cariesStage", { n: k.slice(1) })}
-            disabled={!enabled}
-            className={"keypad-btn keypad-stage" + (stage === k ? " is-active" : "")}
-            onClick={() => pickStage(k)}>
-            {k}
-          </button>
-        ))}
-        <span className="keypad-hint">{hint}</span>
-      </Row>
-      <Row label={t("schematic.keypad.row.surfaces")}>
-        {SURFACES.map((s) => (
-          <button key={s.ch} type="button" className="keypad-btn keypad-surf" title={t(s.titleKey)}
-            disabled={!enabled} onClick={() => applySurface(s.ch)}>
-            {s.label}
-          </button>
-        ))}
-      </Row>
-      <Row label={t("schematic.keypad.row.restoration")}>{RESTO_BTNS.map(btn)}</Row>
-      <Row label={t("schematic.keypad.row.retention")}>
-        {RETENTION_BTNS.map((r) => (
-          <button key={r.value} type="button" className="keypad-btn" title={t(r.titleKey)}
-            disabled={!enabled} onClick={() => applyRetention(r.value)}>
-            {r.label}
-          </button>
-        ))}
-      </Row>
-      <Row label={t("schematic.keypad.row.endo")}>{ENDO_BTNS.map(btn)}</Row>
-      <Row label={t("schematic.keypad.row.rootApical")}>{APICAL_BTNS.map(btn)}</Row>
-      <Row label={t("schematic.keypad.row.pulp")}>{PULP_BTNS.map(btn)}</Row>
+      <div className="keypad-groups">
+        <Group title={t("schematic.keypad.row.state")}>
+          <Row label="">{STATE_BTNS.map(btn)}</Row>
+          <Row label={t("schematic.keypad.row.eruption")}>{ERUPTION_BTNS.map(btn)}</Row>
+        </Group>
+
+        <Group title={t("schematic.keypad.row.restoration")}>
+          <Row label="">{RESTO_BTNS.map(btn)}</Row>
+          <Row label={t("schematic.keypad.row.material")}>
+            {MATERIALS.map((m) => (
+              <button key={m.ch} type="button" title={t(m.labelKey)} disabled={!enabled}
+                className={"keypad-btn keypad-mat" + (mat === m.ch ? " is-active" : "")}
+                onClick={() => pickMat(m.ch)}>
+                {t(m.labelKey)}
+              </button>
+            ))}
+          </Row>
+        </Group>
+
+        <Group title={t("schematic.keypad.row.surfaces")}>
+          <Row label="">
+            {SURFACES.map((s) => (
+              <button key={s.ch} type="button" className="keypad-btn keypad-surf" title={t(s.titleKey)}
+                disabled={!enabled} onClick={() => applySurface(s.ch)}>
+                {s.label}
+              </button>
+            ))}
+          </Row>
+          <Row label={t("schematic.keypad.row.caries")}>
+            {CARIES_STAGES.map((k) => (
+              <button key={k} type="button" title={t("schematic.keypad.t.cariesStage", { n: k.slice(1) })}
+                disabled={!enabled}
+                className={"keypad-btn keypad-stage" + (stage === k ? " is-active" : "")}
+                onClick={() => pickStage(k)}>
+                {k}
+              </button>
+            ))}
+          </Row>
+          <span className="keypad-hint">{hint}</span>
+        </Group>
+
+        <Group title={t("schematic.keypad.row.endo")}>
+          <Row label="">{ENDO_BTNS.map(btn)}</Row>
+          <Row label={t("schematic.keypad.row.rootApical")}>{APICAL_BTNS.map(btn)}</Row>
+        </Group>
+
+        <Group title={t("schematic.keypad.row.retention")}>
+          <Row label="">
+            {RETENTION_BTNS.map((r) => (
+              <button key={r.value} type="button" className="keypad-btn" title={t(r.titleKey)}
+                disabled={!enabled} onClick={() => applyRetention(r.value)}>
+                {r.label}
+              </button>
+            ))}
+          </Row>
+        </Group>
+
+        <Group title={t("schematic.keypad.row.pulp")}>
+          <Row label="">{PULP_BTNS.map(btn)}</Row>
+        </Group>
+      </div>
     </div>
   );
 }
