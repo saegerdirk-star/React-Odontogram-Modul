@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.71.1 - 2026-08-31
+
+### Schema: ersetzte Zähne (herausnehmbare Prothese) werden gezeichnet
+
+Eine Teleskop-/Modellguss-/Vollprothese ersetzt fehlende Zähne; im Schema wurden
+diese ersetzten Zähne gar nicht angezeigt (nur als fehlend-Geist), obwohl die
+anatomische Ansicht sie zeichnet (Dirk, 31.08.2026). Jetzt rendert das Schema
+einen fehlenden Zahn mit `prosthesis` removable-partial/full als Prothesenzahn —
+schwebende Krone in Prothesenfarbe, Draufsicht als gefüllter Kasten, Badge „e".
+
 ## 2.71.0 - 2026-08-31
 
 ### Befund-Dock: vorgewähltes Material gilt auch für die Tastatur (Status + Plan)

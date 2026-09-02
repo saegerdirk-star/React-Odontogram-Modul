@@ -139,6 +139,10 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
   const missing = sel === "none" || sel === "no-tooth-after-extraction";
   const implant = sel === "implant";
   const pontic = missing && rt === "bridge";
+  // Ersetzter Zahn (charly `e`): eine Lücke, die durch eine herausnehmbare
+  // Prothese (Teleskop-/Modellguss-/Vollprothese) ersetzt ist — schwebende
+  // Prothesenkrone in der Lücke, wie ein Brückenglied, aber in Prothesenfarbe.
+  const replaced = missing && (s.prosthesis === "removable-partial" || s.prosthesis === "removable-full");
   const radix = sub === "radix";
   const crowned = rt === "crown" || rt === "bridge";
 
@@ -155,7 +159,7 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
   const removedIdx = removes && s.rootResectionRoot ? roots.indexOf(s.rootResectionRoot) : -1;
   const apexEff = s.endoResection ? cerv + (apex - cerv) * 0.76 : apex;
 
-  if (missing && !pontic) {
+  if (missing && !pontic && !replaced) {
     // ghost outline only
     parts.push(`<path d="${crownPath(cx, w, top, cerv)}" fill="none" stroke="#c9c9c9" stroke-width="1.2" stroke-dasharray="3 3"/>`);
     for (const d of rootPaths(cx, w, cerv, apex, n)) parts.push(`<path d="${d}" fill="none" stroke="#c9c9c9" stroke-width="1.2" stroke-dasharray="3 3"/>`);
@@ -163,15 +167,16 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
     // crown fill
     let crownFill = "#fff";
     if (crowned) crownFill = CROWN_COLORS[s.restorationMaterial] ?? "#ddd";
-    if (!radix && !pontic) {
+    else if (replaced) crownFill = "#ecdcc4";   // denture tooth (Prothesenzahn)
+    if (!radix && !pontic && !replaced) {
       parts.push(`<path d="${crownPath(cx, w, top, cerv)}" fill="${crownFill}" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>`);
-    } else if (pontic) {
-      // floating crown, no roots
+    } else if (pontic || replaced) {
+      // floating crown, no roots — a bridge pontic or a removable-denture tooth
       parts.push(`<path d="${crownPath(cx, w, top, cerv)}" fill="${crownFill}" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>`);
     }
     // roots — an IMPLANT has none: a single screw body with a threaded (zig-zag)
-    // edge, not the natural roots. Otherwise the data-driven root count.
-    if (!pontic) {
+    // edge, not the natural roots. A pontic / replaced denture tooth has none.
+    if (!pontic && !replaced) {
       if (implant) {
         // Implantatposition: center | mesial | distal | both. mesial faces the
         // arch midline (mesialOnLeft, quadrant 2/3). "both" draws two narrower
@@ -357,7 +362,7 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
 
   // upright text annotations, added AFTER the flip so they never read upside down.
   const anno: string[] = [];
-  const badge = crowned ? (rt === "bridge" ? "B" : "K") : rt === "veneer" ? "V" : rt === "onlay" ? "On" : rt === "inlay" ? "I" : "";
+  const badge = crowned ? (rt === "bridge" ? "B" : "K") : replaced ? "e" : rt === "veneer" ? "V" : rt === "onlay" ? "On" : rt === "inlay" ? "I" : "";
   if (badge) anno.push(`<text x="${CELL_W - 5}" y="14" text-anchor="end" font-size="11" font-weight="600" fill="${INK}">${badge}</text>`);
   if (!implant && (anyFill || anyPost)) {
     const t = anyFill && anyPost ? "WF·St" : anyPost ? "St" : "WF";
@@ -404,7 +409,13 @@ function occlBox(toothNo: number, s: ToothDisplayState): string {
   const ix0 = cx - inW / 2, iy0 = cy - inH / 2;
   const outerRx = anterior ? 6 : 8, innerRx = anterior ? 3 : 4;
   const missing = s.toothSelection === "none" || s.toothSelection === "no-tooth-after-extraction";
+  const replaced = missing && (s.prosthesis === "removable-partial" || s.prosthesis === "removable-full");
   const parts: string[] = [];
+  if (replaced) {
+    // a removable-denture tooth (Prothesenzahn): a filled box in denture colour
+    parts.push(`<rect x="${x0}" y="${y0}" width="${boxW}" height="${boxH}" rx="${outerRx}" fill="#ecdcc4" stroke="${INK}" stroke-width="1.4"/>`);
+    return parts.join("");
+  }
   if (missing && s.restorationType !== "bridge") {
     parts.push(`<rect x="${x0}" y="${y0}" width="${boxW}" height="${boxH}" rx="${outerRx}" fill="none" stroke="#c9c9c9" stroke-width="1.2" stroke-dasharray="3 3"/>`);
     return parts.join("");
