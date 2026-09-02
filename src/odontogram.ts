@@ -565,6 +565,9 @@ function defaultState(){
     // Restauration, keine Füllung — die Engine muss die Flächen kennen, um es im
     // HKP als „Inlay n-flächig" abzurechnen.
     inlayCoverage: [] as string[],
+    // Veneer-Flächen (Dirk, 31.08.2026): welche Flächen das Veneer bedeckt
+    // (labial, ggf. inzisal/approximal) — für den Kostenplan, wie inlayCoverage.
+    veneerCoverage: [] as string[],
     crownLeakage: false, // marginal leakage on a crown/bridge restoration (SP3b Task 6)
     // charly „Wurzelkappe": eine Kappe auf einer Wurzel (Radix), z. B. als
     // Auflager einer Deckprothese. Nur auf einem Wurzelrest sinnvoll — der
@@ -5433,6 +5436,10 @@ function getStateSummary(toothNo: number): string[]{
     const surfs = state.inlayCoverage.map((sf: string) => t("surface." + sf)).join(", ");
     summary.push(t("inlayCoverage.label") + ": " + surfs);
   }
+  if(veneerCoverageAllowed(state) && Array.isArray(state.veneerCoverage) && state.veneerCoverage.length){
+    const surfs = state.veneerCoverage.map((sf: string) => t("surface." + sf)).join(", ");
+    summary.push(t("veneerCoverage.label") + ": " + surfs);
+  }
   if(state.endoResection) summary.push(t("endo.resection"));
   if(state.fissureSealing) summary.push(t("filling.fissureSealing"));
   if(state.parapulpalPin) summary.push(t("endo.parapulpalPin"));
@@ -6136,6 +6143,9 @@ function syncControlsFromState(state: Any){
     const inCov: string[] = Array.isArray(state.inlayCoverage) ? state.inlayCoverage : [];
     for(const sf of Object.keys(caps)) $(`#inlayCov${caps[sf]}`).checked = inCov.includes(sf);
     $("#inlayCoverageRow").classList.toggle("hidden", !(activeTooth && inlayCoverageAllowed(state)));
+    const veCov: string[] = Array.isArray(state.veneerCoverage) ? state.veneerCoverage : [];
+    for(const sf of Object.keys(caps)) $(`#veneerCov${caps[sf]}`).checked = veCov.includes(sf);
+    $("#veneerCoverageRow").classList.toggle("hidden", !(activeTooth && veneerCoverageAllowed(state)));
   }
   const isMilktooth = state.toothSelection === "milktooth";
   const isImplant = state.toothSelection === "implant";
@@ -7151,6 +7161,28 @@ export function toggleInlaySurface(toothNo: number, surface: string): void {
 }
 export function getInlayCoverage(toothNo: number): string[] {
   const v = toothState.get(toothNo)?.inlayCoverage;
+  return Array.isArray(v) ? [...v] : [];
+}
+
+/** Veneer-Flächen (Dirk, 31.08.2026): welche Flächen das Veneer bedeckt — für
+ *  den Kostenplan. Nur auf einem Veneer. */
+export function veneerCoverageAllowed(state: Any): boolean {
+  return state.restorationType === "veneer";
+}
+export function toggleVeneerSurface(toothNo: number, surface: string): void {
+  if(!ONLAY_SURFACES.includes(surface)) return;
+  const s = toothState.get(toothNo);
+  if(!s || !veneerCoverageAllowed(s)) return;
+  gateToothEdit(toothNo, () => {
+    const cur: string[] = Array.isArray(s.veneerCoverage) ? s.veneerCoverage : [];
+    const has = cur.includes(surface);
+    s.veneerCoverage = has ? cur.filter((x: string) => x !== surface) : [...cur, surface];
+    notifyStateChange();
+    return true;
+  });
+}
+export function getVeneerCoverage(toothNo: number): string[] {
+  const v = toothState.get(toothNo)?.veneerCoverage;
   return Array.isArray(v) ? [...v] : [];
 }
 
@@ -8197,13 +8229,18 @@ function writeShorthandEdit(s: Any, edit: ShorthandEdit, toothNo: number): void 
     }
     return;
   }
-  if(edit.kind === "surfaces" && edit.target === "inlay-coverage"){
-    // The surfaces of an inlay (restoration material + surfaces): stored as the
-    // inlay's extent for the cost plan, not as a filling (Dirk, 31.08.2026).
-    const cur: string[] = Array.isArray(s.inlayCoverage) ? s.inlayCoverage : [];
+  if(edit.kind === "surfaces" && edit.target === "restoration-coverage"){
+    // Surfaces of a partial restoration (restoration material + surfaces): they
+    // are the restoration's extent, stored for the cost plan (Dirk, 31.08.2026).
+    // Which coverage depends on what the tooth already is — a veneer stays a
+    // veneer, an onlay an onlay; anything else becomes an inlay.
+    const rt = s.restorationType;
+    const field = rt === "veneer" ? "veneerCoverage" : rt === "onlay" ? "onlayCoverage" : "inlayCoverage";
+    if(rt !== "veneer" && rt !== "onlay" && rt !== "inlay") s.restorationType = "inlay";
+    const cur: string[] = Array.isArray(s[field]) ? s[field] : [];
     const set = new Set<string>(cur);
     for(const surf of edit.surfaces) set.add(surf);
-    s.inlayCoverage = [...set];
+    s[field] = [...set];
     return;
   }
 }
@@ -8798,6 +8835,7 @@ function serializeState(s: Any){
     ...(s.rootCap ? { rootCap: true } : {}),
     ...(Array.isArray(s.onlayCoverage) && s.onlayCoverage.length ? { onlayCoverage: [...s.onlayCoverage] } : {}),
     ...(Array.isArray(s.inlayCoverage) && s.inlayCoverage.length ? { inlayCoverage: [...s.inlayCoverage] } : {}),
+    ...(Array.isArray(s.veneerCoverage) && s.veneerCoverage.length ? { veneerCoverage: [...s.veneerCoverage] } : {}),
     prosthesis: s.prosthesis,
     mobility: s.mobility,
     toothSubstrate: s.toothSubstrate,
@@ -9435,6 +9473,9 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
     : [];
   s.inlayCoverage = Array.isArray(raw.inlayCoverage)    // Inlay-Flächen
     ? raw.inlayCoverage.filter((x: unknown): x is string => typeof x === "string" && ONLAY_SURFACES.includes(x))
+    : [];
+  s.veneerCoverage = Array.isArray(raw.veneerCoverage)  // Veneer-Flächen
+    ? raw.veneerCoverage.filter((x: unknown): x is string => typeof x === "string" && ONLAY_SURFACES.includes(x))
     : [];
   s.prosthesis = validateEnum(raw.prosthesis, VALID_PROSTHESIS, "none");
   s.mobility = validateEnum(raw.mobility, VALID_MOBILITY, s.mobility);
@@ -14479,6 +14520,11 @@ function wireControls(){
       for(const toothNo of betroffen) toggleInlaySurface(toothNo, sf);
       nachZeichnen(betroffen);
     });
+    $(`#veneerCov${cap}`).addEventListener("change", ()=>{
+      const betroffen = Array.from(selectedTeeth) as number[];
+      for(const toothNo of betroffen) toggleVeneerSurface(toothNo, sf);
+      nachZeichnen(betroffen);
+    });
   }
 
   // Missing closed
@@ -15178,7 +15224,7 @@ export type ToothDisplayState = {
   crownFractureType: string;
   crownMarginType: string; crownMarginSide: string;
   splinted: boolean; occlusalSplint: boolean; occlusalFunction: string;
-  rootCap: boolean; onlayCoverage: string[]; inlayCoverage: string[];
+  rootCap: boolean; onlayCoverage: string[]; inlayCoverage: string[]; veneerCoverage: string[];
 };
 
 export function getToothDisplayState(toothNo: number): ToothDisplayState {
@@ -15233,6 +15279,7 @@ export function getToothDisplayState(toothNo: number): ToothDisplayState {
     rootCap: !!s.rootCap,
     onlayCoverage: Array.isArray(s.onlayCoverage) ? [...s.onlayCoverage] : [],
     inlayCoverage: Array.isArray(s.inlayCoverage) ? [...s.inlayCoverage] : [],
+    veneerCoverage: Array.isArray(s.veneerCoverage) ? [...s.veneerCoverage] : [],
   };
 }
 

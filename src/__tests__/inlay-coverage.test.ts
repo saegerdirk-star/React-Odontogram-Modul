@@ -14,6 +14,8 @@ import {
   getStatusChart,
   toggleInlaySurface,
   getInlayCoverage,
+  toggleVeneerSurface,
+  getVeneerCoverage,
 } from "../odontogram";
 import { buildSchematicSvg } from "../schematicGraphic";
 
@@ -25,22 +27,20 @@ describe("materials: Zirkon + NEM", () => {
   });
 });
 
-describe("inlay from material + surfaces", () => {
-  it("a restoration material on surfaces parses to an inlay AND records the surfaces", () => {
+describe("restoration from material + surfaces", () => {
+  it("a restoration material on surfaces sets the material AND keeps the surfaces as coverage", () => {
     const r = parseShorthand("Gmod");   // Gold on m/o/d
-    // restorationType inlay + material gold
-    expect(r.edits).toContainEqual({ kind: "axis", field: "restorationType", value: "inlay" });
     expect(r.edits).toContainEqual({ kind: "axis", field: "restorationMaterial", value: "gold" });
-    // the surfaces are kept as the inlay's extent, not dropped
-    const cov = r.edits.find(e => e.kind === "surfaces" && (e as { target: string }).target === "inlay-coverage");
+    // the surfaces are kept as the restoration's extent, not dropped; which
+    // coverage (inlay/onlay/veneer) is decided by the writer from the tooth state
+    const cov = r.edits.find(e => e.kind === "surfaces" && (e as { target: string }).target === "restoration-coverage");
     expect(cov).toBeTruthy();
     expect((cov as { surfaces: string[] }).surfaces.sort()).toEqual(["distal", "mesial", "occlusal"]);
   });
 
-  it("Zirkon on surfaces gives a zircon inlay", () => {
+  it("Zirkon on surfaces carries the zircon material", () => {
     const r = parseShorthand("Ziro");   // Zirkon on occlusal
     expect(r.edits).toContainEqual({ kind: "axis", field: "restorationMaterial", value: "zircon" });
-    expect(r.edits).toContainEqual({ kind: "axis", field: "restorationType", value: "inlay" });
   });
 });
 
@@ -66,5 +66,30 @@ describe("inlayCoverage model + schema", () => {
     __setToothStateForTest(16, { restorationType: "inlay", restorationMaterial: "gold", inlayCoverage: ["occlusal"] });
     const svg = buildSchematicSvg(getToothDisplayState);
     expect(svg).toContain("inlayClip-16");
+  });
+});
+
+describe("veneerCoverage model + schema", () => {
+  it("stores and serializes only on a veneer, omit-when-empty", () => {
+    __setToothStateForTest(11, { restorationType: "veneer", restorationMaterial: "emax" });
+    expect(getVeneerCoverage(11)).toEqual([]);
+    expect(getStatusChart().teeth["11"]?.veneerCoverage).toBeUndefined();
+    __setToothStateForTest(11, { restorationType: "veneer", restorationMaterial: "emax", veneerCoverage: ["buccal", "occlusal"] });
+    expect(getStatusChart().teeth["11"]?.veneerCoverage).toEqual(["buccal", "occlusal"]);
+  });
+
+  it("the setter only takes on a veneer", () => {
+    __setToothStateForTest(21, { restorationType: "crown" });
+    toggleVeneerSurface(21, "buccal");
+    expect(getVeneerCoverage(21)).toEqual([]);
+    __setToothStateForTest(21, { restorationType: "veneer" });
+    toggleVeneerSurface(21, "buccal");
+    expect(getVeneerCoverage(21)).toEqual(["buccal"]);
+  });
+
+  it("draws the veneer surfaces in the schema box", () => {
+    __setToothStateForTest(11, { restorationType: "veneer", restorationMaterial: "emax", veneerCoverage: ["buccal"] });
+    const svg = buildSchematicSvg(getToothDisplayState);
+    expect(svg).toContain("veneerClip-11");
   });
 });

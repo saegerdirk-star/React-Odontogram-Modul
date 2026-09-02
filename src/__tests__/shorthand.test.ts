@@ -94,9 +94,8 @@ describe("Das Material steht VOR dem Befund und bleibt stehen", () => {
     // inlayCoverage mitgeschrieben (Kostenplan, Dirk 31.08.2026).
     const r = parseShorthand("G od");
     expect(r.edits).toEqual([
-      { kind: "axis", field: "restorationType", value: "inlay" },
       { kind: "axis", field: "restorationMaterial", value: "gold" },
-      { kind: "surfaces", target: "inlay-coverage", surfaces: ["occlusal", "distal"] },
+      { kind: "surfaces", target: "restoration-coverage", surfaces: ["occlusal", "distal"] },
     ]);
   });
 

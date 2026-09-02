@@ -480,6 +480,21 @@ function occlBox(toothNo: number, s: ToothDisplayState): string {
     parts.push(`<clipPath id="${clipId}"><rect x="${x0}" y="${y0}" width="${boxW}" height="${boxH}" rx="${outerRx}"/></clipPath>`);
     parts.push(`<g clip-path="url(#${clipId})">${covered}</g>`);
   }
+  // Veneer-Flächen (Dirk 31.08.2026): dieselbe Darstellung für den Kostenplan.
+  if (s.restorationType === "veneer" && s.veneerCoverage.length) {
+    const col = CROWN_COLORS[s.restorationMaterial] ?? "#e2d6c4";
+    const occlShape = `M${ix0},${iy0} h${inW} v${inH} h${-inW} Z`;
+    const surfShape: Record<string, string> = {
+      buccal: topShape, lingual: botShape, occlusal: occlShape,
+      [onLeft ? "mesial" : "distal"]: leftShape,
+      [onLeft ? "distal" : "mesial"]: rightShape,
+    };
+    const clipId = `veneerClip-${toothNo}`;
+    const covered = s.veneerCoverage.map(surf => surfShape[surf]).filter(Boolean)
+      .map(d => `<path d="${d}" fill="${col}" opacity="0.55" stroke="${INK}" stroke-width="0.8"/>`).join("");
+    parts.push(`<clipPath id="${clipId}"><rect x="${x0}" y="${y0}" width="${boxW}" height="${boxH}" rx="${outerRx}"/></clipPath>`);
+    parts.push(`<g clip-path="url(#${clipId})">${covered}</g>`);
+  }
   const oc = surfaceColor("occlusal", s);
   parts.push(`<rect x="${x0}" y="${y0}" width="${boxW}" height="${boxH}" rx="${outerRx}" fill="none" stroke="${INK}" stroke-width="1.5"/>`);
   // Centre: the molar occlusal square, or the anterior incisal-edge bar. The bar

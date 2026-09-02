@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.72.1 - 2026-08-31
+
+### Veneer-Flächen + kontextabhängige Restaurationsflächen
+
+Wie das Inlay braucht auch das **Veneer** seine Flächen für den Kostenplan: neues
+`veneerCoverage`. Und die „Material + Flächen"-Geste ist jetzt kontextabhängig —
+die Flächen landen in der Coverage der VORHANDENEN Teilrestauration (Veneer bleibt
+Veneer, Onlay bleibt Onlay); nur ein Zahn ohne solche Restauration wird zum Inlay.
+Steuerung (Flächen-Kästchen), Schema-Färbung und Summary analog zum Inlay.
+Payload 2.45 → 2.46.
+
 ## 2.72.0 - 2026-08-31
 
 ### Dock-Materialien (Zirkon/NEM, Kunststoff) + Inlay-Flächen für den Kostenplan

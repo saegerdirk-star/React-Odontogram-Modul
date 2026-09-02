@@ -1409,6 +1409,14 @@ export default function App({
                 <label><input type="checkbox" id="inlayCovLingual" /><span>{t("surface.lingual")}</span></label>
                 <label><input type="checkbox" id="inlayCovOcclusal" /><span>{t("surface.occlusal")}</span></label>
               </div>
+              <div id="veneerCoverageRow" className="row inline-checks hidden">
+                <span>{t("veneerCoverage.label")}</span>
+                <label><input type="checkbox" id="veneerCovMesial" /><span>{t("surface.mesial")}</span></label>
+                <label><input type="checkbox" id="veneerCovDistal" /><span>{t("surface.distal")}</span></label>
+                <label><input type="checkbox" id="veneerCovBuccal" /><span>{t("surface.buccal")}</span></label>
+                <label><input type="checkbox" id="veneerCovLingual" /><span>{t("surface.lingual")}</span></label>
+                <label><input type="checkbox" id="veneerCovOcclusal" /><span>{t("surface.occlusal")}</span></label>
+              </div>
               {/* Bead odontogram-dma: what holds a removable denture to this
                   tooth. Its own row rather than more entries in the restoration
                   dropdown: a clasp is not a restoration, and it sits on teeth
