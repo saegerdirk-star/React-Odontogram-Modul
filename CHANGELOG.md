@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.72.6 - 2026-09-02
+
+### Restaurations-Farbpalette: Dirks Palette ist der Standard
+
+Die ausgelieferte Standard-Palette sind jetzt Dirks eigene Restaurationsfarben
+(Cognovis-Fork): u.a. Metall als Schiefer-Graublau, Teleskop grün, Teleskop
+innen Taupe, Glasionomer als Ocker/Braun, provisorische Füllung graugrün,
+Prothesenzahn kräftiger, Gold/Zirkon/emax leicht angepasst. Jeder kann in
+Einstellungen → Colours weiterhin jede Farbe ändern; „Reset to defaults" führt
+jetzt auf DIESE Palette. Reine Session-/Praxis-Präferenz, nicht Teil der Payload
+— ein anderswo geöffneter Fall rendert in DEREN Praxisfarben. Eine wirklich
+leere Palette (`setRestorationPalette({})`) bleibt byte-identisch, sodass die
+Paritäts-Fingerprints unverändert sind.
+
 ## 2.72.5 - 2026-09-02
 
 ### Kürzel-Einstellungen wiederhergestellt

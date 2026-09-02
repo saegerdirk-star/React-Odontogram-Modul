@@ -18,7 +18,7 @@ import type {
 // Bead odontogram-sjr: the palette is engine state; the modal is its control
 // surface, so it reads and writes it directly rather than through SettingsState.
 import {
-  getRestorationColours, getRestorationPalette, setRestorationColour, resetRestorationColours,
+  getRestorationColours, isRestorationPaletteDefault, setRestorationColour, resetRestorationColours,
   getShorthandEnabled, setShorthandEnabled, getShorthandTabWalk, setShorthandTabWalk,
   getToothDepth, setToothDepth,
 } from "./odontogram";
@@ -267,7 +267,9 @@ function ToggleRow({
 function ColourTab({ t }: { t: (k: string, v?: Record<string, unknown>) => string }) {
   const [, bump] = useState(0);
   const colours = getRestorationColours();
-  const dirty = Object.keys(getRestorationPalette()).length > 0;
+  // "Reset to defaults" is enabled only when something differs from the fork
+  // default palette (the shipped standard), not merely when any colour is set.
+  const dirty = !isRestorationPaletteDefault();
   return (
     <>
       <p className="settings-desc">{t("settings.colours.desc")}</p>

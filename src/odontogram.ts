@@ -37,7 +37,7 @@ import {
 import {
   RESTORATION_PALETTE, applyRestorationPalette, getRestorationPalette as paletteValues,
   setRestorationColourValue, resetRestorationPaletteValues, setRestorationPaletteValues,
-  restorationColour, paletteEntry,
+  restorationColour, paletteEntry, restorationPaletteIsDefault as paletteIsDefault,
 } from "./restorationPalette";
 // Bead odontogram-dma: retention gating + bar-span derivation, kept DOM-free.
 import {
@@ -10069,12 +10069,17 @@ export function setRestorationColour(key: string, hex: string | null): void {
   notifyStateChange();
 }
 
-/** Drop every choice; the chart returns to the shipped palette. */
+/** Restore the fork default palette (Dirk's colours); the chart returns to the
+ *  standard set. */
 export function resetRestorationColours(): void {
   if(!resetRestorationPaletteValues()) return;
   syncRestorationPalette();
   notifyStateChange();
 }
+
+/** Whether the palette equals the fork default — nothing customised beyond it.
+ *  Drives the "Reset to defaults" button's enabled state. */
+export function isRestorationPaletteDefault(): boolean { return paletteIsDefault(); }
 
 /** The chosen colours, for a host that persists practice preferences. */
 export function getRestorationPalette(): Record<string, string> { return paletteValues(); }
@@ -15059,6 +15064,10 @@ export async function initOdontogram(){
   wireControls();
   await buildGrid(token);
   if(!initialized || token !== initToken) return;
+  // Paint the (fork default) restoration palette onto the freshly built grid.
+  // Upstream shipped an empty palette, so init wrote nothing; this fork seeds
+  // Dirk's colours, which must be pushed onto the cascade once #toothGrid exists.
+  syncRestorationPalette();
   if(!i18nUnsubscribe){
     i18nUnsubscribe = onI18nChange(()=>refreshLocalizedContent());
   }

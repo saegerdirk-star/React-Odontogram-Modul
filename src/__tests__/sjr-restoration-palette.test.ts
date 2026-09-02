@@ -15,6 +15,7 @@ import {
   RESTORATION_PALETTE, deriveRamp, lighten, parseHex, resolveEntry,
   restorationColour, setRestorationColourValue, resetRestorationPaletteValues,
   setRestorationPaletteValues, applyRestorationPalette, getRestorationPalette,
+  FORK_DEFAULT_PALETTE, restorationPaletteIsDefault,
 } from "../restorationPalette";
 
 const entry = (key: string) => RESTORATION_PALETTE.find((e) => e.key === key)!;
@@ -32,7 +33,11 @@ function fakeRoot() {
   };
 }
 
-beforeEach(() => { resetRestorationPaletteValues(); });
+// Clear to a GENUINELY empty palette (not the fork default reset now restores),
+// so the "unconfigured writes nothing / reports no chosen colours" guarantees
+// below still test the byte-identical unconfigured state the parity contract
+// rests on.
+beforeEach(() => { setRestorationPaletteValues({}); });
 
 describe("an untouched palette writes nothing", () => {
   it("removes rather than writing the defaults back", () => {
@@ -152,5 +157,23 @@ describe("a persisted palette round-trips", () => {
     setRestorationColourValue("gold", "#123456");
     setRestorationPaletteValues(null);
     expect(getRestorationPalette()).toEqual({});
+  });
+});
+
+describe("the Cognovis fork default palette", () => {
+  it("Reset to defaults restores the fork palette, not an empty one", () => {
+    setRestorationColourValue("gold", "#123456");
+    expect(restorationPaletteIsDefault()).toBe(false);
+    resetRestorationPaletteValues();
+    expect(getRestorationPalette()).toEqual(FORK_DEFAULT_PALETTE);
+    expect(restorationPaletteIsDefault()).toBe(true);
+  });
+
+  it("writes the fork colours onto the root when applied", () => {
+    resetRestorationPaletteValues();               // -> fork default
+    const root = fakeRoot();
+    applyRestorationPalette(root);
+    expect(root.set.get("--odon-rest-gold")).toBe("#dfa507");
+    expect(root.set.get("--odon-rest-telescope-connector-anterior")).toBe("#09ff05");
   });
 });
