@@ -14,7 +14,7 @@ import { DentalRiskEvidenceProfile } from "./generated/de-cognovis-fhir-dental-c
 import { DentalServiceRequestProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/ServiceRequest_DentalServiceRequest";
 import { DentalToothStateProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalToothState";
 import { CHART_MAPPINGS, COMPONENT_SYSTEM, DENTAL_CORE, DENTAL_CORE_BUNDLE_IDENTIFIER, DENTAL_CORE_PROFILES, FDI_SYSTEM, isDentalCoreDiagnosis, isDentalCoreFdi, isDentalCoreRiskValue, normalizeLegacyRootPost, PROPERTY_SYSTEM, PROVENANCE_SYSTEM, VALUE_SYSTEM } from "./dentalCoreContract";
-import { LOCAL_SYSTEM, resolveSmokingStatus } from "./codesystems";
+import { DENTAL_CORE_LOCAL_SYSTEM as LOCAL_SYSTEM, resolveSmokingStatus } from "./dentalCoreLocalCoding";
 import { LOCAL_VALUE_MAPS } from "../registry/valueCatalog";
 
 export class UnsupportedDentalCoreContentError extends Error {

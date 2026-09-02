@@ -72,6 +72,16 @@ describe("endo per canal — schematic rendering", () => {
     expect(svg.match(/stroke="#8a9096" stroke-width="3\.6"/g)).toHaveLength(1);
   });
 
+  it("keeps one tooth-level post when migrated canal detail has no explicit post", () => {
+    __resetChartStateForTest();
+    __setToothStateForTest(46, {
+      endo: "endo-metal-pin",
+      endoCanals: { mesial: ["filling"] },
+    });
+    const svg = buildSchematicSvg(getToothDisplayState);
+    expect(svg.match(/stroke="#8a9096" stroke-width="3\.6"/g)).toHaveLength(1);
+  });
+
   it("synthesizes a whole-tooth post across roots only without per-canal detail", () => {
     __resetChartStateForTest();
     __setToothStateForTest(16, { rootPostType: "metal", endoCanals: {} });

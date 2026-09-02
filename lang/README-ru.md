@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.69.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-3.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -583,7 +583,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion is a pure optional projection of the UI-domain document. It has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.6.0` from the exact `@cognovis/fhir-release@0.2.4` projection. Root posts use the orthogonal `rootPostType` axis and remain representable beside every root-filling state; legacy `endo-glass-pin` and `endo-metal-pin` values migrate to `endo-filling` plus the corresponding post material. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date and refuses exports that would lose populated clinical state; a Dental Core session rejects Legacy, unsupported, or malformed bundles.
+Преобразование FHIR — это чистая необязательная проекция документа интерфейса. Dental Core `de.cognovis.fhir.dental.core#0.6.0` из точной проекции `@cognovis/fhir-release@0.2.4` является единственным контрактом FHIR. Версия 3 удаляет прежнее представление вне Dental Core и выбор диалекта во время выполнения; чужие, неподдерживаемые или некорректные Bundle явно отклоняются. Корневой штифт остаётся независимым от любого состояния пломбирования благодаря `rootPostType`. Старые JSON и прежние значения Dental Core `endo-glass-pin` / `endo-metal-pin` мигрируют в `endo-filling` плюс материал штифта; новый вывод больше никогда не объединяет эти две оси.
 
 **Живой режим Aidbox (разработка, начиная с 2.50.0):**
 
@@ -777,6 +777,7 @@ npm run docs           # Generate TypeDoc docs in docs/
 - `prosthesis` — ось съёмного/аттачментного протезирования (none/healing-abutment/locator/locator-denture/bar/bar-denture/removable-partial/removable-full), взаимоисключающая с фиксированным `restorationType` коронка/мост
 - `crownLeakage` — флаг краевой негерметичности коронки, имеет значение только когда `restorationType` равен crown или bridge
 - `endo` — эндодонтический статус; взаимоисключающий с `pulpDx` (отображаются вместе через единый объединённый селектор «Статус пульпы / эндо» — лечение зуба нормализует `pulpDx` в `normal`)
+- `rootPostType` — материал корневого штифта (`none`, `glass-fiber`, `metal`), независимо от `endo`
 - `mods` — массив модификаций (inflammation, parodontal); `inflammation` упразднён в интерфейсе для присутствующих зубов (там глиф определяется `apicalDx`), но по-прежнему применяется к отсутствующим зубам/лункам после удаления
 - `caries` — активные поверхности кариеса
 - `cariesActiveDepth` — значение глубины ICDAS, устанавливаемое селектором глубины кариеса при применении к новой поверхности (не сохраняемое значение по поверхности; см. `cariesSeverity` для сохранённого поля по поверхности)

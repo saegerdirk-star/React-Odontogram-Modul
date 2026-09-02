@@ -251,7 +251,7 @@ export const AXES: ClinicalAxis[] = [
   // axis. `secondaryCaries` (per-surface CARS 0-6) and `radiographicDepth`
   // (per-surface none/E1/E2/D1/D2/D3) are scalar-map fields handled the same way
   // `cariesDepths` is — special-cased outside AXES/FIELD_MAPPINGS entirely (see
-  // registry/fhir.ts + registry/fromFhir.ts) — so they deliberately have no row here.
+  // fhir/toFhirDentalCore.ts + fhir/fromFhirDentalCore.ts) — so they deliberately have no row here.
   { id: "rootCaries", field: "rootCaries", kind: "enum", valueGroup: "rootCaries",
     skipValue: "none", finding: { local: "root-caries", display: "Root caries" },
     values: valuesFrom("rootCaries"),

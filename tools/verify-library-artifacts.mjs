@@ -12,11 +12,22 @@ const typeEntries = [
   packageJson.types,
   ...Object.values(packageJson.exports).flatMap((entry) => entry.types ? [entry.types] : []),
 ];
+const removedDialectSymbols = [
+  ["Fhir", "Dialect"].join(""),
+  ["Fhir", "CodecOptions"].join(""),
+  ["Unsupported", "Fhir", "Dialect"].join(""),
+];
 
 for (const typeEntry of typeEntries) {
   const artifact = resolve(root, typeEntry);
   if (!existsSync(artifact)) {
     throw new Error(`Missing declaration artifact: ${typeEntry}`);
+  }
+  const declaration = readFileSync(artifact, "utf8");
+  for (const removedSymbol of removedDialectSymbols) {
+    if (declaration.includes(removedSymbol)) {
+      throw new Error(`Removed FHIR dialect symbol ${removedSymbol} leaked into ${typeEntry}`);
+    }
   }
 }
 
@@ -27,6 +38,8 @@ try {
     'import Odontogram from "react-advanced-odontogram";',
     'import { DentalCoreBundleRejectedError, buildDentalCoreBundle, buildFhirBundle, parseDentalCoreBundle, parseFhirBundle } from "react-advanced-odontogram/fhir";',
     'import type { FhirExportOptions, OdontogramExportPayload } from "react-advanced-odontogram/fhir";',
+    '// @ts-expect-error The removed legacy FHIR dialect is intentionally not public.',
+    `import type { ${removedDialectSymbols.slice(0, 2).join(", ")} } from "react-advanced-odontogram/fhir";`,
     "const options: FhirExportOptions = { subject: \"Patient/example\", effectiveDateTime: \"2026-08-12\" };",
     'const payload: OdontogramExportPayload = { version: "2.25", globals: {}, teeth: {} };',
     "void Odontogram;",

@@ -12,8 +12,6 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath, URL as NodeURL } from "node:url";
 import { __renderActiveLayers, __setToothStateForTest, __getToothStateForTest } from "../odontogram";
-import { buildFhirBundle } from "../fhir/toFhir";
-import { parseFhirBundle } from "../fhir/fromFhir";
 import type { OdontogramExportPayload } from "../fhir/types";
 
 function svgText(name: string): string {

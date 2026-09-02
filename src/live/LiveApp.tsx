@@ -133,7 +133,7 @@ function ReportPanel({ report, skipped }: { report?: LoadReport; skipped: Skippe
 
 function LiveChart({ config }: { config: LiveConfig }) {
   const session = useMemo<OdontogramSession>(
-    () => createOdontogramSession(null, { fhir: { dialect: "dental-core" } }),
+    () => createOdontogramSession(),
     [],
   );
   const gateway = useMemo(() => createAidboxGateway(config), [config]);

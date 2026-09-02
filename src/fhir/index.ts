@@ -15,10 +15,7 @@ export {
   DENTAL_CORE_PROFILES,
   DENTAL_CORE_PACKAGE_VERSION,
 } from "./dentalCoreContract";
-export { resolveFhirDialect, UnsupportedFhirDialectError } from "./types";
 export type {
-  FhirCodecOptions,
-  FhirDialect,
   FhirExportOptions,
   OdontogramExportPayload,
 } from "./types";

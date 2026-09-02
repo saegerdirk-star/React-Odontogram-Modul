@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { PAYLOAD_VERSION } from "../document";
-import { describe, expect, expectTypeOf, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   buildDentalCoreBundle,
   buildFhirBundle,
@@ -35,11 +35,11 @@ import {
   FHIR_RELEASE_PROJECTION_PACKAGE,
   FHIR_RELEASE_PROJECTION_VERSION,
 } from "../fhir/generated/dental-core-contract";
-import type { FhirDialect, OdontogramExportPayload } from "../fhir/types";
+import type { OdontogramExportPayload } from "../fhir/types";
 import { createOdontogramSession } from "../index";
 import { __importStatusForTest, __resetChartStateForTest, __setToothStateForTest, getStatusChart, importFhirBundle } from "../odontogram";
 
-const options = { subject: "Patient/example", effectiveDateTime: "2026-08-14T17:00:31Z", dialect: "dental-core" as const };
+const options = { subject: "Patient/example", effectiveDateTime: "2026-08-14T17:00:31Z" };
 const testFileUrl = import.meta.url;
 
 function fixture(): OdontogramExportPayload {
@@ -174,7 +174,7 @@ describe("generated Dental Core contract", () => {
   });
 });
 
-describe("configured FHIR codecs", () => {
+describe("Dental Core FHIR seam", () => {
   it("exports a clinically populated chart through the canonical carrier profiles and roundtrips source values", () => {
     const source = clinicalFixture();
     const bundle = buildDentalCoreBundle(source, options);
@@ -370,7 +370,7 @@ describe("configured FHIR codecs", () => {
     expect(newEntries.every((entry) => /^urn:uuid:/.test(entry.fullUrl ?? ""))).toBe(true);
   });
 
-  it("uses an explicit Dental Core codec and roundtrips every emitted companion resource", () => {
+  it("uses Dental Core by default and roundtrips every emitted companion resource", () => {
     const source = fixture();
     const bundle = buildFhirBundle(source, options);
 
@@ -384,7 +384,7 @@ describe("configured FHIR codecs", () => {
       DENTAL_CORE_PROFILES["dental-service-request"],
       DENTAL_CORE_PROFILES["dental-clinical-provenance"],
     ]));
-    expect(parseFhirBundle(bundle, { dialect: "dental-core" })).toMatchObject(source);
+    expect(parseFhirBundle(bundle)).toMatchObject(source);
   });
 
   it("preserves explicit false and mapped defaults without inventing omitted state", () => {
@@ -394,7 +394,7 @@ describe("configured FHIR codecs", () => {
       teeth: { "16": { endoResection: false, periapicalType: "none", retention: "none" } },
     };
 
-    const parsed = parseFhirBundle(buildFhirBundle(source, options), { dialect: "dental-core" });
+    const parsed = parseFhirBundle(buildFhirBundle(source, options));
     expect(parsed.teeth["16"]).toMatchObject(source.teeth["16"]);
     expect(parsed.teeth["17"]).toBeUndefined();
   });
@@ -408,7 +408,7 @@ describe("configured FHIR codecs", () => {
           globals: {},
           teeth: { "16": { [mapping.field]: mapping.kind === "set" ? [value] : value } },
         };
-        const parsed = parseFhirBundle(buildFhirBundle(source, options), { dialect: "dental-core" });
+        const parsed = parseFhirBundle(buildFhirBundle(source, options));
         const expected = mapping.omitDefault && value === mapping.defaultValue ? undefined : source.teeth["16"]?.[mapping.field];
         expect(parsed.teeth["16"]?.[mapping.field], `${mapping.field}=${String(value)}`).toEqual(expected);
       }
@@ -417,7 +417,7 @@ describe("configured FHIR codecs", () => {
 
   it("accepts empty Core collections and rejects ambiguous Core collections", () => {
     const empty = buildFhirBundle({ version: PAYLOAD_VERSION, globals: {}, teeth: {} }, options);
-    expect(parseFhirBundle(empty, { dialect: "dental-core" })).toEqual({ version: PAYLOAD_VERSION, globals: {}, teeth: {} });
+    expect(parseFhirBundle(empty)).toEqual({ version: PAYLOAD_VERSION, globals: {}, teeth: {} });
 
     const invalidType = structuredClone(buildFhirBundle(fixture(), options));
     invalidType.type = "transaction";
@@ -434,7 +434,7 @@ describe("configured FHIR codecs", () => {
     }
 
     for (const candidate of [invalidType, duplicateChart, contradictory]) {
-      expect(() => parseFhirBundle(candidate, { dialect: "dental-core" })).toThrow(DentalCoreBundleRejectedError);
+      expect(() => parseFhirBundle(candidate)).toThrow(DentalCoreBundleRejectedError);
     }
   });
 
@@ -454,11 +454,11 @@ describe("configured FHIR codecs", () => {
       } },
     };
 
-    expect(parseFhirBundle(buildFhirBundle(source, options), { dialect: "dental-core" })).toMatchObject(source);
+    expect(parseFhirBundle(buildFhirBundle(source, options))).toMatchObject(source);
   });
 
   it("requires a truthful effective date for clinical content", () => {
-    expect(() => buildFhirBundle(fixture(), { dialect: "dental-core" })).toThrow("Dental Core export requires an effective date");
+    expect(() => buildFhirBundle(fixture())).toThrow("Dental Core export requires an effective date");
   });
 
   it("rejects malformed, duplicate, unsupported, and foreign-dialect bundles", () => {
@@ -473,7 +473,7 @@ describe("configured FHIR codecs", () => {
     const foreign = { resourceType: "Bundle", identifier: { system: DENTAL_CORE, value: "odontogram-dental-core-unsupported" }, entry: [] };
 
     for (const candidate of [duplicate, unsupported, wrongCoding, foreign]) {
-      expect(() => parseFhirBundle(candidate, { dialect: "dental-core" })).toThrow(DentalCoreBundleRejectedError);
+      expect(() => parseFhirBundle(candidate)).toThrow(DentalCoreBundleRejectedError);
     }
   });
 
@@ -482,7 +482,7 @@ describe("configured FHIR codecs", () => {
     const plan = invalid.entry?.find((entry) => entry.resource?.resourceType === "CarePlan")?.resource as import("fhir/r4").CarePlan | undefined;
     if (plan) plan.activity = [{ reference: { reference: "ServiceRequest/not-generated" } }];
 
-    expect(() => parseFhirBundle(invalid, { dialect: "dental-core" })).toThrow(DentalCoreBundleRejectedError);
+    expect(() => parseFhirBundle(invalid)).toThrow(DentalCoreBundleRejectedError);
   });
 
   it("does not replace the chart after a rejected import", () => {
@@ -505,7 +505,7 @@ describe("configured FHIR codecs", () => {
     const chart = aidboxBundle.entry?.find((entry) => entry.resource?.meta?.profile?.includes(DENTAL_CORE_PROFILES["dental-chart-state"]))?.resource;
     chart?.meta?.profile?.push("http://hl7.org/fhir/StructureDefinition/Observation");
 
-    expect(parseFhirBundle(aidboxBundle, { dialect: "dental-core" })).toMatchObject({
+    expect(parseFhirBundle(aidboxBundle)).toMatchObject({
       teeth: fixture().teeth,
       plan: fixture().plan,
       examination: { subject: options.subject, effectiveDateTime: options.effectiveDateTime },
@@ -518,7 +518,7 @@ describe("configured FHIR codecs", () => {
     const chart = aidboxBundle.entry?.find((entry) => entry.resource?.meta?.profile?.includes(DENTAL_CORE_PROFILES["dental-chart-state"]))?.resource;
     chart?.meta?.profile?.push("http://hl7.org/fhir/StructureDefinition/Observation");
     const session = createOdontogramSession(undefined, {
-      fhir: { dialect: "dental-core", exportOptions: { subject: options.subject, effectiveDateTime: options.effectiveDateTime } },
+      fhir: { exportOptions: { subject: options.subject, effectiveDateTime: options.effectiveDateTime } },
     });
 
     expect(session.importFhirBundle(aidboxBundle)).toBe(true);
@@ -579,7 +579,7 @@ describe("configured FHIR codecs", () => {
     }
 
     const session = createOdontogramSession(undefined, {
-      fhir: { dialect: "dental-core", exportOptions: { subject: options.subject, effectiveDateTime: options.effectiveDateTime } },
+      fhir: { exportOptions: { subject: options.subject, effectiveDateTime: options.effectiveDateTime } },
     });
 
     expect(session.importFhirBundle(aidboxBundle)).toBe(true);
@@ -625,7 +625,7 @@ describe("configured FHIR codecs", () => {
       globals: {},
       teeth: { "16": { endoResection: true } },
       fhirIdentity: { resources: { "Observation/chart/status/16": { id: "host-a-chart", versionId: "17", fullUrl: "https://aidbox.example/fhir/Observation/host-a-chart" } } },
-    }, { fhir: { dialect: "dental-core", exportOptions: options } });
+    }, { fhir: { exportOptions: options } });
 
     session.activate();
     try {
@@ -666,7 +666,7 @@ describe("configured FHIR codecs", () => {
     }
 
     const session = createOdontogramSession(undefined, {
-      fhir: { dialect: "dental-core", exportOptions: options },
+      fhir: { exportOptions: options },
     });
     expect(session.importFhirBundle(relativeBundle)).toBe(true);
 
@@ -781,13 +781,10 @@ describe("configured FHIR codecs", () => {
     expect(parseDentalCoreBundle(diagnosisBundle)).toBeUndefined();
   });
 
-  it("publishes exactly the two supported dialect values", () => {
-    expectTypeOf<FhirDialect>().toEqualTypeOf<"legacy" | "dental-core">();
-  });
 });
 
-describe("configured FHIR sessions", () => {
-  it("keeps the selected codec immutable and makes a rejected Core import non-destructive", () => {
+describe("Dental Core sessions", () => {
+  it("keeps export options immutable and makes a rejected foreign import non-destructive", () => {
     const source: OdontogramExportPayload = {
       version: PAYLOAD_VERSION,
       globals: {},
@@ -795,61 +792,24 @@ describe("configured FHIR sessions", () => {
       plan: { "16": { retention: "clasp" } },
       examination: { effectiveDateTime: "2026-08-14T17:00:31Z" },
     };
-    const legacy = createOdontogramSession(source, { fhir: { dialect: "legacy" } });
-    const dentalCore = createOdontogramSession(source, {
+    const session = createOdontogramSession(source, {
       fhir: {
-        dialect: "dental-core",
         exportOptions: { subject: "Patient/mira", effectiveDateTime: "2026-08-14T17:00:31Z" },
       },
     });
 
-    const legacyBundle = legacy.exportFhirBundle();
-    const coreBundle = dentalCore.exportFhirBundle();
-
-    expect(legacy.fhir.dialect).toBe("legacy");
-    expect(dentalCore.fhir.dialect).toBe("dental-core");
-    expect(legacy.importFhirBundle(legacyBundle)).toBe(true);
-    expect(legacy.getDocument().teeth["16"]?.retention).toBeUndefined();
+    const coreBundle = session.exportFhirBundle();
+    expect(session.fhir).not.toHaveProperty("dialect");
     expect(coreBundle.identifier).toEqual({ system: DENTAL_CORE, value: DENTAL_CORE_BUNDLE_IDENTIFIER });
-    expect(dentalCore.importFhirBundle(coreBundle)).toBe(true);
-    expect(dentalCore.getDocument()).toMatchObject({
+    expect(session.importFhirBundle(coreBundle)).toBe(true);
+    expect(session.getDocument()).toMatchObject({
       version: source.version,
       globals: source.globals,
       teeth: source.teeth,
       plan: source.plan,
     });
-    const beforeRejectedImport = dentalCore.getDocument();
-    expect(dentalCore.importFhirBundle(legacyBundle)).toBe(false);
-    expect(dentalCore.getDocument()).toEqual(beforeRejectedImport);
-  });
-
-  it("rejects malformed Legacy input and admitted Core content without replacing the Legacy document", () => {
-    const legacy = createOdontogramSession({ version: PAYLOAD_VERSION, globals: {}, teeth: { "16": { endoResection: true } } }, { fhir: { dialect: "legacy" } });
-    const before = legacy.getDocument();
-    const coreWithoutMarker = structuredClone(buildFhirBundle(fixture(), options));
-    coreWithoutMarker.identifier = { system: "https://example.test/bundles", value: "assembled" };
-
-    expect(legacy.importFhirBundle({ arbitrary: true })).toBe(false);
-    expect(legacy.getDocument()).toEqual(before);
-    expect(legacy.importFhirBundle({ resourceType: "Bundle", type: "collection", entry: [{ resource: { resourceType: "Patient", id: "unrelated" } }] })).toBe(false);
-    expect(legacy.getDocument()).toEqual(before);
-    expect(legacy.importFhirBundle(coreWithoutMarker)).toBe(false);
-    expect(legacy.getDocument()).toEqual(before);
-  });
-
-  it("rejects a runtime dialect outside the public union at session construction", () => {
-    expect(() => createOdontogramSession(undefined, { fhir: { dialect: "not-a-dialect" as FhirDialect } })).toThrow("Unsupported FHIR dialect");
-  });
-
-  it("keeps the upstream Legacy semantic roundtrip independent of newer Core-only state", () => {
-    const source: OdontogramExportPayload = {
-      version: PAYLOAD_VERSION,
-      globals: {},
-      teeth: { "16": { endoResection: true, fissureSealing: true, mods: ["mobility"] } },
-    };
-    const session = createOdontogramSession(source, { fhir: { dialect: "legacy" } });
-
-    expect(session.importFhirBundle(session.exportFhirBundle())).toBe(true);
-    expect(session.getDocument().teeth["16"]).toMatchObject(source.teeth["16"]);
+    const beforeRejectedImport = session.getDocument();
+    expect(session.importFhirBundle({ resourceType: "Bundle", type: "collection", entry: [] })).toBe(false);
+    expect(session.getDocument()).toEqual(beforeRejectedImport);
   });
 });

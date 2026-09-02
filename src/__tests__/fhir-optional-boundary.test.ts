@@ -3,7 +3,7 @@
 // Dirk Saeger, Malte Sussdorff 2026
 
 import { describe, expect, it } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 const root = process.cwd();
@@ -117,6 +117,29 @@ describe("optional FHIR package boundary", () => {
     expect(generator).toContain("@cognovis/codegen");
   });
 
+  it("exposes one Dental Core seam without a selectable legacy implementation", () => {
+    const publicTypes = source("src/fhir/types.ts");
+    const publicEntry = source("src/fhir/index.ts");
+    const session = source("src/odontogram.ts");
+
+    expect(`${publicTypes}\n${publicEntry}\n${session}`).not.toMatch(/FhirDialect|resolveFhirDialect|UnsupportedFhirDialect/);
+    expect(publicTypes).not.toMatch(/\bdialect\??:/);
+    expect(session).not.toMatch(/\bdialect\s*:/);
+    for (const removed of [
+      "src/fhir/codesystems.ts",
+      "src/fhir/iso3950.ts",
+      "src/fhir/primitives.ts",
+      "src/fhir/toFhirPerio.ts",
+      "src/registry/fhir.ts",
+      "src/registry/fromFhir.ts",
+      "src/registry/legacyAxes.ts",
+      "src/__tests__/legacy-fhir-golden.test.ts",
+      "src/__tests__/fixtures/legacy-fhir-golden.json",
+    ]) {
+      expect(existsSync(resolve(root, removed)), removed).toBe(false);
+    }
+  });
+
   it("contains no removed-dialect implementation, generated artifact, or documentation residue", () => {
     const residue = new RegExp([
       `\\b${["fhir", "dental", "de"].join("-")}\\b`,
@@ -130,6 +153,20 @@ describe("optional FHIR package boundary", () => {
 
     for (const file of files) {
       expect(source(file), `Removed dialect residue in ${file}`).not.toMatch(residue);
+    }
+  });
+
+  it("documents the sole Dental Core contract and independent root posts in every language guide", () => {
+    const guides = readdirSync(resolve(root, "lang"))
+      .filter((name) => /^README-.*\.md$/.test(name))
+      .map((name) => `lang/${name}`);
+
+    expect(guides).toHaveLength(12);
+    for (const guide of guides) {
+      const text = source(guide);
+      expect(text, guide).toContain("de.cognovis.fhir.dental.core#0.6.0");
+      expect(text, guide).toContain("@cognovis/fhir-release@0.2.4");
+      expect(text, guide).toContain("rootPostType");
     }
   });
 });

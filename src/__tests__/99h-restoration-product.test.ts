@@ -160,7 +160,7 @@ describe("FHIR", () => {
   it("die CHARGE steht dort, wo ein Rueckruf sie sucht", () => {
     __setToothStateForTest(16, KRONE);
     setRestorationProduct(16, { manufacturer: "Ivoclar Vivadent", product: "IPS e.max CAD", udi: UDI });
-    const bundle = buildFhirBundle(__collectExportPayloadForTest() as never, { dialect: "dental-core", effectiveDateTime: "2026-08-21T09:00:00Z" } as never);
+    const bundle = buildFhirBundle(__collectExportPayloadForTest() as never, { effectiveDateTime: "2026-08-21T09:00:00Z" } as never);
     const geraete = (bundle.entry ?? []).map((e) => e.resource as unknown as Record<string, unknown>)
       .filter((r) => r?.resourceType === "Device" && r.lotNumber === "LOT4711");
     expect(geraete).toHaveLength(1);
@@ -171,7 +171,7 @@ describe("FHIR", () => {
 
   it("ohne Produkt kein Device", () => {
     __setToothStateForTest(16, KRONE);
-    const bundle = buildFhirBundle(__collectExportPayloadForTest() as never, { dialect: "dental-core", effectiveDateTime: "2026-08-21T09:00:00Z" } as never);
+    const bundle = buildFhirBundle(__collectExportPayloadForTest() as never, { effectiveDateTime: "2026-08-21T09:00:00Z" } as never);
     const geraete = (bundle.entry ?? []).map((e) => e.resource as unknown as Record<string, unknown>)
       .filter((r) => r?.resourceType === "Device");
     expect(geraete).toHaveLength(0);
@@ -267,7 +267,7 @@ describe("Das Produkt einer direkten Fuellung", () => {
   it("FHIR: ein Device je Material, mit der Charge in lotNumber", () => {
     __setToothStateForTest(16, MIT_KOMPOSIT as never);
     setFillingProduct(16, "composite", { manufacturer: "Ivoclar Vivadent", product: "Tetric EvoCeram", shade: "A3", lot: "K-2231" });
-    const bundle = buildFhirBundle(__collectExportPayloadForTest() as never, { dialect: "dental-core", effectiveDateTime: "2026-08-21T09:00:00Z" } as never);
+    const bundle = buildFhirBundle(__collectExportPayloadForTest() as never, { effectiveDateTime: "2026-08-21T09:00:00Z" } as never);
     const geraete = (bundle.entry ?? []).map((e) => e.resource as unknown as Record<string, unknown>)
       .filter((r) => r?.resourceType === "Device");
     expect(geraete).toHaveLength(1);

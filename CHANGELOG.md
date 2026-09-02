@@ -1,5 +1,26 @@
 # Changelog
 
+## 3.0.0 - 2026-09-02
+
+### Breaking: Dental Core is the sole FHIR contract
+
+- Remove the separate upstream Legacy FHIR representation, its public dialect
+  selection, canonical catalogue, runtime dispatch, generated
+  goldens, and compatibility tests. `buildFhirBundle`, `parseFhirBundle`, every
+  session, and the built-in import/export controls now use
+  `de.cognovis.fhir.dental.core#0.6.0` exclusively.
+- Reject foreign and malformed non-Dental-Core Bundles explicitly instead of
+  trying another representation. The exact `@cognovis/fhir-release@0.2.4`
+  projection and generated Dental Core contract remain pinned and verified.
+- Preserve migration for legacy JSON documents and older Dental Core chart
+  values `endo-glass-pin` / `endo-metal-pin`; new JSON and FHIR output keep
+  root filling and `rootPostType` independent.
+- Keep a migrated tooth-level root post visible in the schematic when explicit
+  canal filling detail has no canal-level post, without projecting the post
+  into every canal.
+
+Payload **2.45 -> 2.46**. Package **2.69.0 -> 3.0.0**.
+
 ## 2.69.0 - 2026-09-01
 
 ### Dental Core 0.6 odontogram axes and independent root posts

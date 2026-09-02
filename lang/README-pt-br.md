@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.69.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-3.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -578,7 +578,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion is a pure optional projection of the UI-domain document. It has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.6.0` from the exact `@cognovis/fhir-release@0.2.4` projection. Root posts use the orthogonal `rootPostType` axis and remain representable beside every root-filling state; legacy `endo-glass-pin` and `endo-metal-pin` values migrate to `endo-filling` plus the corresponding post material. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date and refuses exports that would lose populated clinical state; a Dental Core session rejects Legacy, unsupported, or malformed bundles.
+A conversão FHIR é uma projeção opcional e pura do documento da interface. O Dental Core `de.cognovis.fhir.dental.core#0.6.0`, da projeção exata `@cognovis/fhir-release@0.2.4`, é o único contrato FHIR. A versão 3 remove a representação anterior fora do Dental Core e toda seleção de dialeto em tempo de execução; Bundles externos, não suportados ou inválidos são rejeitados explicitamente. O pino radicular permanece independente de qualquer estado da obturação por meio de `rootPostType`. JSON antigo e valores Dental Core anteriores `endo-glass-pin` / `endo-metal-pin` migram para `endo-filling` mais o material do pino; a nova saída nunca volta a combinar os dois eixos.
 
 **Modo live do Aidbox (desenvolvimento, a partir de 2.50.0):**
 
@@ -723,6 +723,7 @@ A exportação cria um arquivo JSON (versão `2.10`; as importações também ac
 - `prosthesis` - eixo removível/de fixação (none/healing-abutment/locator/locator-denture/bar/bar-denture/removable-partial/removable-full), mutuamente exclusivo com um `restorationType` fixo de coroa/ponte
 - `crownLeakage` - marcador de infiltração marginal de coroa, relevante apenas quando `restorationType` é coroa ou ponte
 - `endo` - estado endodôntico; mutuamente exclusivo com `pulpDx` (exibidos juntos por meio de um único seletor unificado de "Estado pulpar/endodôntico" — tratar um dente normaliza `pulpDx` para `normal`)
+- `rootPostType` - material do pino radicular (`none`, `glass-fiber`, `metal`), independente de `endo`
 - `mods` - array de modificações (inflammation, parodontal); `inflammation` foi aposentado da interface em dentes presentes (ali `apicalDx` determina o glifo), mas continua se aplicando a dentes ausentes/alvéolo de extração
 - `caries` - faces com cárie ativa
 - `cariesActiveDepth` - o valor de profundidade ICDAS temporariamente definido pelo seletor de profundidade de cárie ao aplicar uma nova face (não é um valor armazenado por face; ver `cariesSeverity` para o campo por face armazenado)

@@ -240,6 +240,8 @@ export interface DentalCoreIdentity {
 }
 
 /** The payload/document version this engine writes. Readers accept earlier versions. */
+// 2.46 (odontogram-yi8): the public FHIR seam is Dental Core only. The JSON
+// shape is unchanged; legacy JSON endo-post values still migrate at load.
 // 2.45 (odontogram-yi8): additive `rootPostType` axis. Legacy endo post enum
 // values migrate to `endo-filling` plus the matching independent post value.
 // 2.22 (odontogram-8vu): additive `not-erupted` tooth selection; no migration.
@@ -286,7 +288,7 @@ export interface DentalCoreIdentity {
 // filling or caries lesion extends into the cervical region. Omitted entirely
 // when empty, so a document that never records it is byte-identical apart from
 // this version string, and an older document needs no migration.
-export const PAYLOAD_VERSION = "2.45";
+export const PAYLOAD_VERSION = "2.46";
 
 /**
  * The UI-domain document (bead odontogram-3l1, AC2/AC4): a versioned,

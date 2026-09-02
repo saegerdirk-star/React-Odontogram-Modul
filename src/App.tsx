@@ -35,7 +35,7 @@ export { parseFhirBundle } from "./fhir/fromFhir";
 import type { OdontogramSummary, PulpDetailLevel, SecondaryCariesMode, RootCariesMode, RadiographicDepthMode, ToothDetailLevel, SurfaceNotation, PerioViewMode, PerioRowId, PerioIndexNameMode } from "./odontogram";
 export type { PulpDetailLevel, SecondaryCariesMode, RootCariesMode, RadiographicDepthMode, ToothDetailLevel, SurfaceNotation, PerioViewMode, PerioRowId, PerioIndexNameMode } from "./odontogram";
 export type { OdontogramSummary, OdontogramSummarySection } from "./odontogram";
-export type { FhirCodecOptions, FhirDialect, FhirExportOptions } from "./fhir/types";
+export type { FhirExportOptions } from "./fhir/types";
 import { startIntroTour } from "./tour";
 export { startIntroTour } from "./tour";
 import { useI18n } from "./i18n/useI18n";

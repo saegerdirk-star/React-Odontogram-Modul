@@ -17,7 +17,6 @@ import {
 import { buildSchematicSvg } from "../schematicGraphic";
 
 const options = {
-  dialect: "dental-core" as const,
   subject: "Patient/example",
   effectiveDateTime: "2026-09-01T00:00:00Z",
 };

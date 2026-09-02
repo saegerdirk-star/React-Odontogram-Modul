@@ -283,15 +283,22 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
     const centers = rootCenters(cx, w, canals.length);
     const legacy = legacyEndoFindings(s.endo);
     const hasPerCanalDetail = Object.values(s.endoCanals).some((findings) => findings.length > 0);
+    const hasExplicitCanalPost = canals.some((name) => s.endoCanals[name]?.includes("post"));
+    const fallbackPostCanal = hasPerCanalDetail && !hasExplicitCanalPost && s.rootPostType !== "none"
+      ? canals.find((name) => s.endoCanals[name]?.length > 0)
+      : undefined;
     if (!implant) {
       canals.forEach((name, i) => {
         if (i === removedIdx) return;   // a removed root has no canal to fill
         const canalFindings = (s.endoCanals[name] && s.endoCanals[name].length) ? s.endoCanals[name] : legacy;
-        // A whole-tooth root-post value is a fallback only. Once any canal has
-        // explicit detail, draw posts exclusively where that detail says
-        // `post`; synthesizing the global value into every canal destroys the
-        // per-canal distinction the schematic view exists to show.
-        const f = !hasPerCanalDetail && s.rootPostType !== "none" && !canalFindings.includes("post")
+        // The tooth-level material is authoritative. With no canal detail it
+        // projects to every root, matching the anatomical whole-tooth layer.
+        // With detail, explicit canal posts win; if none exists, preserve one
+        // tooth-level post on the first detailed canal instead of losing it or
+        // inventing a post in every canal.
+        const includeToothPost = s.rootPostType !== "none"
+          && (!hasPerCanalDetail || name === fallbackPostCanal);
+        const f = includeToothPost && !canalFindings.includes("post")
           ? [...canalFindings, "post"]
           : canalFindings;
         if (!f.length) return;

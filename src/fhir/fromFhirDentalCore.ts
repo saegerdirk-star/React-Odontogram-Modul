@@ -13,7 +13,7 @@ import { DentalProcedureProfile } from "./generated/de-cognovis-fhir-dental-core
 import { DentalRiskEvidenceProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalRiskEvidence";
 import { DentalServiceRequestProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/ServiceRequest_DentalServiceRequest";
 import { DentalToothStateProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalToothState";
-import { LOCAL_SYSTEM, resolveSmokingStatus } from "./codesystems";
+import { DENTAL_CORE_LOCAL_SYSTEM as LOCAL_SYSTEM, resolveSmokingStatus } from "./dentalCoreLocalCoding";
 import { LOCAL_VALUE_MAPS } from "../registry/valueCatalog";
 import type { DentalCoreResourceIdentity, OdontogramExportPayload, ToothRecord } from "./types";
 import {

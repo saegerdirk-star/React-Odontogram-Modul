@@ -12,7 +12,7 @@ import { type OdontogramPlugin, getQuadrant, LAYER_Z } from "./plugin";
 import { sanitizePluginSvg } from "./pluginSanitize";
 import { buildFhirBundle } from "./fhir/toFhir";
 import { parseFhirBundle } from "./fhir/fromFhir";
-import { resolveFhirDialect, type Bundle, type FhirDialect, type FhirExportOptions } from "./fhir/types";
+import { type Bundle, type FhirExportOptions } from "./fhir/types";
 import type { OdontogramDocument, ExaminationSnapshotRecord } from "./document";
 import type { CvmStage, SmiStage } from "./skeletalAge";
 import { PAYLOAD_VERSION } from "./document";
@@ -15725,14 +15725,13 @@ export interface OdontogramSession {
   activate(): void;
   /** Give the engine back to the session that was live before `activate()`. */
   release(): void;
-  /** Export the current document through this session's configured codec. */
+  /** Export the current document through the sole Dental Core seam. */
   exportFhirBundle(options?: FhirExportOptions): Bundle;
-  /** Import through this session's configured codec without replacing state on rejection. */
+  /** Import Dental Core without replacing state on rejection. */
   importFhirBundle(input: unknown): boolean;
 }
 
 export interface OdontogramSessionFhirConfiguration {
-  dialect: FhirDialect;
   exportOptions?: FhirExportOptions;
 }
 
@@ -15841,7 +15840,6 @@ class ClinicalSession implements OdontogramSession {
     this.liveFhirIdentity = undefined;
     const exportOptions = options?.fhir?.exportOptions;
     this.fhir = Object.freeze({
-      dialect: resolveFhirDialect(options?.fhir?.dialect),
       ...(exportOptions ? { exportOptions: Object.freeze({ ...exportOptions }) } : {}),
     });
   }
@@ -15886,13 +15884,12 @@ class ClinicalSession implements OdontogramSession {
     return buildFhirBundle(this.getDocument(), {
       ...this.fhir.exportOptions,
       ...options,
-      dialect: this.fhir.dialect,
     });
   }
 
   importFhirBundle(input: unknown): boolean {
     try {
-      const payload = parseFhirBundle(input, { dialect: this.fhir.dialect });
+      const payload = parseFhirBundle(input);
       this.setDocument(payload);
       return true;
     } catch (error) {

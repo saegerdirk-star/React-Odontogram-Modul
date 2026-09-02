@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.69.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-3.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -575,7 +575,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion is a pure optional projection of the UI-domain document. It has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.6.0` from the exact `@cognovis/fhir-release@0.2.4` projection. Root posts use the orthogonal `rootPostType` axis and remain representable beside every root-filling state; legacy `endo-glass-pin` and `endo-metal-pin` values migrate to `endo-filling` plus the corresponding post material. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date and refuses exports that would lose populated clinical state; a Dental Core session rejects Legacy, unsupported, or malformed bundles.
+FHIR 转换是 UI 领域文档的纯可选投影。来自精确 `@cognovis/fhir-release@0.2.4` 投影的 Dental Core `de.cognovis.fhir.dental.core#0.6.0` 是唯一的 FHIR 合约。版本 3 删除了原先非 Dental Core 的表示以及运行时方言选择；外来、不受支持或格式错误的 Bundle 会被明确拒绝。根管桩通过 `rootPostType` 与所有根管充填状态保持独立。旧 JSON 和较早的 Dental Core 值 `endo-glass-pin` / `endo-metal-pin` 会迁移为 `endo-filling` 加桩材料；新的输出绝不会再次合并这两个轴。
 
 **Aidbox 实时模式（开发用，自 2.50.0 起）：**
 
@@ -758,6 +758,7 @@ npm run docs           # 在 docs/ 目录生成 TypeDoc 文档
 - `prosthesis` - 可摘/附着体轴（none/healing-abutment/locator/locator-denture/bar/bar-denture/removable-partial/removable-full），与 crown/bridge 类型的固定 `restorationType` 互斥
 - `crownLeakage` - 牙冠边缘微渗漏标志，仅在 `restorationType` 为 crown 或 bridge 时有意义
 - `endo` - 根管治疗状态；与 `pulpDx` 互斥（通过一个合并的“牙髓 / 根管状态”选择器共同呈现——对某颗牙进行根管治疗会将 `pulpDx` 规范化为 `normal`）
+- `rootPostType` - 根管桩材料（`none`、`glass-fiber`、`metal`），独立于 `endo`
 - `mods` - 修饰项数组（inflammation、parodontal）；`inflammation` 在现有牙齿的界面上已退役（此处由 `apicalDx` 驱动图标），但对缺失/拔牙创牙位仍然适用
 - `caries` - 当前有龋齿的牙面
 - `cariesActiveDepth` - 应用新牙面时龋齿深度选择器所暂存的 ICDAS 深度值（并非按牙面存储的数值；按牙面存储的字段见 `cariesSeverity`）

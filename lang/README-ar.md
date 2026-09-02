@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.69.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-3.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -582,7 +582,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion is optional and has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.6.0` from the exact `@cognovis/fhir-release@0.2.4` projection. Root posts use the orthogonal `rootPostType` axis and remain representable beside every root-filling state; legacy `endo-glass-pin` and `endo-metal-pin` values migrate to `endo-filling` plus the corresponding post material. A Dental Core session rejects Legacy, malformed, or unsupported input and refuses exports that would lose populated clinical state.
+تحويل FHIR هو إسقاط اختياري ونقي لوثيقة واجهة المستخدم. يُعد Dental Core ‏`de.cognovis.fhir.dental.core#0.6.0` من الإسقاط الدقيق `@cognovis/fhir-release@0.2.4` عقد FHIR الوحيد. يزيل الإصدار 3 التمثيل السابق غير التابع لـ Dental Core واختيار اللهجة أثناء التشغيل؛ وتُرفض Bundles الأجنبية أو غير المدعومة أو غير الصالحة صراحةً. يبقى وتد الجذر مستقلاً عن كل حالة حشو عبر `rootPostType`. تُرحَّل ملفات JSON القديمة وقيم Dental Core السابقة `endo-glass-pin` / `endo-metal-pin` إلى `endo-filling` مع مادة الوتد؛ ولا يدمج الإخراج الجديد المحورين مرة أخرى.
 
 **وضع Aidbox الحي (تطوير، ابتداءً من 2.50.0):**
 
@@ -780,6 +780,7 @@ npm run docs           # توليد توثيق TypeDoc داخل docs/
 - `prosthesis` - محور التحريك/التثبيت (none/healing-abutment/locator/locator-denture/bar/bar-denture/removable-partial/removable-full)، يتنافى مع `restorationType` الثابت من نوع تاج/جسر
 - `crownLeakage` - علامة تسرب حافة التاج، ذات معنى فقط عندما يكون `restorationType` تاجًا أو جسرًا
 - `endo` - الحالة اللبّية؛ تتنافى مع `pulpDx` (تُعرضان معًا عبر محدِّد واحد مدمج لحالة اللب/العلاج اللبي — معالجة السن تطبّع `pulpDx` إلى `normal`)
+- `rootPostType` - مادة وتد الجذر (`none`، `glass-fiber`، `metal`) مستقلة عن `endo`
 - `mods` - مصفوفة التعديلات (الالتهاب، دواعم السن)؛ أُلغي `inflammation` من الواجهة في الأسنان الموجودة (حيث يتحكم `apicalDx` بالرمز هناك) لكنه لا يزال ساريًا على الأسنان المفقودة/سنخ الخلع
 - `caries` - أسطح النخر النشطة
 - `cariesActiveDepth` - قيمة عمق ICDAS التي يحتفظ بها محدِّد عمق النخر عند تطبيق سطح جديد (ليست قيمة مخزَّنة لكل سطح؛ انظر `cariesSeverity` للحقل المخزَّن لكل سطح)

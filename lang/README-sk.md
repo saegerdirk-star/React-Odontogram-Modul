@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.69.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-3.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -580,7 +580,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion is a pure optional projection of the UI-domain document. It has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.6.0` from the exact `@cognovis/fhir-release@0.2.4` projection. Root posts use the orthogonal `rootPostType` axis and remain representable beside every root-filling state; legacy `endo-glass-pin` and `endo-metal-pin` values migrate to `endo-filling` plus the corresponding post material. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date and refuses exports that would lose populated clinical state; a Dental Core session rejects Legacy, unsupported, or malformed bundles.
+Konverzia FHIR je čistá voliteľná projekcia dokumentu používateľského rozhrania. Dental Core `de.cognovis.fhir.dental.core#0.6.0` z presnej projekcie `@cognovis/fhir-release@0.2.4` je jediný FHIR kontrakt. Verzia 3 odstraňuje pôvodnú reprezentáciu mimo Dental Core aj výber dialektu za behu; cudzie, nepodporované alebo chybné Bundle sa výslovne odmietnu. Koreňový kolík zostáva cez `rootPostType` nezávislý od každého stavu koreňovej výplne. Starý JSON a staršie hodnoty Dental Core `endo-glass-pin` / `endo-metal-pin` sa migrujú na `endo-filling` plus materiál kolíka; nový výstup už obe osi nikdy nezlučuje.
 
 **Aidbox live režim (vývoj, od 2.50.0):**
 
@@ -773,6 +773,7 @@ Export vytvorí súbor JSON (verzia `2.20`; import tiež akceptuje staršie verz
 - `prosthesis` - os snímateľnej protetiky/upevnenia (none/healing-abutment/locator/locator-denture/bar/bar-denture/removable-partial/removable-full), navzájom sa vylučuje s pevným `restorationType` typu korunka/mostík
 - `crownLeakage` - príznak okrajovej netesnosti korunky, zmysluplný iba keď je `restorationType` typu korunka alebo mostík
 - `endo` - endodontický stav; navzájom sa vylučuje s `pulpDx` (zobrazované spoločne cez jeden zlúčený výber „Stav drene / endo" — ošetrenie zuba normalizuje `pulpDx` na `normal`)
+- `rootPostType` - materiál koreňového kolíka (`none`, `glass-fiber`, `metal`), nezávislý od `endo`
 - `mods` - pole modifikácií (zápal, parodontálny); `inflammation` je z rozhrania na prítomných zuboch zrušený (periapikálny glyf tam určuje `apicalDx`), ale stále sa vzťahuje na chýbajúce zuby/zuby s extrakčnou ranou
 - `caries` - aktívne plochy kazu
 - `cariesActiveDepth` - hodnota hĺbky ICDAS pripravená výberom hĺbky kazu pri aplikovaní novej plochy (nie je uložená hodnota pre každú plochu; pozri `cariesSeverity` pre uložené pole pre každú plochu)
