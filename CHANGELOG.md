@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.71.2 - 2026-08-31
+
+### Schema: Zähne kompakter (mind. 25% kleiner)
+
+Die Schema-Darstellung füllt nicht mehr die volle Breite, sondern 72% davon
+(zentriert) — die Zähne sind damit unabhängig von der Fensterbreite verlässlich
+~28% kleiner (Dirk, 31.08.2026). Die frühere Breiten-Kappe (1680) wieder auf
+1400 zurückgenommen.
+
 ## 2.71.1 - 2026-08-31
 
 ### Schema: ersetzte Zähne (herausnehmbare Prothese) werden gezeichnet

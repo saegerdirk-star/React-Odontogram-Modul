@@ -1469,11 +1469,11 @@ select:focus{
 }
 /* Schematic chart view (odontogram-5hm sequel) — full-width, own SVG renderer. */
 .schematic-column{grid-column:1 / -1; min-width:0; padding:12px 8px; overflow-x:auto}
-/* Dirk 31.08.2026: Schema-Zähne ~20% größer — die Kappe der Chartbreite von
-   1400 auf 1680 px angehoben (auf breiten Klinik-Monitoren werden die Zähne
-   damit größer; die SVG füllt weiter 100% der Breite). */
-.schematic-chart-wrap{max-inline-size:1680px; margin-inline:auto}
-.schematic-chart-wrap svg.schematic-chart{display:block; width:100%; height:auto}
+/* Dirk 31.08.2026: Schema-Zähne mindestens 25% KLEINER. Die SVG füllt nicht mehr
+   die volle Breite, sondern 72% davon (zentriert) — so sind die Zähne
+   unabhängig von der Fensterbreite verlässlich kompakter. */
+.schematic-chart-wrap{max-inline-size:1400px; margin-inline:auto}
+.schematic-chart-wrap svg.schematic-chart{display:block; width:72%; height:auto; margin-inline:auto}
 .schematic-chart-outer{position:relative}
 
 /* Bead odontogram-ip3, Phase 2: editing in the schematic view.
