@@ -66,6 +66,7 @@ const ERUPTION_BTNS: Btn[] = [
 // clears the side and honours retentionAllowed); they call setRetention direct.
 const RETENTION_BTNS: { label: string; value: string; titleKey: string }[] = [
   { label: "Kl", value: "clasp", titleKey: "schematic.keypad.t.clasp" },
+  { label: "Gesch", value: "attachment", titleKey: "schematic.keypad.t.attachment" },
   { label: "Steg", value: "bar-abutment", titleKey: "schematic.keypad.t.bar" },
 ];
 const RESTO_BTNS: Btn[] = [
