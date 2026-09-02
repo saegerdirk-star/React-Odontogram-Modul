@@ -844,8 +844,8 @@ Az odontogram saját Státusz JSON / FHIR / PNG / JPG / SVG exportján túl a **
 - `src/status_extras.ts` - 34 előre definiált restaurációs sablon (hidak, protézisek, bár konstrukciók)
 - `src/i18n/` - fordítások (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR) és i18n hook
 - `src/utils/numbering.ts` - FDI, Universal, Palmer számozási konverzió
-- `src/registry/` - deklaratív klinikai-tengely registry: FHIR mezőmegfeleltetések, SVG-törlési-halmaz/logikai-jelző aktiválás, pótlás típus×anyag mátrix, UI opciólisták (egyetlen forrás, amely generálja az export/import, FHIR és a választó UI-t)
-- `src/fhir/` - HL7 FHIR R4 export/import: `toFhir.ts`/`fromFhir.ts`, kódrendszerek, mezőmegfeleltetések, primitívek
+- `src/registry/` - deklaratív klinikai tengely- és UI-regiszter: tengelymetaadatok, SVG-aktiválás, pótlás típus×anyag mátrix, értékkatalógus és opciólisták; a FHIR-megfeleltetések a `src/fhir/` felelőssége
+- `src/fhir/` - az egyetlen Dental Core HL7 FHIR R4 kapcsolódási pont: `toFhir.ts`/`fromFhir.ts` belépési pontok, `toFhirDentalCore.ts`/`fromFhirDentalCore.ts` kodek, `dentalCoreContract.ts` és generált profilok/szerződések, valamint `dentalCoreLocalCoding.ts` segédek
 - `src/bridgeOverlay.ts` - több fogra kiterjedő híd-csatlakozó overlay (ívhez igazodó nyereg-geometria)
 - `src/SettingsModal.tsx` - lapozott (tabos) Beállítások ablak (Általános/Panelek/Fogadatok/Caries/Pulpa/Jegyzetek/Periodontal)
 - `src/perioExport.ts` - `buildPerioSvg()`: a teljes parodontális diagram egyetlen önálló vektoros SVG-ként

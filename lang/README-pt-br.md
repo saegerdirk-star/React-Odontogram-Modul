@@ -775,8 +775,8 @@ A exportação cria um arquivo JSON (versão `2.10`; as importações também ac
 - `src/status_extras.ts` - 34 modelos de restauração predefinidos (pontes, próteses, construções sobre barra)
 - `src/i18n/` - traduções (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR) e hook de i18n
 - `src/utils/numbering.ts` - conversão de numeração FDI, Universal, Palmer
-- `src/registry/` - registro declarativo de eixos clínicos: mapeamentos de campos FHIR, ativação de conjunto-de-limpeza-SVG/marcador booleano, matriz tipo×material de restauração, listas de opções da interface (fonte única de verdade que gera exportação/importação, FHIR e a interface dos seletores)
-- `src/fhir/` - exportação/importação HL7 FHIR R4: `toFhir.ts`/`fromFhir.ts`, sistemas de códigos, mapeamentos de campos, primitivas
+- `src/registry/` - registro declarativo de eixos clínicos e da UI: metadados de eixos, ativação SVG, matriz tipo×material de restauração, catálogo de valores e listas de opções; os mapeamentos FHIR pertencem a `src/fhir/`
+- `src/fhir/` - única fronteira Dental Core para HL7 FHIR R4: pontos de entrada `toFhir.ts`/`fromFhir.ts`, codec `toFhirDentalCore.ts`/`fromFhirDentalCore.ts`, `dentalCoreContract.ts` mais perfis/contratos gerados e os auxiliares `dentalCoreLocalCoding.ts`
 - `src/bridgeOverlay.ts` - overlay de conector de vão de ponte multi-dente (geometria de vão sensível ao arco)
 - `src/SettingsModal.tsx` - diálogo de Configurações por abas (Geral/Painéis/Detalhes do dente/Cárie/Polpa/Notas)
 - `src/__tests__/` + `src/registry/__tests__/` - suíte de testes Vitest (864 testes aprovados, 1 ignorado, em 94 arquivos)

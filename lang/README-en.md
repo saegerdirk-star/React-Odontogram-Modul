@@ -845,8 +845,8 @@ Beyond the odontogram's own Status JSON / FHIR / PNG / JPG / SVG export, the **p
 - `src/status_extras.ts` - 34 predefined restoration templates (bridges, dentures, bar constructions)
 - `src/i18n/` - translations (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR/AR/ZH/FR) and i18n hook
 - `src/utils/numbering.ts` - FDI, Universal, Palmer numbering conversion
-- `src/registry/` - declarative clinical-axis registry: FHIR field mappings, SVG-clear-set/boolean-flag activation, restoration type×material matrix, UI option lists (single source of truth generating export/import, FHIR, and picker UI)
-- `src/fhir/` - HL7 FHIR R4 export/import: `toFhir.ts`/`fromFhir.ts`, code systems, field mappings, primitives
+- `src/registry/` - declarative clinical-axis and UI registry: axis metadata, SVG activation, restoration type×material matrix, value catalogue, and option lists; FHIR mappings are owned by `src/fhir/`
+- `src/fhir/` - sole Dental Core HL7 FHIR R4 seam: `toFhir.ts`/`fromFhir.ts` entry points, `toFhirDentalCore.ts`/`fromFhirDentalCore.ts` codec, `dentalCoreContract.ts` plus generated profiles/contracts, and `dentalCoreLocalCoding.ts` helpers
 - `src/bridgeOverlay.ts` - multi-tooth bridge-span connector overlay (arch-aware saddle geometry)
 - `src/SettingsModal.tsx` - tabbed Settings dialog (General/Panels/Tooth details/Caries/Pulpa/Notes/Periodontal)
 - `src/perioExport.ts` - `buildPerioSvg()`: the full perio chart as one standalone vector SVG

@@ -168,5 +168,27 @@ describe("optional FHIR package boundary", () => {
       expect(text, guide).toContain("@cognovis/fhir-release@0.2.4");
       expect(text, guide).toContain("rootPostType");
     }
+
+    const layoutGuides = guides.filter((guide) => source(guide).includes("`src/registry/`"));
+    expect(layoutGuides).toHaveLength(11);
+    for (const guide of layoutGuides) {
+      const text = source(guide);
+      for (const currentModule of [
+        "toFhir.ts", "fromFhir.ts", "toFhirDentalCore.ts", "fromFhirDentalCore.ts", "dentalCoreContract.ts", "dentalCoreLocalCoding.ts",
+      ]) expect(text, guide).toContain(currentModule);
+      for (const removedModule of ["codesystems.ts", "primitives.ts", "registry/fhir.ts", "registry/fromFhir.ts", "fieldMappings.ts"]) {
+        expect(text, guide).not.toContain(removedModule);
+      }
+    }
+
+    const instructions = source("CLAUDE.md");
+    for (const currentContract of [
+      "dental-periodontal-finding", "dental-peri-implant-finding", "dental-gingival-recession-assessment",
+      "32910-2", "64043-3", "34016-6", "771311009", "modified-plaque-index", "modified-sulcus-bleeding-index",
+    ]) expect(instructions).toContain(currentContract);
+    for (const obsoleteClaim of [
+      "fieldMappings.ts", "periodontal-panel", "74029-0", "32911-0", "32912-8", "34015-8",
+      "plaque-surface", "mod-plaque-index-mombelli", "mod-bleeding-index-mombelli", "component.bodySite` backport",
+    ]) expect(instructions).not.toContain(obsoleteClaim);
   });
 });

@@ -841,8 +841,8 @@ Poza własnym eksportem Status JSON / FHIR / PNG / JPG / SVG odontogramu, **wykr
 - `src/status_extras.ts` - 34 predefiniowane szablony uzupełnień (mosty, protezy, konstrukcje belkowe)
 - `src/i18n/` - tłumaczenia (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR) i hook i18n
 - `src/utils/numbering.ts` - konwersja numeracji FDI, Universal, Palmer
-- `src/registry/` - deklaratywny rejestr osi klinicznych: mapowania pól FHIR, aktywacja zestawu czyszczenia SVG/flag logicznych, macierz typ×materiał odbudowy, listy opcji interfejsu (jedno źródło prawdy generujące eksport/import, FHIR i interfejs selektorów)
-- `src/fhir/` - eksport/import HL7 FHIR R4: `toFhir.ts`/`fromFhir.ts`, systemy kodów, mapowania pól, prymitywy
+- `src/registry/` - deklaratywny rejestr osi klinicznych i UI: metadane osi, aktywacja SVG, macierz typ×materiał odbudowy, katalog wartości i listy opcji; mapowania FHIR należą do `src/fhir/`
+- `src/fhir/` - jedyna warstwa Dental Core dla HL7 FHIR R4: punkty wejścia `toFhir.ts`/`fromFhir.ts`, kodek `toFhirDentalCore.ts`/`fromFhirDentalCore.ts`, `dentalCoreContract.ts` wraz z generowanymi profilami/kontraktami oraz pomocniczy `dentalCoreLocalCoding.ts`
 - `src/bridgeOverlay.ts` - nakładka łącznika odcinka mostu wielozębowego (geometria siodła uwzględniająca łuk)
 - `src/SettingsModal.tsx` - zakładkowe okno dialogowe Ustawień (Ogólne/Panele/Szczegóły zęba/Próchnica/Miazga/Notatki/Periodontologia)
 - `src/perioExport.ts` - `buildPerioSvg()`: pełny wykres periodontalny jako jeden samodzielny wektorowy SVG

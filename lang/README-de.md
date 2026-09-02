@@ -848,8 +848,8 @@ Der Export erzeugt eine JSON-Datei (Version `2.20`; Importe akzeptieren weiterhi
 - `src/status_extras.ts` - 34 vordefinierte Restaurationsvorlagen (Brücken, Prothesen, Stegkonstruktionen)
 - `src/i18n/` - Übersetzungen (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR) und i18n-Hook
 - `src/utils/numbering.ts` - FDI, Universal, Palmer Nummerierungskonvertierung
-- `src/registry/` - deklaratives Register der klinischen Achsen: FHIR-Feldzuordnungen, SVG-Clear-Set/Boolean-Flag-Aktivierung, Restaurationstyp×Material-Matrix, UI-Optionslisten (eine einzige Quelle der Wahrheit, die Export/Import, FHIR und die Auswähler-UI erzeugt)
-- `src/fhir/` - HL7-FHIR-R4-Export/Import: `toFhir.ts`/`fromFhir.ts`, Codesysteme, Feldzuordnungen, Primitive
+- `src/registry/` - deklaratives Register für klinische Achsen und UI: Achsenmetadaten, SVG-Aktivierung, Restaurationstyp×Material-Matrix, Wertekatalog und Optionslisten; die FHIR-Zuordnungen liegen in `src/fhir/`
+- `src/fhir/` - einzige Dental-Core-Naht für HL7 FHIR R4: Einstiegspunkte `toFhir.ts`/`fromFhir.ts`, Codec `toFhirDentalCore.ts`/`fromFhirDentalCore.ts`, `dentalCoreContract.ts` plus generierte Profile/Verträge sowie Hilfen in `dentalCoreLocalCoding.ts`
 - `src/bridgeOverlay.ts` - Mehrzahn-Brückenspann-Verbinder-Overlay (bogenbewusste Sattelgeometrie)
 - `src/SettingsModal.tsx` - tabbasierter Einstellungsdialog (Allgemein/Panels/Zahndetails/Karies/Pulpa/Notizen/Parodontal)
 - `src/perioExport.ts` - `buildPerioSvg()`: das vollständige Parodontalstatus-Chart als ein eigenständiges Vektor-SVG

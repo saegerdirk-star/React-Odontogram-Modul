@@ -845,8 +845,8 @@ Además de la propia exportación de Estado JSON / FHIR / PNG / JPG / SVG del od
 - `src/status_extras.ts` - 34 plantillas de restauración predefinidas (puentes, prótesis, construcciones con barra)
 - `src/i18n/` - traducciones (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR/AR/ZH/FR) y hook i18n
 - `src/utils/numbering.ts` - conversión de numeración FDI, Universal, Palmer
-- `src/registry/` - registro declarativo de ejes clínicos: mapeos de campos FHIR, conjunto de limpieza SVG/activación de indicadores booleanos, matriz tipo×material de restauración, listas de opciones de UI (fuente única de verdad que genera la UI de exportación/importación, FHIR y de selectores)
-- `src/fhir/` - exportación/importación HL7 FHIR R4: `toFhir.ts`/`fromFhir.ts`, sistemas de códigos, mapeos de campos, primitivas
+- `src/registry/` - registro declarativo de ejes clínicos y UI: metadatos de ejes, activación SVG, matriz tipo×material de restauración, catálogo de valores y listas de opciones; los mapeos FHIR pertenecen a `src/fhir/`
+- `src/fhir/` - única interfaz Dental Core para HL7 FHIR R4: puntos de entrada `toFhir.ts`/`fromFhir.ts`, códec `toFhirDentalCore.ts`/`fromFhirDentalCore.ts`, `dentalCoreContract.ts` más perfiles/contratos generados, y ayudas de `dentalCoreLocalCoding.ts`
 - `src/bridgeOverlay.ts` - superposición de conector de tramo de puente multidiente (geometría de silla adaptada a la arcada)
 - `src/SettingsModal.tsx` - diálogo de Ajustes por pestañas (General/Paneles/Detalles del diente/Caries/Pulpa/Notas/Periodontal)
 - `src/perioExport.ts` - `buildPerioSvg()`: el gráfico periodontal completo como un único SVG vectorial independiente

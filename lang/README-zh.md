@@ -823,8 +823,8 @@ npm run docs           # 在 docs/ 目录生成 TypeDoc 文档
 - `src/status_extras.ts` - 34 种预定义修复体模板（桥、义齿、杆卡结构）
 - `src/i18n/` - 翻译文件（HU/EN/DE/ES/IT/SK/PL/RU/PT-BR）及国际化 hook
 - `src/utils/numbering.ts` - FDI、通用编号法、Palmer 编号转换
-- `src/registry/` - 声明式临床轴注册表：FHIR 字段映射、SVG 清除集/布尔标志激活、修复体类型×材料矩阵、界面选项列表（生成导出/导入、FHIR 及选择器界面的单一数据来源）
-- `src/fhir/` - HL7 FHIR R4 导出/导入：`toFhir.ts`/`fromFhir.ts`、代码系统、字段映射、基础类型
+- `src/registry/` - 声明式临床轴和界面注册表：轴元数据、SVG 激活、修复体类型×材料矩阵、值目录和选项列表；FHIR 映射由 `src/fhir/` 负责
+- `src/fhir/` - 唯一的 Dental Core HL7 FHIR R4 边界：`toFhir.ts`/`fromFhir.ts` 入口、`toFhirDentalCore.ts`/`fromFhirDentalCore.ts` 编解码器、`dentalCoreContract.ts` 及生成的配置文件/契约，以及 `dentalCoreLocalCoding.ts` 辅助代码
 - `src/bridgeOverlay.ts` - 多牙位桥跨越连接体叠加层（感知牙弓形态的桥体几何）
 - `src/SettingsModal.tsx` - 带标签页的设置弹窗（常规/面板/牙齿详情/龋齿/牙髓/备注/牙周）
 - `src/perioExport.ts` - `buildPerioSvg()`：将完整牙周图表构建为一份独立的矢量 SVG

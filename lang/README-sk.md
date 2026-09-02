@@ -838,8 +838,8 @@ Okrem vlastného exportu odontogramu Stav JSON / FHIR / PNG / JPG / SVG má **pa
 - `src/status_extras.ts` - 34 preddefinovaných šablón reštaurácií (mostíky, protézy, stegové konštrukcie)
 - `src/i18n/` - preklady (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR) a i18n hook
 - `src/utils/numbering.ts` - konverzia číslovania FDI, Universal, Palmer
-- `src/registry/` - deklaratívny register klinických osí: mapovania polí FHIR, aktivácia SVG-clear-set/boolean príznakov, matica typ×materiál náhrady, zoznamy možností rozhrania (jediný zdroj pravdy generujúci export/import, FHIR aj rozhranie výberov)
-- `src/fhir/` - export/import HL7 FHIR R4: `toFhir.ts`/`fromFhir.ts`, systémy kódov, mapovania polí, primitíva
+- `src/registry/` - deklaratívny register klinických osí a UI: metadáta osí, aktivácia SVG, matica typ×materiál náhrady, katalóg hodnôt a zoznamy možností; mapovania FHIR patria do `src/fhir/`
+- `src/fhir/` - jediné rozhranie Dental Core pre HL7 FHIR R4: vstupné body `toFhir.ts`/`fromFhir.ts`, kodek `toFhirDentalCore.ts`/`fromFhirDentalCore.ts`, `dentalCoreContract.ts` s generovanými profilmi/kontraktmi a pomocné funkcie `dentalCoreLocalCoding.ts`
 - `src/bridgeOverlay.ts` - prekrytie konektora viaczubového mostíkového úseku (geometria sedla prispôsobená oblúku)
 - `src/SettingsModal.tsx` - záložkový dialóg Nastavenia (Všeobecné/Panely/Detaily zuba/Kaz/Dreň/Poznámky/Periodontálne)
 - `src/perioExport.ts` - `buildPerioSvg()`: celý parodontálny graf ako jeden samostatný vektorový SVG
