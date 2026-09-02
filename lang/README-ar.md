@@ -589,7 +589,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 نقطة دخول ثانية لخادم التطوير، `live.html` (`src/live`)، تُحمِّل سجل مريض واحد مباشرةً من
 Aidbox Reetfurt local-UAT معزول، وتعرضه في الواجهة المعتادة عبر واجهة برمجة الجلسة المذكورة أعلاه، وتكتب
 التغييرات مرة أخرى كموارد Dental Core تحت معرّفات حتمية، بحيث يُحدِّث الحفظ المتكرر بدلاً من
-التكرار. ابدأ نسخة Reetfurt مسماة (`POLARIS_DIR=/Users/malte/code/polaris/platform bun run uat:local up --instance <id>`
+التكرار. ابدأ نسخة Reetfurt مسماة (`POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local up --instance <id>`
 في مستودع mvz-reetfurt) ثم نفِّذ `npm run live:provision -- --instance <id>` لإنشاء عميل الآلة
 المحدود `odontogram-live` وكتابة ملف `.env` المستبعد من التحكم بالإصدارات. لا تضع بيانات اعتماد
 إدارية في `VITE_*` أبداً. إنها أداة تطوير، وليست جزءاً من الحزمة المنشورة: `@cognovis/fhir-sdk`

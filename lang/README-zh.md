@@ -579,7 +579,7 @@ FHIR 转换是 UI 领域文档的纯可选投影。来自精确 `@cognovis/fhir-
 
 **Aidbox 实时模式（开发用，自 2.50.0 起）：**
 
-第二个开发服务器入口 `live.html`（`src/live`）直接从隔离的 Reetfurt local-UAT Aidbox 加载单个患者的病历，通过上文所述的会话 API 在常规外壳中渲染它，并以确定性 id 将更改作为 Dental Core 资源写回，因此再次保存会更新而不是重复。先在 mvz-reetfurt 检出中启动命名的 Reetfurt 实例（`POLARIS_DIR=/Users/malte/code/polaris/platform bun run uat:local up --instance <id>`），再运行 `npm run live:provision -- --instance <id>`，以创建受限机器客户端 `odontogram-live` 并写入被版本控制忽略的 `.env`。切勿把管理员凭据写入 `VITE_*`。它是一个开发工具，不属于已发布的包：`@cognovis/fhir-sdk` 是 devDependency，`dependencies` 不变，`src/live` 和 `live.html` 均不发布。设置、加载/保存机制以及与 charly 适配器方言之间已记录的差异见 [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md)。请注意，安装本仓库的 devDependencies 现在需要 `npm.cognovis.de` 的凭据（见文档）；`npm ci --omit=dev` 以及使用已发布的包则不需要。
+第二个开发服务器入口 `live.html`（`src/live`）直接从隔离的 Reetfurt local-UAT Aidbox 加载单个患者的病历，通过上文所述的会话 API 在常规外壳中渲染它，并以确定性 id 将更改作为 Dental Core 资源写回，因此再次保存会更新而不是重复。先在 mvz-reetfurt 检出中启动命名的 Reetfurt 实例（`POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local up --instance <id>`），再运行 `npm run live:provision -- --instance <id>`，以创建受限机器客户端 `odontogram-live` 并写入被版本控制忽略的 `.env`。切勿把管理员凭据写入 `VITE_*`。它是一个开发工具，不属于已发布的包：`@cognovis/fhir-sdk` 是 devDependency，`dependencies` 不变，`src/live` 和 `live.html` 均不发布。设置、加载/保存机制以及与 charly 适配器方言之间已记录的差异见 [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md)。请注意，安装本仓库的 devDependencies 现在需要 `npm.cognovis.de` 的凭据（见文档）；`npm ci --omit=dev` 以及使用已发布的包则不需要。
 
 **带日期的检查、评估状态与种植体周围记录（自 2.4.0 起）：**
 

@@ -16,10 +16,16 @@
 - Docs describe the owner-native Reetfurt workflow. The published library
   boundary is unchanged: `src/live` stays a Vite app beside the package,
   `@cognovis/fhir-sdk` is a devDependency, `files` remains `["dist"]`.
+- `live:provision` defaults the Reetfurt and PolarIS checkouts from
+  `$HOME/code/mvz-reetfurt` and `$HOME/code/polaris/platform`. `REETFURT_DIR`
+  and `POLARIS_DIR` still override. Committed source no longer encodes a
+  machine-absolute home path.
+- The scoped AccessPolicy uses Aidbox-native `#/pattern` URIs and `$one-of`.
+  The stored `$regex` / `$enum` shape did not grant.
 
 The praxis-store image identity recorded for this workflow is tag
-`state-3cc52d646206`, digest
-`sha256:1062bb7528e071cb87b58e13da40a6a9c0469dd8ba9b2a4a190d46d8f5c04f1b`
+`state-e196b7bb4f12`, digest
+`sha256:dbd47a9fc72d7454916db2711237c0aa792651aead5b6d25493fac2fb2b43da2`
 (`mvz-reetfurt/config/praxis-store-image.json`). That file is not copied here.
 
 ## 3.0.0 - 2026-09-02

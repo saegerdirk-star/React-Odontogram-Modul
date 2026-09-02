@@ -10,6 +10,7 @@
 
 import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -24,8 +25,8 @@ export const SCOPED_ENV_KEYS = [
 ] as const;
 
 const ADMIN_KEY = /AIDBOX_ADMIN|BOX_ADMIN|VITE_AIDBOX_ADMIN/i;
-const DEFAULT_REETFURT_DIR = "/Users/malte/code/mvz-reetfurt";
-const DEFAULT_POLARIS_DIR = "/Users/malte/code/polaris/platform";
+const HOME_REETFURT_RELATIVE = join("code", "mvz-reetfurt");
+const HOME_POLARIS_RELATIVE = join("code", "polaris", "platform");
 const POLARIS_OPERATOR_ENV = "packages/pvs-x-isynet/.env";
 const DENTAL_OBSERVATION_PROFILE = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-tooth-state";
 const DENTAL_CONDITION_PROFILE = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-periodontal-diagnosis";
@@ -135,6 +136,10 @@ export function desiredClient(secret: string): AidboxClientResource {
   };
 }
 
+// Aidbox matcho is conjunctive per object. `$regex` / `$enum` are not this
+// server's operators: a `#/pattern` URI is the regex, and `$one-of` is the
+// disjunction. Measured against odontogram-cpx: Patient GET 200, Observation
+// GET 200, ImplementationGuide GET 403, Patient PUT 403.
 export function desiredAccessPolicy(): AidboxAccessPolicyResource {
   return {
     resourceType: "AccessPolicy",
@@ -145,16 +150,12 @@ export function desiredAccessPolicy(): AidboxAccessPolicyResource {
     matcho: {
       "$one-of": [
         {
-          uri: { $regex: "^/fhir/Patient(/.*)?$" },
-          "request-method": { $enum: ["get"] },
-          params: { "resource/type": { $enum: ["Patient"] } },
+          uri: "#/fhir/Patient.*",
+          "request-method": "get",
         },
         {
-          uri: { $regex: "^/fhir/(Observation|Condition|ServiceRequest|CarePlan)(/.*)?$" },
-          "request-method": { $enum: ["get", "put", "post", "delete"] },
-          params: {
-            "resource/type": { $enum: ["Observation", "Condition", "ServiceRequest", "CarePlan"] },
-          },
+          uri: "#/fhir/(Observation|Condition|ServiceRequest|CarePlan).*",
+          "request-method": { "$one-of": ["get", "put", "post", "delete"] },
         },
       ],
     },
@@ -191,6 +192,20 @@ export function resolveOperatorCredentials(
     if (id && password) return { id, password };
   }
   throw new Error("No Aidbox operator credentials in the environment or PolarIS/Reetfurt operator env file");
+}
+
+export function resolveHomeCheckout(
+  env: Record<string, string | undefined>,
+  envKey: "REETFURT_DIR" | "POLARIS_DIR",
+  relativeFromHome: string,
+): string {
+  const override = cleaned(env[envKey]);
+  if (override) return resolve(override);
+  const home = cleaned(env.HOME) ?? cleaned(homedir());
+  if (!home) {
+    throw new Error(`Set ${envKey} to the checkout path, or set HOME so $HOME/${relativeFromHome} can be used`);
+  }
+  return resolve(join(home, relativeFromHome));
 }
 
 export function instanceBindingPath(reetfurtDir: string, instance: string): string {
@@ -331,8 +346,8 @@ export async function provisionLiveMode(options: {
   env?: Record<string, string | undefined>;
 }): Promise<{ baseUrl: string; patientId: string; envPath: string }> {
   const env = options.env ?? process.env;
-  const reetfurtDir = resolve(options.reetfurtDir ?? env.REETFURT_DIR ?? DEFAULT_REETFURT_DIR);
-  const polarisDir = resolve(options.polarisDir ?? env.POLARIS_DIR ?? DEFAULT_POLARIS_DIR);
+  const reetfurtDir = resolve(options.reetfurtDir ?? resolveHomeCheckout(env, "REETFURT_DIR", HOME_REETFURT_RELATIVE));
+  const polarisDir = resolve(options.polarisDir ?? resolveHomeCheckout(env, "POLARIS_DIR", HOME_POLARIS_RELATIVE));
   const binding = readInstanceBinding(reetfurtDir, options.instance);
   const baseUrl = cleaned(binding.POLARIS_AIDBOX_URL);
   if (!baseUrl) {

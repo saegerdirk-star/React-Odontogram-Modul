@@ -6,6 +6,7 @@
 // client into the ignored local .env. Operator credentials stay outside Vite.
 
 import { describe, it, expect } from "vitest";
+import { execSync } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -16,6 +17,7 @@ import {
   desiredAccessPolicy,
   desiredClient,
   rejectAdminEquivalentClient,
+  resolveHomeCheckout,
   resolveOperatorCredentials,
   writeScopedEnv,
 } from "../../tools/live-provision";
@@ -112,17 +114,16 @@ describe("odontogram-cpx AC2: scoped live-mode provision", () => {
     expect(Array.isArray(clauses)).toBe(true);
     const patient = clauses.find((clause) => JSON.stringify(clause).includes("Patient"));
     const dental = clauses.find((clause) => JSON.stringify(clause).includes("Observation"));
-    expect(patient).toMatchObject({
-      "request-method": { $enum: ["get"] },
-      params: { "resource/type": { $enum: ["Patient"] } },
+    expect(patient).toEqual({
+      uri: "#/fhir/Patient.*",
+      "request-method": "get",
     });
-    expect(dental).toMatchObject({
-      "request-method": { $enum: ["get", "put", "post", "delete"] },
-      params: {
-        "resource/type": { $enum: ["Observation", "Condition", "ServiceRequest", "CarePlan"] },
-      },
+    expect(dental).toEqual({
+      uri: "#/fhir/(Observation|Condition|ServiceRequest|CarePlan).*",
+      "request-method": { "$one-of": ["get", "put", "post", "delete"] },
     });
     expect(JSON.stringify(policy)).not.toMatch(/ImplementationGuide|Practitioner|Device|Provenance/);
+    expect(JSON.stringify(policy)).not.toMatch(/\$regex|\$enum/);
   });
 
   it("reads operator credentials from the environment or PolarIS env file, never from VITE_*", () => {
@@ -140,5 +141,32 @@ describe("odontogram-cpx AC2: scoped live-mode provision", () => {
     expect(fromEnv).toEqual({ id: "operator", password: "from-env" });
     const fromFile = resolveOperatorCredentials({}, [polarisEnv]);
     expect(fromFile).toEqual({ id: "operator", password: "from-file" });
+  });
+
+  it("defaults Reetfurt and PolarIS checkouts from HOME and honors env overrides", () => {
+    expect(resolveHomeCheckout({ HOME: "/tmp/devhome" }, "REETFURT_DIR", join("code", "mvz-reetfurt")))
+      .toBe(join("/tmp/devhome", "code", "mvz-reetfurt"));
+    expect(resolveHomeCheckout({ HOME: "/tmp/devhome" }, "POLARIS_DIR", join("code", "polaris", "platform")))
+      .toBe(join("/tmp/devhome", "code", "polaris", "platform"));
+    expect(resolveHomeCheckout(
+      { HOME: "/tmp/devhome", REETFURT_DIR: "/opt/reetfurt", POLARIS_DIR: "/opt/polaris/platform" },
+      "REETFURT_DIR",
+      join("code", "mvz-reetfurt"),
+    )).toBe("/opt/reetfurt");
+    expect(resolveHomeCheckout(
+      { HOME: "/tmp/devhome", POLARIS_DIR: "/opt/polaris/platform" },
+      "POLARIS_DIR",
+      join("code", "polaris", "platform"),
+    )).toBe("/opt/polaris/platform");
+  });
+
+  it("does not encode a machine-absolute home path in committed source", () => {
+    const needle = ["/", "Users", "/", "malte"].join("");
+    const tracked = execSync("git ls-files", { encoding: "utf8" })
+      .split("\n")
+      .filter((file) => file.length > 0)
+      .filter((file) => file !== ".library.lock");
+    const offenders = tracked.filter((file) => readFileSync(file, "utf8").includes(needle));
+    expect(offenders).toEqual([]);
   });
 });

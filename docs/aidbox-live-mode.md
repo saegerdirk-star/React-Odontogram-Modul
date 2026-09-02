@@ -12,20 +12,20 @@ published library artifact does not contain it and does not depend on the SDK
 The owner-native server is an isolated **Reetfurt local-UAT** instance, not
 MIRA, not PolarIS runtime services, and not the shared isynet Aidbox on
 `:8081`. The PolarIS checkout that still exposes `scripts/aidbox-stack.py` is
-`/Users/malte/code/polaris/platform` — `~/code/polaris` is a monorepo and
-fails `uat:local`. Always export `POLARIS_DIR=/Users/malte/code/polaris/platform`.
+`$HOME/code/polaris/platform` — `~/code/polaris` is a monorepo and
+fails `uat:local`. Always export `POLARIS_DIR=$HOME/code/polaris/platform`.
 
 The praxis-store image identity for this workflow is recorded in
-`mvz-reetfurt/config/praxis-store-image.json` (tag `state-3cc52d646206`, digest
-`sha256:1062bb7528e071cb87b58e13da40a6a9c0469dd8ba9b2a4a190d46d8f5c04f1b`).
+`mvz-reetfurt/config/praxis-store-image.json` (tag `state-e196b7bb4f12`, digest
+`sha256:dbd47a9fc72d7454916db2711237c0aa792651aead5b6d25493fac2fb2b43da2`).
 That file is not copied into this repository.
 
 ## Running it
 
 ```sh
-cd /Users/malte/code/mvz-reetfurt
-POLARIS_DIR=/Users/malte/code/polaris/platform bun run uat:local up --instance odontogram-cpx
-POLARIS_DIR=/Users/malte/code/polaris/platform bun run uat:local status --instance odontogram-cpx
+cd $HOME/code/mvz-reetfurt
+POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local up --instance odontogram-cpx
+POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local status --instance odontogram-cpx
 
 cd /path/to/React-Odontogram-Modul
 npm run live:provision -- --instance odontogram-cpx
