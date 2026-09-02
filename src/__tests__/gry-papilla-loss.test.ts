@@ -18,6 +18,7 @@ import {
 } from "../odontogram";
 import { mesialIsLeft } from "../retention";
 import { buildFhirBundle } from "../fhir/toFhir";
+import { UnsupportedDentalCoreContentError } from "../fhir/toFhirDentalCore";
 
 beforeEach(() => { __resetChartStateForTest(); setChartMode("status"); });
 
@@ -180,22 +181,20 @@ describe("Was der Plan aendert", () => {
 });
 
 describe("FHIR", () => {
-  it("haengt eine Komponente mit lokalem Code an die parodontale Observation", () => {
+  it("rejects populated papilla loss because Dental Core has no admitted carrier", () => {
     __setToothStateForTest(46, {});
     setPapillaLoss(46, "mesial", 2);
-    const bundle = buildFhirBundle(__collectExportPayloadForTest() as never);
-    const komponenten = (bundle.entry ?? [])
-      .flatMap((e) => ((e.resource as { component?: unknown[] }).component ?? []) as Record<string, never>[])
-      .filter((c) => JSON.stringify(c).includes("papilla-loss-nordland-tarnow"));
-    expect(komponenten).toHaveLength(1);
-    expect(komponenten[0].valueInteger).toBe(2);
-    // Der Zwischenraum reitet auf der R4-Rueckportierung von component.bodySite,
-    // wie die Sondierungsstelle und der Furkationseingang daneben.
-    expect(JSON.stringify(komponenten[0])).toContain("papilla:mesial");
+    expect(() => buildFhirBundle(
+      __collectExportPayloadForTest() as never,
+      { effectiveDateTime: "2026-08-14" },
+    )).toThrowError(UnsupportedDentalCoreContentError);
   });
-  it("emittiert nichts, wo nichts beurteilt ist", () => {
+  it("does not emit papilla loss when none was assessed", () => {
     __setToothStateForTest(46, {});
-    const bundle = buildFhirBundle(__collectExportPayloadForTest() as never);
+    const bundle = buildFhirBundle(
+      __collectExportPayloadForTest() as never,
+      { effectiveDateTime: "2026-08-14" },
+    );
     expect(JSON.stringify(bundle)).not.toContain("papilla-loss-nordland-tarnow");
   });
 });

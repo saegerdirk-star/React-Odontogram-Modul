@@ -122,6 +122,7 @@ describe("SP7 Task 5: Root and Periodontium merged card", () => {
     // #pulpEndoSelect (Task 4's merged selector) lives in the root block too —
     // the old two-select endoSection layout is gone.
     expect(root.querySelector("#pulpEndoSelect")).toBeTruthy();
+    expect(root.querySelector("#rootPostSelect")).toBeTruthy();
   });
 
   it("mobility + calculus + mods live in the perio block", () => {

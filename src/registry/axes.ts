@@ -54,8 +54,17 @@ export const AXES: ClinicalAxis[] = [
       { value: "endo-medical-filling", labelKey: "endo.option.medicalFilling" },
       { value: "endo-filling", labelKey: "endo.option.filling", when: (c) => !c.isMilktooth },
       { value: "endo-filling-incomplete", labelKey: "endo.option.incompleteFilling", when: (c) => !c.isMilktooth },
-      { value: "endo-glass-pin", labelKey: "endo.option.glassPin", when: (c) => !c.isMilktooth },
-      { value: "endo-metal-pin", labelKey: "endo.option.metalPin", when: (c) => !c.isMilktooth },
+    ] },
+  { id: "rootPostType", field: "rootPostType", kind: "enum", valueGroup: "rootPostType",
+    skipValue: "none", finding: { local: "root-post-type", display: "Root post type" },
+    values: withSvgLayer(valuesFrom("rootPostType"), {
+      "glass-fiber": "endo-glass-pin",
+      "metal": "endo-metal-pin",
+    }),
+    uiOptions: [
+      { value: "none", labelKey: "rootPost.option.none" },
+      { value: "glass-fiber", labelKey: "rootPost.option.glassFiber" },
+      { value: "metal", labelKey: "rootPost.option.metal" },
     ] },
   { id: "toothSubstrate", field: "toothSubstrate", kind: "enum", valueGroup: "toothSubstrate",
     skipValue: "natural", finding: { local: "tooth-substrate", display: "Tooth substrate" },
@@ -231,11 +240,8 @@ export const AXES: ClinicalAxis[] = [
     svgLayer: "arrow-up", appliesWhen: (c) => c.toothPresent },
   { id: "orthoRotation", field: "orthoRotation", kind: "boolean",
     finding: { local: "tooth-ortho-rotation", display: "Tooth rotation" } },
-  // Bead KFO (Bracket buccal/lingual). Qualifier des Brackets, keine eigene
-  // Ebene - die Seite steuert nur, WIE das Overlay Bracket und Bogen zeichnet.
-  // Kein `svgLayer` -> SVG-Fingerabdruck-Paritaet byte-identisch. Wie
-  // sensibility/percussion bewusst NICHT in `dentalCoreContract.ts`: kein
-  // verifiziertes Dental-Core-Merkmal, lokaler Kode genuegt.
+  // Buccal/lingual bracket qualifier. It changes how the bracket and arch wire
+  // overlay is drawn, but has no independent SVG layer or verified Core carrier.
   { id: "orthoBracketSide", field: "orthoBracketSide", kind: "enum", valueGroup: "orthoBracketSide",
     skipValue: "buccal", finding: { local: "tooth-ortho-bracket-side", display: "Bracket surface" },
     values: valuesFrom("orthoBracketSide"), appliesWhen: (c) => c.toothPresent },
@@ -245,7 +251,7 @@ export const AXES: ClinicalAxis[] = [
   // axis. `secondaryCaries` (per-surface CARS 0-6) and `radiographicDepth`
   // (per-surface none/E1/E2/D1/D2/D3) are scalar-map fields handled the same way
   // `cariesDepths` is — special-cased outside AXES/FIELD_MAPPINGS entirely (see
-  // registry/fhir.ts + registry/fromFhir.ts) — so they deliberately have no row here.
+  // fhir/toFhirDentalCore.ts + fhir/fromFhirDentalCore.ts) — so they deliberately have no row here.
   { id: "rootCaries", field: "rootCaries", kind: "enum", valueGroup: "rootCaries",
     skipValue: "none", finding: { local: "root-caries", display: "Root caries" },
     values: valuesFrom("rootCaries"),
@@ -258,15 +264,8 @@ export const AXES: ClinicalAxis[] = [
   // neither renders on the odontogram, so SVG-fingerprint parity is byte-identical
   // (mirrors the periImplant/discoloration foundation axes — declarative FHIR via
   // FIELD_MAPPINGS, no render metadata here).
-  // Bead odontogram-fu1: die Pruefung neben der Diagnose. Kein `svgLayer` -
-  // beide zeichnen nichts, die SVG-Fingerabdruck-Paritaet bleibt
-  // byte-identisch (wie cejVisibility/rootConcavity darunter).
-  //
-  // BEWUSST NICHT in `fhir/dentalCoreContract.ts` eingetragen: dort stehen
-  // erzeugte Dental-Core-Eigenschaften, und fuer diese beiden ist keine
-  // nachgewiesen. Eine zu erfinden waere gegen dieselbe Regel, unter der
-  // odontogram-c51 keine unbelegte Norm ausliefert. Lokale Kodes genuegen,
-  // wie bei den parodontalen Achsen ohne verifizierten LOINC.
+  // These diagnostic axes do not need SVG layers. Dental Core 0.6 provides
+  // their verified chart-property and chart-value carriers.
   { id: "sensibility", field: "sensibility", kind: "enum", valueGroup: "sensibility",
     skipValue: "none", finding: { local: "pulp-sensibility-test", display: "Pulp sensibility test" },
     values: valuesFrom("sensibility"),
@@ -284,8 +283,8 @@ export const AXES: ClinicalAxis[] = [
       { value: "negative", labelKey: "percussion.option.negative" },
       { value: "sensitive", labelKey: "percussion.option.sensitive" },
     ] },
-  // Beads odontogram-t6y und -ca0. Wie sensibility/percussion: kein `svgLayer`,
-  // keine erfundene Dental-Core-Eigenschaft, lokale Kodes.
+  // Eruption stage and root-fracture orientation are data-only axes backed by
+  // Dental Core 0.6; neither needs an independent SVG layer.
   { id: "eruptionStage", field: "eruptionStage", kind: "enum", valueGroup: "eruptionStage",
     skipValue: "none", finding: { local: "tooth-eruption-stage", display: "Tooth eruption stage" },
     values: valuesFrom("eruptionStage"),

@@ -4,8 +4,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { VALID_PERI_IMPLANT, __setToothStateForTest, __getToothStateForTest,
   __collectExportPayloadForTest } from "../odontogram";
-import { buildFhirBundle } from "../fhir/toFhir";
-import { parseFhirBundle } from "../fhir/fromFhir";
 import { setI18nLanguage } from "../i18n/useI18n";
 
 beforeEach(() => setI18nLanguage("en"));

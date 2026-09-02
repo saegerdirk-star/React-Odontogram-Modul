@@ -30,7 +30,7 @@ export type DentalModelAnalysisMeasurementProfileRaw = {
     derivedFrom: Reference<"DocumentReference" | "ImagingStudy" | "Media" | "MolecularSequence" | "Observation" | "QuestionnaireResponse">[];
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-model-analysis-measurement (pkg: de.cognovis.fhir.dental.core#0.5.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-model-analysis-measurement (pkg: de.cognovis.fhir.dental.core#0.6.0)
 export class DentalModelAnalysisMeasurementProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-model-analysis-measurement";
 

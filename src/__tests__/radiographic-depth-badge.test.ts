@@ -20,8 +20,6 @@ import {
   setRadiographicDepthMode,
   VALID_RADIOGRAPHIC_DEPTH,
 } from "../odontogram";
-import { buildFhirBundle } from "../fhir/toFhir";
-import { parseFhirBundle } from "../fhir/fromFhir";
 import type { OdontogramExportPayload } from "../fhir/types";
 
 function svgText(name: string): string {

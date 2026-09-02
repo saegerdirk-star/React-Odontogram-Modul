@@ -133,11 +133,11 @@ export interface CephMeasure {
    * `local` is always present and is the round-trip key. `loinc` and `snomed`
    * are OPTIONAL and left unset — no verified standard code for a cephalometric
    * measurement has been produced, and inventing one would silently assert
-   * something false. That is the same call `toFhirPerio.ts` already makes for
+   * something false. That is the same call `toFhirDentalCore.ts` already makes for
    * per-site BOP, plaque and the Mombelli indices.
    *
    * `ucum` is the unit code for `Observation.valueQuantity`, in the shape
-   * `toFhirPerio.ts` already emits: `{ value, unit, system: UCUM, code }`.
+   * `toFhirDentalCore.ts` already emits: `{ value, unit, system: UCUM, code }`.
    */
   coding: { local: string; ucum: "deg" | "mm" | "%"; loinc?: string; snomed?: string };
   /**

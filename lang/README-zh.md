@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.72.6-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-3.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -144,7 +144,7 @@ export default function OdontogramClient() {
 - 🌉 桥体牙位同时渲染牙冠帽与桥体连接部；多牙位桥跨越叠加层会在连续的桥体牙位（桥体单位 + 基牙）及其间隙上渲染一条连续的、感知牙弓形态的连接体（上颌与下颌使用镜像的桥体几何形状，保证连接体在两侧牙弓上均对齐），并包含在 PNG/JPG/SVG 导出中；通过“状态预设”应用桥修复时会立即重新计算该叠加层
 - 🔍 6 个牙面的龋齿记录：近中、远中、颊侧、舌侧、咬合面、冠下
 - 🪥 每个牙面的充填材料：银汞合金、复合树脂、玻璃离子（GIC）、临时材料
-- 🏥 一个合并的“牙髓 / 根管状态”选择器（分组：活髓 vs. 已治疗/根管）：根管治疗状态（药物充填、根管充填、根管充填不完全、玻璃纤维桩、金属桩）与 AAE 牙髓诊断（`pulpDx`：正常 / 可复性 / 不可复性牙髓炎 / 坏死）互斥——已行根管治疗的牙齿（设置了 `endo`）不能同时携带活髓诊断；进行治疗时，`pulpDx` 会被规范化为 `normal`，且患髓图标会被隐藏。可复性牙髓炎渲染为一个简化的牙髓图标。一个可选的三级牙髓详情设置（`pulpDetailLevel`：simple / AAE / 实用拉丁文）通过 `pulpLatin` 展示 9 种实用拉丁文牙髓亚型（pulpa sana … gangraena pulpae）；根尖切除和髓旁钉仍作为独立的特殊指示项
+- 🏥 一个合并的“牙髓 / 根管状态”选择器（分组：活髓 vs. 已治疗/根管），用于药物充填、完整或不完整根管充填；另有独立的根管桩材料选择器（`rootPostType`：none / glass-fiber / metal）：根管治疗与 AAE 牙髓诊断（`pulpDx`：正常 / 可复性 / 不可复性牙髓炎 / 坏死）互斥，而根管桩可与任一根管充填状态并存。已行根管治疗的牙齿（设置了 `endo`）不能同时携带活髓诊断；进行治疗时，`pulpDx` 会被规范化为 `normal`，且患髓图标会被隐藏。可复性牙髓炎渲染为一个简化的牙髓图标。一个可选的三级牙髓详情设置（`pulpDetailLevel`：simple / AAE / 实用拉丁文）通过 `pulpLatin` 展示 9 种实用拉丁文牙髓亚型（pulpa sana … gangraena pulpae）；根尖切除和髓旁钉仍作为独立的特殊指示项
 - 🦴 根尖诊断（`apicalDx`：有症状/无症状根尖周炎，急性/慢性根尖脓肿，致密性骨炎）直接驱动根尖周图标；肉芽肿/囊肿病损亚型限定符仅在有症状/无症状根尖周炎下显示（多余的“脓肿”亚型已被移除——它已被根尖诊断覆盖）
 - 🩹 合并的“牙根与牙周组织”卡片（一个可折叠区域，涵盖牙根/根尖周及牙周相关表现）
 - ⚕️ 修饰项：根尖周炎症（仅在缺失/拔牙创牙位显示；在现有牙齿上隐藏，此时仅由 `apicalDx` 驱动根尖周图标；在种植体上也隐藏，此时由 `periImplant` 覆盖该表现）、牙周病、松动度分级（M1/M2/M3，种植体上隐藏）
@@ -339,7 +339,10 @@ c mod K3                 三个面的龋，并带严重度
 **牙冠边缘微渗漏**（`crownLeakage`；布尔值）：仅在 `restorationType` 为 `crown` 或 `bridge` 时显示；激活 `crown-leakage` 美术层。
 
 **根管治疗选项（恒牙）：**
-`none`、`endo-medical-filling`、`endo-filling`、`endo-filling-incomplete`、`endo-glass-pin`、`endo-metal-pin`
+`none`、`endo-medical-filling`、`endo-filling`、`endo-filling-incomplete`
+
+**根管桩材料（恒牙，独立于 `endo`）：**
+`none`、`glass-fiber`、`metal`
 
 **根管治疗选项（乳牙）：**
 `none`、`endo-medical-filling`
@@ -572,7 +575,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion is a pure optional projection of the UI-domain document. It has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.5.0`. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date and refuses exports that would lose populated clinical state; a Dental Core session rejects Legacy, unsupported, or malformed bundles.
+FHIR 转换是 UI 领域文档的纯可选投影。来自精确 `@cognovis/fhir-release@0.2.4` 投影的 Dental Core `de.cognovis.fhir.dental.core#0.6.0` 是唯一的 FHIR 合约。版本 3 删除了原先非 Dental Core 的表示以及运行时方言选择；外来、不受支持或格式错误的 Bundle 会被明确拒绝。根管桩通过 `rootPostType` 与所有根管充填状态保持独立。旧 JSON 和较早的 Dental Core 值 `endo-glass-pin` / `endo-metal-pin` 会迁移为 `endo-filling` 加桩材料；新的输出绝不会再次合并这两个轴。
 
 **Aidbox 实时模式（开发用，自 2.50.0 起）：**
 
@@ -755,6 +758,7 @@ npm run docs           # 在 docs/ 目录生成 TypeDoc 文档
 - `prosthesis` - 可摘/附着体轴（none/healing-abutment/locator/locator-denture/bar/bar-denture/removable-partial/removable-full），与 crown/bridge 类型的固定 `restorationType` 互斥
 - `crownLeakage` - 牙冠边缘微渗漏标志，仅在 `restorationType` 为 crown 或 bridge 时有意义
 - `endo` - 根管治疗状态；与 `pulpDx` 互斥（通过一个合并的“牙髓 / 根管状态”选择器共同呈现——对某颗牙进行根管治疗会将 `pulpDx` 规范化为 `normal`）
+- `rootPostType` - 根管桩材料（`none`、`glass-fiber`、`metal`），独立于 `endo`
 - `mods` - 修饰项数组（inflammation、parodontal）；`inflammation` 在现有牙齿的界面上已退役（此处由 `apicalDx` 驱动图标），但对缺失/拔牙创牙位仍然适用
 - `caries` - 当前有龋齿的牙面
 - `cariesActiveDepth` - 应用新牙面时龋齿深度选择器所暂存的 ICDAS 深度值（并非按牙面存储的数值；按牙面存储的字段见 `cariesSeverity`）
@@ -819,8 +823,8 @@ npm run docs           # 在 docs/ 目录生成 TypeDoc 文档
 - `src/status_extras.ts` - 34 种预定义修复体模板（桥、义齿、杆卡结构）
 - `src/i18n/` - 翻译文件（HU/EN/DE/ES/IT/SK/PL/RU/PT-BR）及国际化 hook
 - `src/utils/numbering.ts` - FDI、通用编号法、Palmer 编号转换
-- `src/registry/` - 声明式临床轴注册表：FHIR 字段映射、SVG 清除集/布尔标志激活、修复体类型×材料矩阵、界面选项列表（生成导出/导入、FHIR 及选择器界面的单一数据来源）
-- `src/fhir/` - HL7 FHIR R4 导出/导入：`toFhir.ts`/`fromFhir.ts`、代码系统、字段映射、基础类型
+- `src/registry/` - 声明式临床轴和界面注册表：轴元数据、SVG 激活、修复体类型×材料矩阵、值目录和选项列表；FHIR 映射由 `src/fhir/` 负责
+- `src/fhir/` - 唯一的 Dental Core HL7 FHIR R4 边界：`toFhir.ts`/`fromFhir.ts` 入口、`toFhirDentalCore.ts`/`fromFhirDentalCore.ts` 编解码器、`dentalCoreContract.ts` 及生成的配置文件/契约，以及 `dentalCoreLocalCoding.ts` 辅助代码
 - `src/bridgeOverlay.ts` - 多牙位桥跨越连接体叠加层（感知牙弓形态的桥体几何）
 - `src/SettingsModal.tsx` - 带标签页的设置弹窗（常规/面板/牙齿详情/龋齿/牙髓/备注/牙周）
 - `src/perioExport.ts` - `buildPerioSvg()`：将完整牙周图表构建为一份独立的矢量 SVG

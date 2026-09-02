@@ -9,10 +9,12 @@
 import { describe, it, expect } from "vitest";
 import {
   __setToothStateForTest,
+  __resetChartStateForTest,
   getToothDisplayState,
   getStatusChart,
   cycleEndoCanal,
   effectiveEndo,
+  effectiveRootPostType,
   endoCanalSummaryParts,
 } from "../odontogram";
 import { buildSchematicSvg, toothCanals } from "../schematicGraphic";
@@ -56,18 +58,76 @@ describe("endo per canal — schematic rendering", () => {
     const svg = buildSchematicSvg(getToothDisplayState);
     expect(svg).toContain("WF");
   });
+
+  it("does not synthesize a whole-tooth post into every explicitly detailed canal", () => {
+    __resetChartStateForTest();
+    __setToothStateForTest(16, {
+      rootPostType: "metal",
+      endoCanals: {
+        mesiobuccal: ["filling"],
+        distobuccal: ["post"],
+      },
+    });
+    const svg = buildSchematicSvg(getToothDisplayState);
+    expect(svg.match(/stroke="#8a9096" stroke-width="3\.6"/g)).toHaveLength(1);
+  });
+
+  it("keeps one tooth-level post when migrated canal detail has no explicit post", () => {
+    __resetChartStateForTest();
+    __setToothStateForTest(46, {
+      endo: "endo-metal-pin",
+      endoCanals: { mesial: ["filling"] },
+    });
+    const svg = buildSchematicSvg(getToothDisplayState);
+    expect(svg.match(/stroke="#8a9096" stroke-width="3\.6"/g)).toHaveLength(1);
+  });
+
+  it("does not let foreign canal detail suppress a tooth-level post", () => {
+    __resetChartStateForTest();
+    __setToothStateForTest(46, {
+      rootPostType: "metal",
+      endoCanals: { palatal: ["filling"] },
+    });
+    const svg = buildSchematicSvg(getToothDisplayState);
+    expect(svg.match(/stroke="#8a9096" stroke-width="3\.6"/g)).toHaveLength(2);
+  });
+
+  it("places a fallback tooth-level post on a retained root", () => {
+    __resetChartStateForTest();
+    __setToothStateForTest(16, {
+      rootPostType: "metal",
+      rootResection: "hemisection",
+      rootResectionRoot: "mesiobuccal",
+      endoCanals: {
+        mesiobuccal: ["filling"],
+        distobuccal: ["filling"],
+      },
+    });
+    const svg = buildSchematicSvg(getToothDisplayState);
+    expect(svg.match(/stroke="#8a9096" stroke-width="3\.6"/g)).toHaveLength(1);
+  });
+
+  it("synthesizes a whole-tooth post across roots only without per-canal detail", () => {
+    __resetChartStateForTest();
+    __setToothStateForTest(16, { rootPostType: "metal", endoCanals: {} });
+    const svg = buildSchematicSvg(getToothDisplayState);
+    expect(svg.match(/stroke="#8a9096" stroke-width="3\.6"/g)).toHaveLength(3);
+  });
 });
 
 describe("endo per canal — both-views derivation + interaction", () => {
   it("effectiveEndo collapses per-canal findings to a whole-tooth value", () => {
-    // Post wins (metal pin), else filling, else incomplete, else temporary.
-    expect(effectiveEndo({ endoCanals: { mesial: ["incomplete"], distal: ["filling", "post"] } })).toBe("endo-metal-pin");
+    // Filling state and post material are independent projections.
+    const mixed = { endoCanals: { mesial: ["incomplete"], distal: ["filling", "post"] } };
+    expect(effectiveEndo(mixed)).toBe("endo-filling");
+    expect(effectiveRootPostType(mixed)).toBe("metal");
     expect(effectiveEndo({ endoCanals: { mesial: ["filling"] } })).toBe("endo-filling");
     expect(effectiveEndo({ endoCanals: { mesial: ["incomplete"] } })).toBe("endo-filling-incomplete");
     expect(effectiveEndo({ endoCanals: { mesial: ["temporary"] } })).toBe("endo-medical-filling");
     expect(effectiveEndo({ endoCanals: {} })).toBe("none");
-    // The legacy scalar still wins when set.
-    expect(effectiveEndo({ endo: "endo-glass-pin", endoCanals: { mesial: ["filling"] } })).toBe("endo-glass-pin");
+    // Legacy combined values project onto both modern axes.
+    expect(effectiveEndo({ endo: "endo-glass-pin", endoCanals: { mesial: ["filling"] } })).toBe("endo-filling");
+    expect(effectiveRootPostType({ endo: "endo-glass-pin" })).toBe("glass-fiber");
   });
 
   it("summary emits a language-neutral per-canal line", () => {

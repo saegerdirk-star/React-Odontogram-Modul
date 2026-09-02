@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.72.6-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-3.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -142,7 +142,7 @@ export default function OdontogramClient() {
 - 🌉 Зубы моста отображают одновременно коронковую часть и седловидный коннектор; оверлей многозубого мостовидного пролёта отрисовывает единый непрерывный, учитывающий дугу коннектор через последовательные зубы моста (тело + опоры) и межзубные промежутки между ними (верхняя и нижняя дуга используют зеркальную геометрию седла, сохраняя выравнивание коннектора на обеих дугах), включён в экспорт PNG/JPG/SVG; применение моста через шаблон статусов немедленно пересчитывает оверлей
 - 🔍 Картирование кариеса на 6 поверхностях: мезиальная, дистальная, щёчная, язычная, окклюзионная, подкоронковая
 - 🪥 Материалы пломб по поверхностям: амальгама, композит, стеклоиономер (СИЦ), временная
-- 🏥 Единый объединённый селектор «Статус пульпы / эндо» (сгруппирован: витальная пульпа vs. леченная/эндо): эндодонтические состояния (лечебное пломбирование, пломбирование канала, неполное пломбирование канала, стекловолоконный штифт, металлический штифт) и диагноз пульпы по AAE (`pulpDx`: норма / обратимый / необратимый пульпит / некроз) взаимоисключающие — зуб с эндодонтическим лечением (установлен `endo`) не может одновременно нести диагноз витальной пульпы; при лечении `pulpDx` нормализуется к `normal`, а глиф поражённой пульпы скрывается. Обратимый пульпит отображается уменьшенным глифом пульпы. Опциональная 3-уровневая настройка детализации пульпы (`pulpDetailLevel`: simple / AAE / практический латинский) раскрывает 9 практических латинских подтипов пульпы (pulpa sana … gangraena pulpae) через `pulpLatin`; резекция и парапульпарный штифт остаются отдельными специальными индикаторами
+- 🏥 Единый объединённый селектор «Статус пульпы / эндо» (сгруппирован: витальная пульпа vs. леченная/эндо) для лечебного, полного или неполного пломбирования канала и отдельный селектор материала корневого штифта (`rootPostType`: none / glass-fiber / metal): эндодонтическое лечение и диагноз пульпы по AAE (`pulpDx`: норма / обратимый / необратимый пульпит / некроз) взаимоисключающие, а штифт может сочетаться с любым состоянием пломбирования канала. Зуб с эндодонтическим лечением (установлен `endo`) не может одновременно нести диагноз витальной пульпы; при лечении `pulpDx` нормализуется к `normal`, а глиф поражённой пульпы скрывается. Обратимый пульпит отображается уменьшенным глифом пульпы. Опциональная 3-уровневая настройка детализации пульпы (`pulpDetailLevel`: simple / AAE / практический латинский) раскрывает 9 практических латинских подтипов пульпы (pulpa sana … gangraena pulpae) через `pulpLatin`; резекция и парапульпарный штифт остаются отдельными специальными индикаторами
 - 🦴 Апикальный диагноз (`apicalDx`: симптоматический/бессимптомный апикальный периодонтит, острый/хронический апикальный абсцесс, конденсирующий остеит) напрямую определяет периапикальный глиф; уточняющий подтип очага гранулёма/киста отображается только при симптоматическом/бессимптомном апикальном периодонтите (избыточный подтип «абсцесс» убран — он уже покрывается апикальным диагнозом)
 - 🩹 Объединённая карточка «Корень и пародонт» (единый сворачиваемый раздел для находок корня/периапикальной области и пародонта)
 - ⚕️ Модификации: периапикальное воспаление (отображается только на отсутствующих зубах/лунках после удаления; скрыто на присутствующих зубах, где периапикальный глиф определяется исключительно `apicalDx`, и на имплантатах, где это покрывает `periImplant`), заболевание пародонта, степени подвижности (M1/M2/M3, скрыты на имплантатах)
@@ -342,7 +342,10 @@ c mod K3                 кариес на трёх поверхностях, с
 **Краевая негерметичность коронки** (`crownLeakage`; логическое значение): отображается только когда `restorationType` равен `crown` или `bridge`; активирует слой изображения `crown-leakage`.
 
 **Эндодонтические варианты (постоянные зубы):**
-`none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`, `endo-glass-pin`, `endo-metal-pin`
+`none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`
+
+**Материал корневого штифта (постоянные зубы, независимо от `endo`):**
+`none`, `glass-fiber`, `metal`
 
 **Эндодонтические варианты (молочные зубы):**
 `none`, `endo-medical-filling`
@@ -580,7 +583,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion is a pure optional projection of the UI-domain document. It has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.5.0`. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date and refuses exports that would lose populated clinical state; a Dental Core session rejects Legacy, unsupported, or malformed bundles.
+Преобразование FHIR — это чистая необязательная проекция документа интерфейса. Dental Core `de.cognovis.fhir.dental.core#0.6.0` из точной проекции `@cognovis/fhir-release@0.2.4` является единственным контрактом FHIR. Версия 3 удаляет прежнее представление вне Dental Core и выбор диалекта во время выполнения; чужие, неподдерживаемые или некорректные Bundle явно отклоняются. Корневой штифт остаётся независимым от любого состояния пломбирования благодаря `rootPostType`. Старые JSON и прежние значения Dental Core `endo-glass-pin` / `endo-metal-pin` мигрируют в `endo-filling` плюс материал штифта; новый вывод больше никогда не объединяет эти две оси.
 
 **Живой режим Aidbox (разработка, начиная с 2.50.0):**
 
@@ -774,6 +777,7 @@ npm run docs           # Generate TypeDoc docs in docs/
 - `prosthesis` — ось съёмного/аттачментного протезирования (none/healing-abutment/locator/locator-denture/bar/bar-denture/removable-partial/removable-full), взаимоисключающая с фиксированным `restorationType` коронка/мост
 - `crownLeakage` — флаг краевой негерметичности коронки, имеет значение только когда `restorationType` равен crown или bridge
 - `endo` — эндодонтический статус; взаимоисключающий с `pulpDx` (отображаются вместе через единый объединённый селектор «Статус пульпы / эндо» — лечение зуба нормализует `pulpDx` в `normal`)
+- `rootPostType` — материал корневого штифта (`none`, `glass-fiber`, `metal`), независимо от `endo`
 - `mods` — массив модификаций (inflammation, parodontal); `inflammation` упразднён в интерфейсе для присутствующих зубов (там глиф определяется `apicalDx`), но по-прежнему применяется к отсутствующим зубам/лункам после удаления
 - `caries` — активные поверхности кариеса
 - `cariesActiveDepth` — значение глубины ICDAS, устанавливаемое селектором глубины кариеса при применении к новой поверхности (не сохраняемое значение по поверхности; см. `cariesSeverity` для сохранённого поля по поверхности)
@@ -838,8 +842,8 @@ npm run docs           # Generate TypeDoc docs in docs/
 - `src/status_extras.ts` — 34 предустановленных шаблона реставраций (мосты, протезы, балочные конструкции)
 - `src/i18n/` — переводы (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR) и хук i18n
 - `src/utils/numbering.ts` — преобразование нумерации FDI, Universal, Palmer
-- `src/registry/` — декларативный реестр клинических осей: сопоставления полей FHIR, набор очистки SVG/активация логических флагов, матрица тип×материал реставраций, списки опций интерфейса (единый источник истины, генерирующий экспорт/импорт, FHIR и интерфейс выбора)
-- `src/fhir/` — экспорт/импорт HL7 FHIR R4: `toFhir.ts`/`fromFhir.ts`, системы кодов, сопоставления полей, примитивы
+- `src/registry/` — декларативный реестр клинических осей и UI: метаданные осей, активация SVG, матрица тип×материал реставраций, каталог значений и списки опций; сопоставления FHIR принадлежат `src/fhir/`
+- `src/fhir/` — единственная граница Dental Core для HL7 FHIR R4: точки входа `toFhir.ts`/`fromFhir.ts`, кодек `toFhirDentalCore.ts`/`fromFhirDentalCore.ts`, `dentalCoreContract.ts` со сгенерированными профилями/контрактами, а также вспомогательный `dentalCoreLocalCoding.ts`
 - `src/bridgeOverlay.ts` — оверлей коннектора многозубого мостовидного пролёта (геометрия седла с учётом дуги)
 - `src/SettingsModal.tsx` — модальное окно настроек с вкладками (Общие/Панели/Детали зуба/Кариес/Пульпа/Заметки/Периодонтальный)
 - `src/perioExport.ts` — `buildPerioSvg()`: полная пародонтальная карта в виде одного самостоятельного векторного SVG

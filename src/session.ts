@@ -16,11 +16,10 @@
 //
 // WHAT STAYS OUT. This module exists to make the boundary legible and testable,
 // so it must stay free of transport concerns: no HTTP client, no server URL, no
-// authentication, no audit provenance, no persistence. A session may carry an
-// immutable FHIR codec configuration: standalone defaults to upstream-compatible
-// Legacy, while a host explicitly selects Dental Core. Its `importFhirBundle()`
-// and `exportFhirBundle()` methods are the same codec path used by the built-in
-// buttons. Sending any resulting Bundle remains the host's job.
+// authentication, no audit provenance, no persistence. A session may carry
+// immutable Dental Core export options. Its `importFhirBundle()` and
+// `exportFhirBundle()` methods are the same sole-Dental-Core seam used by the
+// built-in buttons. Sending any resulting Bundle remains the host's job.
 //
 // The implementation lives in `./odontogram` because it owns the clinical state;
 // this module is the documented public surface for it.

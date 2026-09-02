@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.72.6-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-3.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -153,7 +153,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion is a pure optional projection of the UI-domain document. It has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.5.0`. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date and refuses exports that would lose populated clinical state; a Dental Core session rejects Legacy, unsupported, or malformed bundles.
+La conversion FHIR est une projection optionnelle et pure du document d'interface. Dental Core `de.cognovis.fhir.dental.core#0.6.0`, issu de la projection exacte `@cognovis/fhir-release@0.2.4`, est l'unique contrat FHIR. La version 3 supprime l'ancienne représentation hors Dental Core et toute sélection de dialecte à l'exécution ; les Bundles étrangers, non pris en charge ou mal formés sont explicitement rejetés. Les tenons radiculaires restent indépendants via `rootPostType`. Les anciens JSON et les anciennes valeurs Dental Core `endo-glass-pin` / `endo-metal-pin` migrent vers `endo-filling` plus le matériau du tenon ; les nouvelles sorties ne recombinent jamais les deux axes.
 
 **Mode live Aidbox (développement, à partir de 2.50.0) :**
 

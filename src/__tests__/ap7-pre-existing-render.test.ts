@@ -175,9 +175,13 @@ describe("the hatch marks WORK, never the tooth and never the disease", () => {
     expect(markedFor({ toothSelection: "tooth-base", endo: "endo-filling" })).toContain("endo-filling");
   });
 
-  it("hatches a root canal filling carrying a pin", () => {
-    const marked = markedFor({ toothSelection: "tooth-base", endo: "endo-metal-pin" });
-    expect(marked).toContain("endo-filling");
+  it("hatches an independent root post together with its incomplete root filling", () => {
+    const marked = markedFor({
+      toothSelection: "tooth-base",
+      endo: "endo-filling-incomplete",
+      rootPostType: "metal",
+    });
+    expect(marked).toContain("endo-filling-incomplete");
     expect(marked).toContain("endo-metal-pin");
   });
 

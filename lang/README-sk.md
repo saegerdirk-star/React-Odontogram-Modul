@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.72.6-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-3.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -142,7 +142,7 @@ Alebo ho načítajte pomocou dynamického importu iba na strane klienta: `dynami
 - 🌉 Zuby mostíka vykresľujú súčasne korunkový uzáver aj sedlový konektor; prekrytie viaczubového mostíkového úseku vykresľuje jeden súvislý, oblúku prispôsobený konektor cez po sebe idúce zuby mostíka (články + piliere) a medzizubné medzery medzi nimi (horný a dolný oblúk používajú zrkadlenú geometriu sedla, čím zostáva konektor zarovnaný na oboch oblúkoch), zahrnuté v exporte PNG/JPG/SVG; aplikovanie mostíka cez predvoľbu stavov okamžite prepočíta prekrytie
 - 🔍 Zaznamenávanie kazu na 6 plochách: meziálne, distálne, bukálne, linguálne, oklúzne, subkoronálne
 - 🪥 Materiály výplní na každú plochu: amalgám, kompozit, GIC, dočasný
-- 🏥 Jeden zlúčený výber „Stav drene / endo" (zoskupený: vitálna dreň vs. liečená/endo): endodontické stavy (liečivá výplň, koreňová výplň, nekompletná koreňová výplň, sklený kolík, kovový kolík) a AAE diagnóza drene (`pulpDx`: normálna / reverzibilná / ireverzibilná pulpitída / nekróza) sa navzájom vylučujú — zub s ošetreným koreňovým kanálikom (nastavené `endo`) nemôže mať zároveň diagnózu vitálnej drene; pri ošetrení sa `pulpDx` normalizuje na `normal` a glyf chorej drene sa potlačí. Reverzibilná pulpitída sa zobrazuje ako zmenšený glyf drene. Voliteľné 3-úrovňové nastavenie podrobnosti drene (`pulpDetailLevel`: simple / AAE / praktická latinčina) cez `pulpLatin` sprístupňuje 9 praktických latinských podtypov drene (pulpa sana … gangraena pulpae); resekcia a parapulpálny kolík zostávajú samostatnými špeciálnymi indikátormi
+- 🏥 Jeden zlúčený výber „Stav drene / endo" (zoskupený: vitálna dreň vs. liečená/endo) pre liečivú, úplnú alebo nekompletnú koreňovú výplň a samostatný výber materiálu koreňového kolíka (`rootPostType`: none / glass-fiber / metal): endodontická liečba a AAE diagnóza drene (`pulpDx`: normálna / reverzibilná / ireverzibilná pulpitída / nekróza) sa navzájom vylučujú, zatiaľ čo kolík možno zaznamenať pri každom stave koreňovej výplne. Zub s ošetreným koreňovým kanálikom (nastavené `endo`) nemôže mať zároveň diagnózu vitálnej drene; pri ošetrení sa `pulpDx` normalizuje na `normal` a glyf chorej drene sa potlačí. Reverzibilná pulpitída sa zobrazuje ako zmenšený glyf drene. Voliteľné 3-úrovňové nastavenie podrobnosti drene (`pulpDetailLevel`: simple / AAE / praktická latinčina) cez `pulpLatin` sprístupňuje 9 praktických latinských podtypov drene (pulpa sana … gangraena pulpae); resekcia a parapulpálny kolík zostávajú samostatnými špeciálnymi indikátormi
 - 🦴 Apikálna diagnóza (`apicalDx`: symptomatická/asymptomatická apikálna parodontitída, akútny/chronický apikálny absces, kondenzujúca osteitída) priamo určuje periapikálny glyf; kvalifikátor podtypu lézie granulóm/cysta sa zobrazuje iba pri symptomatickej/asymptomatickej apikálnej parodontitíde (redundantný podtyp „absces" bol odstránený — je už pokrytý apikálnou diagnózou)
 - 🩹 Zlúčená karta „Koreň a parodont" (jedna zbaliteľná sekcia pre nálezy koreňa/periapikálnej oblasti a parodontu)
 - ⚕️ Modifikácie: periapikálny zápal (zobrazený iba na chýbajúcich zuboch/zuboch s extrakčnou ranou; skrytý na prítomných zuboch, kde periapikálny glyf priamo určuje `apicalDx`, a na implantátoch, kde ho pokrýva `periImplant`), parodontálne ochorenie, stupne mobility (M1/M2/M3, skryté na implantátoch)
@@ -340,7 +340,10 @@ Skratka je prepísaná z klávesnice nálezov programu *charly* (solutio), nie v
 **Okrajová netesnosť korunky** (`crownLeakage`; boolean): zobrazená iba keď je `restorationType` typu `crown` alebo `bridge`; aktivuje vrstvu ilustrácie `crown-leakage`.
 
 **Endodontické možnosti (trvalé zuby):**
-`none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`, `endo-glass-pin`, `endo-metal-pin`
+`none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`
+
+**Materiál koreňového kolíka (trvalé zuby, nezávisle od `endo`):**
+`none`, `glass-fiber`, `metal`
 
 **Endodontické možnosti (mliečne zuby):**
 `none`, `endo-medical-filling`
@@ -577,7 +580,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion is a pure optional projection of the UI-domain document. It has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.5.0`. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date and refuses exports that would lose populated clinical state; a Dental Core session rejects Legacy, unsupported, or malformed bundles.
+Konverzia FHIR je čistá voliteľná projekcia dokumentu používateľského rozhrania. Dental Core `de.cognovis.fhir.dental.core#0.6.0` z presnej projekcie `@cognovis/fhir-release@0.2.4` je jediný FHIR kontrakt. Verzia 3 odstraňuje pôvodnú reprezentáciu mimo Dental Core aj výber dialektu za behu; cudzie, nepodporované alebo chybné Bundle sa výslovne odmietnu. Koreňový kolík zostáva cez `rootPostType` nezávislý od každého stavu koreňovej výplne. Starý JSON a staršie hodnoty Dental Core `endo-glass-pin` / `endo-metal-pin` sa migrujú na `endo-filling` plus materiál kolíka; nový výstup už obe osi nikdy nezlučuje.
 
 **Aidbox live režim (vývoj, od 2.50.0):**
 
@@ -770,6 +773,7 @@ Export vytvorí súbor JSON (verzia `2.20`; import tiež akceptuje staršie verz
 - `prosthesis` - os snímateľnej protetiky/upevnenia (none/healing-abutment/locator/locator-denture/bar/bar-denture/removable-partial/removable-full), navzájom sa vylučuje s pevným `restorationType` typu korunka/mostík
 - `crownLeakage` - príznak okrajovej netesnosti korunky, zmysluplný iba keď je `restorationType` typu korunka alebo mostík
 - `endo` - endodontický stav; navzájom sa vylučuje s `pulpDx` (zobrazované spoločne cez jeden zlúčený výber „Stav drene / endo" — ošetrenie zuba normalizuje `pulpDx` na `normal`)
+- `rootPostType` - materiál koreňového kolíka (`none`, `glass-fiber`, `metal`), nezávislý od `endo`
 - `mods` - pole modifikácií (zápal, parodontálny); `inflammation` je z rozhrania na prítomných zuboch zrušený (periapikálny glyf tam určuje `apicalDx`), ale stále sa vzťahuje na chýbajúce zuby/zuby s extrakčnou ranou
 - `caries` - aktívne plochy kazu
 - `cariesActiveDepth` - hodnota hĺbky ICDAS pripravená výberom hĺbky kazu pri aplikovaní novej plochy (nie je uložená hodnota pre každú plochu; pozri `cariesSeverity` pre uložené pole pre každú plochu)
@@ -834,8 +838,8 @@ Okrem vlastného exportu odontogramu Stav JSON / FHIR / PNG / JPG / SVG má **pa
 - `src/status_extras.ts` - 34 preddefinovaných šablón reštaurácií (mostíky, protézy, stegové konštrukcie)
 - `src/i18n/` - preklady (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR) a i18n hook
 - `src/utils/numbering.ts` - konverzia číslovania FDI, Universal, Palmer
-- `src/registry/` - deklaratívny register klinických osí: mapovania polí FHIR, aktivácia SVG-clear-set/boolean príznakov, matica typ×materiál náhrady, zoznamy možností rozhrania (jediný zdroj pravdy generujúci export/import, FHIR aj rozhranie výberov)
-- `src/fhir/` - export/import HL7 FHIR R4: `toFhir.ts`/`fromFhir.ts`, systémy kódov, mapovania polí, primitíva
+- `src/registry/` - deklaratívny register klinických osí a UI: metadáta osí, aktivácia SVG, matica typ×materiál náhrady, katalóg hodnôt a zoznamy možností; mapovania FHIR patria do `src/fhir/`
+- `src/fhir/` - jediné rozhranie Dental Core pre HL7 FHIR R4: vstupné body `toFhir.ts`/`fromFhir.ts`, kodek `toFhirDentalCore.ts`/`fromFhirDentalCore.ts`, `dentalCoreContract.ts` s generovanými profilmi/kontraktmi a pomocné funkcie `dentalCoreLocalCoding.ts`
 - `src/bridgeOverlay.ts` - prekrytie konektora viaczubového mostíkového úseku (geometria sedla prispôsobená oblúku)
 - `src/SettingsModal.tsx` - záložkový dialóg Nastavenia (Všeobecné/Panely/Detaily zuba/Kaz/Dreň/Poznámky/Periodontálne)
 - `src/perioExport.ts` - `buildPerioSvg()`: celý parodontálny graf ako jeden samostatný vektorový SVG

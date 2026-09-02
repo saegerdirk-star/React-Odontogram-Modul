@@ -37,7 +37,7 @@ export type DentalPeriapicalIndexProfileRaw = {
     status: ("registered" | "preliminary" | "final" | "amended" | "corrected" | "cancelled" | "entered-in-error" | "unknown");
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-periapical-index (pkg: de.cognovis.fhir.dental.core#0.5.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-periapical-index (pkg: de.cognovis.fhir.dental.core#0.6.0)
 export class DentalPeriapicalIndexProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-periapical-index";
 

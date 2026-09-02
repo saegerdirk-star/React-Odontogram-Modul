@@ -19,7 +19,7 @@ import {
     validateMustSupport,
 } from "../../profile-helpers";
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/tooth-surface (pkg: de.cognovis.fhir.dental.core#0.5.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/tooth-surface (pkg: de.cognovis.fhir.dental.core#0.6.0)
 export class ToothSurfaceExtProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/tooth-surface";
 

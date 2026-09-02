@@ -13,14 +13,21 @@ import { DentalProcedureProfile } from "./generated/de-cognovis-fhir-dental-core
 import { DentalRiskEvidenceProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalRiskEvidence";
 import { DentalServiceRequestProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/ServiceRequest_DentalServiceRequest";
 import { DentalToothStateProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalToothState";
-import { CHART_MAPPINGS, COMPONENT_SYSTEM, DENTAL_CORE, DENTAL_CORE_BUNDLE_IDENTIFIER, DENTAL_CORE_PROFILES, FDI_SYSTEM, isDentalCoreDiagnosis, isDentalCoreFdi, isDentalCoreRiskValue, PROPERTY_SYSTEM, PROVENANCE_SYSTEM, VALUE_SYSTEM } from "./dentalCoreContract";
-import { LOCAL_SYSTEM, resolveSmokingStatus } from "./codesystems";
+import { CHART_MAPPINGS, COMPONENT_SYSTEM, DENTAL_CORE, DENTAL_CORE_BUNDLE_IDENTIFIER, DENTAL_CORE_PROFILES, FDI_SYSTEM, isDentalCoreDiagnosis, isDentalCoreFdi, isDentalCoreRiskValue, normalizeLegacyRootPost, PROPERTY_SYSTEM, PROVENANCE_SYSTEM, VALUE_SYSTEM } from "./dentalCoreContract";
+import { DENTAL_CORE_LOCAL_SYSTEM as LOCAL_SYSTEM, resolveSmokingStatus } from "./dentalCoreLocalCoding";
 import { LOCAL_VALUE_MAPS } from "../registry/valueCatalog";
 
 export class UnsupportedDentalCoreContentError extends Error {
   constructor(field: string) {
     super(`Dental Core cannot faithfully represent populated field: ${field}`);
     this.name = "UnsupportedDentalCoreContentError";
+  }
+}
+
+export class MissingDentalCoreEffectiveDateError extends Error {
+  constructor() {
+    super("Dental Core export requires an effective date from the export options or examination context");
+    this.name = "MissingDentalCoreEffectiveDateError";
   }
 }
 
@@ -83,7 +90,7 @@ class DentalCoreIdentityResolver {
 const subjectReference = (options: FhirExportOptions, identity: DentalCoreIdentityResolver): string => options.subject ?? identity.reference("Patient/subject");
 const effective = (payload: OdontogramExportPayload, options: FhirExportOptions): string => {
   const value = options.effectiveDateTime ?? payload.examination?.effectiveDateTime ?? payload.case?.examDate;
-  if (!value) throw new Error("Dental Core export requires an effective date from the export options or examination context");
+  if (!value) throw new MissingDentalCoreEffectiveDateError();
   return value;
 };
 const coding = (system: string, code: string) => ({ system, code });
@@ -179,6 +186,24 @@ function hasClinicalValue(value: unknown, field?: string): boolean {
   if (typeof value === "object") return Object.entries(value as Record<string, unknown>)
     .some(([nestedField, nestedValue]) => hasClinicalValue(nestedValue, nestedField));
   return true;
+}
+
+/**
+ * Project the UI record onto Dental Core's admitted tooth contract.
+ *
+ * Dental Core 0.6 represents root-fracture orientation, but has no carrier for
+ * the optional root qualifier used by multi-root odontogram teeth. Preserve the
+ * oriented finding and deliberately omit only that qualifier. A qualifier
+ * without an oriented fracture remains unsupported and must still fail the
+ * completeness gate; guessing an orientation from a root name would change the
+ * clinical meaning.
+ */
+function projectDentalCoreTooth(record: ToothRecord): ToothRecord {
+  const normalized = normalizeLegacyRootPost(record);
+  if (!normalized.rootFracture || normalized.rootFracture === "none" || !normalized.rootFractureRoot) return normalized;
+  const projected: ToothRecord = { ...normalized };
+  delete projected.rootFractureRoot;
+  return projected;
 }
 
 function validProfileField(field: keyof ToothRecord, value: unknown): boolean {
@@ -349,6 +374,7 @@ function chartComponents(record: ToothRecord): Observation["component"] {
     const present = Object.prototype.hasOwnProperty.call(record, mapping.field);
     if (!present) continue;
     const raw = record[mapping.field];
+    if (mapping.omitDefault && raw === mapping.defaultValue) continue;
     if (mapping.kind === "boolean") {
       if (typeof raw !== "boolean") continue;
       const coded = mapping.values?.true;
@@ -803,7 +829,14 @@ function sharedResourceEntries(payload: OdontogramExportPayload, options: FhirEx
 }
 
 export function buildDentalCoreBundle(payload: OdontogramExportPayload, options: FhirExportOptions = {}): Bundle {
-  const safe = payload && typeof payload === "object" ? payload : ({ version: "", teeth: {} } as OdontogramExportPayload);
+  const source = payload && typeof payload === "object" ? payload : ({ version: "", teeth: {} } as OdontogramExportPayload);
+  const safe: OdontogramExportPayload = {
+    ...source,
+    teeth: Object.fromEntries(Object.entries(source.teeth ?? {}).map(([fdi, record]) => [fdi, projectDentalCoreTooth(record)])),
+    ...(source.plan
+      ? { plan: Object.fromEntries(Object.entries(source.plan).map(([fdi, record]) => [fdi, projectDentalCoreTooth(record)])) }
+      : {}),
+  };
   const identity = new DentalCoreIdentityResolver(safe);
   assertDentalCoreComplete(safe, options, identity);
   const entries: BundleEntry[] = [];

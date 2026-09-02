@@ -61,7 +61,7 @@ function legacyEndoFindings(endo: string): string[] {
     case "endo-filling-incomplete": return ["incomplete"];
     case "endo-medical-filling": return ["temporary"];
     case "endo-glass-pin":
-    case "endo-metal-pin": return ["post"];
+    case "endo-metal-pin": return ["filling", "post"];
     default: return [];
   }
 }
@@ -287,10 +287,26 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
     const canals = toothCanals(toothNo);
     const centers = rootCenters(cx, w, canals.length);
     const legacy = legacyEndoFindings(s.endo);
+    const retainedCanals = canals.filter((_name, index) => index !== removedIdx);
+    const hasPerCanalDetail = canals.some((name) => s.endoCanals[name]?.length > 0);
+    const hasExplicitCanalPost = canals.some((name) => s.endoCanals[name]?.includes("post"));
+    const fallbackPostCanal = hasPerCanalDetail && !hasExplicitCanalPost && s.rootPostType !== "none"
+      ? retainedCanals.find((name) => s.endoCanals[name]?.length > 0) ?? retainedCanals[0]
+      : undefined;
     if (!implant) {
       canals.forEach((name, i) => {
         if (i === removedIdx) return;   // a removed root has no canal to fill
-        const f = (s.endoCanals[name] && s.endoCanals[name].length) ? s.endoCanals[name] : legacy;
+        const canalFindings = (s.endoCanals[name] && s.endoCanals[name].length) ? s.endoCanals[name] : legacy;
+        // The tooth-level material is authoritative. With no canal detail it
+        // projects to every root, matching the anatomical whole-tooth layer.
+        // With detail, explicit canal posts win; if none exists, preserve one
+        // tooth-level post on the first detailed canal instead of losing it or
+        // inventing a post in every canal.
+        const includeToothPost = s.rootPostType !== "none"
+          && (!hasPerCanalDetail || name === fallbackPostCanal);
+        const f = includeToothPost && !canalFindings.includes("post")
+          ? [...canalFindings, "post"]
+          : canalFindings;
         if (!f.length) return;
         const rx = centers[i] ?? cx;
         if (f.includes("filling") || f.includes("temporary") || f.includes("incomplete")) {

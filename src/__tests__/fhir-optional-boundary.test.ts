@@ -3,7 +3,7 @@
 // Dirk Saeger, Malte Sussdorff 2026
 
 import { describe, expect, it } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 const root = process.cwd();
@@ -104,14 +104,40 @@ describe("optional FHIR package boundary", () => {
 
   it("pins and verifies the released Dental Core generation input", () => {
     const generator = source("tools/generate-dental-core-types.mjs");
+    const packageJson = JSON.parse(source("package.json")) as { devDependencies?: Record<string, string> };
 
-    expect(generator).toContain('name: "de.cognovis.fhir.dental.core", version: "0.5.0"');
-    expect(generator).toContain("https://npm.cognovis.de/de.cognovis.fhir.dental.core/-/de.cognovis.fhir.dental.core-0.5.0.tgz");
-    expect(generator).toContain("81ed6290f278c4a2668d6079e443cdee4aaf1a2aa63ea9e19e1aaff208b68ec4b0f5a062fabe22bc6f672555b0c974fef7d64282d3277cad14ff4cd1b1b45835");
+    expect(packageJson.devDependencies?.["@cognovis/fhir-release"]).toBe("0.2.4");
+    expect(generator).toContain('name: "@cognovis/fhir-release", version: "0.2.4"');
+    expect(generator).toContain("cognovis-fhir-release.manifest.json");
+    expect(generator).toContain('entry.packageId === "de.cognovis.fhir.dental.core" && entry.scope === "estate"');
+    expect(generator).toContain('dentalCoreClosure.version !== "0.6.0"');
     expect(generator).toContain("dental-core-contract.ts");
     expect(generator).not.toMatch(removedDialectPattern);
     expect(generator).not.toMatch(/de\.cognovis\.fhir\.dental"/i);
     expect(generator).toContain("@cognovis/codegen");
+  });
+
+  it("exposes one Dental Core seam without a selectable legacy implementation", () => {
+    const publicTypes = source("src/fhir/types.ts");
+    const publicEntry = source("src/fhir/index.ts");
+    const session = source("src/odontogram.ts");
+
+    expect(`${publicTypes}\n${publicEntry}\n${session}`).not.toMatch(/FhirDialect|resolveFhirDialect|UnsupportedFhirDialect/);
+    expect(publicTypes).not.toMatch(/\bdialect\??:/);
+    expect(session).not.toMatch(/\bdialect\s*:/);
+    for (const removed of [
+      "src/fhir/codesystems.ts",
+      "src/fhir/iso3950.ts",
+      "src/fhir/primitives.ts",
+      "src/fhir/toFhirPerio.ts",
+      "src/registry/fhir.ts",
+      "src/registry/fromFhir.ts",
+      "src/registry/legacyAxes.ts",
+      "src/__tests__/legacy-fhir-golden.test.ts",
+      "src/__tests__/fixtures/legacy-fhir-golden.json",
+    ]) {
+      expect(existsSync(resolve(root, removed)), removed).toBe(false);
+    }
   });
 
   it("contains no removed-dialect implementation, generated artifact, or documentation residue", () => {
@@ -128,5 +154,41 @@ describe("optional FHIR package boundary", () => {
     for (const file of files) {
       expect(source(file), `Removed dialect residue in ${file}`).not.toMatch(residue);
     }
+  });
+
+  it("documents the sole Dental Core contract and independent root posts in every language guide", () => {
+    const guides = readdirSync(resolve(root, "lang"))
+      .filter((name) => /^README-.*\.md$/.test(name))
+      .map((name) => `lang/${name}`);
+
+    expect(guides).toHaveLength(12);
+    for (const guide of guides) {
+      const text = source(guide);
+      expect(text, guide).toContain("de.cognovis.fhir.dental.core#0.6.0");
+      expect(text, guide).toContain("@cognovis/fhir-release@0.2.4");
+      expect(text, guide).toContain("rootPostType");
+    }
+
+    const layoutGuides = guides.filter((guide) => source(guide).includes("`src/registry/`"));
+    expect(layoutGuides).toHaveLength(11);
+    for (const guide of layoutGuides) {
+      const text = source(guide);
+      for (const currentModule of [
+        "toFhir.ts", "fromFhir.ts", "toFhirDentalCore.ts", "fromFhirDentalCore.ts", "dentalCoreContract.ts", "dentalCoreLocalCoding.ts",
+      ]) expect(text, guide).toContain(currentModule);
+      for (const removedModule of ["codesystems.ts", "primitives.ts", "registry/fhir.ts", "registry/fromFhir.ts", "fieldMappings.ts"]) {
+        expect(text, guide).not.toContain(removedModule);
+      }
+    }
+
+    const instructions = source("CLAUDE.md");
+    for (const currentContract of [
+      "dental-periodontal-finding", "dental-peri-implant-finding", "dental-gingival-recession-assessment",
+      "32910-2", "64043-3", "34016-6", "771311009", "modified-plaque-index", "modified-sulcus-bleeding-index",
+    ]) expect(instructions).toContain(currentContract);
+    for (const obsoleteClaim of [
+      "fieldMappings.ts", "periodontal-panel", "74029-0", "32911-0", "32912-8", "34015-8",
+      "plaque-surface", "mod-plaque-index-mombelli", "mod-bleeding-index-mombelli", "component.bodySite` backport",
+    ]) expect(instructions).not.toContain(obsoleteClaim);
   });
 });

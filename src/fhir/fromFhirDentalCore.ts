@@ -13,7 +13,7 @@ import { DentalProcedureProfile } from "./generated/de-cognovis-fhir-dental-core
 import { DentalRiskEvidenceProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalRiskEvidence";
 import { DentalServiceRequestProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/ServiceRequest_DentalServiceRequest";
 import { DentalToothStateProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalToothState";
-import { LOCAL_SYSTEM, resolveSmokingStatus } from "./codesystems";
+import { DENTAL_CORE_LOCAL_SYSTEM as LOCAL_SYSTEM, resolveSmokingStatus } from "./dentalCoreLocalCoding";
 import { LOCAL_VALUE_MAPS } from "../registry/valueCatalog";
 import type { DentalCoreResourceIdentity, OdontogramExportPayload, ToothRecord } from "./types";
 import {
@@ -28,6 +28,7 @@ import {
   isDentalCoreRiskValue,
   isDentalCoreValue,
   mappingsByProperty,
+  normalizeLegacyRootPost,
   PROPERTY_SYSTEM,
   PROVENANCE_SYSTEM,
   VALUE_SYSTEM,
@@ -787,5 +788,9 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
     payload.examination = { ...payload.examination, subject: expectedSubject, effectiveDateTime: [...effectiveDates][0] };
   }
   if (Object.keys(identities).length) payload.fhirIdentity = { resources: identities };
+  for (const [fdi, record] of Object.entries(payload.teeth)) payload.teeth[fdi] = normalizeLegacyRootPost(record);
+  if (payload.plan) {
+    for (const [fdi, record] of Object.entries(payload.plan)) payload.plan[fdi] = normalizeLegacyRootPost(record);
+  }
   return payload;
 }

@@ -406,6 +406,7 @@ describe('App.tsx', () => {
     it('renders the merged pulp/endo select dropdown, not the old separate ones', () => {
       render(<App />);
       expect(document.getElementById('pulpEndoSelect')).toBeInTheDocument();
+      expect(document.getElementById('rootPostSelect')).toBeInTheDocument();
       expect(document.getElementById('endoSelect')).not.toBeInTheDocument();
       expect(document.getElementById('pulpSelect')).not.toBeInTheDocument();
     });

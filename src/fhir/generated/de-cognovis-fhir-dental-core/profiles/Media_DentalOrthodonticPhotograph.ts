@@ -28,7 +28,7 @@ export type DentalOrthodonticPhotographProfileRaw = {
     content: Attachment;
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-orthodontic-photograph (pkg: de.cognovis.fhir.dental.core#0.5.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-orthodontic-photograph (pkg: de.cognovis.fhir.dental.core#0.6.0)
 export class DentalOrthodonticPhotographProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-orthodontic-photograph";
 

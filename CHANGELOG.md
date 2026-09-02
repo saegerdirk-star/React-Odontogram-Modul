@@ -1,5 +1,51 @@
 # Changelog
 
+## 3.0.0 - 2026-09-02
+
+### Breaking: Dental Core is the sole FHIR contract
+
+- Remove the separate upstream Legacy FHIR representation, its public dialect
+  selection, canonical catalogue, runtime dispatch, generated
+  goldens, and compatibility tests. `buildFhirBundle`, `parseFhirBundle`, every
+  session, and the built-in import/export controls now use
+  `de.cognovis.fhir.dental.core#0.6.0` exclusively.
+- Remove the derived periodontal ICD-10 `Condition` capability with the Legacy
+  FHIR builder, including K05.1/K05.2/K05.3 coding, derived stage/grade/extent,
+  and evidence links. Dental Core emits a periodontal `Condition` only for an
+  explicit clinician-selected `case.diagnosisOverride`.
+- Reject foreign and malformed non-Dental-Core Bundles explicitly instead of
+  trying another representation. The exact `@cognovis/fhir-release@0.2.4`
+  projection and generated Dental Core contract remain pinned and verified.
+- Reject FHIR export with `UnsupportedDentalCoreContentError` instead of
+  silently dropping populated editor fields for which Dental Core 0.6.0 has no
+  admitted carrier: `papillaLoss`, `endoCanals`, `rootResection` and
+  `rootResectionRoot`, `implantPosition`, `crownMarginType` and
+  `crownMarginSide`, `crownFractureType`, `splinted`, `occlusalSplint`,
+  `occlusalFunction`, `rootCap`, `cantilever`, `onlayCoverage`, `apicalRoot`,
+  `orthoProgressive`, a lingual `orthoBracketSide`, and plugin `customStates`.
+  Charts that populate any of these fields remain valid odontogram documents
+  but cannot be exported faithfully through the sole Dental Core FHIR contract.
+- Consume `de.cognovis.fhir.dental.core#0.6.0` from the exact
+  `@cognovis/fhir-release@0.2.4` projection and regenerate the published
+  profiles and terminology contract with closure identity and integrity
+  assertions.
+- Project pulp sensibility, percussion, tooth eruption stage, oriented root
+  fracture, and root-post material through the new Dental Core chart
+  properties.
+- Add `rootPostType` (`none` | `glass-fiber` | `metal`) as an axis independent
+  from `endo`, including its control, summary, anatomical layers, schematic
+  renderer, serialization, FHIR import/export, and Charly shorthand mapping.
+  An incomplete root filling and either post material can now coexist without
+  loss.
+- Preserve migration for legacy JSON documents and older Dental Core chart
+  values `endo-glass-pin` / `endo-metal-pin`; new JSON and FHIR output keep
+  root filling and `rootPostType` independent.
+- Keep a migrated tooth-level root post visible in the schematic when explicit
+  canal filling detail has no canal-level post, without projecting the post
+  into every canal.
+
+Payload **2.44 -> 2.46**. Package **2.68.0 -> 3.0.0**.
+
 ## 2.72.6 - 2026-09-02
 
 ### Restaurations-Farbpalette: Dirks Palette ist der Standard

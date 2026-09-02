@@ -179,7 +179,7 @@ export const SHORTHAND_DE: Record<string, Entry> = {
   "wf":   { kind: "axis", field: "endo", value: "endo-filling" },
   "WFi":  { kind: "axis", field: "endo", value: "endo-filling-incomplete" },
   "Twf":  { kind: "axis", field: "endo", value: "endo-medical-filling" },
-  "Sti":  { kind: "axis", field: "endo", value: "endo-metal-pin" },
+  "Sti":  { kind: "axis", field: "rootPostType", value: "metal" },
   "Res":  { kind: "axis", field: "endoResection", value: true },
   // Beads odontogram-t6y / -ca0, gebaut am 20.08.2026. `Fra` meint bei charly
   // die WURZELfraktur; unsere drei Bruchachsen meinen die Krone. Ob laengs
@@ -603,8 +603,8 @@ export function nextChartTooth(
 //   forbids the combination. So the material mode is left standing and simply
 //   does not apply to `e`. If the denture material has to be recorded, it needs
 //   an axis first.
-// * `Sti` resolves to `endo-metal-pin`. charly does not distinguish the post
-//   material on this key; we carry glass and metal separately.
+// * `Sti` resolves to the independent metal root-post axis. charly does not
+//   distinguish the post material on this key; the detailed picker does.
 // * `K1`…`K5` map onto ICDAS 2…6. charly has five stages and no definition for
 //   them in its own database; ours are seven with one. The mapping is linear
 //   from the top, which leaves ICDAS 1 — a change visible only after drying —

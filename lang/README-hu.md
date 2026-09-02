@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.72.6-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-3.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -142,7 +142,7 @@ Vagy töltsd be egy kizárólag kliensoldali dinamikus importtal: `dynamic(() =>
 - 🌉 A hídtag fogak megjelenítik mind a koronát, mind a nyeregpántos (saddle) csatlakozót; egy több fogra kiterjedő híd-overlay egyetlen folytonos, ívhez igazodó csatlakozót jelenít meg az egymást követő hídtagokon (pontikok + pillérek) és a köztük lévő fogközi réseken keresztül (a felső és alsó fogsor tükrözött nyereg-geometriát használ, így a csatlakozó mindkét fogsoron illeszkedik), és a PNG/JPG/SVG exportban is szerepel; a híd Státusz mintán keresztüli alkalmazása azonnal újraszámítja az overlay-t
 - 🔍 Szuvasodás rögzítése 6 felületen: meziális, disztális, bukkális, linguális, okkluzális, korona alatti
 - 🪥 Tömőanyagok felületenként: amalgám, kompozit, GIC, ideiglenes
-- 🏥 Egyetlen összevont "Pulpa / Endo státusz" választó (csoportosítva: vitális pulpa vs. kezelt/endo): az endodonciai állapotok (gyógyszeres tömés, gyökértömés, nem teljes gyökértömés, üvegszálas csap, fémcsap) és az AAE pulpa diagnózis (`pulpDx`: normal / reverzibilis / irreverzibilis pulpitis / necrosis) kölcsönösen kizárják egymást — egy gyökérkezelt fogon (`endo` beállítva) nem szerepelhet egyidejűleg vitális pulpa diagnózis; kezelés esetén a `pulpDx` automatikusan `normal`-ra áll vissza, és a beteg pulpa jelölés eltűnik. A reverzibilis pulpitis csökkentett méretű pulpa jelölést jelenít meg. Az opcionális, 3 szintű pulpa részletezettségi beállítás (`pulpDetailLevel`: simple / AAE / gyakorlati latin) 9 gyakorlati latin pulpa altípust jelenít meg (pulpa sana … gangraena pulpae) a `pulpLatin` mezőn keresztül; a rezekció és a parapulpális csap továbbra is külön speciális jelzőként szerepel
+- 🏥 Egyetlen összevont "Pulpa / Endo státusz" választó (csoportosítva: vitális pulpa vs. kezelt/endo) a gyógyszeres, teljes vagy nem teljes gyökértöméshez, valamint egy külön választó a gyökércsap anyagához (`rootPostType`: none / glass-fiber / metal): az endodonciai kezelés és az AAE pulpa diagnózis (`pulpDx`: normal / reverzibilis / irreverzibilis pulpitis / necrosis) kölcsönösen kizárják egymást, míg a gyökércsap bármely gyökértömési állapottal együtt rögzíthető. Egy gyökérkezelt fogon (`endo` beállítva) nem szerepelhet egyidejűleg vitális pulpa diagnózis; kezelés esetén a `pulpDx` automatikusan `normal`-ra áll vissza, és a beteg pulpa jelölés eltűnik. A reverzibilis pulpitis csökkentett méretű pulpa jelölést jelenít meg. Az opcionális, 3 szintű pulpa részletezettségi beállítás (`pulpDetailLevel`: simple / AAE / gyakorlati latin) 9 gyakorlati latin pulpa altípust jelenít meg (pulpa sana … gangraena pulpae) a `pulpLatin` mezőn keresztül; a rezekció és a parapulpális csap továbbra is külön speciális jelzőként szerepel
 - 🦴 Apikális diagnózis (`apicalDx`: tünetekkel járó/tünetmentes apikális periodontitis, akut/krónikus apikális tályog, condensing osteitis) közvetlenül meghatározza a periapikális jelölést; a granuloma/ciszta lézió-altípus minősítő csak tünetekkel járó/tünetmentes apikális periodontitis esetén jelenik meg (a redundáns "tályog" altípus törölve lett — ezt már az apikális diagnózis lefedi)
 - 🩹 Összevont "Gyökér és fogágy" kártya (egyetlen összecsukható szekció a gyökér-/periapikális és parodontális leletekhez)
 - ⚕️ Módosítók: periapikális gyulladás (csak hiányzó/extrakciós alveolus fogakon jelenik meg; meglévő fogakon rejtett, ahol az `apicalDx` önmagában határozza meg a periapikális jelölést, és implantátumokon, ahol a `periImplant` fedi le), parodontális betegség, mobilitási fokok (M1/M2/M3, implantátumokon rejtett)
@@ -343,7 +343,10 @@ A tartomány a **fogívet** követi, nem a geometriát (`odontogram-apn`): a kö
 **Korona szegélyi rés** (`crownLeakage`; logikai): csak akkor jelenik meg, ha a `restorationType` értéke `crown` vagy `bridge`; aktiválja a `crown-leakage` grafikai réteget.
 
 **Endodonciai lehetőségek (maradó fogak):**
-`none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`, `endo-glass-pin`, `endo-metal-pin`
+`none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`
+
+**Gyökércsap anyaga (maradó fogak, az `endo` értékétől függetlenül):**
+`none`, `glass-fiber`, `metal`
 
 **Endodonciai lehetőségek (tejfogak):**
 `none`, `endo-medical-filling`
@@ -580,7 +583,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion is optional and has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.5.0`. A Dental Core session rejects Legacy, malformed, or unsupported input and refuses exports that would lose populated clinical state.
+A FHIR-konverzió a felhasználói felület dokumentumának tiszta, opcionális leképezése. A pontos `@cognovis/fhir-release@0.2.4` projekcióból származó Dental Core `de.cognovis.fhir.dental.core#0.6.0` az egyetlen FHIR-szerződés. A 3-as verzió eltávolítja a korábbi, nem Dental Core reprezentációt és a futásidejű dialektusválasztást; az idegen, nem támogatott vagy hibás Bundle-ök kifejezetten elutasításra kerülnek. A gyökércsap a `rootPostType` tengelyen minden gyökértömési állapottól független marad. A régi JSON és a korábbi Dental Core `endo-glass-pin` / `endo-metal-pin` értékek `endo-filling` plusz csapanyag formára migrálnak; az új kimenet soha nem vonja össze újra a két tengelyt.
 
 **Aidbox élő mód (fejlesztés, 2.50.0-tól):**
 
@@ -776,6 +779,7 @@ Az export egy JSON fájlt hoz létre (`2.20` verziójú; az importálás tovább
 - `prosthesis` - kivehető/csatlakozós tengely (none/healing-abutment/locator/locator-denture/bar/bar-denture/removable-partial/removable-full), kölcsönösen kizárja a fix korona/híd `restorationType`-ot
 - `crownLeakage` - korona szegélyi rés jelző, csak akkor releváns, ha a `restorationType` korona vagy híd
 - `endo` - endodonciai állapot; kölcsönösen kizárja a `pulpDx`-et (egyetlen összevont "Pulpa / Endo státusz" választón keresztül érhetők el együtt — egy fog kezelése a `pulpDx`-et `normal`-ra normalizálja)
+- `rootPostType` - gyökércsap anyaga (`none`, `glass-fiber`, `metal`), az `endo` állapottól függetlenül
 - `mods` - módosítók tömbje (inflammation, parodontal); az `inflammation` megszűnt a felületen meglévő fogaknál (ott az `apicalDx` határozza meg a jelölést), de továbbra is érvényes hiányzó/extrakciós alveolus fogaknál
 - `caries` - aktív szuvasodási felületek
 - `cariesActiveDepth` - a caries-mélység választó által ideiglenesen tárolt ICDAS-mélység érték új felület alkalmazásakor (nem felületenkénti tárolt érték; a felületenkénti mezőhöz lásd a `cariesSeverity`-t)
@@ -840,8 +844,8 @@ Az odontogram saját Státusz JSON / FHIR / PNG / JPG / SVG exportján túl a **
 - `src/status_extras.ts` - 34 előre definiált restaurációs sablon (hidak, protézisek, bár konstrukciók)
 - `src/i18n/` - fordítások (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR) és i18n hook
 - `src/utils/numbering.ts` - FDI, Universal, Palmer számozási konverzió
-- `src/registry/` - deklaratív klinikai-tengely registry: FHIR mezőmegfeleltetések, SVG-törlési-halmaz/logikai-jelző aktiválás, pótlás típus×anyag mátrix, UI opciólisták (egyetlen forrás, amely generálja az export/import, FHIR és a választó UI-t)
-- `src/fhir/` - HL7 FHIR R4 export/import: `toFhir.ts`/`fromFhir.ts`, kódrendszerek, mezőmegfeleltetések, primitívek
+- `src/registry/` - deklaratív klinikai tengely- és UI-regiszter: tengelymetaadatok, SVG-aktiválás, pótlás típus×anyag mátrix, értékkatalógus és opciólisták; a FHIR-megfeleltetések a `src/fhir/` felelőssége
+- `src/fhir/` - az egyetlen Dental Core HL7 FHIR R4 kapcsolódási pont: `toFhir.ts`/`fromFhir.ts` belépési pontok, `toFhirDentalCore.ts`/`fromFhirDentalCore.ts` kodek, `dentalCoreContract.ts` és generált profilok/szerződések, valamint `dentalCoreLocalCoding.ts` segédek
 - `src/bridgeOverlay.ts` - több fogra kiterjedő híd-csatlakozó overlay (ívhez igazodó nyereg-geometria)
 - `src/SettingsModal.tsx` - lapozott (tabos) Beállítások ablak (Általános/Panelek/Fogadatok/Caries/Pulpa/Jegyzetek/Periodontal)
 - `src/perioExport.ts` - `buildPerioSvg()`: a teljes parodontális diagram egyetlen önálló vektoros SVG-ként

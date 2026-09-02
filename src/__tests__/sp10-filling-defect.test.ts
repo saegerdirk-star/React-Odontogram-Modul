@@ -4,8 +4,6 @@
 import { PAYLOAD_VERSION } from "../document";
 import { describe, it, expect, beforeEach } from "vitest";
 import { __setToothStateForTest, __getToothStateForTest, __collectExportPayloadForTest, VALID_FILLING_DEFECT, applyFillingDefect } from "../odontogram";
-import { buildFhirBundle } from "../fhir/toFhir";
-import { parseFhirBundle } from "../fhir/fromFhir";
 import { setI18nLanguage, t } from "../i18n/useI18n";
 
 beforeEach(() => setI18nLanguage("en"));

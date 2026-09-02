@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.72.6-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-3.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -144,7 +144,7 @@ export default function OdontogramClient() {
 - 🌉 أسنان الجسر تعرض غطاء التاج وموصل السرج معًا؛ تراكب امتداد جسر متعدد الأسنان يرسم موصلًا واحدًا متصلًا ومتوافقًا مع شكل القوس عبر أسنان الجسر المتتالية (الوسائط + الدعامات) والفراغات بينها (يستخدم القوسان العلوي والسفلي هندسة سرج متطابقة انعكاسيًا، بحيث يبقى الموصل متماشيًا في كلا القوسين)، وهو مُضمَّن في تصدير PNG/JPG/SVG؛ تطبيق جسر عبر نمط حالة جاهز يعيد حساب التراكب فورًا
 - 🔍 تسجيل النخر على 6 أسطح: قريب من الوسط، بعيد عن الوسط، دهليزي، لساني، إطباقي، تحت التاج
 - 🪥 مواد الحشو لكل سطح: أملغم، حشوة تجميلية (كومبوزيت)، أيونومر زجاجي، مؤقتة
-- 🏥 مُحدِّد واحد مدمج لـ"حالة اللب/العلاج اللبي" (مُجمَّع: لب حيوي مقابل معالَج/لبّي): الحالات اللبّية (حشوة دوائية، حشوة قناة جذر، حشوة قناة جذر غير مكتملة، وتد ألياف زجاجية، وتد معدني) وتشخيص اللب وفق AAE (`pulpDx`: طبيعي / التهاب لب قابل للعكس / غير قابل للعكس / نخر اللب) متنافيان — فالسن المعالَج بقناة الجذر (`endo` مضبوط) لا يمكن أن يحمل في الوقت نفسه تشخيص لب حيوي؛ وعند المعالجة يُعاد ضبط `pulpDx` إلى `normal` ويُخفى رمز اللب المريض. التهاب اللب القابل للعكس يُعرض برمز لب مصغَّر. إعداد اختياري لثلاثة مستويات من تفاصيل اللب (`pulpDetailLevel`: بسيط / AAE / لاتيني عملي) يُظهر عبر `pulpLatin` تسعة أنماط لبّية فرعية باللاتينية العملية (pulpa sana … gangraena pulpae)؛ ويبقى الاستئصال والوتد المجاوز للُّب مؤشرين خاصين منفصلين
+- 🏥 مُحدِّد واحد مدمج لـ"حالة اللب/العلاج اللبي" (مُجمَّع: لب حيوي مقابل معالَج/لبّي) للحشوة الدوائية أو الكاملة أو غير المكتملة، مع مُحدِّد مستقل لمادة وتد الجذر (`rootPostType`: none / glass-fiber / metal): العلاج اللبي وتشخيص اللب وفق AAE (`pulpDx`: طبيعي / التهاب لب قابل للعكس / غير قابل للعكس / نخر اللب) متنافيان، بينما يمكن للوتد أن يترافق مع أي حالة لحشوة قناة الجذر. فالسن المعالَج بقناة الجذر (`endo` مضبوط) لا يمكن أن يحمل في الوقت نفسه تشخيص لب حيوي؛ وعند المعالجة يُعاد ضبط `pulpDx` إلى `normal` ويُخفى رمز اللب المريض. التهاب اللب القابل للعكس يُعرض برمز لب مصغَّر. إعداد اختياري لثلاثة مستويات من تفاصيل اللب (`pulpDetailLevel`: بسيط / AAE / لاتيني عملي) يُظهر عبر `pulpLatin` تسعة أنماط لبّية فرعية باللاتينية العملية (pulpa sana … gangraena pulpae)؛ ويبقى الاستئصال والوتد المجاوز للُّب مؤشرين خاصين منفصلين
 - 🦴 التشخيص القمي (`apicalDx`: التهاب دواعم السن القمي العرَضي/اللاعرَضي، خراج قمي حاد/مزمن، التهاب العظم المتكاثف) يتحكم مباشرة برمز الآفة حول الذروة؛ ويظهر محدِّد فرعي للنوع (ورم حبيبي/كيس) فقط تحت التهاب دواعم السن القمي العرَضي/اللاعرَضي (وقد أُلغي نوع "الخراج" الفرعي الزائد عن الحاجة — لأنه مشمول أصلًا ضمن التشخيص القمي)
 - 🩹 بطاقة مدمجة لـ"الجذر ودواعم السن" (قسم قابل للطي واحد لنتائج الجذر/حول الذروة ونتائج دواعم السن)
 - ⚕️ التعديلات: التهاب حول الذروة (يظهر فقط في الأسنان المفقودة/سنخ الخلع؛ ويُخفى في الأسنان الموجودة حيث يتحكم `apicalDx` وحده برمز الآفة، وفي الزرعات حيث يغطيها `periImplant`)، مرض دواعم السن، درجات حركة السن (M1/M2/M3، مخفية في الزرعات)
@@ -342,7 +342,10 @@ c mod K3                 نخر على ثلاثة أسطح مع درجة شدة
 **تسرب حافة التاج** (`crownLeakage`؛ منطقية): تظهر فقط عندما يكون `restorationType` مساويًا لـ`crown` أو `bridge`؛ وتُفعِّل طبقة الرسم `crown-leakage`.
 
 **خيارات العلاج اللبي (الأسنان الدائمة):**
-`none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`, `endo-glass-pin`, `endo-metal-pin`
+`none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`
+
+**مادة الوتد الجذري (الأسنان الدائمة، مستقلة عن `endo`):**
+`none`, `glass-fiber`, `metal`
 
 **خيارات العلاج اللبي (الأسنان اللبنية):**
 `none`, `endo-medical-filling`
@@ -579,7 +582,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion is optional and has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.5.0`. A Dental Core session rejects Legacy, malformed, or unsupported input and refuses exports that would lose populated clinical state.
+تحويل FHIR هو إسقاط اختياري ونقي لوثيقة واجهة المستخدم. يُعد Dental Core ‏`de.cognovis.fhir.dental.core#0.6.0` من الإسقاط الدقيق `@cognovis/fhir-release@0.2.4` عقد FHIR الوحيد. يزيل الإصدار 3 التمثيل السابق غير التابع لـ Dental Core واختيار اللهجة أثناء التشغيل؛ وتُرفض Bundles الأجنبية أو غير المدعومة أو غير الصالحة صراحةً. يبقى وتد الجذر مستقلاً عن كل حالة حشو عبر `rootPostType`. تُرحَّل ملفات JSON القديمة وقيم Dental Core السابقة `endo-glass-pin` / `endo-metal-pin` إلى `endo-filling` مع مادة الوتد؛ ولا يدمج الإخراج الجديد المحورين مرة أخرى.
 
 **وضع Aidbox الحي (تطوير، ابتداءً من 2.50.0):**
 
@@ -777,6 +780,7 @@ npm run docs           # توليد توثيق TypeDoc داخل docs/
 - `prosthesis` - محور التحريك/التثبيت (none/healing-abutment/locator/locator-denture/bar/bar-denture/removable-partial/removable-full)، يتنافى مع `restorationType` الثابت من نوع تاج/جسر
 - `crownLeakage` - علامة تسرب حافة التاج، ذات معنى فقط عندما يكون `restorationType` تاجًا أو جسرًا
 - `endo` - الحالة اللبّية؛ تتنافى مع `pulpDx` (تُعرضان معًا عبر محدِّد واحد مدمج لحالة اللب/العلاج اللبي — معالجة السن تطبّع `pulpDx` إلى `normal`)
+- `rootPostType` - مادة وتد الجذر (`none`، `glass-fiber`، `metal`) مستقلة عن `endo`
 - `mods` - مصفوفة التعديلات (الالتهاب، دواعم السن)؛ أُلغي `inflammation` من الواجهة في الأسنان الموجودة (حيث يتحكم `apicalDx` بالرمز هناك) لكنه لا يزال ساريًا على الأسنان المفقودة/سنخ الخلع
 - `caries` - أسطح النخر النشطة
 - `cariesActiveDepth` - قيمة عمق ICDAS التي يحتفظ بها محدِّد عمق النخر عند تطبيق سطح جديد (ليست قيمة مخزَّنة لكل سطح؛ انظر `cariesSeverity` للحقل المخزَّن لكل سطح)
@@ -841,8 +845,8 @@ npm run docs           # توليد توثيق TypeDoc داخل docs/
 - `src/status_extras.ts` - 34 قالب ترميم جاهزًا مسبقًا (جسور، أطقم، تراكيب بار)
 - `src/i18n/` - الترجمات (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR) وخطاف الترجمة
 - `src/utils/numbering.ts` - تحويل الترقيم بين FDI والعالمي وبالمر
-- `src/registry/` - سجل تصريحي لمحاور الحالة السريرية: ربط حقول FHIR، تفعيل مجموعة SVG الواضحة/العلامات المنطقية، مصفوفة نوع×مادة الترميم، قوائم خيارات الواجهة (مصدر وحيد للحقيقة يولّد التصدير/الاستيراد وFHIR وواجهة المحدِّدات)
-- `src/fhir/` - تصدير/استيراد HL7 FHIR R4: `toFhir.ts`/`fromFhir.ts`، أنظمة الترميز، ربط الحقول، الأنواع الأولية
+- `src/registry/` - سجل تصريحي للمحاور السريرية والواجهة: بيانات المحاور، وتفعيل SVG، ومصفوفة نوع×مادة الترميم، وكتالوج القيم وقوائم الخيارات؛ تعيينات FHIR من مسؤولية `src/fhir/`
+- `src/fhir/` - الحد الوحيد لـ Dental Core مع HL7 FHIR R4: نقطتا الدخول `toFhir.ts`/`fromFhir.ts`، ومرمّز/مفكّك `toFhirDentalCore.ts`/`fromFhirDentalCore.ts`، و`dentalCoreContract.ts` مع الملفات/العقود المولّدة، ومساعدات `dentalCoreLocalCoding.ts`
 - `src/bridgeOverlay.ts` - تراكب موصل امتداد الجسر متعدد الأسنان (هندسة سرج مراعية لشكل القوس)
 - `src/SettingsModal.tsx` - نافذة إعدادات بعلامات تبويب (عام/اللوحات/تفاصيل السن/النخر/اللب/الملاحظات/دواعم السن)
 - `src/perioExport.ts` - `buildPerioSvg()`: مخطط دواعم السن الكامل كملف SVG متجهي مستقل واحد

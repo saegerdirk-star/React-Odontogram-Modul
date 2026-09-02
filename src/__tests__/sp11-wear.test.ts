@@ -5,8 +5,6 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath, URL as NodeURL } from "node:url";
 import { __renderActiveLayers, __setToothStateForTest, __getToothStateForTest, __collectExportPayloadForTest, VALID_WEAR_EDGE, VALID_WEAR_CERVICAL } from "../odontogram";
-import { buildFhirBundle } from "../fhir/toFhir";
-import { parseFhirBundle } from "../fhir/fromFhir";
 
 const svgText = readFileSync(fileURLToPath(new NodeURL("../assets/teeth-svgs/11.svg", import.meta.url)), "utf8");
 const render = (state: Record<string, unknown>) => __renderActiveLayers(svgText, 11, state);

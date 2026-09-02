@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.72.6-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-3.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -142,7 +142,7 @@ O cárgalo con un import dinámico solo de cliente: `dynamic(() => import("./Odo
 - 🌉 Los dientes de puente renderizan tanto la corona como el conector de silla de montar; una superposición de tramo de puente multidiente renderiza un conector continuo y adaptado a la arcada a través de los dientes de puente consecutivos (pónticos + pilares) y los espacios entre ellos (la arcada superior e inferior usan geometría de silla espejada, manteniendo el conector alineado en ambas arcadas), incluido en la exportación PNG/JPG/SVG; añadir un puente mediante un estado predefinido recalcula la superposición de inmediato
 - 🔍 Registro de caries en 6 superficies: mesial, distal, bucal, lingual, oclusal, subcoronal
 - 🪥 Materiales de obturación por superficie: amalgama, composite, ionómero de vidrio, temporal
-- 🏥 Un único selector combinado "Estado pulpar / endo" (agrupado: pulpa vital vs. tratada/endo): los estados endodónticos (obturación medicinal, tratamiento de conductos, obturación incompleta, poste de fibra de vidrio, poste metálico) y el diagnóstico pulpar AAE (`pulpDx`: normal / pulpitis reversible / irreversible / necrosis) son mutuamente excluyentes — un diente con tratamiento de conducto (`endo` distinto de `none`) no puede tener a la vez un diagnóstico pulpar vital; al tratarlo, `pulpDx` se normaliza a `normal` y se suprime el glifo de pulpa enferma. La pulpitis reversible se renderiza con un glifo reducido. Un ajuste opcional de 3 niveles de detalle pulpar (`pulpDetailLevel`: simple / AAE / latín práctico) muestra 9 subtipos en latín práctico (pulpa sana … gangraena pulpae) mediante `pulpLatin`; resección y pin parapulpar siguen siendo indicadores especiales aparte
+- 🏥 Un único selector combinado "Estado pulpar / endo" (agrupado: pulpa vital vs. tratada/endo) para la obturación medicinal, completa o incompleta, más un selector independiente para el material del poste radicular (`rootPostType`: none / glass-fiber / metal): el tratamiento endodóntico y el diagnóstico pulpar AAE (`pulpDx`: normal / pulpitis reversible / irreversible / necrosis) son mutuamente excluyentes, mientras que el poste puede coexistir con cualquier estado de obturación radicular. Un diente con tratamiento de conducto (`endo` distinto de `none`) no puede tener a la vez un diagnóstico pulpar vital; al tratarlo, `pulpDx` se normaliza a `normal` y se suprime el glifo de pulpa enferma. La pulpitis reversible se renderiza con un glifo reducido. Un ajuste opcional de 3 niveles de detalle pulpar (`pulpDetailLevel`: simple / AAE / latín práctico) muestra 9 subtipos en latín práctico (pulpa sana … gangraena pulpae) mediante `pulpLatin`; resección y pin parapulpar siguen siendo indicadores especiales aparte
 - 🦴 Diagnóstico apical (`apicalDx`: periodontitis apical sintomática/asintomática, absceso apical agudo/crónico, osteítis condensante) determina directamente el glifo periapical; el subtipo de lesión granuloma/quiste solo se muestra bajo periodontitis apical sintomática/asintomática (se eliminó el subtipo redundante "absceso", ya cubierto por el diagnóstico apical)
 - 🩹 Tarjeta combinada "Raíz y periodonto" (sección colapsable única para hallazgos radiculares/periapicales y periodontales)
 - ⚕️ Modificaciones: inflamación periapical (visible solo en dientes ausentes/alvéolo de extracción; oculta en dientes presentes, donde el glifo periapical lo determina únicamente `apicalDx`, y en implantes, donde lo cubre `periImplant`), enfermedad periodontal, grados de movilidad (M1/M2/M3, ocultos en implantes)
@@ -343,7 +343,10 @@ sí, cambiar de maxilar nunca.
 **Filtración marginal de corona** (`crownLeakage`; booleano): solo se muestra cuando `restorationType` es `crown` o `bridge`; activa la capa de ilustración `crown-leakage`.
 
 **Opciones endodónticas (dientes permanentes):**
-`none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`, `endo-glass-pin`, `endo-metal-pin`
+`none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`
+
+**Material del poste radicular (dientes permanentes, independiente de `endo`):**
+`none`, `glass-fiber`, `metal`
 
 **Opciones endodónticas (dientes de leche):**
 `none`, `endo-medical-filling`
@@ -581,7 +584,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion is a pure optional projection of the UI-domain document. It has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.5.0`. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date and refuses exports that would lose populated clinical state; a Dental Core session rejects Legacy, unsupported, or malformed bundles.
+La conversión FHIR es una proyección opcional y pura del documento de la interfaz. Dental Core `de.cognovis.fhir.dental.core#0.6.0`, procedente de la proyección exacta `@cognovis/fhir-release@0.2.4`, es el único contrato FHIR. La versión 3 elimina la representación anterior ajena a Dental Core y toda selección de dialecto en tiempo de ejecución; los Bundles externos, no admitidos o mal formados se rechazan explícitamente. Los postes radiculares permanecen independientes mediante `rootPostType`. El JSON antiguo y los valores Dental Core anteriores `endo-glass-pin` / `endo-metal-pin` migran a `endo-filling` más el material del poste; la salida nueva nunca vuelve a combinar ambos ejes.
 
 **Modo en vivo con Aidbox (desarrollo, desde 2.50.0):**
 
@@ -777,6 +780,7 @@ La exportación genera un archivo JSON (versión `2.20`; las importaciones tambi
 - `prosthesis` - eje removible/de anclaje (none/healing-abutment/locator/locator-denture/bar/bar-denture/removable-partial/removable-full), mutuamente excluyente con un `restorationType` fijo de corona/puente
 - `crownLeakage` - indicador de filtración marginal de corona, significativo solo cuando `restorationType` es corona o puente
 - `endo` - estado endodóntico; mutuamente excluyente con `pulpDx` (mostrados juntos mediante un único selector combinado "Estado pulpar / endo" — tratar un diente normaliza `pulpDx` a `normal`)
+- `rootPostType` - material del poste radicular (`none`, `glass-fiber`, `metal`), independiente de `endo`
 - `mods` - array de modificaciones (inflammation, parodontal); `inflammation` se retira de la UI en dientes presentes (allí el glifo lo determina `apicalDx`) pero sigue aplicándose a dientes ausentes/alvéolo de extracción
 - `caries` - superficies con caries activa
 - `cariesActiveDepth` - el valor de profundidad ICDAS preparado por el selector de profundidad de caries al aplicar una nueva superficie (no es un valor almacenado por superficie; ver `cariesSeverity` para el campo almacenado por superficie)
@@ -841,8 +845,8 @@ Además de la propia exportación de Estado JSON / FHIR / PNG / JPG / SVG del od
 - `src/status_extras.ts` - 34 plantillas de restauración predefinidas (puentes, prótesis, construcciones con barra)
 - `src/i18n/` - traducciones (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR/AR/ZH/FR) y hook i18n
 - `src/utils/numbering.ts` - conversión de numeración FDI, Universal, Palmer
-- `src/registry/` - registro declarativo de ejes clínicos: mapeos de campos FHIR, conjunto de limpieza SVG/activación de indicadores booleanos, matriz tipo×material de restauración, listas de opciones de UI (fuente única de verdad que genera la UI de exportación/importación, FHIR y de selectores)
-- `src/fhir/` - exportación/importación HL7 FHIR R4: `toFhir.ts`/`fromFhir.ts`, sistemas de códigos, mapeos de campos, primitivas
+- `src/registry/` - registro declarativo de ejes clínicos y UI: metadatos de ejes, activación SVG, matriz tipo×material de restauración, catálogo de valores y listas de opciones; los mapeos FHIR pertenecen a `src/fhir/`
+- `src/fhir/` - única interfaz Dental Core para HL7 FHIR R4: puntos de entrada `toFhir.ts`/`fromFhir.ts`, códec `toFhirDentalCore.ts`/`fromFhirDentalCore.ts`, `dentalCoreContract.ts` más perfiles/contratos generados, y ayudas de `dentalCoreLocalCoding.ts`
 - `src/bridgeOverlay.ts` - superposición de conector de tramo de puente multidiente (geometría de silla adaptada a la arcada)
 - `src/SettingsModal.tsx` - diálogo de Ajustes por pestañas (General/Paneles/Detalles del diente/Caries/Pulpa/Notas/Periodontal)
 - `src/perioExport.ts` - `buildPerioSvg()`: el gráfico periodontal completo como un único SVG vectorial independiente

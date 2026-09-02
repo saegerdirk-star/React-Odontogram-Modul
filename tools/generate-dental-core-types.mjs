@@ -1,16 +1,28 @@
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
+import { Buffer } from "node:buffer";
 import { mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { APIBuilder, prettyReport } from "@cognovis/codegen";
 
 const execFileAsync = promisify(execFile);
-const dentalCorePackage = { name: "de.cognovis.fhir.dental.core", version: "0.5.0" };
-const dentalCoreRemoteTgz = "https://npm.cognovis.de/de.cognovis.fhir.dental.core/-/de.cognovis.fhir.dental.core-0.5.0.tgz";
-const dentalCoreTgzSha512 = "81ed6290f278c4a2668d6079e443cdee4aaf1a2aa63ea9e19e1aaff208b68ec4b0f5a062fabe22bc6f672555b0c974fef7d64282d3277cad14ff4cd1b1b45835";
+const fhirReleaseProjection = { name: "@cognovis/fhir-release", version: "0.2.4" };
+const fhirReleaseManifestPath = join("node_modules", "@cognovis", "fhir-release", "cognovis-fhir-release.manifest.json");
+const fhirReleaseManifest = JSON.parse(await readFile(fhirReleaseManifestPath, "utf8"));
+if (fhirReleaseManifest.projectionVersion !== fhirReleaseProjection.version) {
+  throw new Error(`FHIR release projection mismatch: expected ${fhirReleaseProjection.version}, received ${String(fhirReleaseManifest.projectionVersion)}`);
+}
+const dentalCoreClosure = fhirReleaseManifest.closure?.find((entry) =>
+  entry.packageId === "de.cognovis.fhir.dental.core" && entry.scope === "estate");
+if (!dentalCoreClosure || dentalCoreClosure.version !== "0.6.0" || typeof dentalCoreClosure.integrity !== "string") {
+  throw new Error("FHIR release projection does not contain the Dental Core 0.6.0 estate package");
+}
+const dentalCorePackage = { name: dentalCoreClosure.packageId, version: dentalCoreClosure.version };
+const dentalCoreRemoteTgz = `https://npm.cognovis.de/${dentalCorePackage.name}/-/${dentalCorePackage.name}-${dentalCorePackage.version}.tgz`;
+const dentalCoreTgzSha512 = Buffer.from(dentalCoreClosure.integrity.replace(/^sha512-/, ""), "base64").toString("hex");
 const dentalCoreStageDir = ".codegen-cache/dental-core";
-const dentalCoreStageFile = "de.cognovis.fhir.dental.core-0.5.0.tgz";
+const dentalCoreStageFile = `${dentalCorePackage.name}-${dentalCorePackage.version}.tgz`;
 const dentalCoreGeneratedRoot = "src/fhir/generated";
 const dentalCoreContractPath = join(dentalCoreGeneratedRoot, "dental-core-contract.ts");
 const fhirR4Core = { name: "hl7.fhir.r4.core", version: "4.0.1" };
@@ -67,6 +79,11 @@ async function writeGeneratedContract(extractedPackage, metadata) {
     `export const DENTAL_CORE_PACKAGE_VERSION = ${JSON.stringify(metadata.version)} as const;`,
     `export const DENTAL_CORE_PACKAGE_ARCHIVE_URL = ${JSON.stringify(dentalCoreRemoteTgz)} as const;`,
     `export const DENTAL_CORE_PACKAGE_SHA512 = ${JSON.stringify(dentalCoreTgzSha512)} as const;`,
+    `export const FHIR_RELEASE_PROJECTION_PACKAGE = ${JSON.stringify(fhirReleaseProjection.name)} as const;`,
+    `export const FHIR_RELEASE_PROJECTION_VERSION = ${JSON.stringify(fhirReleaseProjection.version)} as const;`,
+    `export const FHIR_RELEASE_PROJECTION_IDENTITY = ${JSON.stringify(fhirReleaseManifest.identity)} as const;`,
+    `export const FHIR_RELEASE_PROJECTION_CLOSURE_DIGEST = ${JSON.stringify(fhirReleaseManifest.closureDigest)} as const;`,
+    `export const DENTAL_CORE_CLOSURE_ENTRY = ${JSON.stringify(dentalCoreClosure, null, 2)} as const;`,
     `export const DENTAL_CORE_CANONICAL = ${JSON.stringify(metadata.canonical)} as const;`,
     `export const DENTAL_CORE_PROFILE_URLS = ${JSON.stringify(profiles, null, 2)} as const;`,
     `export const DENTAL_CORE_CODE_SYSTEM_URLS = ${JSON.stringify(codeSystems, null, 2)} as const;`,

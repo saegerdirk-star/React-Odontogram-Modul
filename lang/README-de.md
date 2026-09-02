@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.72.6-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-3.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -144,7 +144,7 @@ Oder laden Sie sie mit einem rein clientseitigen dynamischen Import: `dynamic(()
 - 🌉 Brückenzähne rendern sowohl die Kronenkappe als auch den Sattel-Verbinder; ein Mehrzahn-Brückenspann-Overlay rendert einen durchgehenden, bogenbewussten Verbinder über aufeinanderfolgende Brückenzähne (Glieder + Pfeiler) sowie die dazwischenliegenden Zahnzwischenräume (Ober- und Unterkiefer verwenden gespiegelte Sattelgeometrie, sodass der Verbinder auf beiden Bögen ausgerichtet bleibt), im PNG/JPG/SVG-Export enthalten; das Anwenden einer Brücke über eine Statusvorlage berechnet das Overlay sofort neu
 - 🔍 Karieskartierung auf 6 Flächen: mesial, distal, bukkal, lingual, okklusal, subkronal
 - 🪥 Füllungsmaterialien pro Fläche: Amalgam, Komposit, GIZ, provisorisch
-- 🏥 Ein zusammengeführter „Pulpa-/Endo-Status"-Auswähler (gruppiert: vitale Pulpa vs. behandelt/endodontisch): endodontische Zustände (medikamentöse Füllung, Wurzelfüllung, inkomplette Wurzelfüllung, Glasfaserstift, Metallstift) und die AAE-Pulpadiagnose (`pulpDx`: normal / reversible / irreversible Pulpitis / Nekrose) schließen sich gegenseitig aus — ein wurzelbehandelter Zahn (`endo` gesetzt) kann nicht gleichzeitig eine vitale Pulpadiagnose tragen; bei einer Behandlung wird `pulpDx` auf `normal` normalisiert und das Glyph für die erkrankte Pulpa unterdrückt. Reversible Pulpitis rendert ein reduziertes Pulpa-Glyph. Eine optionale 3-stufige Pulpa-Detailstufe (`pulpDetailLevel`: simple / AAE / praktisches Latein) zeigt über `pulpLatin` 9 praktische lateinische Pulpa-Subtypen an (pulpa sana … gangraena pulpae); Resektion und parapulpaler Stift bleiben eigenständige Sonderindikatoren
+- 🏥 Ein zusammengeführter „Pulpa-/Endo-Status"-Auswähler (gruppiert: vitale Pulpa vs. behandelt/endodontisch) für medikamentöse, vollständige oder inkomplette Wurzelfüllungen sowie ein eigenständiger Auswähler für das Wurzelstift-Material: endodontische Behandlung und AAE-Pulpadiagnose (`pulpDx`: normal / reversible / irreversible Pulpitis / Nekrose) schließen sich gegenseitig aus — ein wurzelbehandelter Zahn (`endo` gesetzt) kann nicht gleichzeitig eine vitale Pulpadiagnose tragen; bei einer Behandlung wird `pulpDx` auf `normal` normalisiert und das Glyph für die erkrankte Pulpa unterdrückt. Reversible Pulpitis rendert ein reduziertes Pulpa-Glyph. Eine optionale 3-stufige Pulpa-Detailstufe (`pulpDetailLevel`: simple / AAE / praktisches Latein) zeigt über `pulpLatin` 9 praktische lateinische Pulpa-Subtypen an (pulpa sana … gangraena pulpae); Resektion und parapulpaler Stift bleiben eigenständige Sonderindikatoren
 - 🦴 Apikale Diagnose (`apicalDx`: symptomatische/asymptomatische apikale Parodontitis, akuter/chronischer apikaler Abszess, kondensierende Osteitis) steuert direkt den periapikalen Glyphen; ein Granulom-/Zysten-Läsionssubtyp-Qualifikator wird nur unter symptomatischer/asymptomatischer apikaler Parodontitis angezeigt (der redundante „Abszess"-Subtyp wurde entfernt — er ist bereits durch die apikale Diagnose abgedeckt)
 - 🩹 Zusammengeführte Karte „Wurzel und Parodontium" (ein einzelner ausklappbarer Abschnitt für Wurzel-/periapikale und parodontale Befunde)
 - ⚕️ Modifikationen: periapikale Entzündung (nur bei fehlenden/Extraktionsalveolen-Zähnen angezeigt; bei vorhandenen Zähnen ausgeblendet, wo `apicalDx` allein den periapikalen Glyphen steuert, sowie bei Implantaten, wo `periImplant` dies übernimmt), Parodontalerkrankung, Mobilitätsgrade (M1/M2/M3, bei Implantaten ausgeblendet)
@@ -274,7 +274,7 @@ Oder laden Sie sie mit einem rein clientseitigen dynamischen Import: `dynamic(()
 - **Kieferorthopädie-Karte:** Apparatur, mesiale/distale Drift, vertikale Bewegung (Extrusion/Intrusion), Rotations-Umschalter — angezeigt bei einem vorhandenen natürlichen Zahn
 - **Karies-Karte:** Dropdown für den Kariestiefe-Modus, Subkronal-Karies-Checkbox, Dropdown für den Wurzelkaries-Schweregrad sowie der B/M/O/D/L-Flächenauswähler für Karies mit einem kontextabhängigen ICDAS-Tiefe-/CARS-Popup und einem Badge für die radiologische Tiefe
 - **Füllungen-Karte:** Dropdown für das Füllungsmaterial, Flächenauswähler für Füllungen (mit Material pro Fläche), Flächenindikator für Füllungsdefekte (marginal/Fraktur/Abrieb), Hinweise zu Sekundärkaries und Füllungsdefekten
-- **Wurzel-und-Parodontium-Karte:** zusammengeführter „Pulpa-/Endo-Status"-Auswähler, Auswähler für apikale Diagnose, Auswähler für periapikalen Läsionssubtyp (nur symptomatische/asymptomatische apikale Parodontitis), Auswähler für den Wurzelresorptionstyp, Auswähler für den Mobilitätsgrad, Auswähler für den periimplantären Status (nur Implantate)
+- **Wurzel-und-Parodontium-Karte:** zusammengeführter „Pulpa-/Endo-Status"-Auswähler, eigenständiger Auswähler für das Wurzelstift-Material, Auswähler für apikale Diagnose, Auswähler für periapikalen Läsionssubtyp (nur symptomatische/asymptomatische apikale Parodontitis), Auswähler für den Wurzelresorptionstyp, Auswähler für den Mobilitätsgrad, Auswähler für den periimplantären Status (nur Implantate)
 - **Spezielle Indikatoren:** Extraktionsplan/-wunde, Lücke geschlossen, Fissurenversiegelung, Kontaktpunktverlust, Zahnstein, parapulpaler Stift, Endo-Resektion, Brückenpfeiler
 
 ### ⌨️ Befundeingabe über Kürzel
@@ -347,7 +347,10 @@ Eine Spanne folgt dem **Bogen**, nicht der Geometrie (`odontogram-apn`): über d
 **Kronenrand-Undichtigkeit** (`crownLeakage`; boolean): nur sichtbar, wenn `restorationType` gleich `crown` oder `bridge` ist; aktiviert die `crown-leakage`-Bildebene.
 
 **Endodontische Optionen (bleibende Zähne):**
-`none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`, `endo-glass-pin`, `endo-metal-pin`
+`none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`
+
+**Wurzelstift-Material (vorhandene Zähne, unabhängig von `endo`):**
+`none`, `glass-fiber`, `metal`
 
 **Endodontische Optionen (Milchzähne):**
 `none`, `endo-medical-filling`
@@ -585,7 +588,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion is a pure optional projection of the UI-domain document. It has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.5.0`. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date and refuses exports that would lose populated clinical state; a Dental Core session rejects Legacy, unsupported, or malformed bundles.
+Die FHIR-Konvertierung ist eine reine optionale Projektion des UI-Dokuments. Dental Core `de.cognovis.fhir.dental.core#0.6.0` aus der exakten Projektion `@cognovis/fhir-release@0.2.4` ist der einzige FHIR-Vertrag. Version 3 entfernt die frühere Nicht-Dental-Core-Darstellung und jede Laufzeitauswahl eines Dialekts; fremde, nicht unterstützte oder fehlerhafte Bundles werden ausdrücklich abgelehnt. Wurzelstifte bleiben über die unabhängige Achse `rootPostType` neben jedem Wurzelfüllungszustand darstellbar. Altes JSON und ältere Dental-Core-Werte `endo-glass-pin` / `endo-metal-pin` werden zu `endo-filling` plus Stiftmaterial migriert; neue Ausgaben führen beide Achsen nie wieder zusammen.
 
 **Aidbox-Live-Modus (Entwicklung, ab 2.50.0):**
 
@@ -780,6 +783,7 @@ Der Export erzeugt eine JSON-Datei (Version `2.20`; Importe akzeptieren weiterhi
 - `prosthesis` - herausnehmbare/Attachment-Achse (none/healing-abutment/locator/locator-denture/bar/bar-denture/removable-partial/removable-full), schließt sich mit einer festen `restorationType` von Krone/Brücke gegenseitig aus
 - `crownLeakage` - Kronenrand-Undichtigkeits-Flag, nur relevant, wenn `restorationType` gleich Krone oder Brücke ist
 - `endo` - endodontischer Zustand; schließt sich mit `pulpDx` gegenseitig aus (über einen zusammengeführten „Pulpa-/Endo-Status"-Auswähler gemeinsam dargestellt — das Behandeln eines Zahns normalisiert `pulpDx` auf `normal`)
+- `rootPostType` - Wurzelstiftmaterial (`none`, `glass-fiber`, `metal`), unabhängig von `endo`
 - `mods` - Modifikations-Array (Entzündung, parodontal); `inflammation` ist bei vorhandenen Zähnen aus der UI entfernt (dort steuert `apicalDx` den Glyphen), gilt aber weiterhin für fehlende/Extraktionsalveolen-Zähne
 - `caries` - aktive Kariesflächen
 - `cariesActiveDepth` - der vom Kariestiefe-Auswähler vorgehaltene ICDAS-Tiefenwert beim Anwenden einer neuen Fläche (kein gespeicherter Wert pro Fläche; siehe `cariesSeverity` für das gespeicherte Feld pro Fläche)
@@ -844,8 +848,8 @@ Der Export erzeugt eine JSON-Datei (Version `2.20`; Importe akzeptieren weiterhi
 - `src/status_extras.ts` - 34 vordefinierte Restaurationsvorlagen (Brücken, Prothesen, Stegkonstruktionen)
 - `src/i18n/` - Übersetzungen (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR) und i18n-Hook
 - `src/utils/numbering.ts` - FDI, Universal, Palmer Nummerierungskonvertierung
-- `src/registry/` - deklaratives Register der klinischen Achsen: FHIR-Feldzuordnungen, SVG-Clear-Set/Boolean-Flag-Aktivierung, Restaurationstyp×Material-Matrix, UI-Optionslisten (eine einzige Quelle der Wahrheit, die Export/Import, FHIR und die Auswähler-UI erzeugt)
-- `src/fhir/` - HL7-FHIR-R4-Export/Import: `toFhir.ts`/`fromFhir.ts`, Codesysteme, Feldzuordnungen, Primitive
+- `src/registry/` - deklaratives Register für klinische Achsen und UI: Achsenmetadaten, SVG-Aktivierung, Restaurationstyp×Material-Matrix, Wertekatalog und Optionslisten; die FHIR-Zuordnungen liegen in `src/fhir/`
+- `src/fhir/` - einzige Dental-Core-Naht für HL7 FHIR R4: Einstiegspunkte `toFhir.ts`/`fromFhir.ts`, Codec `toFhirDentalCore.ts`/`fromFhirDentalCore.ts`, `dentalCoreContract.ts` plus generierte Profile/Verträge sowie Hilfen in `dentalCoreLocalCoding.ts`
 - `src/bridgeOverlay.ts` - Mehrzahn-Brückenspann-Verbinder-Overlay (bogenbewusste Sattelgeometrie)
 - `src/SettingsModal.tsx` - tabbasierter Einstellungsdialog (Allgemein/Panels/Zahndetails/Karies/Pulpa/Notizen/Parodontal)
 - `src/perioExport.ts` - `buildPerioSvg()`: das vollständige Parodontalstatus-Chart als ein eigenständiges Vektor-SVG

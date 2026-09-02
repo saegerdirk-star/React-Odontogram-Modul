@@ -180,7 +180,7 @@ const PAPILLA_ROMAN = ["–", "I", "II", "III"];
 // order + compact face glyphs (mirrors FURCATION_ROMAN's role). Literal (not
 // imported from "./odontogram") for the same module-eval-safety reason as
 // BUCCAL_SITES/PLAQUE_SURFACES above — order matches VALID_CEJ_VISIBILITY /
-// VALID_ROOT_CONCAVITY (odontogram.ts) / LOCAL_VALUE_MAPS (codesystems.ts).
+// VALID_ROOT_CONCAVITY (odontogram.ts) / LOCAL_VALUE_MAPS (registry/valueCatalog.ts).
 const CEJ_VISIBILITY_CYCLE: readonly string[] = ["none", "detectable", "not-detectable"];
 const CEJ_VISIBILITY_FACE: Record<string, string> = { none: "–", detectable: "D", "not-detectable": "ND" };
 const ROOT_CONCAVITY_CYCLE: readonly string[] = ["none", "mild", "deep"];
@@ -191,7 +191,7 @@ const ROOT_CONCAVITY_FACE: Record<string, string> = { none: "–", mild: "Mi", d
 // ROOT_CONCAVITY_CYCLE above exactly. Literal (not imported from
 // "./odontogram") for the same module-eval-safety reason as those two —
 // order matches VALID_GINGIVAL_THICKNESS / VALID_MILLER_CLASS (odontogram.ts)
-// / LOCAL_VALUE_MAPS (fhir/codesystems.ts).
+// / LOCAL_VALUE_MAPS (registry/valueCatalog.ts).
 const GINGIVAL_THICKNESS_CYCLE: readonly string[] = ["unknown", "thin", "medium", "thick"];
 const GINGIVAL_THICKNESS_FACE: Record<string, string> = { unknown: "–", thin: "Tn", medium: "Md", thick: "Tk" };
 const MILLER_CLASS_CYCLE: readonly string[] = ["none", "i", "ii", "iii", "iv"];

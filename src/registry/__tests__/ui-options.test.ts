@@ -21,7 +21,11 @@ describe("registry stable option lists match today's option functions", () => {
   it("mods", () => expect(optionsFor("mods")).toEqual([
     { value: "parodontal", labelKey: "mods.parodontal" }, { value: "inflammation", labelKey: "mods.periapicalInflammation" }]));
   it("endo permanent", () => expect(optionsFor("endo").map(o => o.value)).toEqual([
-    "none", "endo-medical-filling", "endo-filling", "endo-filling-incomplete", "endo-glass-pin", "endo-metal-pin"]));
+    "none", "endo-medical-filling", "endo-filling", "endo-filling-incomplete"]));
   it("endo milktooth", () => expect(optionsFor("endo", { isMilktooth: true }).map(o => o.value)).toEqual([
     "none", "endo-medical-filling"]));
+  it("root post permanent", () => expect(optionsFor("rootPostType").map(o => o.value)).toEqual([
+    "none", "glass-fiber", "metal"]));
+  it("root post milktooth", () => expect(optionsFor("rootPostType", { isMilktooth: true }).map(o => o.value)).toEqual([
+    "none", "glass-fiber", "metal"]));
 });

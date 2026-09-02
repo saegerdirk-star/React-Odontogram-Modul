@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-2.72.6-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-3.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -142,7 +142,7 @@ Ewentualnie załaduj go za pomocą dynamicznego importu tylko po stronie klienta
 - 🌉 Zęby mostowe renderują zarówno koronę, jak i łącznik siodłowy; nakładka odcinka mostu wielozębowego renderuje jeden ciągły, uwzględniający łuk łącznik przez kolejne zęby mostu (przęsła + filary) oraz przerwy między nimi (górny i dolny łuk używają lustrzanej geometrii siodła, dzięki czemu łącznik pozostaje wyrównany na obu łukach), uwzględniona w eksporcie PNG/JPG/SVG; zastosowanie mostu przez preset Statusów natychmiast przelicza nakładkę na nowo
 - 🔍 Dokumentowanie próchnicy na 6 powierzchniach: mezjalnej, dystalnej, policzkowej, językowej, okluzyjnej, podkoronowej
 - 🪥 Materiały wypełnień na powierzchnię: amalgamat, kompozyt, GIC, tymczasowe
-- 🏥 Jeden połączony selektor „Stan miazgi / endodontyczny” (zgrupowany: żywa miazga vs. leczona/endo): stany endodontyczne (wypełnienie lecznicze, wypełnienie kanałowe, niekompletne wypełnienie kanałowe, wkład z włókna szklanego, wkład metalowy) i diagnoza miazgi wg AAE (`pulpDx`: normalna / odwracalne / nieodwracalne zapalenie miazgi / martwica) wykluczają się wzajemnie — ząb leczony kanałowo (ustawione `endo`) nie może jednocześnie mieć diagnozy żywej miazgi; przy leczeniu `pulpDx` jest normalizowane do wartości `normal`, a symbol chorej miazgi jest ukrywany. Odwracalne zapalenie miazgi renderuje zredukowany symbol miazgi. Opcjonalne 3-poziomowe ustawienie szczegółowości miazgi (`pulpDetailLevel`: proste / AAE / praktyczna łacina) udostępnia 9 praktycznych łacińskich podtypów miazgi (pulpa sana … gangraena pulpae) za pomocą `pulpLatin`; resekcja i wkład parapulpalny pozostają osobnymi wskaźnikami specjalnymi
+- 🏥 Jeden połączony selektor „Stan miazgi / endodontyczny” (zgrupowany: żywa miazga vs. leczona/endo) dla wypełnienia leczniczego, pełnego lub niekompletnego oraz osobny selektor materiału wkładu korzeniowego (`rootPostType`: none / glass-fiber / metal): leczenie endodontyczne i diagnoza miazgi wg AAE (`pulpDx`: normalna / odwracalne / nieodwracalne zapalenie miazgi / martwica) wykluczają się wzajemnie, natomiast wkład może współistnieć z każdym stanem wypełnienia kanałowego. Ząb leczony kanałowo (ustawione `endo`) nie może jednocześnie mieć diagnozy żywej miazgi; przy leczeniu `pulpDx` jest normalizowane do wartości `normal`, a symbol chorej miazgi jest ukrywany. Odwracalne zapalenie miazgi renderuje zredukowany symbol miazgi. Opcjonalne 3-poziomowe ustawienie szczegółowości miazgi (`pulpDetailLevel`: proste / AAE / praktyczna łacina) udostępnia 9 praktycznych łacińskich podtypów miazgi (pulpa sana … gangraena pulpae) za pomocą `pulpLatin`; resekcja i wkład parapulpalny pozostają osobnymi wskaźnikami specjalnymi
 - 🦴 Diagnoza okołowierzchołkowa (`apicalDx`: objawowe/bezobjawowe zapalenie ozębnej wierzchołkowej, ostry/przewlekły ropień okołowierzchołkowy, osteoskleroza) bezpośrednio determinuje symbol okołowierzchołkowy; kwalifikator podtypu zmiany ziarniniak/torbiel jest pokazywany tylko przy objawowym/bezobjawowym zapaleniu ozębnej wierzchołkowej (zbędny podtyp „ropień” został usunięty — jest już pokryty przez diagnozę okołowierzchołkową)
 - 🩹 Połączona karta „Korzeń i przyzębie” (jedna zwijana sekcja dla wyników dotyczących korzenia/okołowierzchołkowych i przyzębia)
 - ⚕️ Modyfikacje: zapalenie okołowierzchołkowe (widoczne tylko przy zębach brakujących/w zębodole poekstrakcyjnym; ukryte przy zębach obecnych, gdzie symbol okołowierzchołkowy determinuje wyłącznie `apicalDx`, oraz przy implantach, gdzie pokrywa to `periImplant`), choroba przyzębia, stopnie ruchomości (M1/M2/M3, ukryte przy implantach)
@@ -343,7 +343,10 @@ Odcinek podąża za **łukiem**, nie za geometrią (`odontogram-apn`): przez lin
 **Nieszczelność brzeżna korony** (`crownLeakage`; wartość logiczna): pokazywana tylko gdy `restorationType` to `crown` lub `bridge`; aktywuje warstwę grafiki `crown-leakage`.
 
 **Opcje endodontyczne (zęby stałe):**
-`none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`, `endo-glass-pin`, `endo-metal-pin`
+`none`, `endo-medical-filling`, `endo-filling`, `endo-filling-incomplete`
+
+**Materiał wkładu korzeniowego (zęby stałe, niezależnie od `endo`):**
+`none`, `glass-fiber`, `metal`
 
 **Opcje endodontyczne (zęby mleczne):**
 `none`, `endo-medical-filling`
@@ -580,7 +583,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion is a pure optional projection of the UI-domain document. It has two explicit codecs: upstream-compatible `legacy` is the standalone default, while `dental-core` uses generated `de.cognovis.fhir.dental.core#0.5.0`. `buildDentalCoreBundle` requires a caller-provided or examination-context effective date and refuses exports that would lose populated clinical state; a Dental Core session rejects Legacy, unsupported, or malformed bundles.
+Konwersja FHIR jest czystą, opcjonalną projekcją dokumentu interfejsu. Dental Core `de.cognovis.fhir.dental.core#0.6.0` z dokładnej projekcji `@cognovis/fhir-release@0.2.4` jest jedynym kontraktem FHIR. Wersja 3 usuwa poprzednią reprezentację spoza Dental Core i wybór dialektu w czasie działania; obce, nieobsługiwane lub błędne Bundle są jawnie odrzucane. Wkład korzeniowy pozostaje niezależny od każdego stanu wypełnienia dzięki `rootPostType`. Stary JSON i starsze wartości Dental Core `endo-glass-pin` / `endo-metal-pin` są migrowane do `endo-filling` wraz z materiałem wkładu; nowy zapis nigdy ponownie nie łączy obu osi.
 
 **Tryb live Aidbox (rozwój, od 2.50.0):**
 
@@ -773,6 +776,7 @@ Eksport tworzy plik JSON (wersja `2.20`; import akceptuje też starsze wersje `1
 - `prosthesis` - oś ruchoma/łącznikowa (none/healing-abutment/locator/locator-denture/bar/bar-denture/removable-partial/removable-full), wykluczająca się wzajemnie ze stałym `restorationType` korona/most
 - `crownLeakage` - flaga nieszczelności brzeżnej korony, istotna tylko gdy `restorationType` to korona lub most
 - `endo` - stan endodontyczny; wyklucza się wzajemnie z `pulpDx` (prezentowane razem za pomocą jednego połączonego selektora „Stan miazgi / endodontyczny” — leczenie zęba normalizuje `pulpDx` do `normal`)
+- `rootPostType` - materiał wkładu korzeniowego (`none`, `glass-fiber`, `metal`), niezależny od `endo`
 - `mods` - tablica modyfikacji (zapalenie, przyzębie); `inflammation` zostało wycofane z interfejsu przy zębach obecnych (tam symbol determinuje `apicalDx`), ale nadal dotyczy zębów brakujących/w zębodole poekstrakcyjnym
 - `caries` - aktywne powierzchnie z próchnicą
 - `cariesActiveDepth` - wartość głębokości ICDAS przygotowywana przez selektor głębokości próchnicy przy zastosowaniu nowej powierzchni (nie jest wartością przechowywaną na powierzchnię; zob. `cariesSeverity` dla przechowywanego pola na powierzchnię)
@@ -837,8 +841,8 @@ Poza własnym eksportem Status JSON / FHIR / PNG / JPG / SVG odontogramu, **wykr
 - `src/status_extras.ts` - 34 predefiniowane szablony uzupełnień (mosty, protezy, konstrukcje belkowe)
 - `src/i18n/` - tłumaczenia (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR) i hook i18n
 - `src/utils/numbering.ts` - konwersja numeracji FDI, Universal, Palmer
-- `src/registry/` - deklaratywny rejestr osi klinicznych: mapowania pól FHIR, aktywacja zestawu czyszczenia SVG/flag logicznych, macierz typ×materiał odbudowy, listy opcji interfejsu (jedno źródło prawdy generujące eksport/import, FHIR i interfejs selektorów)
-- `src/fhir/` - eksport/import HL7 FHIR R4: `toFhir.ts`/`fromFhir.ts`, systemy kodów, mapowania pól, prymitywy
+- `src/registry/` - deklaratywny rejestr osi klinicznych i UI: metadane osi, aktywacja SVG, macierz typ×materiał odbudowy, katalog wartości i listy opcji; mapowania FHIR należą do `src/fhir/`
+- `src/fhir/` - jedyna warstwa Dental Core dla HL7 FHIR R4: punkty wejścia `toFhir.ts`/`fromFhir.ts`, kodek `toFhirDentalCore.ts`/`fromFhirDentalCore.ts`, `dentalCoreContract.ts` wraz z generowanymi profilami/kontraktami oraz pomocniczy `dentalCoreLocalCoding.ts`
 - `src/bridgeOverlay.ts` - nakładka łącznika odcinka mostu wielozębowego (geometria siodła uwzględniająca łuk)
 - `src/SettingsModal.tsx` - zakładkowe okno dialogowe Ustawień (Ogólne/Panele/Szczegóły zęba/Próchnica/Miazga/Notatki/Periodontologia)
 - `src/perioExport.ts` - `buildPerioSvg()`: pełny wykres periodontalny jako jeden samodzielny wektorowy SVG

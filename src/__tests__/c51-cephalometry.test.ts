@@ -354,7 +354,7 @@ describe("FHIR coding lives on the measure, not in a later mapping", () => {
   it("NO LOINC or SNOMED code is invented", () => {
     // No verified standard code for a cephalometric measurement has been
     // produced. Guessing one would silently assert something false — the same
-    // call toFhirPerio.ts already makes for per-site BOP and the Mombelli
+    // call toFhirDentalCore.ts already makes for per-site BOP and the Mombelli
     // indices. The slots exist for when a verified code turns up.
     for (const m of MEASURES) {
       expect(m.coding.loinc, m.id).toBeUndefined();
