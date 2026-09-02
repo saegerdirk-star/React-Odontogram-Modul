@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.72.2 - 2026-08-31
+
+### Brücken-Kennzahlen (Spannen/Glieder/Pfeiler) für den Kostenplan
+
+Neuer Getter `getBridgeSummary()` (Anzahl Spannen/Glieder/Pfeiler, abgeleitet aus
+`getBridgeSpanChecks`) und eine Brücken-Zeile in der Prothetik-Sektion der
+Zusammenfassung. Die hkp-engine kann die Struktur damit abgreifen. Die
+FESTZUSCHUSS-Berechnung selbst bleibt bewusst außerhalb dieser Library (in der
+hkp-engine) — die Bibliothek ist abrechnungs-agnostisch (Bead angelegt).
+
 ## 2.72.1 - 2026-08-31
 
 ### Veneer-Flächen + kontextabhängige Restaurationsflächen

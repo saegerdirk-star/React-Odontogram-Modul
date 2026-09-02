@@ -10949,6 +10949,18 @@ export function getBridgeSpanChecks(): BridgeSpanCheck[] {
   return checkBridgeSpans(bridgeStateFor);
 }
 
+/** Kostenplan-relevante Zusammenfassung der Brücken im aktiven Chart (Dirk,
+ *  31.08.2026): Anzahl der SPANNEN, GLIEDER (pontics) und PFEILER (abutments) —
+ *  reine Ableitung. Die FESTZUSCHUSS-Berechnung gehört NICHT hierher, sondern in
+ *  die hkp-engine, die diese Struktur (via FHIR) konsumiert; die Library bleibt
+ *  abrechnungs-agnostisch. */
+export function getBridgeSummary(): { spans: number; pontics: number; abutments: number } {
+  const checks = getBridgeSpanChecks();
+  const abut = new Set<number>(), pont = new Set<number>();
+  for(const c of checks){ c.abutments.forEach(a => abut.add(a)); c.pontics.forEach(p => pont.add(p)); }
+  return { spans: checks.length, pontics: pont.size, abutments: abut.size };
+}
+
 /** Ob dieser Zahn zu einer Spanne gehoert, die einen Hinweis verdient - ein
  *  Glied ohne jeden Pfeiler, oder eine einseitige Lagerung, die niemand als
  *  gewollt erklaert hat. `null`, wenn es nichts zu melden gibt.
@@ -15615,6 +15627,11 @@ export function getOdontogramSummary(): OdontogramSummary {
   const uneruptedList = unerupted.length
     ? t("toothInfo.uneruptedList", { count: unerupted.length, list: unerupted.map(lbl).join(", ") })
     : null;
+
+  // Brücken-Kennzahlen für den Kostenplan (Dirk, 31.08.2026): Spannen / Glieder /
+  // Pfeiler, oben in der Prothetik-Sektion. Die Festzuschuss-Rechnung selbst
+  // liegt in der hkp-engine, nicht hier.
+  { const b = getBridgeSummary(); if(b.spans > 0) prosthetics.unshift(t("bridge.summary", { spans: b.spans, pontics: b.pontics, abutments: b.abutments })); }
 
   const sections: OdontogramSummarySection[] = [
     { key: "caries", heading: t("toothInfo.caries"), items: caries, emptyText: t("toothInfo.cariesEmpty") },
