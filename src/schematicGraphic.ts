@@ -625,5 +625,8 @@ export function buildSchematicSvg(getState: GetDisplayState): string {
   const h = upperH + gap + lowerH;
   const upper = `<g transform="translate(0,0)">${archRows(UPPER_ARCH, getState, /*sideOnTop*/ true)}</g>`;
   const lower = `<g transform="translate(0,${upperH + gap})">${archRows(LOWER_ARCH, getState, /*sideOnTop*/ false)}</g>`;
-  return `<svg class="schematic-chart" viewBox="0 0 ${w} ${h}" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,system-ui,sans-serif">${upper}${lower}</svg>`;
+  // No width/height attribute: the size is set in CSS (max-width AND max-height),
+  // so the chart can be capped to a share of the VIEWPORT HEIGHT and the finding
+  // dock always fits below it on a laptop screen (Dirk, 31.08.2026).
+  return `<svg class="schematic-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,system-ui,sans-serif">${upper}${lower}</svg>`;
 }

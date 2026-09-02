@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.71.3 - 2026-08-31
+
+### Schema: Chart + Befund-Dock passen zusammen auf einen Laptop-Bildschirm
+
+Die Schema-SVG hat kein festes width-Attribut mehr; die Größe wird per CSS durch
+zwei Grenzen gesetzt — max-width (72%) UND max-height (40vh). Damit wird der
+Chart an die Fensterhöhe gekoppelt, sodass auf einem MacBook das komplette
+Zahnschema UND die ganze Befundeingabe (Dock) zusammen ohne Scrollen sichtbar
+sind (Dirk, 31.08.2026). Dock etwas kompakter (Abstände).
+
 ## 2.71.2 - 2026-08-31
 
 ### Schema: Zähne kompakter (mind. 25% kleiner)
