@@ -6855,6 +6855,27 @@ function updateSelectionUI(){
     syncControlsFromState(defaultState());
     setControlsEnabled(false);
   }
+  const at = (activeTooth && selectedTeeth.has(activeTooth)) ? activeTooth : null;
+  for(const cb of chartSelectionObservers) { try{ cb(at); }catch{ /* observer must not break selection */ } }
+}
+
+// A React view (the Befund-Dock) subscribes here to learn the active tooth in
+// ANY view — a plain selection fires no state-change, so this is the bridge.
+const chartSelectionObservers = new Set<(toothNo: number | null) => void>();
+export function onChartSelectionChange(cb: (toothNo: number | null) => void): () => void {
+  chartSelectionObservers.add(cb);
+  return () => { chartSelectionObservers.delete(cb); };
+}
+
+// Befund-Dock (Dirk 30.08.2026): show the finding keypad BELOW the anatomical
+// chart too (not only the schematic view). Session flag, default OFF while it
+// matures behind a Settings switch.
+let befundDockEnabled = false;
+export function getBefundDockEnabled(): boolean { return befundDockEnabled; }
+export function setBefundDockEnabled(on: boolean): void {
+  if(befundDockEnabled === !!on) return;
+  befundDockEnabled = !!on;
+  notifyStateChange();
 }
 
 /** Select a single tooth from a view OUTSIDE the grid — the schematic chart

@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.70.0 - 2026-08-31
+
+### Befund-Dock (Schritt 2): anatomische Ansicht + größere Schema-Zähne
+
+Zweiter Schritt des Layout-Umbaus (Dirk, 31.08.2026):
+
+- **Anatomisches Befund-Dock** (hinter einem Settings-Schalter „Befund-Dock
+  (anatomisch)", Default AUS): in der Odontogramm-Ansicht sitzt das Befund-Dock
+  jetzt UNTER dem Zahngitter statt der hohen rechten Steuerspalte — genau wie im
+  Schema, aber mit deinen gezeichneten Zähnen. Das Zahngitter wird verkleinert
+  (`zoom` 0.82), damit Chart + Dock ohne Scrollen zusammen im Blick sind; die
+  Overlays (Zahnfleisch, Brücke, Retention) sind Kinder von `#toothGrid` und
+  skalieren mit, bleiben also deckungsgleich. Neuer Auswahl-Beobachter
+  (`onChartSelectionChange`) speist den aktiven Zahn ins Dock — dieselbe
+  Bedienlogik (`applyShorthand` + DS-1-Gate).
+- **Schema-Zähne ~20 % größer**: die Breiten-Kappe der Schema-Darstellung von
+  1400 auf 1680 px angehoben (größere Zähne auf breiten Monitoren).
+
+Reine Präsentation/Bedienung — kein State/Payload/FHIR, Parität byte-identisch.
+Die „Details"-Schublade für den langen Schwanz seltener Optionen folgt als
+nächster Schritt.
+
 ## 2.69.0 - 2026-08-31
 
 ### Befund-Dock (Schritt 1): das Schema-Tastenfeld als Karten-Dock

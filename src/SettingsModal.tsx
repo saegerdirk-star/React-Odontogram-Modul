@@ -44,6 +44,8 @@ export type SettingsState = {
   onToggleDark: () => void;
   toothInfo: boolean;
   onToothInfo: (value: boolean) => void;
+  befundDock?: boolean;
+  onBefundDock?: (value: boolean) => void;
   secondaryCariesMode: SecondaryCariesMode;
   onSecondaryCariesMode: (value: SecondaryCariesMode) => void;
   icdas: boolean;
@@ -446,6 +448,13 @@ export const SETTINGS_TABS: SettingsTab[] = [
           descKey="settings.toothInfo.desc"
           checked={s.toothInfo}
           onChange={s.onToothInfo}
+        />
+        <ToggleRow
+          t={t}
+          label={t("settings.befundDock")}
+          descKey="settings.befundDock.desc"
+          checked={!!s.befundDock}
+          onChange={s.onBefundDock ?? (() => {})}
         />
         <div className="odon-settings-row odon-settings-row-disabled" aria-disabled="true">
           <div className="odon-settings-row-text">

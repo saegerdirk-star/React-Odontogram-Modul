@@ -1469,7 +1469,10 @@ select:focus{
 }
 /* Schematic chart view (odontogram-5hm sequel) — full-width, own SVG renderer. */
 .schematic-column{grid-column:1 / -1; min-width:0; padding:12px 8px; overflow-x:auto}
-.schematic-chart-wrap{max-inline-size:1400px; margin-inline:auto}
+/* Dirk 31.08.2026: Schema-Zähne ~20% größer — die Kappe der Chartbreite von
+   1400 auf 1680 px angehoben (auf breiten Klinik-Monitoren werden die Zähne
+   damit größer; die SVG füllt weiter 100% der Breite). */
+.schematic-chart-wrap{max-inline-size:1680px; margin-inline:auto}
 .schematic-chart-wrap svg.schematic-chart{display:block; width:100%; height:auto}
 .schematic-chart-outer{position:relative}
 
@@ -1529,6 +1532,16 @@ select:focus{
   overflow:auto;
   padding-right:4px;
 }
+
+/* Befund-Dock in the ANATOMICAL view (Dirk 30.08.2026, behind a flag): the
+   finding dock sits BELOW the (shrunk) odontogram, the tall right control panel
+   is hidden — exactly the schematic layout, but for the drawn chart. The drawn
+   tiles are zoomed down so chart + dock fit without scrolling; the overlays are
+   children of #toothGrid, so they scale with it and stay aligned. */
+.layout.dock-mode aside.panel{display:none}
+.layout.dock-mode .chart-column{grid-column:1 / -1}
+.layout.dock-mode .befund-dock-column{grid-column:1 / -1; min-width:0}
+.layout.dock-mode #toothGrid{zoom:0.82}
 
 /* The compact keypad. */
 .schematic-keypad{
