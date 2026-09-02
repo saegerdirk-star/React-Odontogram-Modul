@@ -8059,6 +8059,25 @@ let shorthandBuffer = "";
 export function getShorthandMaterial(): MaterialKey | null { return shorthandMaterial; }
 export function getShorthandBuffer(): string { return shorthandBuffer; }
 
+// The Befund-Dock's material chip and the keyboard's material MODE are one and
+// the same (Dirk, 31.08.2026): arming a material in the dock arms it for the
+// keyboard too, so typing `k`/`b`/… then applies the finding IN that material —
+// in Status and, above all, in Plan mode (where the work is entered). The dock
+// keys are single letters (K/A/G/E); the mode stores charly's MaterialKey.
+const DOCK_CHAR_TO_MATERIAL: Record<string, MaterialKey> = { A: "Am", K: "Kst", G: "G", E: "Ker" };
+const MATERIAL_TO_DOCK_CHAR: Record<string, string> = { Am: "A", Kst: "K", G: "G", Ker: "E" };
+export function setShorthandMaterial(ch: string | null): void {
+  const next = (ch && DOCK_CHAR_TO_MATERIAL[ch]) ? DOCK_CHAR_TO_MATERIAL[ch] : null;
+  if(shorthandMaterial === next) return;
+  shorthandMaterial = next;
+  syncShorthandReadout();
+  notifyStateChange();   // so the dock chip mirrors a keyboard-armed material
+}
+/** The armed material as a dock chip char (K/A/G/E), or null. */
+export function getShorthandMaterialChar(): string | null {
+  return shorthandMaterial ? (MATERIAL_TO_DOCK_CHAR[shorthandMaterial] ?? null) : null;
+}
+
 function shorthandReadoutEl(): HTMLElement | null {
   return document.getElementById("shorthandBuffer");
 }

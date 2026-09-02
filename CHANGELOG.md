@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.71.0 - 2026-08-31
+
+### Befund-Dock: vorgewähltes Material gilt auch für die Tastatur (Status + Plan)
+
+Dirk, 31.08.2026: ist im Dock ein Material vorgewählt, soll die Eingabe der
+Befundtaste (`k`, `b`, …) den Zahn direkt in diesem Material versorgen — vor allem
+in der PLANUNG, wo normalerweise eingetragen wird (der Befund kommt aus dem PVS).
+
+Das Dock-Material-Chip und der Tastatur-Kürzel-Modus (`shorthandMaterial`) sind
+jetzt EINS: `setShorthandMaterial`/`getShorthandMaterialChar` (Char K/A/G/E ↔
+`MaterialKey`); ein Klick auf das Chip armt beides, und ein per Tastatur gewähltes
+Material spiegelt sich zurück aufs Chip. Da alles über `applyShorthand` →
+`applyToSelected` → DS-1-Gate läuft, wirkt es unverändert in Status UND Plan.
+`k` ohne Material zeigt weiter „Choose a material first".
+
+## 2.70.2 - 2026-08-31
+
+### Befund-Dock: Geschiebe (attachment) bei Retention ergänzt
+
+Im Retention-Dock fehlte das Geschiebe — jetzt Kl · Gesch · Steg. `attachment`
+ist wie gehabt auf Krone/Brücke gegated.
+
 ## 2.70.1 - 2026-08-31
 
 ### Befund-Dock: Zahninfo unter das Dock, auch im Schema
