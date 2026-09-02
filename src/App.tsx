@@ -744,6 +744,54 @@ export default function App({
     );
   }
 
+  // The whole-mouth "Tooth information" read-back. Placed BELOW the Befund-Dock
+  // (Dirk 31.08.2026) rather than between chart and dock, and shared by the
+  // anatomical dock-mode and the schematic view.
+  const toothInfoCard = (toothInfoOn && summary) ? (
+    <section className="tooth-info card" aria-label={t("toothInfo.title")}>
+      <div className="card-title">{t("toothInfo.title")}</div>
+      <p className="tooth-info-overview">{summary.overview}</p>
+      {summary.permanentList && <p className="tooth-info-list">{summary.permanentList}</p>}
+      {summary.missingList && <p className="tooth-info-list">{summary.missingList}</p>}
+      {summary.individualNotes && (
+        <div id="toothInfoNotes" className="tooth-info-notes">
+          <span className="tooth-info-heading">{summary.individualNotes.heading}:</span>
+          {summary.individualNotes.items.map((n, i) => (
+            <p key={i} className="tooth-info-note-item">{n}</p>
+          ))}
+        </div>
+      )}
+      {summary.sections.map((sec) => (
+        <p key={sec.key} className="tooth-info-line">
+          <span className="tooth-info-heading">{sec.heading}:</span>{" "}
+          {sec.items.length
+            ? sec.items.join(", ")
+            : <span className="tooth-info-empty">{sec.emptyText}</span>}
+        </p>
+      ))}
+      {summary.plannedChanges && summary.plannedChanges.length > 0 && (
+        <div id="plannedChangesBox" className="planned-changes">
+          <div className="tooth-info-heading">{t("toothInfo.plannedChanges")}</div>
+          {summary.plannedChanges.map((c, i) => (
+            <p key={`${c.toothNo}-${c.axis}-${i}`} className="planned-changes-item">
+              {formatToothLabel(c.toothNo)}: {t(`planChange.axis.${c.axis}`)} {c.from} → {c.to}
+            </p>
+          ))}
+        </div>
+      )}
+      {summary.implants && (
+        <p className="tooth-info-line">
+          <span className="tooth-info-heading">{summary.implants.heading}:</span>{" "}
+          {summary.implants.text}
+        </p>
+      )}
+      <p className="tooth-info-line">
+        <span className="tooth-info-heading">{summary.periodontalTitle}:</span>{" "}
+        {summary.periodontalText}
+      </p>
+    </section>
+  ) : null;
+
   return (
     <div ref={themeRootRef} className="odontogram-root" dir={isRtl(lang) ? "rtl" : "ltr"} lang={lang}>
       <header className="topbar">
@@ -1154,52 +1202,9 @@ export default function App({
           </div>
           <div id="toothGrid" className="tooth-grid" dir="ltr" aria-label={t("chart.aria.toothGrid")}></div>
         </section>
-        {toothInfoOn && summary && (
-          <section className="tooth-info card" aria-label={t("toothInfo.title")}>
-            <div className="card-title">{t("toothInfo.title")}</div>
-            <p className="tooth-info-overview">{summary.overview}</p>
-            {summary.permanentList && <p className="tooth-info-list">{summary.permanentList}</p>}
-            {summary.missingList && <p className="tooth-info-list">{summary.missingList}</p>}
-            {summary.individualNotes && (
-              <div id="toothInfoNotes" className="tooth-info-notes">
-                <span className="tooth-info-heading">{summary.individualNotes.heading}:</span>
-                {summary.individualNotes.items.map((n, i) => (
-                  <p key={i} className="tooth-info-note-item">
-                    {n}
-                  </p>
-                ))}
-              </div>
-            )}
-            {summary.sections.map((sec) => (
-              <p key={sec.key} className="tooth-info-line">
-                <span className="tooth-info-heading">{sec.heading}:</span>{" "}
-                {sec.items.length
-                  ? sec.items.join(", ")
-                  : <span className="tooth-info-empty">{sec.emptyText}</span>}
-              </p>
-            ))}
-            {summary.plannedChanges && summary.plannedChanges.length > 0 && (
-              <div id="plannedChangesBox" className="planned-changes">
-                <div className="tooth-info-heading">{t("toothInfo.plannedChanges")}</div>
-                {summary.plannedChanges.map((c, i) => (
-                  <p key={`${c.toothNo}-${c.axis}-${i}`} className="planned-changes-item">
-                    {formatToothLabel(c.toothNo)}: {t(`planChange.axis.${c.axis}`)} {c.from} → {c.to}
-                  </p>
-                ))}
-              </div>
-            )}
-            {summary.implants && (
-              <p className="tooth-info-line">
-                <span className="tooth-info-heading">{summary.implants.heading}:</span>{" "}
-                {summary.implants.text}
-              </p>
-            )}
-            <p className="tooth-info-line">
-              <span className="tooth-info-heading">{summary.periodontalTitle}:</span>{" "}
-              {summary.periodontalText}
-            </p>
-          </section>
-        )}
+        {/* Non-dock mode keeps the read-back under the chart; in dock mode it
+            moves BELOW the dock (rendered after the befund-dock-column). */}
+        {!(dockEnabled && isOdontogramView) && toothInfoCard}
         </div>
         {dockEnabled && isOdontogramView && (
           <div className="befund-dock-column" dir="ltr">
@@ -1210,6 +1215,7 @@ export default function App({
               onMat={onArmMat}
               onStage={onArmStage}
             />
+            {toothInfoCard}
           </div>
         )}
         {isPerioView && (
@@ -1258,6 +1264,7 @@ export default function App({
                 onStage={onArmStage}
               />
             )}
+            {!schematicShowAll && toothInfoCard}
           </div>
         )}
         <aside className="panel" style={isOrthoView ? { display: "none" } : undefined}>

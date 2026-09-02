@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.70.1 - 2026-08-31
+
+### Befund-Dock: Zahninfo unter das Dock, auch im Schema
+
+Die „Tooth information"-Box saß zwischen Chart und Dock (Dirk, 31.08.2026: stört)
+— sie steht jetzt UNTER dem Befund-Dock. Und die Anordnung (Chart → Dock →
+Zahninfo) gilt jetzt auch in der Schema-Ansicht, wo bisher keine Zahninfo-Box
+war. Reine Umsortierung im Layout.
+
 ## 2.70.0 - 2026-08-31
 
 ### Befund-Dock (Schritt 2): anatomische Ansicht + größere Schema-Zähne
