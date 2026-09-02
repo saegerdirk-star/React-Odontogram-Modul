@@ -5,7 +5,11 @@
 /** Optional standalone FHIR adapter entry point. */
 export { buildFhirBundle } from "./toFhir";
 export { DentalCoreBundleRejectedError, parseFhirBundle } from "./fromFhir";
-export { buildDentalCoreBundle, UnsupportedDentalCoreContentError } from "./toFhirDentalCore";
+export {
+  buildDentalCoreBundle,
+  MissingDentalCoreEffectiveDateError,
+  UnsupportedDentalCoreContentError,
+} from "./toFhirDentalCore";
 export { parseDentalCoreBundle } from "./fromFhirDentalCore";
 export {
   DENTAL_CORE_CANONICAL,
@@ -18,4 +22,5 @@ export {
 export type {
   FhirExportOptions,
   OdontogramExportPayload,
+  ToothRecord,
 } from "./types";

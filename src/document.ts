@@ -87,6 +87,10 @@ export interface ToothRecord {
   eruptionStage?: string;
   rootFracture?: string;
   rootFractureRoot?: string;
+  /** Root-resection procedure, persisted in JSON but not admitted by Dental Core. */
+  rootResection?: string;
+  /** Removed root qualifier for hemisection/amputation. */
+  rootResectionRoot?: string;
   sensibility?: string;
   percussion?: string;
   prosthesis?: string;

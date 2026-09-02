@@ -10,6 +10,7 @@ import {
   DENTAL_CORE_PACKAGE_VERSION as PUBLIC_DENTAL_CORE_PACKAGE_VERSION,
   DENTAL_CORE_PROFILES as PUBLIC_DENTAL_CORE_PROFILES,
   DentalCoreBundleRejectedError,
+  MissingDentalCoreEffectiveDateError,
   parseDentalCoreBundle,
   parseFhirBundle,
   UnsupportedDentalCoreContentError,
@@ -458,6 +459,7 @@ describe("Dental Core FHIR seam", () => {
   });
 
   it("requires a truthful effective date for clinical content", () => {
+    expect(() => buildFhirBundle(fixture())).toThrow(MissingDentalCoreEffectiveDateError);
     expect(() => buildFhirBundle(fixture())).toThrow("Dental Core export requires an effective date");
   });
 

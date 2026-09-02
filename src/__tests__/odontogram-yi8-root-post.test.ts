@@ -31,6 +31,22 @@ const primarySvgText = readFileSync(
 );
 
 describe("Dental Core 0.6 odontogram axes", () => {
+  it("persists root resection fields but rejects them at the Dental Core boundary", () => {
+    __resetChartStateForTest();
+    const resection: ToothRecord = {
+      rootResection: "hemisection",
+      rootResectionRoot: "mesial",
+    };
+    __setToothStateForTest(46, { ...resection });
+
+    const payload = __collectExportPayloadForTest();
+    expect(payload.teeth["46"]).toMatchObject(resection);
+    __hydrateImportedChartsForTest(JSON.parse(JSON.stringify(payload)));
+    expect(__collectExportPayloadForTest().teeth["46"]).toMatchObject(resection);
+    expect(() => buildDentalCoreBundle(payload, options))
+      .toThrow("Dental Core cannot faithfully represent populated field: teeth.46.rootResection");
+  });
+
   it("roundtrips sensibility, percussion, eruption stage, and oriented root fracture while omitting skip values", () => {
     const source: OdontogramExportPayload = {
       version: PAYLOAD_VERSION,

@@ -12,6 +12,7 @@ import { type OdontogramPlugin, getQuadrant, LAYER_Z } from "./plugin";
 import { sanitizePluginSvg } from "./pluginSanitize";
 import { buildFhirBundle } from "./fhir/toFhir";
 import { parseFhirBundle } from "./fhir/fromFhir";
+import { MissingDentalCoreEffectiveDateError, UnsupportedDentalCoreContentError } from "./fhir/toFhirDentalCore";
 import { type Bundle, type FhirExportOptions } from "./fhir/types";
 import type { OdontogramDocument, ExaminationSnapshotRecord } from "./document";
 import type { CvmStage, SmiStage } from "./skeletalAge";
@@ -14876,7 +14877,13 @@ function wireControls(){
         exportFhir();
       } catch (error) {
         console.error("FHIR export failed", error);
-        window.alert("FHIR export requires an effective date in the examination context.");
+        if(error instanceof MissingDentalCoreEffectiveDateError){
+          window.alert(t("fhir.export.missingEffectiveDate"));
+        }else if(error instanceof UnsupportedDentalCoreContentError){
+          window.alert(t("fhir.export.unsupportedContent", { message: error.message }));
+        }else{
+          window.alert(error instanceof Error ? error.message : String(error));
+        }
       }
     };
   }

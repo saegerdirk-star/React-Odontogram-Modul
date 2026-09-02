@@ -24,6 +24,13 @@ export class UnsupportedDentalCoreContentError extends Error {
   }
 }
 
+export class MissingDentalCoreEffectiveDateError extends Error {
+  constructor() {
+    super("Dental Core export requires an effective date from the export options or examination context");
+    this.name = "MissingDentalCoreEffectiveDateError";
+  }
+}
+
 class DentalCoreIdentityResolver {
   private readonly resources: Record<string, DentalCoreResourceIdentity>;
   private readonly fullUrls = new Map<string, string>();
@@ -83,7 +90,7 @@ class DentalCoreIdentityResolver {
 const subjectReference = (options: FhirExportOptions, identity: DentalCoreIdentityResolver): string => options.subject ?? identity.reference("Patient/subject");
 const effective = (payload: OdontogramExportPayload, options: FhirExportOptions): string => {
   const value = options.effectiveDateTime ?? payload.examination?.effectiveDateTime ?? payload.case?.examDate;
-  if (!value) throw new Error("Dental Core export requires an effective date from the export options or examination context");
+  if (!value) throw new MissingDentalCoreEffectiveDateError();
   return value;
 };
 const coding = (system: string, code: string) => ({ system, code });

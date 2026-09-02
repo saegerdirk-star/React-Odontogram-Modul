@@ -36,20 +36,23 @@ const consumerDirectory = mkdtempSync(join(root, ".odontogram-library-consumer-"
 try {
   writeFileSync(join(consumerDirectory, "consumer.ts"), [
     'import Odontogram from "react-advanced-odontogram";',
-    'import { DentalCoreBundleRejectedError, buildDentalCoreBundle, buildFhirBundle, parseDentalCoreBundle, parseFhirBundle } from "react-advanced-odontogram/fhir";',
-    'import type { FhirExportOptions, OdontogramExportPayload } from "react-advanced-odontogram/fhir";',
+    'import { DentalCoreBundleRejectedError, MissingDentalCoreEffectiveDateError, buildDentalCoreBundle, buildFhirBundle, parseDentalCoreBundle, parseFhirBundle } from "react-advanced-odontogram/fhir";',
+    'import type { FhirExportOptions, OdontogramExportPayload, ToothRecord } from "react-advanced-odontogram/fhir";',
     '// @ts-expect-error The removed legacy FHIR dialect is intentionally not public.',
     `import type { ${removedDialectSymbols.slice(0, 2).join(", ")} } from "react-advanced-odontogram/fhir";`,
     "const options: FhirExportOptions = { subject: \"Patient/example\", effectiveDateTime: \"2026-08-12\" };",
     'const payload: OdontogramExportPayload = { version: "2.25", globals: {}, teeth: {} };',
+    'const resection: ToothRecord = { rootResection: "hemisection", rootResectionRoot: "mesial" };',
     "void Odontogram;",
     "void buildDentalCoreBundle;",
     "void buildFhirBundle;",
     "void parseFhirBundle;",
     "void DentalCoreBundleRejectedError;",
+    "void MissingDentalCoreEffectiveDateError;",
     "void parseDentalCoreBundle;",
     "void options;",
     "void payload;",
+    "void resection;",
     "",
   ].join("\n"));
 
