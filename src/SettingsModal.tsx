@@ -369,6 +369,7 @@ function ShorthandTab({ t }: { t: TFn }) {
         checked={walk}
         onChange={(v) => { setShorthandTabWalk(v); bump(n => n + 1); }}
       />
+      <p className="settings-note">{t("settings.shorthand.multiSelectNote")}</p>
       <div className="settings-shorthand-table" aria-disabled={!on}>
         {gruppen.map(g => (
           <section key={g.titleKey}>
@@ -644,6 +645,16 @@ export const SETTINGS_TABS: SettingsTab[] = [
     id: "colours",
     titleKey: "settings.tab.colours",
     render: ({ t }) => <ColourTab t={t} />,
+  },
+  {
+    // Bead odontogram-t8y: keyboard shorthand switches + the key reference
+    // table. Restored to the registry (Dirk 02.09.2026) — the ShorthandTab
+    // component existed but had been dropped from SETTINGS_TABS, so the two
+    // switches and the key list were unreachable. Appended like "colours" so
+    // the general -> panels -> toothDetails order pins stay intact.
+    id: "shorthand",
+    titleKey: "settings.tab.shorthand",
+    render: ({ t }) => <ShorthandTab t={t} />,
   },
 ];
 

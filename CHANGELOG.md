@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.72.5 - 2026-09-02
+
+### Kürzel-Einstellungen wiederhergestellt
+
+- Der Kürzel-Tab (Tastatur-Kürzel) war aus der Einstellungs-Registry gefallen —
+  die Komponente existierte, war aber nicht eingehängt, sodass die beiden
+  Schalter (Kürzel-Eingabe, Tab-Lauf) und die Tastenübersicht unerreichbar
+  waren. Wieder als letzter Tab eingehängt.
+- Dabei einen Altfehler in den Kürzel-Texten behoben: die Platzhalter
+  `{m}`/`{n}`/`{list}` nutzten einfache statt doppelter geschweifter Klammern
+  und wurden nie ersetzt — die Material-Zeilen zeigten „Material {m}" statt des
+  Materials. In allen zwölf Sprachen korrigiert.
+- Neue Hinweiszeile im Kürzel-Tab: **mehrere Zähne markieren geht immer**,
+  unabhängig von den Kürzel-Schaltern — Ziehen über die Zähne oder
+  Shift/Strg-Klick; ein Tastendruck wirkt dann auf alle markierten Zähne. Die
+  Mehrfachauswahl hängt nur an `readOnly`, nie an der Kürzel-Eingabe.
+
 ## 2.72.4 - 2026-09-02
 
 ### Befund-Dock ist Fork-Voreinstellung
