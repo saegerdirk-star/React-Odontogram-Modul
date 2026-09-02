@@ -100,7 +100,6 @@ describe("odontogram-cpx AC2: scoped live-mode provision", () => {
     expect(client.grant_types).toEqual(["basic"]);
     expect(JSON.stringify(client)).not.toMatch(/client_credentials|engine":"allow"|AIDBOX_ADMIN/i);
     expect(() => rejectAdminEquivalentClient({
-      resourceType: "Client",
       id: SCOPED_CLIENT_ID,
       grant_types: ["client_credentials", "basic"],
     })).toThrow(/admin|scope|basic/i);
@@ -203,7 +202,7 @@ describe("odontogram-cpx AC2: scoped live-mode provision", () => {
       document: chartedDocument,
       patientId: "charted",
       effectiveDateTime: "2026-09-02",
-    }).ops.map((op) => op.resource as Record<string, unknown>);
+    }).ops.map((op) => op.resource as unknown as Record<string, unknown>);
     const charted = {
       id: "charted",
       resources: [{ resourceType: "Patient", id: "charted" }, ...chartedResources],
@@ -225,6 +224,9 @@ describe("odontogram-cpx AC2: scoped live-mode provision", () => {
     expect(() => readExistingScopedSecret(401, {})).toThrow(/401|refusing|mint|secret/i);
     expect(() => readExistingScopedSecret(403, {})).toThrow(/403|refusing|mint|secret/i);
     expect(() => readExistingScopedSecret(200, { id: SCOPED_CLIENT_ID })).toThrow(/secret|refusing|mint/i);
+    expect(() => readExistingScopedSecret(200, { secret: "__sha256:deadbeef" })).toThrow(
+      /odontogram-live|plaintext|delete|non-retrievable|hash|digest/i,
+    );
   });
 
   it("does not encode a machine-absolute home path in committed source", () => {

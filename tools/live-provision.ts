@@ -288,6 +288,11 @@ export function readExistingScopedSecret(
 ): { reuse: true; secret: string } | { reuse: false } {
   if (status === 200) {
     const secret = cleaned((resource as { secret?: string } | null)?.secret);
+    if (secret && /^__[a-z0-9]+:/i.test(secret)) {
+      throw new Error(
+        `GET Client/${SCOPED_CLIENT_ID} returned a hashed non-retrievable secret; delete Client/${SCOPED_CLIENT_ID} and re-run, or supply a plaintext secret. Refusing to mint a replacement`,
+      );
+    }
     if (secret) return { reuse: true, secret };
     throw new Error(`GET Client/${SCOPED_CLIENT_ID} returned 200 without a secret; refusing to mint a replacement`);
   }

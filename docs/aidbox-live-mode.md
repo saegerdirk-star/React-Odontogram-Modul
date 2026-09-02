@@ -40,9 +40,12 @@ keys into the ignored `.env`. The default Patient is the first whose assembled
 collection parses through the same partition + `parseDentalCoreBundle` path as
 `live.html`; a seed Observation that wears a Dental Core profile but is not a
 valid 0.6 instance is skipped. A second run leaves the effective Client and
-AccessPolicy unchanged, and a non-404 Client GET fails closed instead of
-rotating the secret. The command runs through `jiti` so the provisioner can
-reuse `src/live/load.ts` without a second TypeScript resolver.
+AccessPolicy unchanged when the existing Client still carries a plaintext
+secret. A non-404 Client GET fails closed instead of rotating the secret,
+including a 200 whose `secret` is an Aidbox digest (`__sha256:…`) — that
+value is not retrievable as a browser password. The command runs through
+`jiti` so the provisioner can reuse `src/live/load.ts` without a second
+TypeScript resolver.
 
 `?patient=<id>` on the URL always wins over `VITE_DEFAULT_PATIENT_ID`. A missing
 or incomplete configuration renders a setup hint naming every missing key — it
