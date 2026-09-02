@@ -9,6 +9,10 @@
   goldens, and compatibility tests. `buildFhirBundle`, `parseFhirBundle`, every
   session, and the built-in import/export controls now use
   `de.cognovis.fhir.dental.core#0.6.0` exclusively.
+- Remove the derived periodontal ICD-10 `Condition` capability with the Legacy
+  FHIR builder, including K05.1/K05.2/K05.3 coding, derived stage/grade/extent,
+  and evidence links. Dental Core emits a periodontal `Condition` only for an
+  explicit clinician-selected `case.diagnosisOverride`.
 - Reject foreign and malformed non-Dental-Core Bundles explicitly instead of
   trying another representation. The exact `@cognovis/fhir-release@0.2.4`
   projection and generated Dental Core contract remain pinned and verified.
