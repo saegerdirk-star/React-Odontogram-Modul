@@ -6890,9 +6890,15 @@ export function onChartSelectionChange(cb: (toothNo: number | null) => void): ()
 }
 
 // Befund-Dock (Dirk 30.08.2026): show the finding keypad BELOW the anatomical
-// chart too (not only the schematic view). Session flag, default OFF while it
-// matures behind a Settings switch.
-let befundDockEnabled = false;
+// chart too (not only the schematic view). Session flag, controlled by the
+// Settings switch (`settings.befundDock`).
+//
+// Defaults ON in this fork (Dirk 02.09.2026), for the same reason the shorthand
+// flags do: this is Dirk's chart and he wants charly's always-visible finding
+// dock under the odontogram. A host that wants the tall right control panel
+// instead flips it at mount with `setBefundDockEnabled(false)`. Session state
+// like `perioViewMode`, never part of the payload.
+let befundDockEnabled = true;
 export function getBefundDockEnabled(): boolean { return befundDockEnabled; }
 export function setBefundDockEnabled(on: boolean): void {
   if(befundDockEnabled === !!on) return;

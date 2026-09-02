@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.72.4 - 2026-09-02
+
+### Befund-Dock ist Fork-Voreinstellung
+
+Das anatomische Befund-Dock (Befund-Tastenfeld unter dem verkleinerten
+Odontogramm) ist in diesem Fork jetzt standardmäßig AN — aus demselben Grund wie
+die Kürzel-Schalter: Dirks Praxis will charlys stets sichtbare Befund-Bedienung.
+Der Schalter dafür sitzt in Einstellungen → Allgemein („Befund-Dock
+(anatomisch)"); ein Host, der lieber die rechte Bedienspalte behält, legt ihn
+beim Mount mit `setBefundDockEnabled(false)` um. Session-Zustand wie
+`perioViewMode`, nicht Teil der Payload — Payload, SVG-Fingerprint und FHIR
+bleiben unverändert.
+
 ## 2.72.3 - 2026-09-02
 
 ### Befund-Dock: Hover-Tooltips + Details-Schublade
