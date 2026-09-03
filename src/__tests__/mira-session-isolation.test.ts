@@ -215,4 +215,71 @@ describe("odontogram-082: session-bound plan chart and plan changes", () => {
     expect(b.isActive()).toBe(false);
     expectIsolated();
   });
+
+  it("getPlanChart stays identical across activate for document globals and legacy caries", () => {
+    const session = createOdontogramSession({
+      version: "2.2",
+      globals: { wisdomVisible: false },
+      teeth: {
+        "16": { toothSelection: "tooth-base" },
+      },
+      plan: {
+        "16": {
+          toothSelection: "tooth-base",
+          restorationType: "crown",
+          restorationMaterial: "zircon",
+          caries: ["caries-occlusal"],
+          fillingSurfaceMaterials: { occlusal: "composite" },
+        },
+      },
+    });
+
+    const before = session.getPlanChart();
+    expect(session.isActive()).toBe(false);
+    expect(before.globals.wisdomVisible).toBe(false);
+
+    session.activate();
+    const whileActive = session.getPlanChart();
+    expect(session.isActive()).toBe(true);
+    expect(whileActive).toEqual(before);
+    expect(whileActive.globals.wisdomVisible).toBe(false);
+    expect(whileActive.teeth["16"].cariesSeverity).toEqual(before.teeth["16"].cariesSeverity);
+
+    session.release();
+    const afterRelease = session.getPlanChart();
+    expect(session.isActive()).toBe(false);
+    expect(afterRelease).toEqual(before);
+    expect(afterRelease.globals.wisdomVisible).toBe(false);
+  });
+
+  it("getPlanChart returns detached case and examination copies", () => {
+    const session = createOdontogramSession({
+      version: "2.46",
+      globals: {},
+      teeth: {},
+      plan: {
+        "16": { toothSelection: "tooth-base", restorationType: "crown", restorationMaterial: "zircon" },
+      },
+      case: { age: 54, patientName: "Ada Lovelace" },
+      examination: { id: "exam-1", subject: "Patient/1" },
+    });
+
+    expect(session.isActive()).toBe(false);
+    const first = session.getPlanChart();
+    expect(first.case).toEqual({ age: 54, patientName: "Ada Lovelace" });
+    expect(first.examination).toEqual({ id: "exam-1", subject: "Patient/1" });
+
+    first.case.age = 99;
+    first.case.patientName = "mutated";
+    first.examination.id = "exam-mutated";
+    first.examination.subject = "Patient/mutated";
+
+    const second = session.getPlanChart();
+    expect(second.case).toEqual({ age: 54, patientName: "Ada Lovelace" });
+    expect(second.examination).toEqual({ id: "exam-1", subject: "Patient/1" });
+
+    const doc = session.getDocument();
+    expect(doc.case).toEqual({ age: 54, patientName: "Ada Lovelace" });
+    expect(doc.examination).toEqual({ id: "exam-1", subject: "Patient/1" });
+  });
 });

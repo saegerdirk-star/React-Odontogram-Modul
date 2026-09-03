@@ -983,23 +983,27 @@ function serializeCaseMeta(c: CaseMeta): Record<string, unknown> {
   if(c.examDate !== null) o.examDate = c.examDate;
   return o;
 }
+function readCaseMeta(raw: Any): CaseMeta {
+  const c = defaultCaseMeta();
+  if(!raw || typeof raw !== "object") return c;
+  c.age = clampInt(raw.age, 0, 120);
+  if(VALID_SMOKING.has(raw.smokingStatus)) c.smokingStatus = raw.smokingStatus;
+  c.cigarettesPerDay = clampInt(raw.cigarettesPerDay, 0, 99);
+  if(VALID_DIABETES.has(raw.diabetesStatus)) c.diabetesStatus = raw.diabetesStatus;
+  { const n = Number(raw.hba1c); c.hba1c = Number.isFinite(n) ? Math.max(3, Math.min(20, Math.round(n * 10) / 10)) : null; }
+  c.toothLossPerio = clampInt(raw.toothLossPerio, 0, 32);
+  c.maxRblPercent = clampInt(raw.maxRblPercent, 0, 100);
+  c.diagnosisOverride = VALID_DIAGNOSIS.has(raw.diagnosisOverride) ? raw.diagnosisOverride : null;
+  c.stageOverride = VALID_STAGE.has(raw.stageOverride) ? raw.stageOverride : null;
+  c.gradeOverride = VALID_GRADE.has(raw.gradeOverride) ? raw.gradeOverride : null;
+  c.extentOverride = VALID_EXTENT.has(raw.extentOverride) ? raw.extentOverride : null;
+  c.patientName = (typeof raw.patientName === "string" && raw.patientName.trim() !== "") ? raw.patientName.trim() : null;
+  c.patientDob = (typeof raw.patientDob === "string" && ISO_DATE.test(raw.patientDob.trim())) ? raw.patientDob.trim() : null;
+  c.examDate = (typeof raw.examDate === "string" && ISO_DATE.test(raw.examDate.trim())) ? raw.examDate.trim() : null;
+  return c;
+}
 function hydrateCaseMeta(raw: Any): void {
-  caseMeta = defaultCaseMeta();
-  if(!raw || typeof raw !== "object") return;
-  caseMeta.age = clampInt(raw.age, 0, 120);
-  if(VALID_SMOKING.has(raw.smokingStatus)) caseMeta.smokingStatus = raw.smokingStatus;
-  caseMeta.cigarettesPerDay = clampInt(raw.cigarettesPerDay, 0, 99);
-  if(VALID_DIABETES.has(raw.diabetesStatus)) caseMeta.diabetesStatus = raw.diabetesStatus;
-  { const n = Number(raw.hba1c); caseMeta.hba1c = Number.isFinite(n) ? Math.max(3, Math.min(20, Math.round(n * 10) / 10)) : null; }
-  caseMeta.toothLossPerio = clampInt(raw.toothLossPerio, 0, 32);
-  caseMeta.maxRblPercent = clampInt(raw.maxRblPercent, 0, 100);
-  caseMeta.diagnosisOverride = VALID_DIAGNOSIS.has(raw.diagnosisOverride) ? raw.diagnosisOverride : null;
-  caseMeta.stageOverride = VALID_STAGE.has(raw.stageOverride) ? raw.stageOverride : null;
-  caseMeta.gradeOverride = VALID_GRADE.has(raw.gradeOverride) ? raw.gradeOverride : null;
-  caseMeta.extentOverride = VALID_EXTENT.has(raw.extentOverride) ? raw.extentOverride : null;
-  caseMeta.patientName = (typeof raw.patientName === "string" && raw.patientName.trim() !== "") ? raw.patientName.trim() : null;
-  caseMeta.patientDob = (typeof raw.patientDob === "string" && ISO_DATE.test(raw.patientDob.trim())) ? raw.patientDob.trim() : null;
-  caseMeta.examDate = (typeof raw.examDate === "string" && ISO_DATE.test(raw.examDate.trim())) ? raw.examDate.trim() : null;
+  caseMeta = readCaseMeta(raw);
 }
 /** P4a Task 2: builds the compact, labelled case-context fragment
  *  (e.g. "Age 54 · current smoker (12/day) · diabetic (HbA1c 7.8%) · max
@@ -9864,10 +9868,10 @@ function toothRaw(teeth: Record<string, unknown> | undefined, toothNo: number): 
   return (teeth as Any)[toothNo] ?? (teeth as Any)[String(toothNo)] ?? {};
 }
 
-function chartFromTeeth(teeth: Record<string, unknown> | undefined): Map<Any, Any> {
+function chartFromTeeth(teeth: Record<string, unknown> | undefined, inferLegacySecondaryCaries: boolean): Map<Any, Any> {
   const chart = new Map();
   for(const toothNo of ALL_TEETH){
-    chart.set(toothNo, hydrateState(toothRaw(teeth, toothNo), false));
+    chart.set(toothNo, hydrateState(toothRaw(teeth, toothNo), inferLegacySecondaryCaries));
   }
   return chart;
 }
@@ -9883,13 +9887,16 @@ function documentGlobals(doc: OdontogramDocument): Record<string, boolean> {
 }
 
 function planChartFromDocument(doc: OdontogramDocument): Any {
+  const inferLegacySecondaryCaries = isLegacyPayloadVersion(doc.version);
   const planTeeth = doc.plan && typeof doc.plan === "object" ? doc.plan : undefined;
+  const caseBlock = readCaseMeta(doc.case);
+  const examination = readExaminationContext(doc.examination);
   return {
     version: PAYLOAD_VERSION,
     globals: documentGlobals(doc),
-    teeth: collectTeeth(chartFromTeeth(planTeeth)),
-    ...(doc.case ? { case: doc.case } : {}),
-    ...(doc.examination ? { examination: doc.examination } : {}),
+    teeth: collectTeeth(chartFromTeeth(planTeeth, inferLegacySecondaryCaries)),
+    ...(caseMetaIsEmpty(caseBlock) ? {} : { case: serializeCaseMeta(caseBlock) }),
+    ...(examinationContextIsEmpty(examination) ? {} : { examination: serializeExaminationContext(examination) }),
   };
 }
 
@@ -10156,7 +10163,11 @@ function readLivePlanChanges(): PlanChange[] {
 
 function planChangesFromDocument(doc: OdontogramDocument): PlanChange[] {
   if(!doc.plan || typeof doc.plan !== "object") return [];
-  return planChangesFromCharts(chartFromTeeth(doc.teeth), chartFromTeeth(doc.plan));
+  const inferLegacySecondaryCaries = isLegacyPayloadVersion(doc.version);
+  return planChangesFromCharts(
+    chartFromTeeth(doc.teeth, inferLegacySecondaryCaries),
+    chartFromTeeth(doc.plan, inferLegacySecondaryCaries),
+  );
 }
 
 export function getPlanChanges(): PlanChange[] {
@@ -16076,6 +16087,15 @@ function loadLiveDocument(doc: OdontogramDocument): void {
   if(edentulous !== edentulousNext){
     edentulous = edentulousNext;
     if(domReady) setToggleButton($("#btnEdentulous"), edentulous);
+  }
+  if(!domReady){
+    // Headless activate still has to land the incoming document's view flags on
+    // the engine: `getPlanChart()` reads `collectGlobals()` while live, and AC1
+    // requires that result to match the inactive, document-derived payload.
+    wisdomVisible = typeof globals?.wisdomVisible === "boolean" ? globals.wisdomVisible : true;
+    showBase = typeof globals?.showBase === "boolean" ? globals.showBase : true;
+    occlusalVisible = typeof globals?.occlusalVisible === "boolean" ? globals.occlusalVisible : true;
+    showHealthyPulp = typeof globals?.showHealthyPulp === "boolean" ? globals.showHealthyPulp : true;
   }
   if(domReady){
     // The remaining globals are VIEW flags whose setters drive the live control
