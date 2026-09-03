@@ -1436,8 +1436,12 @@ export function commitBaselineCorrection(): boolean {
 // plan edits are never silently overwritten by re-cloning from status).
 let planInitialized = false;
 
+function readLiveChartMode(): ChartMode { return chartMode; }
+
 /** Current active chart mode ("status" | "plan"). */
-export function getChartMode(): ChartMode { return chartMode; }
+export function getChartMode(): ChartMode {
+  return getActiveOdontogramSession().getChartMode();
+}
 
 /** Deep-copy every tooth from `src` into `dst` via the proven
  *  serializeState/hydrateState round-trip, so the two charts never share
@@ -1632,7 +1636,7 @@ function syncChartModeUi(): void {
  *
  * @param mode - "status" or "plan"; any other value is ignored.
  */
-export function setChartMode(mode: ChartMode): void {
+function applyLiveChartMode(mode: ChartMode): void {
   if(mode !== "status" && mode !== "plan") return;
   if(mode === chartMode) return;
   if(mode === "plan" && !planInitialized){
@@ -1656,6 +1660,10 @@ export function setChartMode(mode: ChartMode): void {
   if(activeTooth) syncControlsFromState(toothState.get(activeTooth));
   notifyStateChange();
   syncChartModeUi();
+}
+
+export function setChartMode(mode: ChartMode): void {
+  getActiveOdontogramSession().setChartMode(mode);
 }
 
 const toothSvgRoot = new Map(); // toothNo -> [svg elements]
@@ -5111,6 +5119,7 @@ export function __resetChartStateForTest(): void {
   // any restore stack or ownership claim, so one test's sessions cannot leak
   // into the next.
   activeSession = defaultSession;
+  defaultSession.storedChartMode = "status";
   sessionStack.length = 0;
   engineOwner = null;
   engineWaiters.length = 0;
@@ -9839,7 +9848,7 @@ export function getStatusChart(): Any {
  * (`{version, globals, teeth}`), but `teeth` is collected from `charts.plan`.
  * `globals` are shared app-level settings, not owned by either chart.
  */
-export function getPlanChart(): Any {
+function readLivePlanChart(): Any {
   return {
     version: PAYLOAD_VERSION,
     globals: collectGlobals(),
@@ -9848,6 +9857,44 @@ export function getPlanChart(): Any {
     ...(examinationContextIsEmpty(examinationContext)
       ? {} : { examination: serializeExaminationContext(examinationContext) }),
   };
+}
+
+function toothRaw(teeth: Record<string, unknown> | undefined, toothNo: number): Any {
+  if(!teeth || typeof teeth !== "object") return {};
+  return (teeth as Any)[toothNo] ?? (teeth as Any)[String(toothNo)] ?? {};
+}
+
+function chartFromTeeth(teeth: Record<string, unknown> | undefined): Map<Any, Any> {
+  const chart = new Map();
+  for(const toothNo of ALL_TEETH){
+    chart.set(toothNo, hydrateState(toothRaw(teeth, toothNo), false));
+  }
+  return chart;
+}
+
+function documentGlobals(doc: OdontogramDocument): Record<string, boolean> {
+  return {
+    wisdomVisible: doc.globals?.wisdomVisible ?? true,
+    showBase: doc.globals?.showBase ?? true,
+    occlusalVisible: doc.globals?.occlusalVisible ?? true,
+    showHealthyPulp: doc.globals?.showHealthyPulp ?? true,
+    edentulous: doc.globals?.edentulous ?? false,
+  };
+}
+
+function planChartFromDocument(doc: OdontogramDocument): Any {
+  const planTeeth = doc.plan && typeof doc.plan === "object" ? doc.plan : undefined;
+  return {
+    version: PAYLOAD_VERSION,
+    globals: documentGlobals(doc),
+    teeth: collectTeeth(chartFromTeeth(planTeeth)),
+    ...(doc.case ? { case: doc.case } : {}),
+    ...(doc.examination ? { examination: doc.examination } : {}),
+  };
+}
+
+export function getPlanChart(): Any {
+  return getActiveOdontogramSession().getPlanChart();
 }
 
 /**
@@ -10088,12 +10135,11 @@ const DIFF_AXES: { key: string; labelKey: string; label: (s: Any) => string }[] 
  * rest of the app already uses (quadrant-by-quadrant); within a tooth,
  * entries follow `DIFF_AXES` order.
  */
-export function getPlanChanges(): PlanChange[] {
-  if(!planInitialized) return [];
+function planChangesFromCharts(statusChart: Map<Any, Any>, planChart: Map<Any, Any>): PlanChange[] {
   const out: PlanChange[] = [];
   for(const toothNo of ALL_TEETH){
-    const st = charts.status.get(toothNo) ?? defaultState();
-    const pl = charts.plan.get(toothNo) ?? defaultState();
+    const st = statusChart.get(toothNo) ?? defaultState();
+    const pl = planChart.get(toothNo) ?? defaultState();
     for(const axis of DIFF_AXES){
       const from = axis.label(st);
       const to = axis.label(pl);
@@ -10101,6 +10147,20 @@ export function getPlanChanges(): PlanChange[] {
     }
   }
   return out;
+}
+
+function readLivePlanChanges(): PlanChange[] {
+  if(!planInitialized) return [];
+  return planChangesFromCharts(charts.status, charts.plan);
+}
+
+function planChangesFromDocument(doc: OdontogramDocument): PlanChange[] {
+  if(!doc.plan || typeof doc.plan !== "object") return [];
+  return planChangesFromCharts(chartFromTeeth(doc.teeth), chartFromTeeth(doc.plan));
+}
+
+export function getPlanChanges(): PlanChange[] {
+  return getActiveOdontogramSession().getPlanChanges();
 }
 
 // ---- Bead odontogram-sjr: choosable restoration colours ----
@@ -15935,6 +15995,14 @@ export interface OdontogramSession {
   exportFhirBundle(options?: FhirExportOptions): Bundle;
   /** Import Dental Core without replacing state on rejection. */
   importFhirBundle(input: unknown): boolean;
+  /** This session's chart mode. Works without claiming the engine. */
+  getChartMode(): ChartMode;
+  /** Record or apply chart mode for this session. */
+  setChartMode(mode: ChartMode): void;
+  /** This session's plan-chart payload. Works without claiming the engine. */
+  getPlanChart(): Any;
+  /** This session's status-vs-plan diff. `[]` until a plan exists. */
+  getPlanChanges(): PlanChange[];
 }
 
 export interface OdontogramSessionFhirConfiguration {
@@ -16037,12 +16105,16 @@ class ClinicalSession implements OdontogramSession {
    *  the engine's own state is the single source of truth.
    *  @internal — module-private; not part of the public session contract. */
   stored: OdontogramDocument;
+  /** Chart mode while this session is NOT live. Applied on the next activate.
+   *  @internal — module-private; not part of the public session contract. */
+  storedChartMode: ChartMode = "status";
   private liveFhirIdentity: OdontogramDocument["fhirIdentity"];
   private readonly listeners = new Set<(doc: OdontogramDocument) => void>();
 
   constructor(initial?: OdontogramDocument | null, id?: string, options?: OdontogramSessionOptions){
     this.id = id ?? `odontogram-session-${++sessionCounter}`;
     this.stored = initial ? cloneDocument(initial) : blankDocument();
+    this.storedChartMode = "status";
     this.liveFhirIdentity = undefined;
     const exportOptions = options?.fhir?.exportOptions;
     this.fhir = Object.freeze({
@@ -16063,6 +16135,7 @@ class ClinicalSession implements OdontogramSession {
 
   setDocument(doc: OdontogramDocument | null | undefined): void {
     const next = doc && typeof doc === "object" ? cloneDocument(doc) : blankDocument();
+    this.storedChartMode = "status";
     if(this.isActive()){
       this.stored = next;
       loadLiveDocument(next);
@@ -16104,6 +16177,28 @@ class ClinicalSession implements OdontogramSession {
     }
   }
 
+  getChartMode(): ChartMode {
+    return this.isActive() ? readLiveChartMode() : this.storedChartMode;
+  }
+
+  setChartMode(mode: ChartMode): void {
+    if(mode !== "status" && mode !== "plan") return;
+    if(this.isActive()){
+      applyLiveChartMode(mode);
+      this.storedChartMode = readLiveChartMode();
+      return;
+    }
+    this.storedChartMode = mode;
+  }
+
+  getPlanChart(): Any {
+    return this.isActive() ? readLivePlanChart() : planChartFromDocument(this.stored);
+  }
+
+  getPlanChanges(): PlanChange[] {
+    return this.isActive() ? readLivePlanChanges() : planChangesFromDocument(this.stored);
+  }
+
   /** Internal: fan a change out to this session's own subscribers only. */
   notify(): void {
     if(this.listeners.size === 0) return;
@@ -16129,9 +16224,11 @@ function synchronizeActiveFhirIdentity(identity: OdontogramDocument["fhirIdentit
 function activateSession(next: ClinicalSession): void {
   if(activeSession === next) return;
   activeSession.stored = activeSession.getDocument();
+  activeSession.storedChartMode = readLiveChartMode();
   sessionStack.push(activeSession);
   activeSession = next;
   loadLiveDocument(next.stored);
+  applyLiveChartMode(next.storedChartMode);
   notifyStateChange();
 }
 
@@ -16147,8 +16244,10 @@ function releaseSession(session: ClinicalSession): void {
   const previous = sessionStack.pop();
   if(!previous) return; // the default session is never released
   session.stored = session.getDocument();
+  session.storedChartMode = readLiveChartMode();
   activeSession = previous;
   loadLiveDocument(previous.stored);
+  applyLiveChartMode(previous.storedChartMode);
   notifyStateChange();
 }
 

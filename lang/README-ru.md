@@ -570,7 +570,8 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 ```
 
 - `session.getDocument()` / `setDocument(doc)` / `subscribe(listener)` — это весь
-  контракт; `createOdontogramSession(initial?)` создаёт сессию.
+  контракт; `createOdontogramSession(initial?)` создаёт сессию. HKP hosts read
+  treatment intent from `session.getPlanChanges()`, not the module singleton.
 - Простой проп `document` вместо `session` заставляет экземпляр создать собственную
   сессию, инициализированную этим документом.
 - Если не передать **ни того, ни другого**, сохраняется прежнее автономное поведение:

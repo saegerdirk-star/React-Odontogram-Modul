@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.2.0 - 2026-09-03
+
+### Session-bound plan mode and plan diff (odontogram-082)
+
+`OdontogramSession` now exposes `getChartMode()`, `setChartMode(mode)`,
+`getPlanChart()` and `getPlanChanges()`, each bound to that session's document
+whether or not the session owns the engine. Hosts (MIRA / HKP) read treatment
+intent from the session instead of the module singleton. The existing
+module-level functions delegate to the active session and keep their previous
+behaviour. Payload version is unchanged.
+
 ## 3.1.1 - 2026-09-02
 
 ### Auswahl-Performance: ~1s Lag pro Klick beseitigt (odontogram-szc)

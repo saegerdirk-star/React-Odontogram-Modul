@@ -571,7 +571,8 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 ```
 
 - `session.getDocument()` / `setDocument(doc)` / `subscribe(listener)` to cały kontrakt;
-  `createOdontogramSession(initial?)` tworzy sesję.
+  `createOdontogramSession(initial?)` tworzy sesję. HKP hosts read treatment
+  intent from `session.getPlanChanges()`, not the module singleton.
 - Zwykły prop `document` zamiast `session` sprawia, że instancja tworzy własną sesję
   zainicjowaną tym dokumentem.
 - Pominięcie **obu** zachowuje dotychczasowe zachowanie samodzielne: komponent działa na

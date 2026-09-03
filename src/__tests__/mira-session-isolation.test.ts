@@ -143,3 +143,76 @@ describe("odontogram-3l1 AC2: UI-domain document contract", () => {
     expect(s.isActive()).toBe(false);
   });
 });
+
+function docWithPlannedCrown(toothNo: number, material: "zircon" | "emax"): OdontogramDocument {
+  return {
+    version: "2.46",
+    globals: {},
+    teeth: {
+      [String(toothNo)]: { toothSelection: "tooth-base", restorationType: "none" },
+    },
+    plan: {
+      [String(toothNo)]: {
+        toothSelection: "tooth-base",
+        restorationType: "crown",
+        restorationMaterial: material,
+      },
+    },
+  };
+}
+
+function restorationChangeFor(session: OdontogramSession, toothNo: number) {
+  return session.getPlanChanges().filter((change) => change.toothNo === toothNo && change.axis === "restoration");
+}
+
+describe("odontogram-082: session-bound plan chart and plan changes", () => {
+  beforeEach(() => {
+    __resetChartStateForTest();
+  });
+
+  it("two sessions return their own plan chart and plan changes regardless of engine ownership", () => {
+    const a = createOdontogramSession(docWithPlannedCrown(16, "zircon"));
+    const b = createOdontogramSession(docWithPlannedCrown(21, "emax"));
+
+    const expectIsolated = () => {
+      expect(a.getPlanChart().teeth["16"].restorationType).toBe("crown");
+      expect(a.getPlanChart().teeth["16"].restorationMaterial).toBe("zircon");
+      expect(a.getPlanChart().teeth["21"]?.restorationType ?? "none").toBe("none");
+      expect(restorationChangeFor(a, 16)).toEqual([
+        expect.objectContaining({ toothNo: 16, axis: "restoration" }),
+      ]);
+      expect(restorationChangeFor(a, 21)).toEqual([]);
+
+      expect(b.getPlanChart().teeth["21"].restorationType).toBe("crown");
+      expect(b.getPlanChart().teeth["21"].restorationMaterial).toBe("emax");
+      expect(b.getPlanChart().teeth["16"]?.restorationType ?? "none").toBe("none");
+      expect(restorationChangeFor(b, 21)).toEqual([
+        expect.objectContaining({ toothNo: 21, axis: "restoration" }),
+      ]);
+      expect(restorationChangeFor(b, 16)).toEqual([]);
+    };
+
+    expect(a.isActive()).toBe(false);
+    expect(b.isActive()).toBe(false);
+    expectIsolated();
+
+    a.activate();
+    expect(a.isActive()).toBe(true);
+    expect(b.isActive()).toBe(false);
+    expectIsolated();
+
+    b.activate();
+    expect(a.isActive()).toBe(false);
+    expect(b.isActive()).toBe(true);
+    expectIsolated();
+
+    b.release();
+    expect(a.isActive()).toBe(true);
+    expectIsolated();
+
+    a.release();
+    expect(a.isActive()).toBe(false);
+    expect(b.isActive()).toBe(false);
+    expectIsolated();
+  });
+});

@@ -568,7 +568,8 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 ```
 
 - `session.getDocument()` / `setDocument(doc)` / `subscribe(listener)` je celá zmluva;
-  `createOdontogramSession(initial?)` reláciu vytvorí.
+  `createOdontogramSession(initial?)` reláciu vytvorí. HKP hosts read treatment
+  intent from `session.getPlanChanges()`, not the module singleton.
 - Jednoduchá prop `document` namiesto `session` spôsobí, že si inštancia vytvorí vlastnú
   reláciu inicializovanú týmto dokumentom.
 - Ak nezadáš **ani jedno**, zostáva pôvodné samostatné správanie: komponent pracuje nad

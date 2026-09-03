@@ -575,7 +575,9 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 ```
 
 - `session.getDocument()` / `setDocument(doc)` / `subscribe(listener)` ist der gesamte
-  Vertrag; `createOdontogramSession(initial?)` erzeugt eine Session.
+  Vertrag; `createOdontogramSession(initial?)` erzeugt eine Session. Die
+  Behandlungsabsicht liest ein HKP-Host aus `session.getPlanChanges()` (nicht
+  aus den Modul-Funktionen, die an die gerade aktive Session binden).
 - Ein einfaches `document`-Prop statt `session` laesst die Instanz eine eigene, daraus
   initialisierte Session anlegen.
 - Wird **keines von beiden** uebergeben, bleibt das bisherige Standalone-Verhalten

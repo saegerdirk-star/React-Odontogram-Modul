@@ -565,7 +565,8 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 ```
 
 - `session.getDocument()` / `setDocument(doc)` / `subscribe(listener)` 就是全部契约；
-  `createOdontogramSession(initial?)` 用于创建会话。
+  `createOdontogramSession(initial?)` 用于创建会话。 HKP hosts read treatment
+  intent from `session.getPlanChanges()`, not the module singleton.
 - 用普通的 `document` 属性代替 `session`，实例会创建并拥有一个由该文档初始化的私有会话。
 - **两者都不传**则保持原有的独立运行行为：组件运行在进程级默认会话
   （`getDefaultOdontogramSession()`）上，所有模块级入口对它的作用与以前完全一致。

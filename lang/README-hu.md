@@ -571,7 +571,8 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 ```
 
 - `session.getDocument()` / `setDocument(doc)` / `subscribe(listener)` — ez a teljes
-  szerződés; a `createOdontogramSession(initial?)` hoz létre egyet.
+  szerződés; a `createOdontogramSession(initial?)` hoz létre egyet. HKP hosts read
+  treatment intent from `session.getPlanChanges()`, not the module singleton.
 - A `session` helyett megadott egyszerű `document` prop hatására a példány saját, abból
   inicializált munkamenetet hoz létre.
 - Ha **egyiket sem** adod meg, a korábbi önálló viselkedés marad: a komponens a folyamat

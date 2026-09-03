@@ -565,7 +565,8 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 ```
 
 - `session.getDocument()` / `setDocument(doc)` / `subscribe(listener)` é todo o contrato;
-  `createOdontogramSession(initial?)` cria uma sessão.
+  `createOdontogramSession(initial?)` cria uma sessão. HKP hosts read treatment
+  intent from `session.getPlanChanges()`, not the module singleton.
 - Uma prop `document` simples em vez de `session` faz a instância criar e possuir uma
   sessão privada inicializada a partir dela.
 - Não passar **nenhuma das duas** preserva o comportamento autônomo histórico: o componente

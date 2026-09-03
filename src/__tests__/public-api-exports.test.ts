@@ -21,6 +21,7 @@ import {
   exportPdf,
   exportPerioImage,
   exportPerioSvg,
+  createOdontogramSession,
 } from "../App";
 
 describe("public API exports — App.tsx re-exports", () => {
@@ -50,6 +51,14 @@ describe("public API exports — App.tsx re-exports", () => {
   it("exports plan-diff function", () => {
     expect(getPlanChanges).toBeDefined();
     expect(typeof getPlanChanges).toBe("function");
+  });
+
+  it("exposes session-bound chart mode and plan methods", () => {
+    const session = createOdontogramSession();
+    expect(typeof session.getChartMode).toBe("function");
+    expect(typeof session.setChartMode).toBe("function");
+    expect(typeof session.getPlanChart).toBe("function");
+    expect(typeof session.getPlanChanges).toBe("function");
   });
 
   it("exports numbering system setter", () => {

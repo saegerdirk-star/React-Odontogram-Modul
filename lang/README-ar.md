@@ -570,7 +570,8 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 ```
 
 - `session.getDocument()` / `setDocument(doc)` / `subscribe(listener)` هي العقد كاملًا،
-  و`createOdontogramSession(initial?)` تُنشئ جلسة.
+  و`createOdontogramSession(initial?)` تُنشئ جلسة. HKP hosts read treatment
+  intent from `session.getPlanChanges()`, not the module singleton.
 - تمرير خاصية `document` البسيطة بدلًا من `session` يجعل النسخة تُنشئ جلسة خاصة بها
   مُهيّأة من ذلك المستند.
 - عدم تمرير **أيٍّ منهما** يُبقي السلوك المستقل السابق كما هو: يعمل المكوّن على الجلسة

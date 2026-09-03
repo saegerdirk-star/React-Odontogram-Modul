@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
-[![Version](https://img.shields.io/badge/version-3.1.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
+[![Version](https://img.shields.io/badge/version-3.2.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](https://raw.githubusercontent.com/ZoliQua/React-Odontogram-Modul/main/src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
 
@@ -80,7 +80,22 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 <OdontogramShell session={lower} onDocumentChange={(doc) => save("lower", doc)} />
 ```
 
-`session.getDocument()` / `setDocument()` / `subscribe()` are the whole contract.
+`session.getDocument()` / `setDocument()` / `subscribe()` remain the document
+contract. Hosts that need **treatment intent** read it from that same session:
+
+```ts
+const changes = session.getPlanChanges(); // [] until a plan exists
+const plan = session.getPlanChart();
+session.getChartMode();
+session.setChartMode("plan");
+```
+
+Those four methods are bound to **this** session's document, whether or not the
+session currently owns the engine. HKP hosts (MIRA, `cognovis/hkp-engine`) should
+use them. Module-level `getPlanChanges` / `getPlanChart` / `getChartMode` /
+`setChartMode` are shell-internal: they delegate to whichever session currently
+owns the engine and must not be used to derive another patient's plan.
+
 Passing a plain `document` prop instead makes the instance create and own a
 private session seeded from it. Passing **neither** keeps the historical
 standalone behaviour: the component runs on the process-wide default session and
@@ -114,6 +129,8 @@ if (!session.importFhirBundle(bundle)) throw new Error("FHIR import rejected");
 ```
 
 A clinical Dental Core export requires an effective date supplied by the caller, the examination context, or `case.examDate`. The codec projects the IG carrier contract across tooth and root caries, restorations, endodontic and diagnostic findings, periodontal and peri-implant findings, implant identity, treatment requests, assessments, and notes while retaining host resource identity.
+
+When the document carries a `plan` section, the existing Dental Core export already emits planned care as `CarePlan/plan`, one `ServiceRequest/{fdi}` per planned tooth (intent `plan`, `basedOn` that CarePlan), planned `Observation/chart/plan/{fdi}` chart states, and the planned clinical Observations (`tooth-state`, caries, periodontal, recession) also `basedOn` the CarePlan. The FHIR codec is unchanged; hosts derive the intent from `session.getPlanChanges()` and may export the same document through `session.exportFhirBundle()`.
 
 Diabetes, HbA1c, smoking, and edentulous resources remain owned by the host patient record and are never minted by this codec. When those document fields are populated, pass their existing Condition or Observation entries through `exportOptions.sharedResources`; the bundle carries them unchanged, records their references in Provenance, and fails closed if a required host resource is absent or inconsistent. The smoking-status Observation (LOINC 72166-2) may carry either the LOINC LL2201-3 / IPS Current Smoking Status answer codes or the engine-local codes.
 
