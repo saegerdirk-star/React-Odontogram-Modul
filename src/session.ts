@@ -13,6 +13,10 @@
 //     session.getDocument();          // read
 //     session.setDocument(next);      // write
 //     session.subscribe(listener);    // observe
+//     session.getPlanChanges();       // treatment intent for this session
+//     session.getPlanChart();
+//     session.getChartMode();
+//     session.setChartMode("plan");
 //
 // WHAT STAYS OUT. This module exists to make the boundary legible and testable,
 // so it must stay free of transport concerns: no HTTP client, no server URL, no
@@ -35,4 +39,6 @@ export type {
   OdontogramDocument,
   OdontogramSessionFhirConfiguration,
   OdontogramSessionOptions,
+  ChartMode,
+  PlanChange,
 } from "./odontogram";

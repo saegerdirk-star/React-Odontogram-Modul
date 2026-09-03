@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-3.1.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-3.2.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -570,7 +570,8 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 ```
 
 - `session.getDocument()` / `setDocument(doc)` / `subscribe(listener)` — это весь
-  контракт; `createOdontogramSession(initial?)` создаёт сессию.
+  контракт; `createOdontogramSession(initial?)` создаёт сессию. HKP hosts read
+  treatment intent from `session.getPlanChanges()`, not the module singleton.
 - Простой проп `document` вместо `session` заставляет экземпляр создать собственную
   сессию, инициализированную этим документом.
 - Если не передать **ни того, ни другого**, сохраняется прежнее автономное поведение:

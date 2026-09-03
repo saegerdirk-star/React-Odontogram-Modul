@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-3.1.1-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-3.2.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -574,7 +574,15 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 ```
 
 - `session.getDocument()` / `setDocument(doc)` / `subscribe(listener)` is the
-  whole contract; `createOdontogramSession(initial?)` creates one.
+  document contract; `createOdontogramSession(initial?)` creates one. Hosts
+  derive treatment intent from `session.getPlanChanges()` (and may call
+  `session.getPlanChart()` / `getChartMode()` / `setChartMode()`). Module-level
+  `getPlanChanges` / `getPlanChart` / `getChartMode` / `setChartMode` are
+  shell-internal and bind to whichever session currently owns the engine. HKP
+  hosts (MIRA / `cognovis/hkp-engine`) should use the session methods, not the
+  singleton. A Dental Core export of a document with `plan` already emits
+  `CarePlan/plan`, per-tooth `ServiceRequest`s, and planned Observations; the
+  FHIR codec is unchanged.
 - A plain `document` prop instead of `session` makes the instance create and own
   a private session seeded from it.
 - Passing **neither** keeps the historical standalone behaviour: the component

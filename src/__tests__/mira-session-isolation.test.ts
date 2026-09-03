@@ -143,3 +143,187 @@ describe("odontogram-3l1 AC2: UI-domain document contract", () => {
     expect(s.isActive()).toBe(false);
   });
 });
+
+function docWithPlannedCrown(toothNo: number, material: "zircon" | "emax"): OdontogramDocument {
+  return {
+    version: "2.46",
+    globals: {},
+    teeth: {
+      [String(toothNo)]: { toothSelection: "tooth-base", restorationType: "none" },
+    },
+    plan: {
+      [String(toothNo)]: {
+        toothSelection: "tooth-base",
+        restorationType: "crown",
+        restorationMaterial: material,
+      },
+    },
+  };
+}
+
+function restorationChangeFor(session: OdontogramSession, toothNo: number) {
+  return session.getPlanChanges().filter((change) => change.toothNo === toothNo && change.axis === "restoration");
+}
+
+describe("odontogram-082: session-bound plan chart and plan changes", () => {
+  beforeEach(() => {
+    __resetChartStateForTest();
+  });
+
+  it("two sessions return their own plan chart and plan changes regardless of engine ownership", () => {
+    const a = createOdontogramSession(docWithPlannedCrown(16, "zircon"));
+    const b = createOdontogramSession(docWithPlannedCrown(21, "emax"));
+
+    const expectIsolated = () => {
+      expect(a.getPlanChart().teeth["16"].restorationType).toBe("crown");
+      expect(a.getPlanChart().teeth["16"].restorationMaterial).toBe("zircon");
+      expect(a.getPlanChart().teeth["21"]?.restorationType ?? "none").toBe("none");
+      expect(restorationChangeFor(a, 16)).toEqual([
+        expect.objectContaining({ toothNo: 16, axis: "restoration" }),
+      ]);
+      expect(restorationChangeFor(a, 21)).toEqual([]);
+
+      expect(b.getPlanChart().teeth["21"].restorationType).toBe("crown");
+      expect(b.getPlanChart().teeth["21"].restorationMaterial).toBe("emax");
+      expect(b.getPlanChart().teeth["16"]?.restorationType ?? "none").toBe("none");
+      expect(restorationChangeFor(b, 21)).toEqual([
+        expect.objectContaining({ toothNo: 21, axis: "restoration" }),
+      ]);
+      expect(restorationChangeFor(b, 16)).toEqual([]);
+    };
+
+    expect(a.isActive()).toBe(false);
+    expect(b.isActive()).toBe(false);
+    expectIsolated();
+
+    a.activate();
+    expect(a.isActive()).toBe(true);
+    expect(b.isActive()).toBe(false);
+    expectIsolated();
+
+    b.activate();
+    expect(a.isActive()).toBe(false);
+    expect(b.isActive()).toBe(true);
+    expectIsolated();
+
+    b.release();
+    expect(a.isActive()).toBe(true);
+    expectIsolated();
+
+    a.release();
+    expect(a.isActive()).toBe(false);
+    expect(b.isActive()).toBe(false);
+    expectIsolated();
+  });
+
+  it("getPlanChart stays identical across activate for document globals and legacy caries", () => {
+    const session = createOdontogramSession({
+      version: "2.2",
+      globals: { wisdomVisible: false },
+      teeth: {
+        "16": { toothSelection: "tooth-base" },
+      },
+      plan: {
+        "16": {
+          toothSelection: "tooth-base",
+          restorationType: "crown",
+          restorationMaterial: "zircon",
+          caries: ["caries-occlusal"],
+          fillingSurfaceMaterials: { occlusal: "composite" },
+        },
+      },
+    });
+
+    const before = session.getPlanChart();
+    expect(session.isActive()).toBe(false);
+    expect(before.globals.wisdomVisible).toBe(false);
+
+    session.activate();
+    const whileActive = session.getPlanChart();
+    expect(session.isActive()).toBe(true);
+    expect(whileActive).toEqual(before);
+    expect(whileActive.globals.wisdomVisible).toBe(false);
+    expect(whileActive.teeth["16"].cariesSeverity).toEqual(before.teeth["16"].cariesSeverity);
+
+    session.release();
+    const afterRelease = session.getPlanChart();
+    expect(session.isActive()).toBe(false);
+    expect(afterRelease).toEqual(before);
+    expect(afterRelease.globals.wisdomVisible).toBe(false);
+  });
+
+  it("getPlanChart returns detached case and examination copies", () => {
+    const session = createOdontogramSession({
+      version: "2.46",
+      globals: {},
+      teeth: {},
+      plan: {
+        "16": { toothSelection: "tooth-base", restorationType: "crown", restorationMaterial: "zircon" },
+      },
+      case: { age: 54, patientName: "Ada Lovelace" },
+      examination: { id: "exam-1", subject: "Patient/1" },
+    });
+
+    expect(session.isActive()).toBe(false);
+    const first = session.getPlanChart();
+    expect(first.case).toEqual({ age: 54, patientName: "Ada Lovelace" });
+    expect(first.examination).toEqual({ id: "exam-1", subject: "Patient/1" });
+
+    first.case.age = 99;
+    first.case.patientName = "mutated";
+    first.examination.id = "exam-mutated";
+    first.examination.subject = "Patient/mutated";
+
+    const second = session.getPlanChart();
+    expect(second.case).toEqual({ age: 54, patientName: "Ada Lovelace" });
+    expect(second.examination).toEqual({ id: "exam-1", subject: "Patient/1" });
+
+    const doc = session.getDocument();
+    expect(doc.case).toEqual({ age: 54, patientName: "Ada Lovelace" });
+    expect(doc.examination).toEqual({ id: "exam-1", subject: "Patient/1" });
+  });
+
+  it("inactive getPlanChart does not mutate stored plan teeth or leak returned objects", () => {
+    const session = createOdontogramSession({
+      version: "1.4",
+      globals: {},
+      teeth: {},
+      plan: {
+        "16": {
+          toothSelection: "tooth-base",
+          crownMaterial: "zircon",
+          customStates: { "demo-plugin": { lot: "A" } },
+        },
+      },
+    } as OdontogramDocument);
+
+    const storedTooth = session.getDocument().plan!["16"] as Record<string, unknown>;
+    expect(storedTooth.restorationType).toBeUndefined();
+    expect(storedTooth.crownMaterial).toBe("zircon");
+    const customBefore = JSON.parse(JSON.stringify(storedTooth.customStates));
+
+    const first = session.getPlanChart();
+    expect(session.getDocument().plan!["16"]).toEqual({
+      toothSelection: "tooth-base",
+      crownMaterial: "zircon",
+      customStates: { "demo-plugin": { lot: "A" } },
+    });
+    expect((session.getDocument().plan!["16"] as Record<string, unknown>).restorationType).toBeUndefined();
+    expect((session.getDocument().plan!["16"] as Record<string, unknown>).customStates).toEqual(customBefore);
+
+    first.teeth["16"].restorationType = "veneer";
+    first.teeth["16"].customStates = { "demo-plugin": { lot: "mutated" } };
+    if (first.teeth["16"].customStates && typeof first.teeth["16"].customStates === "object") {
+      (first.teeth["16"].customStates as Record<string, unknown>).lot = "mutated";
+    }
+
+    const second = session.getPlanChart();
+    expect(second.teeth["16"].restorationType).not.toBe("veneer");
+    expect(second.teeth["16"].customStates ?? {}).not.toEqual({ "demo-plugin": { lot: "mutated" } });
+    expect(session.getDocument().plan!["16"]).toEqual({
+      toothSelection: "tooth-base",
+      crownMaterial: "zircon",
+      customStates: { "demo-plugin": { lot: "A" } },
+    });
+  });
+});

@@ -983,23 +983,27 @@ function serializeCaseMeta(c: CaseMeta): Record<string, unknown> {
   if(c.examDate !== null) o.examDate = c.examDate;
   return o;
 }
+function readCaseMeta(raw: Any): CaseMeta {
+  const c = defaultCaseMeta();
+  if(!raw || typeof raw !== "object") return c;
+  c.age = clampInt(raw.age, 0, 120);
+  if(VALID_SMOKING.has(raw.smokingStatus)) c.smokingStatus = raw.smokingStatus;
+  c.cigarettesPerDay = clampInt(raw.cigarettesPerDay, 0, 99);
+  if(VALID_DIABETES.has(raw.diabetesStatus)) c.diabetesStatus = raw.diabetesStatus;
+  { const n = Number(raw.hba1c); c.hba1c = Number.isFinite(n) ? Math.max(3, Math.min(20, Math.round(n * 10) / 10)) : null; }
+  c.toothLossPerio = clampInt(raw.toothLossPerio, 0, 32);
+  c.maxRblPercent = clampInt(raw.maxRblPercent, 0, 100);
+  c.diagnosisOverride = VALID_DIAGNOSIS.has(raw.diagnosisOverride) ? raw.diagnosisOverride : null;
+  c.stageOverride = VALID_STAGE.has(raw.stageOverride) ? raw.stageOverride : null;
+  c.gradeOverride = VALID_GRADE.has(raw.gradeOverride) ? raw.gradeOverride : null;
+  c.extentOverride = VALID_EXTENT.has(raw.extentOverride) ? raw.extentOverride : null;
+  c.patientName = (typeof raw.patientName === "string" && raw.patientName.trim() !== "") ? raw.patientName.trim() : null;
+  c.patientDob = (typeof raw.patientDob === "string" && ISO_DATE.test(raw.patientDob.trim())) ? raw.patientDob.trim() : null;
+  c.examDate = (typeof raw.examDate === "string" && ISO_DATE.test(raw.examDate.trim())) ? raw.examDate.trim() : null;
+  return c;
+}
 function hydrateCaseMeta(raw: Any): void {
-  caseMeta = defaultCaseMeta();
-  if(!raw || typeof raw !== "object") return;
-  caseMeta.age = clampInt(raw.age, 0, 120);
-  if(VALID_SMOKING.has(raw.smokingStatus)) caseMeta.smokingStatus = raw.smokingStatus;
-  caseMeta.cigarettesPerDay = clampInt(raw.cigarettesPerDay, 0, 99);
-  if(VALID_DIABETES.has(raw.diabetesStatus)) caseMeta.diabetesStatus = raw.diabetesStatus;
-  { const n = Number(raw.hba1c); caseMeta.hba1c = Number.isFinite(n) ? Math.max(3, Math.min(20, Math.round(n * 10) / 10)) : null; }
-  caseMeta.toothLossPerio = clampInt(raw.toothLossPerio, 0, 32);
-  caseMeta.maxRblPercent = clampInt(raw.maxRblPercent, 0, 100);
-  caseMeta.diagnosisOverride = VALID_DIAGNOSIS.has(raw.diagnosisOverride) ? raw.diagnosisOverride : null;
-  caseMeta.stageOverride = VALID_STAGE.has(raw.stageOverride) ? raw.stageOverride : null;
-  caseMeta.gradeOverride = VALID_GRADE.has(raw.gradeOverride) ? raw.gradeOverride : null;
-  caseMeta.extentOverride = VALID_EXTENT.has(raw.extentOverride) ? raw.extentOverride : null;
-  caseMeta.patientName = (typeof raw.patientName === "string" && raw.patientName.trim() !== "") ? raw.patientName.trim() : null;
-  caseMeta.patientDob = (typeof raw.patientDob === "string" && ISO_DATE.test(raw.patientDob.trim())) ? raw.patientDob.trim() : null;
-  caseMeta.examDate = (typeof raw.examDate === "string" && ISO_DATE.test(raw.examDate.trim())) ? raw.examDate.trim() : null;
+  caseMeta = readCaseMeta(raw);
 }
 /** P4a Task 2: builds the compact, labelled case-context fragment
  *  (e.g. "Age 54 · current smoker (12/day) · diabetic (HbA1c 7.8%) · max
@@ -1436,8 +1440,12 @@ export function commitBaselineCorrection(): boolean {
 // plan edits are never silently overwritten by re-cloning from status).
 let planInitialized = false;
 
+function readLiveChartMode(): ChartMode { return chartMode; }
+
 /** Current active chart mode ("status" | "plan"). */
-export function getChartMode(): ChartMode { return chartMode; }
+export function getChartMode(): ChartMode {
+  return getActiveOdontogramSession().getChartMode();
+}
 
 /** Deep-copy every tooth from `src` into `dst` via the proven
  *  serializeState/hydrateState round-trip, so the two charts never share
@@ -1632,7 +1640,7 @@ function syncChartModeUi(): void {
  *
  * @param mode - "status" or "plan"; any other value is ignored.
  */
-export function setChartMode(mode: ChartMode): void {
+function applyLiveChartMode(mode: ChartMode): void {
   if(mode !== "status" && mode !== "plan") return;
   if(mode === chartMode) return;
   if(mode === "plan" && !planInitialized){
@@ -1656,6 +1664,10 @@ export function setChartMode(mode: ChartMode): void {
   if(activeTooth) syncControlsFromState(toothState.get(activeTooth));
   notifyStateChange();
   syncChartModeUi();
+}
+
+export function setChartMode(mode: ChartMode): void {
+  getActiveOdontogramSession().setChartMode(mode);
 }
 
 const toothSvgRoot = new Map(); // toothNo -> [svg elements]
@@ -5111,6 +5123,7 @@ export function __resetChartStateForTest(): void {
   // any restore stack or ownership claim, so one test's sessions cannot leak
   // into the next.
   activeSession = defaultSession;
+  defaultSession.storedChartMode = "status";
   sessionStack.length = 0;
   engineOwner = null;
   engineWaiters.length = 0;
@@ -9839,7 +9852,7 @@ export function getStatusChart(): Any {
  * (`{version, globals, teeth}`), but `teeth` is collected from `charts.plan`.
  * `globals` are shared app-level settings, not owned by either chart.
  */
-export function getPlanChart(): Any {
+function readLivePlanChart(): Any {
   return {
     version: PAYLOAD_VERSION,
     globals: collectGlobals(),
@@ -9848,6 +9861,51 @@ export function getPlanChart(): Any {
     ...(examinationContextIsEmpty(examinationContext)
       ? {} : { examination: serializeExaminationContext(examinationContext) }),
   };
+}
+
+function toothRaw(teeth: Record<string, unknown> | undefined, toothNo: number): Any {
+  if(!teeth || typeof teeth !== "object") return {};
+  const raw = (teeth as Any)[toothNo] ?? (teeth as Any)[String(toothNo)] ?? {};
+  if(!raw || typeof raw !== "object") return {};
+  // `hydrateState` writes legacy migrations onto `raw`. Clone so an inactive
+  // plan-chart read cannot mutate the session document.
+  return JSON.parse(JSON.stringify(raw));
+}
+
+function chartFromTeeth(teeth: Record<string, unknown> | undefined, inferLegacySecondaryCaries: boolean): Map<Any, Any> {
+  const chart = new Map();
+  for(const toothNo of ALL_TEETH){
+    chart.set(toothNo, hydrateState(toothRaw(teeth, toothNo), inferLegacySecondaryCaries));
+  }
+  return chart;
+}
+
+function documentGlobals(doc: OdontogramDocument): Record<string, boolean> {
+  return {
+    wisdomVisible: doc.globals?.wisdomVisible ?? true,
+    showBase: doc.globals?.showBase ?? true,
+    occlusalVisible: doc.globals?.occlusalVisible ?? true,
+    showHealthyPulp: doc.globals?.showHealthyPulp ?? true,
+    edentulous: doc.globals?.edentulous ?? false,
+  };
+}
+
+function planChartFromDocument(doc: OdontogramDocument): Any {
+  const inferLegacySecondaryCaries = isLegacyPayloadVersion(doc.version);
+  const planTeeth = doc.plan && typeof doc.plan === "object" ? doc.plan : undefined;
+  const caseBlock = readCaseMeta(doc.case);
+  const examination = readExaminationContext(doc.examination);
+  return JSON.parse(JSON.stringify({
+    version: PAYLOAD_VERSION,
+    globals: documentGlobals(doc),
+    teeth: collectTeeth(chartFromTeeth(planTeeth, inferLegacySecondaryCaries)),
+    ...(caseMetaIsEmpty(caseBlock) ? {} : { case: serializeCaseMeta(caseBlock) }),
+    ...(examinationContextIsEmpty(examination) ? {} : { examination: serializeExaminationContext(examination) }),
+  }));
+}
+
+export function getPlanChart(): Any {
+  return getActiveOdontogramSession().getPlanChart();
 }
 
 /**
@@ -10088,12 +10146,11 @@ const DIFF_AXES: { key: string; labelKey: string; label: (s: Any) => string }[] 
  * rest of the app already uses (quadrant-by-quadrant); within a tooth,
  * entries follow `DIFF_AXES` order.
  */
-export function getPlanChanges(): PlanChange[] {
-  if(!planInitialized) return [];
+function planChangesFromCharts(statusChart: Map<Any, Any>, planChart: Map<Any, Any>): PlanChange[] {
   const out: PlanChange[] = [];
   for(const toothNo of ALL_TEETH){
-    const st = charts.status.get(toothNo) ?? defaultState();
-    const pl = charts.plan.get(toothNo) ?? defaultState();
+    const st = statusChart.get(toothNo) ?? defaultState();
+    const pl = planChart.get(toothNo) ?? defaultState();
     for(const axis of DIFF_AXES){
       const from = axis.label(st);
       const to = axis.label(pl);
@@ -10101,6 +10158,24 @@ export function getPlanChanges(): PlanChange[] {
     }
   }
   return out;
+}
+
+function readLivePlanChanges(): PlanChange[] {
+  if(!planInitialized) return [];
+  return planChangesFromCharts(charts.status, charts.plan);
+}
+
+function planChangesFromDocument(doc: OdontogramDocument): PlanChange[] {
+  if(!doc.plan || typeof doc.plan !== "object") return [];
+  const inferLegacySecondaryCaries = isLegacyPayloadVersion(doc.version);
+  return planChangesFromCharts(
+    chartFromTeeth(doc.teeth, inferLegacySecondaryCaries),
+    chartFromTeeth(doc.plan, inferLegacySecondaryCaries),
+  );
+}
+
+export function getPlanChanges(): PlanChange[] {
+  return getActiveOdontogramSession().getPlanChanges();
 }
 
 // ---- Bead odontogram-sjr: choosable restoration colours ----
@@ -15935,6 +16010,14 @@ export interface OdontogramSession {
   exportFhirBundle(options?: FhirExportOptions): Bundle;
   /** Import Dental Core without replacing state on rejection. */
   importFhirBundle(input: unknown): boolean;
+  /** This session's chart mode. Works without claiming the engine. */
+  getChartMode(): ChartMode;
+  /** Record or apply chart mode for this session. */
+  setChartMode(mode: ChartMode): void;
+  /** This session's plan-chart payload. Works without claiming the engine. */
+  getPlanChart(): Any;
+  /** This session's status-vs-plan diff. `[]` until a plan exists. */
+  getPlanChanges(): PlanChange[];
 }
 
 export interface OdontogramSessionFhirConfiguration {
@@ -16001,6 +16084,10 @@ function loadLiveDocument(doc: OdontogramDocument): void {
   // session and be read as belonging to the incoming one.
   const globals = doc && typeof doc === "object" ? doc.globals : undefined;
   const edentulousNext = typeof globals?.edentulous === "boolean" ? globals.edentulous : false;
+  const wisdomNext = typeof globals?.wisdomVisible === "boolean" ? globals.wisdomVisible : true;
+  const showBaseNext = typeof globals?.showBase === "boolean" ? globals.showBase : true;
+  const occlusalNext = typeof globals?.occlusalVisible === "boolean" ? globals.occlusalVisible : true;
+  const pulpNext = typeof globals?.showHealthyPulp === "boolean" ? globals.showHealthyPulp : true;
   // `initialized` alone is not enough: a session is released during the owning
   // React instance's unmount, when the flag is still set but the control-panel
   // DOM has already gone. Probe the grid itself instead.
@@ -16009,14 +16096,22 @@ function loadLiveDocument(doc: OdontogramDocument): void {
     edentulous = edentulousNext;
     if(domReady) setToggleButton($("#btnEdentulous"), edentulous);
   }
+  if(!domReady){
+    // Headless activate still has to land the incoming document's view flags on
+    // the engine: `getPlanChart()` reads `collectGlobals()` while live, and AC1
+    // requires that result to match the inactive, document-derived payload.
+    wisdomVisible = wisdomNext;
+    showBase = showBaseNext;
+    occlusalVisible = occlusalNext;
+    showHealthyPulp = pulpNext;
+  }
   if(domReady){
-    // The remaining globals are VIEW flags whose setters drive the live control
-    // panel, so they are applied only with a mounted grid — `edentulous` above
-    // is the clinical one and travels regardless.
-    if(typeof globals?.wisdomVisible === "boolean") setWisdomVisible(globals.wisdomVisible);
-    if(typeof globals?.showBase === "boolean") setShowBase(globals.showBase);
-    if(typeof globals?.occlusalVisible === "boolean") setOcclusalVisible(globals.occlusalVisible);
-    if(typeof globals?.showHealthyPulp === "boolean") setHealthyPulpVisible(globals.showHealthyPulp);
+    // Apply the same resolved defaults as `documentGlobals()` / the headless
+    // branch. A sparse `globals: {}` must not inherit the outgoing session.
+    setWisdomVisible(wisdomNext);
+    setShowBase(showBaseNext);
+    setOcclusalVisible(occlusalNext);
+    setHealthyPulpVisible(pulpNext);
     for(const toothNo of ALL_TEETH){
       applyStateToSvg(toothNo);
       updateToothTileNumber(toothNo);
@@ -16037,12 +16132,16 @@ class ClinicalSession implements OdontogramSession {
    *  the engine's own state is the single source of truth.
    *  @internal — module-private; not part of the public session contract. */
   stored: OdontogramDocument;
+  /** Chart mode while this session is NOT live. Applied on the next activate.
+   *  @internal — module-private; not part of the public session contract. */
+  storedChartMode: ChartMode = "status";
   private liveFhirIdentity: OdontogramDocument["fhirIdentity"];
   private readonly listeners = new Set<(doc: OdontogramDocument) => void>();
 
   constructor(initial?: OdontogramDocument | null, id?: string, options?: OdontogramSessionOptions){
     this.id = id ?? `odontogram-session-${++sessionCounter}`;
     this.stored = initial ? cloneDocument(initial) : blankDocument();
+    this.storedChartMode = "status";
     this.liveFhirIdentity = undefined;
     const exportOptions = options?.fhir?.exportOptions;
     this.fhir = Object.freeze({
@@ -16063,6 +16162,7 @@ class ClinicalSession implements OdontogramSession {
 
   setDocument(doc: OdontogramDocument | null | undefined): void {
     const next = doc && typeof doc === "object" ? cloneDocument(doc) : blankDocument();
+    this.storedChartMode = "status";
     if(this.isActive()){
       this.stored = next;
       loadLiveDocument(next);
@@ -16104,6 +16204,28 @@ class ClinicalSession implements OdontogramSession {
     }
   }
 
+  getChartMode(): ChartMode {
+    return this.isActive() ? readLiveChartMode() : this.storedChartMode;
+  }
+
+  setChartMode(mode: ChartMode): void {
+    if(mode !== "status" && mode !== "plan") return;
+    if(this.isActive()){
+      applyLiveChartMode(mode);
+      this.storedChartMode = readLiveChartMode();
+      return;
+    }
+    this.storedChartMode = mode;
+  }
+
+  getPlanChart(): Any {
+    return this.isActive() ? readLivePlanChart() : planChartFromDocument(this.stored);
+  }
+
+  getPlanChanges(): PlanChange[] {
+    return this.isActive() ? readLivePlanChanges() : planChangesFromDocument(this.stored);
+  }
+
   /** Internal: fan a change out to this session's own subscribers only. */
   notify(): void {
     if(this.listeners.size === 0) return;
@@ -16129,9 +16251,11 @@ function synchronizeActiveFhirIdentity(identity: OdontogramDocument["fhirIdentit
 function activateSession(next: ClinicalSession): void {
   if(activeSession === next) return;
   activeSession.stored = activeSession.getDocument();
+  activeSession.storedChartMode = readLiveChartMode();
   sessionStack.push(activeSession);
   activeSession = next;
   loadLiveDocument(next.stored);
+  applyLiveChartMode(next.storedChartMode);
   notifyStateChange();
 }
 
@@ -16147,8 +16271,10 @@ function releaseSession(session: ClinicalSession): void {
   const previous = sessionStack.pop();
   if(!previous) return; // the default session is never released
   session.stored = session.getDocument();
+  session.storedChartMode = readLiveChartMode();
   activeSession = previous;
   loadLiveDocument(previous.stored);
+  applyLiveChartMode(previous.storedChartMode);
   notifyStateChange();
 }
 

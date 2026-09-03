@@ -15,7 +15,7 @@ import {
 export {
   createOdontogramSession, getDefaultOdontogramSession, getActiveOdontogramSession,
 } from "./odontogram";
-export type { OdontogramSession, OdontogramDocument, OdontogramSessionFhirConfiguration, OdontogramSessionOptions } from "./odontogram";
+export type { OdontogramSession, OdontogramDocument, OdontogramSessionFhirConfiguration, OdontogramSessionOptions, ChartMode, PlanChange } from "./odontogram";
 // Bead odontogram-2vd: examination identity, dated examination snapshots, and
 // the explicit periodontal assessment status (assessed-normal / not assessed /
 // unmeasurable / not applicable).
