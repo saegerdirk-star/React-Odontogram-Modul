@@ -9865,7 +9865,11 @@ function readLivePlanChart(): Any {
 
 function toothRaw(teeth: Record<string, unknown> | undefined, toothNo: number): Any {
   if(!teeth || typeof teeth !== "object") return {};
-  return (teeth as Any)[toothNo] ?? (teeth as Any)[String(toothNo)] ?? {};
+  const raw = (teeth as Any)[toothNo] ?? (teeth as Any)[String(toothNo)] ?? {};
+  if(!raw || typeof raw !== "object") return {};
+  // `hydrateState` writes legacy migrations onto `raw`. Clone so an inactive
+  // plan-chart read cannot mutate the session document.
+  return JSON.parse(JSON.stringify(raw));
 }
 
 function chartFromTeeth(teeth: Record<string, unknown> | undefined, inferLegacySecondaryCaries: boolean): Map<Any, Any> {
@@ -9891,13 +9895,13 @@ function planChartFromDocument(doc: OdontogramDocument): Any {
   const planTeeth = doc.plan && typeof doc.plan === "object" ? doc.plan : undefined;
   const caseBlock = readCaseMeta(doc.case);
   const examination = readExaminationContext(doc.examination);
-  return {
+  return JSON.parse(JSON.stringify({
     version: PAYLOAD_VERSION,
     globals: documentGlobals(doc),
     teeth: collectTeeth(chartFromTeeth(planTeeth, inferLegacySecondaryCaries)),
     ...(caseMetaIsEmpty(caseBlock) ? {} : { case: serializeCaseMeta(caseBlock) }),
     ...(examinationContextIsEmpty(examination) ? {} : { examination: serializeExaminationContext(examination) }),
-  };
+  }));
 }
 
 export function getPlanChart(): Any {
@@ -16080,6 +16084,10 @@ function loadLiveDocument(doc: OdontogramDocument): void {
   // session and be read as belonging to the incoming one.
   const globals = doc && typeof doc === "object" ? doc.globals : undefined;
   const edentulousNext = typeof globals?.edentulous === "boolean" ? globals.edentulous : false;
+  const wisdomNext = typeof globals?.wisdomVisible === "boolean" ? globals.wisdomVisible : true;
+  const showBaseNext = typeof globals?.showBase === "boolean" ? globals.showBase : true;
+  const occlusalNext = typeof globals?.occlusalVisible === "boolean" ? globals.occlusalVisible : true;
+  const pulpNext = typeof globals?.showHealthyPulp === "boolean" ? globals.showHealthyPulp : true;
   // `initialized` alone is not enough: a session is released during the owning
   // React instance's unmount, when the flag is still set but the control-panel
   // DOM has already gone. Probe the grid itself instead.
@@ -16092,19 +16100,18 @@ function loadLiveDocument(doc: OdontogramDocument): void {
     // Headless activate still has to land the incoming document's view flags on
     // the engine: `getPlanChart()` reads `collectGlobals()` while live, and AC1
     // requires that result to match the inactive, document-derived payload.
-    wisdomVisible = typeof globals?.wisdomVisible === "boolean" ? globals.wisdomVisible : true;
-    showBase = typeof globals?.showBase === "boolean" ? globals.showBase : true;
-    occlusalVisible = typeof globals?.occlusalVisible === "boolean" ? globals.occlusalVisible : true;
-    showHealthyPulp = typeof globals?.showHealthyPulp === "boolean" ? globals.showHealthyPulp : true;
+    wisdomVisible = wisdomNext;
+    showBase = showBaseNext;
+    occlusalVisible = occlusalNext;
+    showHealthyPulp = pulpNext;
   }
   if(domReady){
-    // The remaining globals are VIEW flags whose setters drive the live control
-    // panel, so they are applied only with a mounted grid — `edentulous` above
-    // is the clinical one and travels regardless.
-    if(typeof globals?.wisdomVisible === "boolean") setWisdomVisible(globals.wisdomVisible);
-    if(typeof globals?.showBase === "boolean") setShowBase(globals.showBase);
-    if(typeof globals?.occlusalVisible === "boolean") setOcclusalVisible(globals.occlusalVisible);
-    if(typeof globals?.showHealthyPulp === "boolean") setHealthyPulpVisible(globals.showHealthyPulp);
+    // Apply the same resolved defaults as `documentGlobals()` / the headless
+    // branch. A sparse `globals: {}` must not inherit the outgoing session.
+    setWisdomVisible(wisdomNext);
+    setShowBase(showBaseNext);
+    setOcclusalVisible(occlusalNext);
+    setHealthyPulpVisible(pulpNext);
     for(const toothNo of ALL_TEETH){
       applyStateToSvg(toothNo);
       updateToothTileNumber(toothNo);

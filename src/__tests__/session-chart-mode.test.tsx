@@ -137,4 +137,49 @@ describe("odontogram-082 AC2: session setChartMode and the mounted shell", () =>
     expect(sessionB.getChartMode()).toBe("plan");
     expectPlanToggle(true);
   }, FRIST);
+
+  it("mounted handover keeps getPlanChart globals identical for a sparse incoming document", async () => {
+    const sessionA = createOdontogramSession({
+      version: "2.46",
+      globals: { wisdomVisible: false },
+      teeth: {},
+      plan: {
+        "16": { toothSelection: "tooth-base", restorationType: "crown", restorationMaterial: "zircon" },
+      },
+    });
+    const sessionB = createOdontogramSession({
+      version: "2.46",
+      globals: {},
+      teeth: {},
+      plan: {
+        "21": { toothSelection: "tooth-base", restorationType: "crown", restorationMaterial: "emax" },
+      },
+    });
+
+    render(<OdontogramShell session={sessionA} />);
+    await waitFor(() => {
+      expect(document.querySelector("#toothGrid")).not.toBeNull();
+      expect(document.querySelectorAll("#toothGrid .tooth-tile").length).toBeGreaterThan(0);
+    });
+
+    const beforeB = sessionB.getPlanChart();
+    expect(sessionB.isActive()).toBe(false);
+    expect(beforeB.globals).toEqual({
+      wisdomVisible: true,
+      showBase: true,
+      occlusalVisible: true,
+      showHealthyPulp: true,
+      edentulous: false,
+    });
+    expect(sessionA.getPlanChart().globals.wisdomVisible).toBe(false);
+
+    await act(async () => {
+      sessionB.activate();
+    });
+
+    expect(sessionB.isActive()).toBe(true);
+    expect(document.querySelector("#toothGrid")).not.toBeNull();
+    expect(sessionB.getPlanChart().globals).toEqual(beforeB.globals);
+    expect(sessionB.getPlanChart().globals.wisdomVisible).toBe(true);
+  }, FRIST);
 });

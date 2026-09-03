@@ -282,4 +282,48 @@ describe("odontogram-082: session-bound plan chart and plan changes", () => {
     expect(doc.case).toEqual({ age: 54, patientName: "Ada Lovelace" });
     expect(doc.examination).toEqual({ id: "exam-1", subject: "Patient/1" });
   });
+
+  it("inactive getPlanChart does not mutate stored plan teeth or leak returned objects", () => {
+    const session = createOdontogramSession({
+      version: "1.4",
+      globals: {},
+      teeth: {},
+      plan: {
+        "16": {
+          toothSelection: "tooth-base",
+          crownMaterial: "zircon",
+          customStates: { "demo-plugin": { lot: "A" } },
+        },
+      },
+    } as OdontogramDocument);
+
+    const storedTooth = session.getDocument().plan!["16"] as Record<string, unknown>;
+    expect(storedTooth.restorationType).toBeUndefined();
+    expect(storedTooth.crownMaterial).toBe("zircon");
+    const customBefore = JSON.parse(JSON.stringify(storedTooth.customStates));
+
+    const first = session.getPlanChart();
+    expect(session.getDocument().plan!["16"]).toEqual({
+      toothSelection: "tooth-base",
+      crownMaterial: "zircon",
+      customStates: { "demo-plugin": { lot: "A" } },
+    });
+    expect((session.getDocument().plan!["16"] as Record<string, unknown>).restorationType).toBeUndefined();
+    expect((session.getDocument().plan!["16"] as Record<string, unknown>).customStates).toEqual(customBefore);
+
+    first.teeth["16"].restorationType = "veneer";
+    first.teeth["16"].customStates = { "demo-plugin": { lot: "mutated" } };
+    if (first.teeth["16"].customStates && typeof first.teeth["16"].customStates === "object") {
+      (first.teeth["16"].customStates as Record<string, unknown>).lot = "mutated";
+    }
+
+    const second = session.getPlanChart();
+    expect(second.teeth["16"].restorationType).not.toBe("veneer");
+    expect(second.teeth["16"].customStates ?? {}).not.toEqual({ "demo-plugin": { lot: "mutated" } });
+    expect(session.getDocument().plan!["16"]).toEqual({
+      toothSelection: "tooth-base",
+      crownMaterial: "zircon",
+      customStates: { "demo-plugin": { lot: "A" } },
+    });
+  });
 });
