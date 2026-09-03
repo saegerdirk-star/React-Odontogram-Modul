@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.1.1 - 2026-09-02
+
+### Auswahl-Performance: ~1s Lag pro Klick beseitigt (odontogram-szc)
+
+Jede Auswahländerung (Klick, Cmd/Strg-Klick, Ziehen, Tab, Pfeiltasten) rief
+`setControlsEnabled`, das für JEDES der ~200 Bedien-Controls eine
+**dokumentweite** `querySelector('label[for=…]')`-Suche über das ~6400-Knoten-
+Grid machte — ~800 ms pro Auswahländerung (im Browser ein spürbarer Lag, in
+jsdom ~1 s). `getControlLabel` cached die Zuordnung jetzt pro Control-Element
+(sie ändert sich nie); zusätzlich baut `setSelectOptions` die `<option>`-Listen
+nur noch bei echter Änderung neu (Signatur-Vergleich) und `setControlsEnabled`
+scannt nur noch den Panel-Teilbaum. Messung: ~1012 ms → ~113 ms pro Cmd-Klick,
+Test „Totalprothese" 45 s → 9 s, gesamte Test-Suite ~140 s → ~80 s. Reiner
+Performance-Fix, kein Verhaltens-/Payload-/FHIR-/Render-Wandel.
+
 ## 3.1.0 - 2026-09-02
 
 ### Isolated Reetfurt live mode

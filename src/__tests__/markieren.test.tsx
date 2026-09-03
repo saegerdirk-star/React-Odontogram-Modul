@@ -99,28 +99,28 @@ describe("Markieren durch Ziehen", () => {
     const x = zeigerAuf([16, 15, 14, 13]);
     await ziehe(16, 13, x);
     expect(markiert()).toEqual([13, 14, 15, 16]);
-  }, 60000);
+  }, 30000);
 
   it("zieht in beide Richtungen gleich", async () => {
     await raster();
     const x = zeigerAuf([16, 15, 14, 13]);
     await ziehe(13, 16, x);
     expect(markiert()).toEqual([13, 14, 15, 16]);
-  }, 60000);
+  }, 30000);
 
   it("geht ueber die Mitte", async () => {
     await raster();
     const x = zeigerAuf([13, 12, 11, 21, 22, 23]);
     await ziehe(13, 23, x);
     expect(markiert()).toEqual([11, 12, 13, 21, 22, 23]);
-  }, 60000);
+  }, 30000);
 
   it("greift nicht in den Gegenkiefer", async () => {
     await raster();
     const x = zeigerAuf([16, 46]);
     await ziehe(16, 46, x);
     expect(markiert()).toEqual([16]);
-  }, 60000);
+  }, 30000);
 
   it("ersetzt die Auswahl, mit Shift kommt sie dazu", async () => {
     await raster();
@@ -131,7 +131,7 @@ describe("Markieren durch Ziehen", () => {
     expect(markiert()).toEqual([25, 26]);
     await ziehe(16, 15, x, { shift: true });      // mit Shift: kommt dazu
     expect(markiert()).toEqual([15, 16, 25, 26]);
-  }, 60000);
+  }, 30000);
 
   it("ein Klick bleibt ein Klick - unterhalb der Schwelle keine Spanne", async () => {
     await raster();
@@ -143,7 +143,7 @@ describe("Markieren durch Ziehen", () => {
       kachel(16).dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     expect(markiert()).toEqual([16]);
-  }, 60000);
+  }, 30000);
 
   it("Escape waehrend des Ziehens stellt die vorherige Auswahl wieder her", async () => {
     await raster();
@@ -157,7 +157,7 @@ describe("Markieren durch Ziehen", () => {
       document.dispatchEvent(new MouseEvent("pointerup", { bubbles: true }));
     });
     expect(markiert()).toEqual([]);
-  }, 60000);
+  }, 30000);
 });
 
 describe("Markieren mit Shift und Pfeiltaste", () => {
@@ -173,7 +173,7 @@ describe("Markieren mit Shift und Pfeiltaste", () => {
       });
     }
     expect(markiert()).toEqual([13, 14, 15, 16]);
-  }, 60000);
+  }, 30000);
 
   it("zurueck verkleinert die Spanne wieder, weil das ferne Ende steht", async () => {
     await raster();
@@ -191,7 +191,7 @@ describe("Markieren mit Shift und Pfeiltaste", () => {
     expect(markiert()).toEqual([14, 15, 16]);
     await pfeil("ArrowLeft");
     expect(markiert()).toEqual([15, 16]);
-  }, 60000);
+  }, 30000);
 
   it("eine Pfeiltaste ohne Shift laesst die Auswahl in Ruhe", async () => {
     await raster();
@@ -203,5 +203,5 @@ describe("Markieren mit Shift und Pfeiltaste", () => {
       }));
     });
     expect(markiert()).toEqual([16]);
-  }, 60000);
+  }, 30000);
 });

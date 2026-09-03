@@ -2319,12 +2319,17 @@ function updateWarnings(state: Any){
 
 function getControlLabel(control: Any){
   if(!control) return null;
-  const wrapped = control.closest ? control.closest("label") : null;
-  if(wrapped) return wrapped;
-  if(control.id){
-    return document.querySelector(`label[for="${control.id}"]`);
-  }
-  return null;
+  // Cache the control→label association on the element. A control's label never
+  // moves for the element's lifetime, but the `for=` branch below is a
+  // DOCUMENT-WIDE querySelector, and setControlsEnabled runs it for ~200 controls
+  // on every selection change — ~800ms over the ~6400-node grid DOM in jsdom, a
+  // real per-click lag in the browser too (bead odontogram-szc). Fresh nodes
+  // (grid/panel rebuild) have no cache and recompute once.
+  if(control.__labelEl !== undefined) return control.__labelEl;
+  let label = control.closest ? control.closest("label") : null;
+  if(!label && control.id) label = document.querySelector(`label[for="${control.id}"]`);
+  control.__labelEl = label ?? null;
+  return control.__labelEl;
 }
 
 function syncControlLabelVisibility(control: Any){
@@ -2545,26 +2550,40 @@ function updateAllToothTileNumbers(){
 // change handler, the state model and the payload know nothing about it.
 function setSelectOptions(selectEl: Any, options: Any, value: Any){
   if(!selectEl) return;
-  selectEl.innerHTML = "";
-  let group: Any = null;
-  let groupLabel: string | null = null;
-  for(const opt of options){
-    const o = el("option", { value: opt.value, text: opt.label });
-    if(opt.title) o.title = opt.title;
-    if(opt.group){
-      if(opt.group !== groupLabel){
-        group = el("optgroup", { label: opt.group });
-        groupLabel = opt.group;
-        selectEl.appendChild(group);
+  // Rebuild the <option> DOM only when the option SET actually changed. On a
+  // selection change almost every one of the ~30 selects gets the same options
+  // it already had and only a new value — and clearing `innerHTML` + recreating
+  // every <option>/<optgroup> for all of them cost ~950ms per selection in
+  // jsdom, a visible lag in the browser too (bead odontogram-szc). The options
+  // depend on the language and on state predicates (e.g. getRootOptions), so a
+  // signature over value/label/group/title catches every real change; setting
+  // the value stays cheap and runs every time. `__optSig` is a runtime expando
+  // on the element, discarded when the grid is rebuilt with fresh nodes.
+  const sig = options.map((o: Any) =>
+    `${o.value}\u0001${o.label}\u0001${o.group ?? ""}\u0001${o.title ?? ""}`).join("\u0002");
+  if(selectEl.__optSig !== sig){
+    selectEl.__optSig = sig;
+    selectEl.innerHTML = "";
+    let group: Any = null;
+    let groupLabel: string | null = null;
+    for(const opt of options){
+      const o = el("option", { value: opt.value, text: opt.label });
+      if(opt.title) o.title = opt.title;
+      if(opt.group){
+        if(opt.group !== groupLabel){
+          group = el("optgroup", { label: opt.group });
+          groupLabel = opt.group;
+          selectEl.appendChild(group);
+        }
+        group.appendChild(o);
+        continue;
       }
-      group.appendChild(o);
-      continue;
+      group = null;
+      groupLabel = null;
+      selectEl.appendChild(o);
     }
-    group = null;
-    groupLabel = null;
-    selectEl.appendChild(o);
   }
-  if(options.some(o => o.value === value)){
+  if(options.some((o: Any) => o.value === value)){
     selectEl.value = value;
   }else{
     selectEl.value = options[0]?.value ?? "";
@@ -6768,9 +6787,17 @@ function updateSelectionFilterButtons(){
 }
 
 function setControlsEnabled(enabled: Any){
-  $$(".panel-body input, .panel-body select").forEach(el => {
-    if(el.id === "statusExtraSelect") return;
-    setDisabled(el, !enabled);
+  // Scope the walk to the panel SUBTREE. The old
+  // `$$(".panel-body input, .panel-body select")` is a descendant selector
+  // evaluated against the WHOLE document, so it traversed the ~6400 grid SVG
+  // nodes too — ~800ms on every selection change (bead odontogram-szc). Matching
+  // "input, select" WITHIN each .panel-body is the identical set at a fraction of
+  // the cost. `$$(".panel-body")` is a plain class match, not a descendant scan.
+  $$(".panel-body").forEach(panel => {
+    (panel as HTMLElement).querySelectorAll("input, select").forEach(el => {
+      if((el as HTMLElement).id === "statusExtraSelect") return;
+      setDisabled(el, !enabled);
+    });
   });
 }
 

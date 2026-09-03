@@ -115,7 +115,7 @@ describe("Kurzschrift auf der Tastatur", () => {
     }
     // Ein nicht markierter Zahn bleibt unberuehrt.
     expect(zahn(24).restorationType ?? "none").toBe("none");
-  }, 180000);
+  }, 90000);
 
   it("Tabulator geht zum naechsten Zahn und nimmt die Auswahl mit", async () => {
     await raster();
@@ -126,7 +126,7 @@ describe("Kurzschrift auf der Tastatur", () => {
     expect(kachel(16).classList.contains("active")).toBe(false);
     await taste("Tab", { shift: true });
     expect(kachel(16).classList.contains("active")).toBe(true);
-  }, 180000);
+  }, 90000);
 
   it("k, Tabulator, b - Krone und Brueckenglied am Nachbarn", async () => {
     await raster();
@@ -139,7 +139,7 @@ describe("Kurzschrift auf der Tastatur", () => {
     expect(zahn(16).restorationMaterial).toBe("gold");
     expect(zahn(15).toothSelection).toBe("none");
     expect(zahn(15).restorationType).toBe("bridge");
-  }, 180000);
+  }, 90000);
 
   it("eine Flaechenkette wird erst mit dem Tabulator wirksam, dann als EINE Fuellung", async () => {
     await raster();
@@ -151,7 +151,7 @@ describe("Kurzschrift auf der Tastatur", () => {
     await taste("Tab");
     const flaechen = zahn(36).fillingSurfaces as string[];
     expect(new Set(flaechen)).toEqual(new Set(["mesial", "occlusal", "distal"]));
-  }, 180000);
+  }, 90000);
 
   it("Totalprothese: alles markiert, ein e", async () => {
     await raster();
@@ -170,12 +170,13 @@ describe("Kurzschrift auf der Tastatur", () => {
       expect(zahn(t).prosthesis, `${t}`).toBe("removable-full");
       expect(zahn(t).toothSelection, `${t}`).toBe("none");
     }
-    // 90 Sekunden, nicht 40. Der Test klickt achtundzwanzig Kacheln EINZELN
-    // durch `act()` und rendert danach das ganze Raster neu; allein braucht er
-    // rund 42 Sekunden, unter der Last des vollen Laufs mehr. Gemessen am
-    // 21.08.2026 faellt er bei 40 Sekunden auch OHNE jede Aenderung - die
-    // Grenze war zu knapp gesetzt, nicht der Test zu langsam geworden.
-  }, 180000);
+    // Der Test klickt achtundzwanzig Kacheln EINZELN durch `act()` und rendert
+    // danach das ganze Raster neu. Bis odontogram-szc kostete jede Auswahl-
+    // aenderung ~1s (setControlsEnabled rief pro Control eine dokumentweite
+    // Label-Query ueber das ~6400-Knoten-Grid), sodass allein die Klicks ~42s
+    // brauchten; seit dem gecachten getControlLabel sind es ~9s. Die 90s bleiben
+    // als grosszuegige Reserve fuer den Grid-Aufbau unter der Last des CI-Laufs.
+  }, 90000);
 
   it("sagt es, wenn eine Taste nichts bewirkt hat", async () => {
     await raster();
@@ -191,7 +192,7 @@ describe("Kurzschrift auf der Tastatur", () => {
     expect(anzeige()?.classList.contains("notice")).toBe(true);
     expect(anzeige()?.textContent ?? "").toContain("z");
     expect(anzeige()?.classList.contains("empty")).toBe(false);
-  }, 180000);
+  }, 90000);
 
   it("meldet einen Tippfehler getrennt vom noch Fehlenden", async () => {
     await raster();
@@ -205,7 +206,7 @@ describe("Kurzschrift auf der Tastatur", () => {
     // (Die Testumgebung laeuft auf Englisch.)
     expect(text).toContain("Unknown");
     expect(text).not.toContain("Not chartable");
-  }, 180000);
+  }, 90000);
 
   it("Escape raeumt den Puffer, bevor es die Auswahl raeumt", async () => {
     await raster();
@@ -216,5 +217,5 @@ describe("Kurzschrift auf der Tastatur", () => {
     expect(kachel(16).classList.contains("active")).toBe(true);
     await taste("Escape");
     expect(kachel(16).classList.contains("active")).toBe(false);
-  }, 180000);
+  }, 90000);
 });
