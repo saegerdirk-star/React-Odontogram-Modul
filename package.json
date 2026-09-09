@@ -30,7 +30,8 @@
     "**/*.css"
   ],
   "publishConfig": {
-    "registry": "https://npm.cognovis.de/"
+    "registry": "https://npm.cognovis.de/",
+    "access": "public"
   },
   "files": [
     "dist"
