@@ -2,25 +2,25 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { Attachment } from "../hl7-fhir-r4-core/Attachment";
-import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource";
-import type { Identifier } from "../hl7-fhir-r4-core/Identifier";
-import type { Quantity } from "../hl7-fhir-r4-core/Quantity";
-import type { Range } from "../hl7-fhir-r4-core/Range";
-import type { Ratio } from "../hl7-fhir-r4-core/Ratio";
-import type { Reference } from "../hl7-fhir-r4-core/Reference";
+import type { Attachment } from "../hl7-fhir-r4-core/Attachment.js";
+import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource.js";
+import type { Identifier } from "../hl7-fhir-r4-core/Identifier.js";
+import type { Quantity } from "../hl7-fhir-r4-core/Quantity.js";
+import type { Range } from "../hl7-fhir-r4-core/Range.js";
+import type { Ratio } from "../hl7-fhir-r4-core/Ratio.js";
+import type { Reference } from "../hl7-fhir-r4-core/Reference.js";
 
-import type { Element } from "../hl7-fhir-r4-core/Element";
-export type { Attachment } from "../hl7-fhir-r4-core/Attachment";
-export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-export type { Identifier } from "../hl7-fhir-r4-core/Identifier";
-export type { Quantity } from "../hl7-fhir-r4-core/Quantity";
-export type { Range } from "../hl7-fhir-r4-core/Range";
-export type { Ratio } from "../hl7-fhir-r4-core/Ratio";
-export type { Reference } from "../hl7-fhir-r4-core/Reference";
+import type { Element } from "../hl7-fhir-r4-core/Element.js";
+export type { Attachment } from "../hl7-fhir-r4-core/Attachment.js";
+export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+export type { Identifier } from "../hl7-fhir-r4-core/Identifier.js";
+export type { Quantity } from "../hl7-fhir-r4-core/Quantity.js";
+export type { Range } from "../hl7-fhir-r4-core/Range.js";
+export type { Ratio } from "../hl7-fhir-r4-core/Ratio.js";
+export type { Reference } from "../hl7-fhir-r4-core/Reference.js";
 
 export interface SubstanceSpecificationCode extends BackboneElement {
     code?: CodeableConcept;

@@ -2,17 +2,17 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { Attachment } from "../hl7-fhir-r4-core/Attachment";
-import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource";
-import type { SubstanceAmount } from "../hl7-fhir-r4-core/SubstanceAmount";
+import type { Attachment } from "../hl7-fhir-r4-core/Attachment.js";
+import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource.js";
+import type { SubstanceAmount } from "../hl7-fhir-r4-core/SubstanceAmount.js";
 
-import type { Element } from "../hl7-fhir-r4-core/Element";
-export type { Attachment } from "../hl7-fhir-r4-core/Attachment";
-export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-export type { SubstanceAmount } from "../hl7-fhir-r4-core/SubstanceAmount";
+import type { Element } from "../hl7-fhir-r4-core/Element.js";
+export type { Attachment } from "../hl7-fhir-r4-core/Attachment.js";
+export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+export type { SubstanceAmount } from "../hl7-fhir-r4-core/SubstanceAmount.js";
 
 export interface SubstancePolymerMonomerSet extends BackboneElement {
     ratioType?: CodeableConcept;

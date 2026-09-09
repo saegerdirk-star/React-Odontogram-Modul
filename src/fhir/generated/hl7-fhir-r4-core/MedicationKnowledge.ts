@@ -2,25 +2,25 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource";
-import type { Dosage } from "../hl7-fhir-r4-core/Dosage";
-import type { Duration } from "../hl7-fhir-r4-core/Duration";
-import type { Money } from "../hl7-fhir-r4-core/Money";
-import type { Quantity } from "../hl7-fhir-r4-core/Quantity";
-import type { Ratio } from "../hl7-fhir-r4-core/Ratio";
-import type { Reference } from "../hl7-fhir-r4-core/Reference";
+import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource.js";
+import type { Dosage } from "../hl7-fhir-r4-core/Dosage.js";
+import type { Duration } from "../hl7-fhir-r4-core/Duration.js";
+import type { Money } from "../hl7-fhir-r4-core/Money.js";
+import type { Quantity } from "../hl7-fhir-r4-core/Quantity.js";
+import type { Ratio } from "../hl7-fhir-r4-core/Ratio.js";
+import type { Reference } from "../hl7-fhir-r4-core/Reference.js";
 
-import type { Element } from "../hl7-fhir-r4-core/Element";
-export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-export type { Dosage } from "../hl7-fhir-r4-core/Dosage";
-export type { Duration } from "../hl7-fhir-r4-core/Duration";
-export type { Money } from "../hl7-fhir-r4-core/Money";
-export type { Quantity } from "../hl7-fhir-r4-core/Quantity";
-export type { Ratio } from "../hl7-fhir-r4-core/Ratio";
-export type { Reference } from "../hl7-fhir-r4-core/Reference";
+import type { Element } from "../hl7-fhir-r4-core/Element.js";
+export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+export type { Dosage } from "../hl7-fhir-r4-core/Dosage.js";
+export type { Duration } from "../hl7-fhir-r4-core/Duration.js";
+export type { Money } from "../hl7-fhir-r4-core/Money.js";
+export type { Quantity } from "../hl7-fhir-r4-core/Quantity.js";
+export type { Ratio } from "../hl7-fhir-r4-core/Ratio.js";
+export type { Reference } from "../hl7-fhir-r4-core/Reference.js";
 
 export interface MedicationKnowledgeAdministrationGuidelines extends BackboneElement {
     dosage?: MedicationKnowledgeAdministrationGuidelinesDosage[];

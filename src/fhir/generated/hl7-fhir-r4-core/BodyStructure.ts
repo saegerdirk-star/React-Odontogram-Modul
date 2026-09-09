@@ -2,17 +2,17 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { Attachment } from "../hl7-fhir-r4-core/Attachment";
-import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource";
-import type { Identifier } from "../hl7-fhir-r4-core/Identifier";
-import type { Reference } from "../hl7-fhir-r4-core/Reference";
+import type { Attachment } from "../hl7-fhir-r4-core/Attachment.js";
+import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource.js";
+import type { Identifier } from "../hl7-fhir-r4-core/Identifier.js";
+import type { Reference } from "../hl7-fhir-r4-core/Reference.js";
 
-import type { Element } from "../hl7-fhir-r4-core/Element";
-export type { Attachment } from "../hl7-fhir-r4-core/Attachment";
-export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-export type { Identifier } from "../hl7-fhir-r4-core/Identifier";
-export type { Reference } from "../hl7-fhir-r4-core/Reference";
+import type { Element } from "../hl7-fhir-r4-core/Element.js";
+export type { Attachment } from "../hl7-fhir-r4-core/Attachment.js";
+export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+export type { Identifier } from "../hl7-fhir-r4-core/Identifier.js";
+export type { Reference } from "../hl7-fhir-r4-core/Reference.js";
 
 // CanonicalURL: http://hl7.org/fhir/StructureDefinition/BodyStructure (pkg: hl7.fhir.r4.core#4.0.1)
 export interface BodyStructure extends DomainResource {

@@ -81,7 +81,7 @@ describe("FHIR button routing", () => {
     render(<App document={{
       version: PAYLOAD_VERSION,
       globals: {},
-      teeth: { "46": { rootResection: "hemisection", rootResectionRoot: "mesial" } },
+      teeth: { "46": { splinted: true } },
       examination: { effectiveDateTime: "2026-08-14" },
     }} />);
 
@@ -89,7 +89,7 @@ describe("FHIR button routing", () => {
     fireEvent.click(document.getElementById("btnStatusFhirExport") as HTMLButtonElement);
 
     expect(alert).toHaveBeenCalledWith(
-      "FHIR export cannot represent the current chart: Dental Core cannot faithfully represent populated field: teeth.46.rootResection",
+      "FHIR export cannot represent the current chart: Dental Core cannot faithfully represent populated field: teeth.46.splinted",
     );
     expect(alert).not.toHaveBeenCalledWith("FHIR export requires an effective date in the examination context.");
   }, 15_000);

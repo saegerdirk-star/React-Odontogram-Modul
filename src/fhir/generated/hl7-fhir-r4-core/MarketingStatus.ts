@@ -2,14 +2,14 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-import type { Period } from "../hl7-fhir-r4-core/Period";
+import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+import type { Period } from "../hl7-fhir-r4-core/Period.js";
 
-import type { Element } from "../hl7-fhir-r4-core/Element";
-export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-export type { Period } from "../hl7-fhir-r4-core/Period";
+import type { Element } from "../hl7-fhir-r4-core/Element.js";
+export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+export type { Period } from "../hl7-fhir-r4-core/Period.js";
 
 // CanonicalURL: http://hl7.org/fhir/StructureDefinition/MarketingStatus (pkg: hl7.fhir.r4.core#4.0.1)
 export interface MarketingStatus extends BackboneElement {

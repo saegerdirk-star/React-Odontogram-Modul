@@ -2,16 +2,16 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource";
-import type { ProdCharacteristic } from "../hl7-fhir-r4-core/ProdCharacteristic";
-import type { Quantity } from "../hl7-fhir-r4-core/Quantity";
-import type { Reference } from "../hl7-fhir-r4-core/Reference";
+import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource.js";
+import type { ProdCharacteristic } from "../hl7-fhir-r4-core/ProdCharacteristic.js";
+import type { Quantity } from "../hl7-fhir-r4-core/Quantity.js";
+import type { Reference } from "../hl7-fhir-r4-core/Reference.js";
 
-export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-export type { ProdCharacteristic } from "../hl7-fhir-r4-core/ProdCharacteristic";
-export type { Quantity } from "../hl7-fhir-r4-core/Quantity";
-export type { Reference } from "../hl7-fhir-r4-core/Reference";
+export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+export type { ProdCharacteristic } from "../hl7-fhir-r4-core/ProdCharacteristic.js";
+export type { Quantity } from "../hl7-fhir-r4-core/Quantity.js";
+export type { Reference } from "../hl7-fhir-r4-core/Reference.js";
 
 // CanonicalURL: http://hl7.org/fhir/StructureDefinition/MedicinalProductManufactured (pkg: hl7.fhir.r4.core#4.0.1)
 export interface MedicinalProductManufactured extends DomainResource {

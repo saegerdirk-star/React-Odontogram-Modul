@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased
+
+### Lossless Dental Core chart-state exchange (odontogram-1sa)
+
+- Preserve per-root endodontic states, root fracture and resection qualifiers,
+  apical root, two-sided papilla-loss grades, implant position, bracket side,
+  cantilever role, crown-fracture description, and orthodontic progression
+  through the public FHIR export/import and re-export APIs.
+- Keep observed source assertions distinct from planned target state. Planned
+  values use a referenced Dental Core target-chart `Goal`; they do not create
+  performed procedures, observed findings, implants, brackets, or bridge
+  devices.
+- Reject invalid values, duplicate singleton assertions, duplicate papilla
+  sides, ambiguous source carriers, and inconsistent plan references.
+- Allow the Dental Core generator to consume an unpublished local candidate
+  archive only with its expected SHA-256. Generated metadata identifies that
+  input as a local candidate and does not claim release-projection provenance.
+- Pin `@cognovis/codegen` 0.2.0 to match Dental Core. Until the upstream
+  required-complex-extension constructor bug is fixed, generation removes only
+  its unreachable `args ?? {}` fallback from constructors whose input remains
+  required; unexpected generated shapes fail generation.
+
 ## 3.2.0 - 2026-09-03
 
 ### Session-bound plan mode and plan diff (odontogram-082)

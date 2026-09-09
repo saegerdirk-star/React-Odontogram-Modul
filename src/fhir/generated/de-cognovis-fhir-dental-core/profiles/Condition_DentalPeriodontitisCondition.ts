@@ -2,13 +2,13 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept";
-import type { Condition, ConditionEvidence, ConditionStage } from "../../hl7-fhir-r4-core/Condition";
-import type { Extension } from "../../hl7-fhir-r4-core/Extension";
-import type { Reference } from "../../hl7-fhir-r4-core/Reference";
+import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept.js";
+import type { Condition, ConditionEvidence, ConditionStage } from "../../hl7-fhir-r4-core/Condition.js";
+import type { Extension } from "../../hl7-fhir-r4-core/Extension.js";
+import type { Reference } from "../../hl7-fhir-r4-core/Reference.js";
 
-import { PeriodontitisExtentExtProfile } from "./Extension_PeriodontitisExtentExt";
-import { PeriodontitisGradeExtProfile } from "./Extension_PeriodontitisGradeExt";
+import { PeriodontitisExtentExtProfile } from "./Extension_PeriodontitisExtentExt.js";
+import { PeriodontitisGradeExtProfile } from "./Extension_PeriodontitisGradeExt.js";
 
 import {
     ensureProfile,
@@ -26,7 +26,7 @@ import {
     validateChoiceRequired,
     validateChoiceProhibited,
     validateMustSupport,
-} from "../../profile-helpers";
+} from "../../profile-helpers.js";
 
 export type DentalPeriodontitisConditionProfileRaw = {
     code: CodeableConcept;
@@ -37,7 +37,7 @@ export type DentalPeriodontitisConditionProfileRaw = {
     evidence: ConditionEvidence[];
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-periodontitis-condition (pkg: de.cognovis.fhir.dental.core#0.6.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-periodontitis-condition (pkg: de.cognovis.fhir.dental.core#0.6.1)
 export class DentalPeriodontitisConditionProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-periodontitis-condition";
 

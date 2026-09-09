@@ -2,21 +2,21 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept";
-import type { Observation, ObservationComponent } from "../../hl7-fhir-r4-core/Observation";
-import type { Quantity } from "../../hl7-fhir-r4-core/Quantity";
-import type { Reference } from "../../hl7-fhir-r4-core/Reference";
+import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept.js";
+import type { Observation, ObservationComponent } from "../../hl7-fhir-r4-core/Observation.js";
+import type { Quantity } from "../../hl7-fhir-r4-core/Quantity.js";
+import type { Reference } from "../../hl7-fhir-r4-core/Reference.js";
 
-export type DentalCephalometricLandmark_Component_XCoordinateSliceFlat = Omit<ObservationComponent, "code" | "value" | "valueQuantity" | "valueCodeableConcept" | "valueBoolean" | "valueInteger"> & Quantity;
+export type DentalCephalometricLandmark_Component_XCoordinateSliceFlat = Omit<ObservationComponent, "code" | "value" | "valueQuantity" | "valueCodeableConcept" | "valueString" | "valueBoolean" | "valueInteger" | "valueRange" | "valueRatio" | "valueSampledData" | "valueTime" | "valueDateTime" | "valuePeriod"> & Quantity;
 export type DentalCephalometricLandmark_Component_XCoordinateSliceFlatAll = DentalCephalometricLandmark_Component_XCoordinateSliceFlat;
 
-export type DentalCephalometricLandmark_Component_YCoordinateSliceFlat = Omit<ObservationComponent, "code" | "value" | "valueQuantity" | "valueCodeableConcept" | "valueBoolean" | "valueInteger"> & Quantity;
+export type DentalCephalometricLandmark_Component_YCoordinateSliceFlat = Omit<ObservationComponent, "code" | "value" | "valueQuantity" | "valueCodeableConcept" | "valueString" | "valueBoolean" | "valueInteger" | "valueRange" | "valueRatio" | "valueSampledData" | "valueTime" | "valueDateTime" | "valuePeriod"> & Quantity;
 export type DentalCephalometricLandmark_Component_YCoordinateSliceFlatAll = DentalCephalometricLandmark_Component_YCoordinateSliceFlat;
 
-export type DentalCephalometricLandmark_Component_ZCoordinateSliceFlat = Omit<ObservationComponent, "code" | "value" | "valueQuantity" | "valueCodeableConcept" | "valueBoolean" | "valueInteger"> & Quantity;
+export type DentalCephalometricLandmark_Component_ZCoordinateSliceFlat = Omit<ObservationComponent, "code" | "value" | "valueQuantity" | "valueCodeableConcept" | "valueString" | "valueBoolean" | "valueInteger" | "valueRange" | "valueRatio" | "valueSampledData" | "valueTime" | "valueDateTime" | "valuePeriod"> & Quantity;
 export type DentalCephalometricLandmark_Component_ZCoordinateSliceFlatAll = DentalCephalometricLandmark_Component_ZCoordinateSliceFlat;
 
-export type DentalCephalometricLandmark_Component_CoordinateFrameSliceFlat = Omit<ObservationComponent, "code" | "value" | "valueQuantity" | "valueCodeableConcept" | "valueBoolean" | "valueInteger"> & CodeableConcept;
+export type DentalCephalometricLandmark_Component_CoordinateFrameSliceFlat = Omit<ObservationComponent, "code" | "value" | "valueQuantity" | "valueCodeableConcept" | "valueString" | "valueBoolean" | "valueInteger" | "valueRange" | "valueRatio" | "valueSampledData" | "valueTime" | "valueDateTime" | "valuePeriod"> & CodeableConcept;
 export type DentalCephalometricLandmark_Component_CoordinateFrameSliceFlatAll = DentalCephalometricLandmark_Component_CoordinateFrameSliceFlat;
 
 import {
@@ -38,7 +38,7 @@ import {
     validateChoiceRequired,
     validateChoiceProhibited,
     validateMustSupport,
-} from "../../profile-helpers";
+} from "../../profile-helpers.js";
 
 export type DentalCephalometricLandmarkProfileRaw = {
     status: ("registered" | "preliminary" | "final" | "amended" | "corrected" | "cancelled" | "entered-in-error" | "unknown");
@@ -49,7 +49,7 @@ export type DentalCephalometricLandmarkProfileRaw = {
     component?: ObservationComponent[];
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-cephalometric-landmark (pkg: de.cognovis.fhir.dental.core#0.6.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-cephalometric-landmark (pkg: de.cognovis.fhir.dental.core#0.6.1)
 export class DentalCephalometricLandmarkProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-cephalometric-landmark";
 

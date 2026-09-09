@@ -2,9 +2,9 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept";
-import type { Reference } from "../../hl7-fhir-r4-core/Reference";
-import type { ServiceRequest } from "../../hl7-fhir-r4-core/ServiceRequest";
+import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept.js";
+import type { Reference } from "../../hl7-fhir-r4-core/Reference.js";
+import type { ServiceRequest } from "../../hl7-fhir-r4-core/ServiceRequest.js";
 
 import {
     ensureProfile,
@@ -18,7 +18,7 @@ import {
     validateChoiceRequired,
     validateChoiceProhibited,
     validateMustSupport,
-} from "../../profile-helpers";
+} from "../../profile-helpers.js";
 
 export type DentalServiceRequestProfileRaw = {
     status: ("draft" | "active" | "on-hold" | "revoked" | "completed" | "entered-in-error" | "unknown");
@@ -28,7 +28,7 @@ export type DentalServiceRequestProfileRaw = {
     bodySite: CodeableConcept[];
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-service-request (pkg: de.cognovis.fhir.dental.core#0.6.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-service-request (pkg: de.cognovis.fhir.dental.core#0.6.1)
 export class DentalServiceRequestProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-service-request";
 

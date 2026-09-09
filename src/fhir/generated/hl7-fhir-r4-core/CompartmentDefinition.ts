@@ -2,15 +2,15 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-import type { ContactDetail } from "../hl7-fhir-r4-core/ContactDetail";
-import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource";
-import type { UsageContext } from "../hl7-fhir-r4-core/UsageContext";
+import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+import type { ContactDetail } from "../hl7-fhir-r4-core/ContactDetail.js";
+import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource.js";
+import type { UsageContext } from "../hl7-fhir-r4-core/UsageContext.js";
 
-import type { Element } from "../hl7-fhir-r4-core/Element";
-export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-export type { ContactDetail } from "../hl7-fhir-r4-core/ContactDetail";
-export type { UsageContext } from "../hl7-fhir-r4-core/UsageContext";
+import type { Element } from "../hl7-fhir-r4-core/Element.js";
+export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+export type { ContactDetail } from "../hl7-fhir-r4-core/ContactDetail.js";
+export type { UsageContext } from "../hl7-fhir-r4-core/UsageContext.js";
 
 export interface CompartmentDefinitionResource extends BackboneElement {
     code: string;

@@ -2,11 +2,11 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { Reference } from "../hl7-fhir-r4-core/Reference";
-import type { Resource } from "../hl7-fhir-r4-core/Resource";
+import type { Reference } from "../hl7-fhir-r4-core/Reference.js";
+import type { Resource } from "../hl7-fhir-r4-core/Resource.js";
 
-import type { Element } from "../hl7-fhir-r4-core/Element";
-export type { Reference } from "../hl7-fhir-r4-core/Reference";
+import type { Element } from "../hl7-fhir-r4-core/Element.js";
+export type { Reference } from "../hl7-fhir-r4-core/Reference.js";
 
 // CanonicalURL: http://hl7.org/fhir/StructureDefinition/Binary (pkg: hl7.fhir.r4.core#4.0.1)
 export interface Binary extends Resource {

@@ -2,18 +2,18 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept";
-import type { Observation, ObservationComponent } from "../../hl7-fhir-r4-core/Observation";
-import type { Quantity } from "../../hl7-fhir-r4-core/Quantity";
-import type { Reference } from "../../hl7-fhir-r4-core/Reference";
+import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept.js";
+import type { Observation, ObservationComponent } from "../../hl7-fhir-r4-core/Observation.js";
+import type { Quantity } from "../../hl7-fhir-r4-core/Quantity.js";
+import type { Reference } from "../../hl7-fhir-r4-core/Reference.js";
 
-export type DentalCephalometricAnalysis_Component_MeasurementSliceFlat = Omit<ObservationComponent, "code" | "value" | "valueQuantity" | "valueCodeableConcept" | "valueBoolean" | "valueInteger"> & Quantity;
+export type DentalCephalometricAnalysis_Component_MeasurementSliceFlat = Omit<ObservationComponent, "code" | "value" | "valueQuantity" | "valueCodeableConcept" | "valueString" | "valueBoolean" | "valueInteger" | "valueRange" | "valueRatio" | "valueSampledData" | "valueTime" | "valueDateTime" | "valuePeriod"> & Quantity;
 export type DentalCephalometricAnalysis_Component_MeasurementSliceFlatAll = DentalCephalometricAnalysis_Component_MeasurementSliceFlat;
 
-export type DentalCephalometricAnalysis_Component_ReferenceValueSliceFlat = Omit<ObservationComponent, "code" | "value" | "valueQuantity" | "valueCodeableConcept" | "valueBoolean" | "valueInteger"> & Quantity;
+export type DentalCephalometricAnalysis_Component_ReferenceValueSliceFlat = Omit<ObservationComponent, "code" | "value" | "valueQuantity" | "valueCodeableConcept" | "valueString" | "valueBoolean" | "valueInteger" | "valueRange" | "valueRatio" | "valueSampledData" | "valueTime" | "valueDateTime" | "valuePeriod"> & Quantity;
 export type DentalCephalometricAnalysis_Component_ReferenceValueSliceFlatAll = DentalCephalometricAnalysis_Component_ReferenceValueSliceFlat;
 
-export type DentalCephalometricAnalysis_Component_StandardDeviationSliceFlat = Omit<ObservationComponent, "code" | "value" | "valueQuantity" | "valueCodeableConcept" | "valueBoolean" | "valueInteger"> & Quantity;
+export type DentalCephalometricAnalysis_Component_StandardDeviationSliceFlat = Omit<ObservationComponent, "code" | "value" | "valueQuantity" | "valueCodeableConcept" | "valueString" | "valueBoolean" | "valueInteger" | "valueRange" | "valueRatio" | "valueSampledData" | "valueTime" | "valueDateTime" | "valuePeriod"> & Quantity;
 export type DentalCephalometricAnalysis_Component_StandardDeviationSliceFlatAll = DentalCephalometricAnalysis_Component_StandardDeviationSliceFlat;
 
 import {
@@ -37,7 +37,7 @@ import {
     validateChoiceRequired,
     validateChoiceProhibited,
     validateMustSupport,
-} from "../../profile-helpers";
+} from "../../profile-helpers.js";
 
 export type DentalCephalometricAnalysisProfileRaw = {
     code: CodeableConcept;
@@ -47,7 +47,7 @@ export type DentalCephalometricAnalysisProfileRaw = {
     component?: ObservationComponent[];
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-cephalometric-analysis (pkg: de.cognovis.fhir.dental.core#0.6.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-cephalometric-analysis (pkg: de.cognovis.fhir.dental.core#0.6.1)
 export class DentalCephalometricAnalysisProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-cephalometric-analysis";
 

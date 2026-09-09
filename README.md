@@ -112,7 +112,9 @@ every module-level entry point (`exportStatus`, `importStatus`, `getStatusChart`
 
 ### FHIR is a pure, optional projection
 
-FHIR conversion is a pure adapter over the UI-domain document: it performs no DOM access, network I/O, wall-clock reads, randomness, transport, persistence, or authentication. Dental Core `de.cognovis.fhir.dental.core#0.6.0`, consumed from the exact `@cognovis/fhir-release@0.2.4` projection, is the sole FHIR import/export contract. Version 3 removes the former non-Dental-Core representation and all runtime dialect selection; foreign or malformed Bundles are rejected explicitly, and export fails when populated clinical state has no admitted Core carrier. The explicit boundary is `rootFractureRoot`: Core 0.6 carries the vertical/horizontal `rootFracture` but not its optional root qualifier, so export preserves and round-trips the orientation while deliberately omitting only the qualifier; a root name alone never implies an orientation. Root posts use the orthogonal `rootPostType` axis (`none`, `glass-fiber`, `metal`) and therefore remain representable beside every `endo` filling state, including `endo-filling-incomplete`. Legacy JSON and older Dental Core `endo-glass-pin` / `endo-metal-pin` values remain readable and migrate to `endo-filling` plus the corresponding post material; compatibility with the removed FHIR representation is deliberately not retained.
+FHIR conversion is a pure adapter over the UI-domain document: it performs no DOM access, network I/O, wall-clock reads, randomness, transport, persistence, or authentication. Dental Core is the sole FHIR import/export contract. Version 3 removes the former non-Dental-Core representation and all runtime dialect selection; foreign or malformed Bundles are rejected explicitly, and export fails when populated clinical state has no admitted Core carrier. The current source-preservation contract retains named-root endodontic states, root-fracture and root-resection qualifiers, apical root, two-sided papilla-loss grades, implant position, bracket side, cantilever role, crown-fracture description, and orthodontic progression. These are structural source assertions: the adapter does not turn them into new diagnoses, numbered canals, implant products, or bridge relationships. Root posts use the orthogonal `rootPostType` axis (`none`, `glass-fiber`, `metal`) and therefore remain representable beside every `endo` filling state, including `endo-filling-incomplete`. Legacy JSON and older Dental Core `endo-glass-pin` / `endo-metal-pin` values remain readable and migrate to `endo-filling` plus the corresponding post material; compatibility with the removed FHIR representation is deliberately not retained.
+
+The adapter accepts only the root identities offered by the current tooth position, including `single` for a single-rooted tooth. It rejects empty `endoCanals` maps, mutually exclusive canal fill states, and root-fracture or root-resection qualifiers without their parent finding. The ordinary document serializer omits or clears those malformed shapes.
 
 The optional `buildFhirBundle` and `parseFhirBundle` helpers expose that same sole Dental Core seam when a host does not use a session.
 
@@ -130,11 +132,21 @@ if (!session.importFhirBundle(bundle)) throw new Error("FHIR import rejected");
 
 A clinical Dental Core export requires an effective date supplied by the caller, the examination context, or `case.examDate`. The codec projects the IG carrier contract across tooth and root caries, restorations, endodontic and diagnostic findings, periodontal and peri-implant findings, implant identity, treatment requests, assessments, and notes while retaining host resource identity.
 
-When the document carries a `plan` section, the existing Dental Core export already emits planned care as `CarePlan/plan`, one `ServiceRequest/{fdi}` per planned tooth (intent `plan`, `basedOn` that CarePlan), planned `Observation/chart/plan/{fdi}` chart states, and the planned clinical Observations (`tooth-state`, caries, periodontal, recession) also `basedOn` the CarePlan. The FHIR codec is unchanged; hosts derive the intent from `session.getPlanChanges()` and may export the same document through `session.exportFhirBundle()`.
+When the document carries a `plan` section, Dental Core export emits `CarePlan/plan`, one `ServiceRequest/{fdi}` per planned tooth, and a referenced target-chart `Goal` for the source assertions above. The Goal keeps desired state separate from observed resources: a planned removed root, implant position, bracket side, or cantilever flag does not claim that a procedure was performed or that a device exists. Hosts derive the intent from `session.getPlanChanges()` and may export the same document through `session.exportFhirBundle()`.
 
 Diabetes, HbA1c, smoking, and edentulous resources remain owned by the host patient record and are never minted by this codec. When those document fields are populated, pass their existing Condition or Observation entries through `exportOptions.sharedResources`; the bundle carries them unchanged, records their references in Provenance, and fails closed if a required host resource is absent or inconsistent. The smoking-status Observation (LOINC 72166-2) may carry either the LOINC LL2201-3 / IPS Current Smoking Status answer codes or the engine-local codes.
 
 Hosts can import `DENTAL_CORE_CANONICAL`, `DENTAL_CORE_PROFILES`, `DENTAL_CORE_PACKAGE_VERSION`, and `DENTAL_CORE_CODE_SYSTEM_URLS` from `react-advanced-odontogram/fhir` for compatibility checks. Unsupported, malformed, or foreign Bundles are rejected rather than silently losing content.
+
+For development against an unpublished immutable Dental Core candidate, regenerate from the captured archive and its independently supplied digest:
+
+```sh
+DENTAL_CORE_PACKAGE_TGZ=/absolute/path/to/package.tgz \
+DENTAL_CORE_PACKAGE_SHA256=<lowercase-sha256> \
+npm run fhir:generate
+```
+
+The generator verifies the archive before reading it and labels the generated contract as `local-candidate`; it does not claim released projection provenance.
 
 ### Aidbox live mode (development)
 

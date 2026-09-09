@@ -2,18 +2,18 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource";
-import type { Population } from "../hl7-fhir-r4-core/Population";
-import type { Quantity } from "../hl7-fhir-r4-core/Quantity";
-import type { Reference } from "../hl7-fhir-r4-core/Reference";
+import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource.js";
+import type { Population } from "../hl7-fhir-r4-core/Population.js";
+import type { Quantity } from "../hl7-fhir-r4-core/Quantity.js";
+import type { Reference } from "../hl7-fhir-r4-core/Reference.js";
 
-export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-export type { Population } from "../hl7-fhir-r4-core/Population";
-export type { Quantity } from "../hl7-fhir-r4-core/Quantity";
-export type { Reference } from "../hl7-fhir-r4-core/Reference";
+export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+export type { Population } from "../hl7-fhir-r4-core/Population.js";
+export type { Quantity } from "../hl7-fhir-r4-core/Quantity.js";
+export type { Reference } from "../hl7-fhir-r4-core/Reference.js";
 
 export interface MedicinalProductIndicationOtherTherapy extends BackboneElement {
     medicationCodeableConcept?: CodeableConcept;

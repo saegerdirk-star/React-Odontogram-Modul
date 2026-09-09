@@ -2,14 +2,15 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept";
-import type { Coding } from "../../hl7-fhir-r4-core/Coding";
-import type { Device } from "../../hl7-fhir-r4-core/Device";
-import type { Extension } from "../../hl7-fhir-r4-core/Extension";
-import type { Identifier } from "../../hl7-fhir-r4-core/Identifier";
-import type { Reference } from "../../hl7-fhir-r4-core/Reference";
+import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept.js";
+import type { Coding } from "../../hl7-fhir-r4-core/Coding.js";
+import type { Device } from "../../hl7-fhir-r4-core/Device.js";
+import type { Extension } from "../../hl7-fhir-r4-core/Extension.js";
+import type { Identifier } from "../../hl7-fhir-r4-core/Identifier.js";
+import type { Reference } from "../../hl7-fhir-r4-core/Reference.js";
 
-import { ToothPositionExtProfile } from "./Extension_ToothPositionExt";
+import { RecordedImplantPositionExtProfile } from "./Extension_RecordedImplantPositionExt.js";
+import { ToothPositionExtProfile } from "./Extension_ToothPositionExt.js";
 
 import {
     ensureProfile,
@@ -27,7 +28,7 @@ import {
     validateChoiceRequired,
     validateChoiceProhibited,
     validateMustSupport,
-} from "../../profile-helpers";
+} from "../../profile-helpers.js";
 
 export type DentalImplantProfileRaw = {
     extension: Extension[];
@@ -37,7 +38,7 @@ export type DentalImplantProfileRaw = {
     patient: Reference<"Patient">;
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-implant (pkg: de.cognovis.fhir.dental.core#0.6.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-implant (pkg: de.cognovis.fhir.dental.core#0.6.1)
 export class DentalImplantProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-implant";
 
@@ -160,6 +161,30 @@ export class DentalImplantProfile {
         if (mode === 'raw') return ext
         if (mode === 'profile') return ToothPositionExtProfile.apply(ext)
         return getExtensionValue<Coding>(ext, "valueCoding")
+    }
+
+    public setRecordedPosition (value: RecordedImplantPositionExtProfile | Extension | string): this {
+        if (value instanceof RecordedImplantPositionExtProfile) {
+            upsertExtension(this.resource, value.toResource())
+        } else if (isExtension(value)) {
+            if (value.url !== "https://fhir.cognovis.de/dental-core/StructureDefinition/recorded-implant-position") throw new Error(`Expected extension url 'https://fhir.cognovis.de/dental-core/StructureDefinition/recorded-implant-position', got '${value.url}'`)
+            upsertExtension(this.resource, value)
+        } else {
+            upsertExtension(this.resource, RecordedImplantPositionExtProfile.createResource({ valueString: value as string }))
+        }
+        return this
+    }
+
+    public getRecordedPosition(mode: 'flat'): string | undefined;
+    public getRecordedPosition(mode: 'profile'): RecordedImplantPositionExtProfile | undefined;
+    public getRecordedPosition(mode: 'raw'): Extension | undefined;
+    public getRecordedPosition(): string | undefined;
+    public getRecordedPosition (mode: 'flat' | 'profile' | 'raw' = 'flat'): string | RecordedImplantPositionExtProfile | Extension | undefined {
+        const ext = this.resource.extension?.find(e => e.url === "https://fhir.cognovis.de/dental-core/StructureDefinition/recorded-implant-position")
+        if (!ext) return undefined
+        if (mode === 'raw') return ext
+        if (mode === 'profile') return RecordedImplantPositionExtProfile.apply(ext)
+        return getExtensionValue<string>(ext, "valueString")
     }
 
     // Slices

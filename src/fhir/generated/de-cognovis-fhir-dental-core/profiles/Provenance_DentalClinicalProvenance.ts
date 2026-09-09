@@ -2,8 +2,8 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { Provenance, ProvenanceAgent } from "../../hl7-fhir-r4-core/Provenance";
-import type { Reference } from "../../hl7-fhir-r4-core/Reference";
+import type { Provenance, ProvenanceAgent } from "../../hl7-fhir-r4-core/Provenance.js";
+import type { Reference } from "../../hl7-fhir-r4-core/Reference.js";
 
 import {
     ensureProfile,
@@ -17,7 +17,7 @@ import {
     validateChoiceRequired,
     validateChoiceProhibited,
     validateMustSupport,
-} from "../../profile-helpers";
+} from "../../profile-helpers.js";
 
 export type DentalClinicalProvenanceProfileRaw = {
     target: Reference<string /* Resource */>[];
@@ -25,7 +25,7 @@ export type DentalClinicalProvenanceProfileRaw = {
     agent: ProvenanceAgent[];
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-clinical-provenance (pkg: de.cognovis.fhir.dental.core#0.6.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-clinical-provenance (pkg: de.cognovis.fhir.dental.core#0.6.1)
 export class DentalClinicalProvenanceProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-clinical-provenance";
 

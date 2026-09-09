@@ -2,13 +2,13 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-import type { ContactPoint } from "../hl7-fhir-r4-core/ContactPoint";
-import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource";
+import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+import type { ContactPoint } from "../hl7-fhir-r4-core/ContactPoint.js";
+import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource.js";
 
-import type { Element } from "../hl7-fhir-r4-core/Element";
-export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-export type { ContactPoint } from "../hl7-fhir-r4-core/ContactPoint";
+import type { Element } from "../hl7-fhir-r4-core/Element.js";
+export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+export type { ContactPoint } from "../hl7-fhir-r4-core/ContactPoint.js";
 
 export interface SubscriptionChannel extends BackboneElement {
     endpoint?: string;

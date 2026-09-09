@@ -2,19 +2,19 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { Annotation } from "../hl7-fhir-r4-core/Annotation";
-import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource";
-import type { Identifier } from "../hl7-fhir-r4-core/Identifier";
-import type { Reference } from "../hl7-fhir-r4-core/Reference";
+import type { Annotation } from "../hl7-fhir-r4-core/Annotation.js";
+import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource.js";
+import type { Identifier } from "../hl7-fhir-r4-core/Identifier.js";
+import type { Reference } from "../hl7-fhir-r4-core/Reference.js";
 
-import type { Element } from "../hl7-fhir-r4-core/Element";
-export type { Annotation } from "../hl7-fhir-r4-core/Annotation";
-export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-export type { Identifier } from "../hl7-fhir-r4-core/Identifier";
-export type { Reference } from "../hl7-fhir-r4-core/Reference";
+import type { Element } from "../hl7-fhir-r4-core/Element.js";
+export type { Annotation } from "../hl7-fhir-r4-core/Annotation.js";
+export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+export type { Identifier } from "../hl7-fhir-r4-core/Identifier.js";
+export type { Reference } from "../hl7-fhir-r4-core/Reference.js";
 
 export interface ListEntry extends BackboneElement {
     date?: string;

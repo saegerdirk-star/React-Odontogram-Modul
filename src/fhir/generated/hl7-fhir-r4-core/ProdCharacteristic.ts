@@ -2,16 +2,16 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { Attachment } from "../hl7-fhir-r4-core/Attachment";
-import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-import type { Quantity } from "../hl7-fhir-r4-core/Quantity";
+import type { Attachment } from "../hl7-fhir-r4-core/Attachment.js";
+import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+import type { Quantity } from "../hl7-fhir-r4-core/Quantity.js";
 
-import type { Element } from "../hl7-fhir-r4-core/Element";
-export type { Attachment } from "../hl7-fhir-r4-core/Attachment";
-export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-export type { Quantity } from "../hl7-fhir-r4-core/Quantity";
+import type { Element } from "../hl7-fhir-r4-core/Element.js";
+export type { Attachment } from "../hl7-fhir-r4-core/Attachment.js";
+export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+export type { Quantity } from "../hl7-fhir-r4-core/Quantity.js";
 
 // CanonicalURL: http://hl7.org/fhir/StructureDefinition/ProdCharacteristic (pkg: hl7.fhir.r4.core#4.0.1)
 export interface ProdCharacteristic extends BackboneElement {

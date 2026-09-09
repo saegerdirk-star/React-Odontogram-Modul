@@ -2,12 +2,20 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept";
-import type { Procedure } from "../../hl7-fhir-r4-core/Procedure";
-import type { Reference } from "../../hl7-fhir-r4-core/Reference";
+import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept.js";
+import type { Extension } from "../../hl7-fhir-r4-core/Extension.js";
+import type { Procedure } from "../../hl7-fhir-r4-core/Procedure.js";
+import type { Reference } from "../../hl7-fhir-r4-core/Reference.js";
+
+import { MeasurementLocationDetailExtProfile } from "./Extension_MeasurementLocationDetailExt.js";
 
 import {
     ensureProfile,
+    ensurePath,
+    isExtension,
+    getExtensionValue,
+    pushExtension,
+    upsertExtension,
     validateRequired,
     validateExcluded,
     validateFixedValue,
@@ -18,7 +26,7 @@ import {
     validateChoiceRequired,
     validateChoiceProhibited,
     validateMustSupport,
-} from "../../profile-helpers";
+} from "../../profile-helpers.js";
 
 export type DentalProcedureProfileRaw = {
     status: ("preparation" | "in-progress" | "not-done" | "on-hold" | "stopped" | "completed" | "entered-in-error" | "unknown");
@@ -27,7 +35,7 @@ export type DentalProcedureProfileRaw = {
     bodySite: CodeableConcept[];
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-procedure (pkg: de.cognovis.fhir.dental.core#0.6.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-procedure (pkg: de.cognovis.fhir.dental.core#0.6.1)
 export class DentalProcedureProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-procedure";
 
@@ -118,6 +126,37 @@ export class DentalProcedureProfile {
     }
 
     // Extensions
+    public setLocationDetail (value: MeasurementLocationDetailExtProfile | Extension | string): this {
+        if (value instanceof MeasurementLocationDetailExtProfile) {
+            const target = ensurePath(this.resource as unknown as Record<string, unknown>, ["bodySite"])
+            if (!Array.isArray(target.extension)) target.extension = [] as Extension[]
+            upsertExtension(target as unknown as { extension?: Extension[] }, value.toResource())
+        } else if (isExtension(value)) {
+            if (value.url !== "https://fhir.cognovis.de/dental-core/StructureDefinition/measurement-location-detail") throw new Error(`Expected extension url 'https://fhir.cognovis.de/dental-core/StructureDefinition/measurement-location-detail', got '${value.url}'`)
+            const target = ensurePath(this.resource as unknown as Record<string, unknown>, ["bodySite"])
+            if (!Array.isArray(target.extension)) target.extension = [] as Extension[]
+            upsertExtension(target as unknown as { extension?: Extension[] }, value)
+        } else {
+            const target = ensurePath(this.resource as unknown as Record<string, unknown>, ["bodySite"])
+            if (!Array.isArray(target.extension)) target.extension = [] as Extension[]
+            upsertExtension(target as unknown as { extension?: Extension[] }, MeasurementLocationDetailExtProfile.createResource({ valueString: value as string }))
+        }
+        return this
+    }
+
+    public getLocationDetail(mode: 'flat'): string | undefined;
+    public getLocationDetail(mode: 'profile'): MeasurementLocationDetailExtProfile | undefined;
+    public getLocationDetail(mode: 'raw'): Extension | undefined;
+    public getLocationDetail(): string | undefined;
+    public getLocationDetail (mode: 'flat' | 'profile' | 'raw' = 'flat'): string | MeasurementLocationDetailExtProfile | Extension | undefined {
+        const target = ensurePath(this.resource as unknown as Record<string, unknown>, ["bodySite"])
+        const ext = (target.extension as Extension[] | undefined)?.find(e => e.url === "https://fhir.cognovis.de/dental-core/StructureDefinition/measurement-location-detail")
+        if (!ext) return undefined
+        if (mode === 'raw') return ext
+        if (mode === 'profile') return MeasurementLocationDetailExtProfile.apply(ext)
+        return getExtensionValue<string>(ext, "valueString")
+    }
+
     // Slices
     // Validation
     validate(): { errors: string[]; warnings: string[] } {

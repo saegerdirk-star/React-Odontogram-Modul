@@ -2,21 +2,21 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { Attachment } from "../hl7-fhir-r4-core/Attachment";
-import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-import type { Coding } from "../hl7-fhir-r4-core/Coding";
-import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource";
-import type { Identifier } from "../hl7-fhir-r4-core/Identifier";
-import type { Quantity } from "../hl7-fhir-r4-core/Quantity";
-import type { Reference } from "../hl7-fhir-r4-core/Reference";
+import type { Attachment } from "../hl7-fhir-r4-core/Attachment.js";
+import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+import type { Coding } from "../hl7-fhir-r4-core/Coding.js";
+import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource.js";
+import type { Identifier } from "../hl7-fhir-r4-core/Identifier.js";
+import type { Quantity } from "../hl7-fhir-r4-core/Quantity.js";
+import type { Reference } from "../hl7-fhir-r4-core/Reference.js";
 
-import type { Element } from "../hl7-fhir-r4-core/Element";
-export type { Attachment } from "../hl7-fhir-r4-core/Attachment";
-export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-export type { Coding } from "../hl7-fhir-r4-core/Coding";
-export type { Identifier } from "../hl7-fhir-r4-core/Identifier";
-export type { Quantity } from "../hl7-fhir-r4-core/Quantity";
-export type { Reference } from "../hl7-fhir-r4-core/Reference";
+import type { Element } from "../hl7-fhir-r4-core/Element.js";
+export type { Attachment } from "../hl7-fhir-r4-core/Attachment.js";
+export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+export type { Coding } from "../hl7-fhir-r4-core/Coding.js";
+export type { Identifier } from "../hl7-fhir-r4-core/Identifier.js";
+export type { Quantity } from "../hl7-fhir-r4-core/Quantity.js";
+export type { Reference } from "../hl7-fhir-r4-core/Reference.js";
 
 export interface QuestionnaireResponseItem extends BackboneElement {
     answer?: QuestionnaireResponseItemAnswer[];

@@ -2,8 +2,8 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept";
-import type { Extension } from "../../hl7-fhir-r4-core/Extension";
+import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept.js";
+import type { Extension } from "../../hl7-fhir-r4-core/Extension.js";
 
 import {
     applyFixedValue,
@@ -17,9 +17,9 @@ import {
     validateChoiceRequired,
     validateChoiceProhibited,
     validateMustSupport,
-} from "../../profile-helpers";
+} from "../../profile-helpers.js";
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/periodontitis-extent (pkg: de.cognovis.fhir.dental.core#0.6.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/periodontitis-extent (pkg: de.cognovis.fhir.dental.core#0.6.1)
 export class PeriodontitisExtentExtProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/periodontitis-extent";
 

@@ -2,9 +2,9 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept";
-import type { Observation } from "../../hl7-fhir-r4-core/Observation";
-import type { Reference } from "../../hl7-fhir-r4-core/Reference";
+import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept.js";
+import type { Observation } from "../../hl7-fhir-r4-core/Observation.js";
+import type { Reference } from "../../hl7-fhir-r4-core/Reference.js";
 
 import {
     ensureProfile,
@@ -18,7 +18,7 @@ import {
     validateChoiceRequired,
     validateChoiceProhibited,
     validateMustSupport,
-} from "../../profile-helpers";
+} from "../../profile-helpers.js";
 
 export type DentalCephalometricAnalysisPanelProfileRaw = {
     status: ("registered" | "preliminary" | "final" | "amended" | "corrected" | "cancelled" | "entered-in-error" | "unknown");
@@ -29,7 +29,7 @@ export type DentalCephalometricAnalysisPanelProfileRaw = {
     derivedFrom: Reference<"DocumentReference" | "ImagingStudy" | "Media" | "MolecularSequence" | "Observation" | "QuestionnaireResponse">[];
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-cephalometric-analysis-panel (pkg: de.cognovis.fhir.dental.core#0.6.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-cephalometric-analysis-panel (pkg: de.cognovis.fhir.dental.core#0.6.1)
 export class DentalCephalometricAnalysisPanelProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-cephalometric-analysis-panel";
 

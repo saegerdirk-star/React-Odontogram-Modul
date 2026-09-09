@@ -2,15 +2,15 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept";
-import type { Coding } from "../../hl7-fhir-r4-core/Coding";
-import type { Extension } from "../../hl7-fhir-r4-core/Extension";
-import type { Observation } from "../../hl7-fhir-r4-core/Observation";
-import type { Quantity } from "../../hl7-fhir-r4-core/Quantity";
-import type { Reference } from "../../hl7-fhir-r4-core/Reference";
+import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept.js";
+import type { Coding } from "../../hl7-fhir-r4-core/Coding.js";
+import type { Extension } from "../../hl7-fhir-r4-core/Extension.js";
+import type { Observation } from "../../hl7-fhir-r4-core/Observation.js";
+import type { Quantity } from "../../hl7-fhir-r4-core/Quantity.js";
+import type { Reference } from "../../hl7-fhir-r4-core/Reference.js";
 
-import { MeasurementLocationDetailExtProfile } from "./Extension_MeasurementLocationDetailExt";
-import { ToothSurfaceExtProfile } from "./Extension_ToothSurfaceExt";
+import { MeasurementLocationDetailExtProfile } from "./Extension_MeasurementLocationDetailExt.js";
+import { ToothSurfaceExtProfile } from "./Extension_ToothSurfaceExt.js";
 
 import {
     ensureProfile,
@@ -29,7 +29,7 @@ import {
     validateChoiceRequired,
     validateChoiceProhibited,
     validateMustSupport,
-} from "../../profile-helpers";
+} from "../../profile-helpers.js";
 
 export type DentalGingivalAssessmentProfileRaw = {
     code: CodeableConcept;
@@ -39,7 +39,7 @@ export type DentalGingivalAssessmentProfileRaw = {
     status: ("registered" | "preliminary" | "final" | "amended" | "corrected" | "cancelled" | "entered-in-error" | "unknown");
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-gingival-assessment (pkg: de.cognovis.fhir.dental.core#0.6.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-gingival-assessment (pkg: de.cognovis.fhir.dental.core#0.6.1)
 export class DentalGingivalAssessmentProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-gingival-assessment";
 
@@ -207,7 +207,7 @@ export class DentalGingivalAssessmentProfile {
         return getExtensionValue<Coding>(ext, "valueCoding")
     }
 
-    public setLocationDetail (value: MeasurementLocationDetailExtProfile | Extension | string): this {
+    public setBodySiteLocationDetail (value: MeasurementLocationDetailExtProfile | Extension | string): this {
         if (value instanceof MeasurementLocationDetailExtProfile) {
             const target = ensurePath(this.resource as unknown as Record<string, unknown>, ["bodySite"])
             if (!Array.isArray(target.extension)) target.extension = [] as Extension[]
@@ -225,12 +225,43 @@ export class DentalGingivalAssessmentProfile {
         return this
     }
 
-    public getLocationDetail(mode: 'flat'): string | undefined;
-    public getLocationDetail(mode: 'profile'): MeasurementLocationDetailExtProfile | undefined;
-    public getLocationDetail(mode: 'raw'): Extension | undefined;
-    public getLocationDetail(): string | undefined;
-    public getLocationDetail (mode: 'flat' | 'profile' | 'raw' = 'flat'): string | MeasurementLocationDetailExtProfile | Extension | undefined {
+    public getBodySiteLocationDetail(mode: 'flat'): string | undefined;
+    public getBodySiteLocationDetail(mode: 'profile'): MeasurementLocationDetailExtProfile | undefined;
+    public getBodySiteLocationDetail(mode: 'raw'): Extension | undefined;
+    public getBodySiteLocationDetail(): string | undefined;
+    public getBodySiteLocationDetail (mode: 'flat' | 'profile' | 'raw' = 'flat'): string | MeasurementLocationDetailExtProfile | Extension | undefined {
         const target = ensurePath(this.resource as unknown as Record<string, unknown>, ["bodySite"])
+        const ext = (target.extension as Extension[] | undefined)?.find(e => e.url === "https://fhir.cognovis.de/dental-core/StructureDefinition/measurement-location-detail")
+        if (!ext) return undefined
+        if (mode === 'raw') return ext
+        if (mode === 'profile') return MeasurementLocationDetailExtProfile.apply(ext)
+        return getExtensionValue<string>(ext, "valueString")
+    }
+
+    public setComponentLocationDetail (value: MeasurementLocationDetailExtProfile | Extension | string): this {
+        if (value instanceof MeasurementLocationDetailExtProfile) {
+            const target = ensurePath(this.resource as unknown as Record<string, unknown>, ["component"])
+            if (!Array.isArray(target.extension)) target.extension = [] as Extension[]
+            upsertExtension(target as unknown as { extension?: Extension[] }, value.toResource())
+        } else if (isExtension(value)) {
+            if (value.url !== "https://fhir.cognovis.de/dental-core/StructureDefinition/measurement-location-detail") throw new Error(`Expected extension url 'https://fhir.cognovis.de/dental-core/StructureDefinition/measurement-location-detail', got '${value.url}'`)
+            const target = ensurePath(this.resource as unknown as Record<string, unknown>, ["component"])
+            if (!Array.isArray(target.extension)) target.extension = [] as Extension[]
+            upsertExtension(target as unknown as { extension?: Extension[] }, value)
+        } else {
+            const target = ensurePath(this.resource as unknown as Record<string, unknown>, ["component"])
+            if (!Array.isArray(target.extension)) target.extension = [] as Extension[]
+            upsertExtension(target as unknown as { extension?: Extension[] }, MeasurementLocationDetailExtProfile.createResource({ valueString: value as string }))
+        }
+        return this
+    }
+
+    public getComponentLocationDetail(mode: 'flat'): string | undefined;
+    public getComponentLocationDetail(mode: 'profile'): MeasurementLocationDetailExtProfile | undefined;
+    public getComponentLocationDetail(mode: 'raw'): Extension | undefined;
+    public getComponentLocationDetail(): string | undefined;
+    public getComponentLocationDetail (mode: 'flat' | 'profile' | 'raw' = 'flat'): string | MeasurementLocationDetailExtProfile | Extension | undefined {
+        const target = ensurePath(this.resource as unknown as Record<string, unknown>, ["component"])
         const ext = (target.extension as Extension[] | undefined)?.find(e => e.url === "https://fhir.cognovis.de/dental-core/StructureDefinition/measurement-location-detail")
         if (!ext) return undefined
         if (mode === 'raw') return ext

@@ -2,23 +2,23 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-import type { Coding } from "../hl7-fhir-r4-core/Coding";
-import type { ContactDetail } from "../hl7-fhir-r4-core/ContactDetail";
-import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource";
-import type { Identifier } from "../hl7-fhir-r4-core/Identifier";
-import type { Reference } from "../hl7-fhir-r4-core/Reference";
-import type { UsageContext } from "../hl7-fhir-r4-core/UsageContext";
+import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+import type { Coding } from "../hl7-fhir-r4-core/Coding.js";
+import type { ContactDetail } from "../hl7-fhir-r4-core/ContactDetail.js";
+import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource.js";
+import type { Identifier } from "../hl7-fhir-r4-core/Identifier.js";
+import type { Reference } from "../hl7-fhir-r4-core/Reference.js";
+import type { UsageContext } from "../hl7-fhir-r4-core/UsageContext.js";
 
-import type { Element } from "../hl7-fhir-r4-core/Element";
-export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-export type { Coding } from "../hl7-fhir-r4-core/Coding";
-export type { ContactDetail } from "../hl7-fhir-r4-core/ContactDetail";
-export type { Identifier } from "../hl7-fhir-r4-core/Identifier";
-export type { Reference } from "../hl7-fhir-r4-core/Reference";
-export type { UsageContext } from "../hl7-fhir-r4-core/UsageContext";
+import type { Element } from "../hl7-fhir-r4-core/Element.js";
+export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+export type { Coding } from "../hl7-fhir-r4-core/Coding.js";
+export type { ContactDetail } from "../hl7-fhir-r4-core/ContactDetail.js";
+export type { Identifier } from "../hl7-fhir-r4-core/Identifier.js";
+export type { Reference } from "../hl7-fhir-r4-core/Reference.js";
+export type { UsageContext } from "../hl7-fhir-r4-core/UsageContext.js";
 
 export interface TestScriptDestination extends BackboneElement {
     index: number;

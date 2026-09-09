@@ -2,17 +2,17 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource";
-import type { Identifier } from "../hl7-fhir-r4-core/Identifier";
-import type { Period } from "../hl7-fhir-r4-core/Period";
-import type { Reference } from "../hl7-fhir-r4-core/Reference";
+import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource.js";
+import type { Identifier } from "../hl7-fhir-r4-core/Identifier.js";
+import type { Period } from "../hl7-fhir-r4-core/Period.js";
+import type { Reference } from "../hl7-fhir-r4-core/Reference.js";
 
-import type { Element } from "../hl7-fhir-r4-core/Element";
-export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-export type { Identifier } from "../hl7-fhir-r4-core/Identifier";
-export type { Period } from "../hl7-fhir-r4-core/Period";
-export type { Reference } from "../hl7-fhir-r4-core/Reference";
+import type { Element } from "../hl7-fhir-r4-core/Element.js";
+export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+export type { Identifier } from "../hl7-fhir-r4-core/Identifier.js";
+export type { Period } from "../hl7-fhir-r4-core/Period.js";
+export type { Reference } from "../hl7-fhir-r4-core/Reference.js";
 
 // CanonicalURL: http://hl7.org/fhir/StructureDefinition/Schedule (pkg: hl7.fhir.r4.core#4.0.1)
 export interface Schedule extends DomainResource {

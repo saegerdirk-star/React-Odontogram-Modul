@@ -2,27 +2,27 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { Address } from "../hl7-fhir-r4-core/Address";
-import type { Attachment } from "../hl7-fhir-r4-core/Attachment";
-import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource";
-import type { Identifier } from "../hl7-fhir-r4-core/Identifier";
-import type { Money } from "../hl7-fhir-r4-core/Money";
-import type { Period } from "../hl7-fhir-r4-core/Period";
-import type { Quantity } from "../hl7-fhir-r4-core/Quantity";
-import type { Reference } from "../hl7-fhir-r4-core/Reference";
+import type { Address } from "../hl7-fhir-r4-core/Address.js";
+import type { Attachment } from "../hl7-fhir-r4-core/Attachment.js";
+import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource.js";
+import type { Identifier } from "../hl7-fhir-r4-core/Identifier.js";
+import type { Money } from "../hl7-fhir-r4-core/Money.js";
+import type { Period } from "../hl7-fhir-r4-core/Period.js";
+import type { Quantity } from "../hl7-fhir-r4-core/Quantity.js";
+import type { Reference } from "../hl7-fhir-r4-core/Reference.js";
 
-import type { Element } from "../hl7-fhir-r4-core/Element";
-export type { Address } from "../hl7-fhir-r4-core/Address";
-export type { Attachment } from "../hl7-fhir-r4-core/Attachment";
-export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-export type { Identifier } from "../hl7-fhir-r4-core/Identifier";
-export type { Money } from "../hl7-fhir-r4-core/Money";
-export type { Period } from "../hl7-fhir-r4-core/Period";
-export type { Quantity } from "../hl7-fhir-r4-core/Quantity";
-export type { Reference } from "../hl7-fhir-r4-core/Reference";
+import type { Element } from "../hl7-fhir-r4-core/Element.js";
+export type { Address } from "../hl7-fhir-r4-core/Address.js";
+export type { Attachment } from "../hl7-fhir-r4-core/Attachment.js";
+export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+export type { Identifier } from "../hl7-fhir-r4-core/Identifier.js";
+export type { Money } from "../hl7-fhir-r4-core/Money.js";
+export type { Period } from "../hl7-fhir-r4-core/Period.js";
+export type { Quantity } from "../hl7-fhir-r4-core/Quantity.js";
+export type { Reference } from "../hl7-fhir-r4-core/Reference.js";
 
 export interface ClaimAccident extends BackboneElement {
     date: string;

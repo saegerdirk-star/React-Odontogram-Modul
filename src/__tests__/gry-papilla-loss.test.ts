@@ -18,7 +18,7 @@ import {
 } from "../odontogram";
 import { mesialIsLeft } from "../retention";
 import { buildFhirBundle } from "../fhir/toFhir";
-import { UnsupportedDentalCoreContentError } from "../fhir/toFhirDentalCore";
+import { parseFhirBundle } from "../fhir/fromFhir";
 
 beforeEach(() => { __resetChartStateForTest(); setChartMode("status"); });
 
@@ -181,13 +181,14 @@ describe("Was der Plan aendert", () => {
 });
 
 describe("FHIR", () => {
-  it("rejects populated papilla loss because Dental Core has no admitted carrier", () => {
+  it("roundtrips populated papilla loss through its recorded source carrier", () => {
     __setToothStateForTest(46, {});
     setPapillaLoss(46, "mesial", 2);
-    expect(() => buildFhirBundle(
+    const bundle = buildFhirBundle(
       __collectExportPayloadForTest() as never,
       { effectiveDateTime: "2026-08-14" },
-    )).toThrowError(UnsupportedDentalCoreContentError);
+    );
+    expect(parseFhirBundle(bundle).teeth["46"]?.papillaLoss).toEqual({ mesial: 2 });
   });
   it("does not emit papilla loss when none was assessed", () => {
     __setToothStateForTest(46, {});

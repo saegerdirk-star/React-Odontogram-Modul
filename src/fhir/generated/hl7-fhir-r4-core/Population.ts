@@ -2,13 +2,13 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-import type { Range } from "../hl7-fhir-r4-core/Range";
+import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+import type { Range } from "../hl7-fhir-r4-core/Range.js";
 
-export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-export type { Range } from "../hl7-fhir-r4-core/Range";
+export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+export type { Range } from "../hl7-fhir-r4-core/Range.js";
 
 // CanonicalURL: http://hl7.org/fhir/StructureDefinition/Population (pkg: hl7.fhir.r4.core#4.0.1)
 export interface Population extends BackboneElement {

@@ -2,10 +2,10 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { Attachment } from "../../hl7-fhir-r4-core/Attachment";
-import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept";
-import type { Media } from "../../hl7-fhir-r4-core/Media";
-import type { Reference } from "../../hl7-fhir-r4-core/Reference";
+import type { Attachment } from "../../hl7-fhir-r4-core/Attachment.js";
+import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept.js";
+import type { Media } from "../../hl7-fhir-r4-core/Media.js";
+import type { Reference } from "../../hl7-fhir-r4-core/Reference.js";
 
 import {
     ensureProfile,
@@ -19,7 +19,7 @@ import {
     validateChoiceRequired,
     validateChoiceProhibited,
     validateMustSupport,
-} from "../../profile-helpers";
+} from "../../profile-helpers.js";
 
 export type DentalOrthodonticPhotographProfileRaw = {
     status: ("preparation" | "in-progress" | "not-done" | "on-hold" | "stopped" | "completed" | "entered-in-error" | "unknown");
@@ -28,7 +28,7 @@ export type DentalOrthodonticPhotographProfileRaw = {
     content: Attachment;
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-orthodontic-photograph (pkg: de.cognovis.fhir.dental.core#0.6.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-orthodontic-photograph (pkg: de.cognovis.fhir.dental.core#0.6.1)
 export class DentalOrthodonticPhotographProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-orthodontic-photograph";
 

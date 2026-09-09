@@ -2,19 +2,22 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept";
-import type { Coding } from "../../hl7-fhir-r4-core/Coding";
-import type { Device } from "../../hl7-fhir-r4-core/Device";
-import type { Extension } from "../../hl7-fhir-r4-core/Extension";
-import type { Reference } from "../../hl7-fhir-r4-core/Reference";
+import type { CodeableConcept } from "../../hl7-fhir-r4-core/CodeableConcept.js";
+import type { Coding } from "../../hl7-fhir-r4-core/Coding.js";
+import type { Device } from "../../hl7-fhir-r4-core/Device.js";
+import type { Extension } from "../../hl7-fhir-r4-core/Extension.js";
+import type { Reference } from "../../hl7-fhir-r4-core/Reference.js";
 
-import { ToothPositionExtProfile } from "./Extension_ToothPositionExt";
+import { RecordedBracketSurfaceExtProfile } from "./Extension_RecordedBracketSurfaceExt.js";
+import { RecordedCantileverPonticRoleExtProfile } from "./Extension_RecordedCantileverPonticRoleExt.js";
+import { ToothPositionExtProfile } from "./Extension_ToothPositionExt.js";
 
 import {
     ensureProfile,
     isExtension,
     getExtensionValue,
     pushExtension,
+    upsertExtension,
     validateRequired,
     validateExcluded,
     validateFixedValue,
@@ -25,7 +28,7 @@ import {
     validateChoiceRequired,
     validateChoiceProhibited,
     validateMustSupport,
-} from "../../profile-helpers";
+} from "../../profile-helpers.js";
 
 export type DentalDeviceProfileRaw = {
     status: ("active" | "inactive" | "entered-in-error" | "unknown");
@@ -33,7 +36,7 @@ export type DentalDeviceProfileRaw = {
     patient: Reference<"Patient">;
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-device (pkg: de.cognovis.fhir.dental.core#0.6.0)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-device (pkg: de.cognovis.fhir.dental.core#0.6.1)
 export class DentalDeviceProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-device";
 
@@ -136,6 +139,54 @@ export class DentalDeviceProfile {
         if (mode === 'raw') return ext
         if (mode === 'profile') return ToothPositionExtProfile.apply(ext)
         return getExtensionValue<Coding>(ext, "valueCoding")
+    }
+
+    public setRecordedBracketSurface (value: RecordedBracketSurfaceExtProfile | Extension | Coding): this {
+        if (value instanceof RecordedBracketSurfaceExtProfile) {
+            upsertExtension(this.resource, value.toResource())
+        } else if (isExtension(value)) {
+            if (value.url !== "https://fhir.cognovis.de/dental-core/StructureDefinition/recorded-bracket-surface") throw new Error(`Expected extension url 'https://fhir.cognovis.de/dental-core/StructureDefinition/recorded-bracket-surface', got '${value.url}'`)
+            upsertExtension(this.resource, value)
+        } else {
+            upsertExtension(this.resource, RecordedBracketSurfaceExtProfile.createResource({ valueCoding: value as Coding }))
+        }
+        return this
+    }
+
+    public getRecordedBracketSurface(mode: 'flat'): Coding | undefined;
+    public getRecordedBracketSurface(mode: 'profile'): RecordedBracketSurfaceExtProfile | undefined;
+    public getRecordedBracketSurface(mode: 'raw'): Extension | undefined;
+    public getRecordedBracketSurface(): Coding | undefined;
+    public getRecordedBracketSurface (mode: 'flat' | 'profile' | 'raw' = 'flat'): Coding | RecordedBracketSurfaceExtProfile | Extension | undefined {
+        const ext = this.resource.extension?.find(e => e.url === "https://fhir.cognovis.de/dental-core/StructureDefinition/recorded-bracket-surface")
+        if (!ext) return undefined
+        if (mode === 'raw') return ext
+        if (mode === 'profile') return RecordedBracketSurfaceExtProfile.apply(ext)
+        return getExtensionValue<Coding>(ext, "valueCoding")
+    }
+
+    public setRecordedCantileverPonticRole (value: RecordedCantileverPonticRoleExtProfile | Extension | boolean): this {
+        if (value instanceof RecordedCantileverPonticRoleExtProfile) {
+            upsertExtension(this.resource, value.toResource())
+        } else if (isExtension(value)) {
+            if (value.url !== "https://fhir.cognovis.de/dental-core/StructureDefinition/recorded-cantilever-pontic-role") throw new Error(`Expected extension url 'https://fhir.cognovis.de/dental-core/StructureDefinition/recorded-cantilever-pontic-role', got '${value.url}'`)
+            upsertExtension(this.resource, value)
+        } else {
+            upsertExtension(this.resource, RecordedCantileverPonticRoleExtProfile.createResource({ valueBoolean: value as boolean }))
+        }
+        return this
+    }
+
+    public getRecordedCantileverPonticRole(mode: 'flat'): boolean | undefined;
+    public getRecordedCantileverPonticRole(mode: 'profile'): RecordedCantileverPonticRoleExtProfile | undefined;
+    public getRecordedCantileverPonticRole(mode: 'raw'): Extension | undefined;
+    public getRecordedCantileverPonticRole(): boolean | undefined;
+    public getRecordedCantileverPonticRole (mode: 'flat' | 'profile' | 'raw' = 'flat'): boolean | RecordedCantileverPonticRoleExtProfile | Extension | undefined {
+        const ext = this.resource.extension?.find(e => e.url === "https://fhir.cognovis.de/dental-core/StructureDefinition/recorded-cantilever-pontic-role")
+        if (!ext) return undefined
+        if (mode === 'raw') return ext
+        if (mode === 'profile') return RecordedCantileverPonticRoleExtProfile.apply(ext)
+        return getExtensionValue<boolean>(ext, "valueBoolean")
     }
 
     // Slices

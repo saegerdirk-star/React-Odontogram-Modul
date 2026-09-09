@@ -2,33 +2,33 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { Age } from "../hl7-fhir-r4-core/Age";
-import type { Annotation } from "../hl7-fhir-r4-core/Annotation";
-import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource";
-import type { Duration } from "../hl7-fhir-r4-core/Duration";
-import type { Expression } from "../hl7-fhir-r4-core/Expression";
-import type { Identifier } from "../hl7-fhir-r4-core/Identifier";
-import type { Period } from "../hl7-fhir-r4-core/Period";
-import type { Range } from "../hl7-fhir-r4-core/Range";
-import type { Reference } from "../hl7-fhir-r4-core/Reference";
-import type { RelatedArtifact } from "../hl7-fhir-r4-core/RelatedArtifact";
-import type { Timing } from "../hl7-fhir-r4-core/Timing";
+import type { Age } from "../hl7-fhir-r4-core/Age.js";
+import type { Annotation } from "../hl7-fhir-r4-core/Annotation.js";
+import type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource.js";
+import type { Duration } from "../hl7-fhir-r4-core/Duration.js";
+import type { Expression } from "../hl7-fhir-r4-core/Expression.js";
+import type { Identifier } from "../hl7-fhir-r4-core/Identifier.js";
+import type { Period } from "../hl7-fhir-r4-core/Period.js";
+import type { Range } from "../hl7-fhir-r4-core/Range.js";
+import type { Reference } from "../hl7-fhir-r4-core/Reference.js";
+import type { RelatedArtifact } from "../hl7-fhir-r4-core/RelatedArtifact.js";
+import type { Timing } from "../hl7-fhir-r4-core/Timing.js";
 
-import type { Element } from "../hl7-fhir-r4-core/Element";
-export type { Age } from "../hl7-fhir-r4-core/Age";
-export type { Annotation } from "../hl7-fhir-r4-core/Annotation";
-export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement";
-export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-export type { Duration } from "../hl7-fhir-r4-core/Duration";
-export type { Expression } from "../hl7-fhir-r4-core/Expression";
-export type { Identifier } from "../hl7-fhir-r4-core/Identifier";
-export type { Period } from "../hl7-fhir-r4-core/Period";
-export type { Range } from "../hl7-fhir-r4-core/Range";
-export type { Reference } from "../hl7-fhir-r4-core/Reference";
-export type { RelatedArtifact } from "../hl7-fhir-r4-core/RelatedArtifact";
-export type { Timing } from "../hl7-fhir-r4-core/Timing";
+import type { Element } from "../hl7-fhir-r4-core/Element.js";
+export type { Age } from "../hl7-fhir-r4-core/Age.js";
+export type { Annotation } from "../hl7-fhir-r4-core/Annotation.js";
+export type { BackboneElement } from "../hl7-fhir-r4-core/BackboneElement.js";
+export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+export type { Duration } from "../hl7-fhir-r4-core/Duration.js";
+export type { Expression } from "../hl7-fhir-r4-core/Expression.js";
+export type { Identifier } from "../hl7-fhir-r4-core/Identifier.js";
+export type { Period } from "../hl7-fhir-r4-core/Period.js";
+export type { Range } from "../hl7-fhir-r4-core/Range.js";
+export type { Reference } from "../hl7-fhir-r4-core/Reference.js";
+export type { RelatedArtifact } from "../hl7-fhir-r4-core/RelatedArtifact.js";
+export type { Timing } from "../hl7-fhir-r4-core/Timing.js";
 
 export interface RequestGroupAction extends BackboneElement {
     action?: RequestGroupAction[];

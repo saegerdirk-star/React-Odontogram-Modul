@@ -2,15 +2,15 @@
 // GitHub: https://github.com/atomic-ehr/codegen
 // Any manual changes made to this file may be overwritten.
 
-import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-import type { ContactDetail } from "../hl7-fhir-r4-core/ContactDetail";
-import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource";
-import type { UsageContext } from "../hl7-fhir-r4-core/UsageContext";
+import type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+import type { ContactDetail } from "../hl7-fhir-r4-core/ContactDetail.js";
+import type { DomainResource } from "../hl7-fhir-r4-core/DomainResource.js";
+import type { UsageContext } from "../hl7-fhir-r4-core/UsageContext.js";
 
-import type { Element } from "../hl7-fhir-r4-core/Element";
-export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept";
-export type { ContactDetail } from "../hl7-fhir-r4-core/ContactDetail";
-export type { UsageContext } from "../hl7-fhir-r4-core/UsageContext";
+import type { Element } from "../hl7-fhir-r4-core/Element.js";
+export type { CodeableConcept } from "../hl7-fhir-r4-core/CodeableConcept.js";
+export type { ContactDetail } from "../hl7-fhir-r4-core/ContactDetail.js";
+export type { UsageContext } from "../hl7-fhir-r4-core/UsageContext.js";
 
 // CanonicalURL: http://hl7.org/fhir/StructureDefinition/MetadataResource (pkg: hl7.fhir.r4.core#4.0.1)
 export interface MetadataResource extends DomainResource {

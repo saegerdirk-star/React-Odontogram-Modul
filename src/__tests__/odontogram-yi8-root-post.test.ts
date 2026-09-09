@@ -31,7 +31,7 @@ const primarySvgText = readFileSync(
 );
 
 describe("Dental Core 0.6 odontogram axes", () => {
-  it("persists root resection fields but rejects them at the Dental Core boundary", () => {
+  it("persists root resection fields through the Dental Core boundary", () => {
     __resetChartStateForTest();
     const resection: ToothRecord = {
       rootResection: "hemisection",
@@ -43,8 +43,8 @@ describe("Dental Core 0.6 odontogram axes", () => {
     expect(payload.teeth["46"]).toMatchObject(resection);
     __hydrateImportedChartsForTest(JSON.parse(JSON.stringify(payload)));
     expect(__collectExportPayloadForTest().teeth["46"]).toMatchObject(resection);
-    expect(() => buildDentalCoreBundle(payload, options))
-      .toThrow("Dental Core cannot faithfully represent populated field: teeth.46.rootResection");
+    expect(parseDentalCoreBundle(buildDentalCoreBundle(payload, options))?.teeth["46"])
+      .toMatchObject(resection);
   });
 
   it("roundtrips sensibility, percussion, eruption stage, and oriented root fracture while omitting skip values", () => {
@@ -91,7 +91,7 @@ describe("Dental Core 0.6 odontogram axes", () => {
     expect(parseDentalCoreBundle(bundle)?.teeth["12"]).toBeUndefined();
   });
 
-  it("roundtrips a multi-root fracture orientation while omitting only its unsupported root qualifier", () => {
+  it("roundtrips a multi-root fracture orientation with its root qualifier", () => {
     const source: OdontogramExportPayload = {
       version: PAYLOAD_VERSION,
       globals: {},
@@ -104,8 +104,7 @@ describe("Dental Core 0.6 odontogram axes", () => {
     };
 
     const parsed = parseDentalCoreBundle(buildDentalCoreBundle(source, options));
-    expect(parsed?.teeth["16"]).toEqual({ rootFracture: "horizontal" });
-    expect(parsed?.teeth["16"]).not.toHaveProperty("rootFractureRoot");
+    expect(parsed?.teeth["16"]).toEqual(source.teeth["16"]);
   });
 
   it("does not infer a root-fracture orientation from an unqualified root name", () => {
