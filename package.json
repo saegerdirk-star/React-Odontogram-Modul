@@ -31,7 +31,7 @@
   ],
   "publishConfig": {
     "registry": "https://npm.cognovis.de/",
-    "access": "public"
+    "access": "restricted"
   },
   "files": [
     "dist"
