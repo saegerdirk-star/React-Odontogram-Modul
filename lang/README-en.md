@@ -581,8 +581,9 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
   shell-internal and bind to whichever session currently owns the engine. HKP
   hosts (MIRA / `cognovis/hkp-engine`) should use the session methods, not the
   singleton. A Dental Core export of a document with `plan` already emits
-  `CarePlan/plan`, per-tooth `ServiceRequest`s, and planned Observations; the
-  FHIR codec is unchanged.
+  `CarePlan/plan` and per-tooth `ServiceRequest`s. The eleven source-preservation
+  axes documented below use referenced target-chart `Goal`s; established plan
+  fields continue to use profiled planned Observations.
 - A plain `document` prop instead of `session` makes the instance create and own
   a private session seeded from it.
 - Passing **neither** keeps the historical standalone behaviour: the component
@@ -595,7 +596,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion is a pure optional projection of the UI-domain document. Dental Core `de.cognovis.fhir.dental.core#0.6.0`, from the exact `@cognovis/fhir-release@0.2.4` projection, is the sole FHIR contract. Version 3 removes the former non-Dental-Core representation and all runtime dialect selection; foreign, unsupported, or malformed Bundles are rejected explicitly. Root posts use the independent `rootPostType` axis and remain representable beside every root-filling state. Legacy JSON and older Dental Core `endo-glass-pin` / `endo-metal-pin` values migrate to `endo-filling` plus the corresponding post material, while new output never collapses the two axes. `buildFhirBundle` requires a caller-provided or examination-context effective date and refuses exports that would lose populated clinical state.
+FHIR conversion is a pure optional projection of the UI-domain document. Dental Core `de.cognovis.fhir.dental.core#0.6.1` is the sole FHIR contract; the recognized `odontogram-dental-core-0.6.0` marker remains readable for empty legacy collections, while unknown dialect markers are rejected. Import, export, and re-export preserve the eleven source axes `implantPosition`, `crownFractureType`, `orthoProgressive`, `rootResection`, `papillaLoss`, `orthoBracketSide`, `cantilever`, `endoCanals`, `rootFractureRoot`, `rootResectionRoot`, and `apicalRoot`. For plans, those axes use a referenced target-chart `Goal`, while established plan fields continue to use profiled planned Observations; planned state stays separate from observed state and does not fabricate Devices or performed Procedures. Duplicate, conflicting, malformed, ambiguously addressed, or tooth-incompatible assertions are rejected. Root posts remain independent through `rootPostType`; legacy JSON and older `endo-glass-pin` / `endo-metal-pin` values migrate to `endo-filling` plus the post material. `buildFhirBundle` requires a caller-provided or examination-context effective date and refuses exports that would lose populated clinical state.
 
 **Aidbox live mode (development, from 2.50.0):**
 

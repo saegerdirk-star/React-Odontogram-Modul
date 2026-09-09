@@ -370,6 +370,167 @@ describe("Dental Core FHIR seam", () => {
     expect(parseDentalCoreBundle(duplicateGoal)).toBeUndefined();
   });
 
+  it("rejects equal or conflicting singleton assertions copied across chart and device carriers", () => {
+    const cases = [
+      {
+        record: { toothSelection: "implant", implantPosition: "center", orthoProgressive: false } satisfies ToothRecord,
+        deviceProfile: DENTAL_CORE_PROFILES["dental-implant"],
+        url: `${DENTAL_CORE}/StructureDefinition/recorded-implant-position`,
+        conflict: (extension: import("fhir/r4").Extension) => { extension.valueString = "distal"; },
+      },
+      {
+        record: { orthoAppliance: "bracket", orthoBracketSide: "buccal", orthoProgressive: false } satisfies ToothRecord,
+        deviceProfile: DENTAL_CORE_PROFILES["dental-device"],
+        url: `${DENTAL_CORE}/StructureDefinition/recorded-bracket-surface`,
+        conflict: (extension: import("fhir/r4").Extension) => { extension.valueCoding!.code = "L"; },
+      },
+      {
+        record: { bridgePillar: true, cantilever: false, orthoProgressive: false } satisfies ToothRecord,
+        deviceProfile: DENTAL_CORE_PROFILES["dental-device"],
+        url: `${DENTAL_CORE}/StructureDefinition/recorded-cantilever-pontic-role`,
+        conflict: (extension: import("fhir/r4").Extension) => { extension.valueBoolean = true; },
+      },
+    ];
+
+    for (const { record, deviceProfile, url, conflict } of cases) {
+      for (const makeConflict of [false, true]) {
+        const bundle = buildFhirBundle({ version: PAYLOAD_VERSION, globals: {}, teeth: { "15": record } }, options);
+        const device = bundle.entry?.find((entry) => entry.resource?.meta?.profile?.includes(deviceProfile))?.resource as import("fhir/r4").Device;
+        const chart = bundle.entry?.find((entry) => entry.resource?.meta?.profile?.includes(DENTAL_CORE_PROFILES["dental-chart-state"]))?.resource as import("fhir/r4").Observation;
+        const copied = structuredClone(device.extension?.find((extension) => extension.url === url)!);
+        expect(copied, url).toBeDefined();
+        if (makeConflict) conflict(copied);
+        (chart.extension ??= []).push(copied);
+
+        expect(parseDentalCoreBundle(bundle), `${url} conflict=${makeConflict}`).toBeUndefined();
+      }
+    }
+  });
+
+  it("rejects duplicate optional roots in every observed and target complex carrier", () => {
+    const source: OdontogramExportPayload = {
+      version: PAYLOAD_VERSION,
+      globals: {},
+      teeth: { "16": {
+        endoCanals: { palatal: ["filling"] },
+        rootFracture: "vertical",
+        rootFractureRoot: "palatal",
+        rootResection: "amputation",
+        rootResectionRoot: "palatal",
+        apicalDx: "normal",
+        apicalRoot: "palatal",
+      } },
+      plan: { "26": {
+        endoCanals: { palatal: ["filling"] },
+        rootFracture: "vertical",
+        rootFractureRoot: "palatal",
+        rootResection: "amputation",
+        rootResectionRoot: "palatal",
+        apicalDx: "normal",
+        apicalRoot: "palatal",
+      } },
+    };
+    const locationUrl = `${DENTAL_CORE}/StructureDefinition/measurement-location-detail`;
+    const rootEndoUrl = `${DENTAL_CORE}/StructureDefinition/recorded-root-endodontic-state`;
+    const rootFractureUrl = `${DENTAL_CORE}/StructureDefinition/recorded-root-fracture`;
+    const rootResectionUrl = `${DENTAL_CORE}/StructureDefinition/recorded-root-resection`;
+    const apicalUrl = `${DENTAL_CORE}/StructureDefinition/recorded-apical-finding`;
+    type ExtensionParent = { extension?: import("fhir/r4").Extension[] };
+    const paths: Array<[string, (bundle: ReturnType<typeof buildFhirBundle>) => [ExtensionParent, string]]> = [
+      ["observed endodontic root", (bundle) => {
+        const toothState = bundle.entry?.find((entry) => entry.resource?.meta?.profile?.includes(DENTAL_CORE_PROFILES["dental-tooth-state"]))?.resource as import("fhir/r4").Observation;
+        return [toothState.component!.find((component) => component.valueCodeableConcept?.text === "filling")!, locationUrl];
+      }],
+      ["observed fracture root", (bundle) => {
+        const chart = bundle.entry?.find((entry) => entry.resource?.meta?.profile?.includes(DENTAL_CORE_PROFILES["dental-chart-state"]))?.resource as import("fhir/r4").Observation;
+        return [chart.component!.find((component) => component.code.coding?.some((coding) => coding.system === PROPERTY_SYSTEM && coding.code === "root-fracture"))!, locationUrl];
+      }],
+      ["observed resection root", (bundle) => {
+        const chart = bundle.entry?.find((entry) => entry.resource?.meta?.profile?.includes(DENTAL_CORE_PROFILES["dental-chart-state"]))?.resource as import("fhir/r4").Observation;
+        return [chart.extension!.find((extension) => extension.url === rootResectionUrl)!, "root"];
+      }],
+      ["observed apical root", (bundle) => {
+        const chart = bundle.entry?.find((entry) => entry.resource?.meta?.profile?.includes(DENTAL_CORE_PROFILES["dental-chart-state"]))?.resource as import("fhir/r4").Observation;
+        return [chart.extension!.find((extension) => extension.url === apicalUrl)!, "root"];
+      }],
+      ["target endodontic root", (bundle) => {
+        const goal = bundle.entry?.find((entry) => entry.resource?.resourceType === "Goal")?.resource as import("fhir/r4").Goal;
+        return [goal.extension!.find((extension) => extension.url === rootEndoUrl)!, "root"];
+      }],
+      ["target fracture root", (bundle) => {
+        const goal = bundle.entry?.find((entry) => entry.resource?.resourceType === "Goal")?.resource as import("fhir/r4").Goal;
+        return [goal.extension!.find((extension) => extension.url === rootFractureUrl)!, "root"];
+      }],
+      ["target resection root", (bundle) => {
+        const goal = bundle.entry?.find((entry) => entry.resource?.resourceType === "Goal")?.resource as import("fhir/r4").Goal;
+        return [goal.extension!.find((extension) => extension.url === rootResectionUrl)!, "root"];
+      }],
+      ["target apical root", (bundle) => {
+        const goal = bundle.entry?.find((entry) => entry.resource?.resourceType === "Goal")?.resource as import("fhir/r4").Goal;
+        return [goal.extension!.find((extension) => extension.url === apicalUrl)!, "root"];
+      }],
+    ];
+
+    for (const [label, select] of paths) {
+      for (const duplicateValue of ["palatal", "distobuccal"]) {
+        const bundle = buildFhirBundle(source, options);
+        const [parent, rootUrl] = select(bundle);
+        const root = parent.extension!.find((extension) => extension.url === rootUrl)!;
+        expect(root, label).toBeDefined();
+        parent.extension!.push({ ...structuredClone(root), valueString: duplicateValue });
+        expect(parseDentalCoreBundle(bundle), `${label} duplicate=${duplicateValue}`).toBeUndefined();
+      }
+    }
+  });
+
+  it("rejects duplicate whole-tooth endodontic components while retaining rooted components", () => {
+    const source: OdontogramExportPayload = {
+      version: PAYLOAD_VERSION,
+      globals: {},
+      teeth: { "16": { endo: "endo-filling", endoCanals: { palatal: ["temporary"] } } },
+    };
+    for (const duplicateCode of ["endo-filling", "endo-filling-incomplete"]) {
+      const bundle = buildFhirBundle(source, options);
+      const toothState = bundle.entry?.find((entry) => entry.resource?.meta?.profile?.includes(DENTAL_CORE_PROFILES["dental-tooth-state"]))?.resource as import("fhir/r4").Observation;
+      const wholeTooth = toothState.component!.find((component) => component.code.coding?.some((coding) => coding.code === "root-endodontic-state")
+        && component.valueCodeableConcept?.coding?.length)!;
+      const duplicate = structuredClone(wholeTooth);
+      duplicate.valueCodeableConcept!.coding![0].code = duplicateCode;
+      toothState.component!.push(duplicate);
+
+      expect(parseDentalCoreBundle(bundle), duplicateCode).toBeUndefined();
+    }
+
+    for (const location of [
+      { url: `${DENTAL_CORE}/StructureDefinition/measurement-location-detail`, valueString: "palatal" },
+      { url: `${DENTAL_CORE}/StructureDefinition/measurement-location-detail`, valueBoolean: true },
+    ] as import("fhir/r4").Extension[]) {
+      const bundle = buildFhirBundle(source, options);
+      const toothState = bundle.entry?.find((entry) => entry.resource?.meta?.profile?.includes(DENTAL_CORE_PROFILES["dental-tooth-state"]))?.resource as import("fhir/r4").Observation;
+      const wholeTooth = toothState.component!.find((component) => component.code.coding?.some((coding) => coding.code === "root-endodontic-state")
+        && component.valueCodeableConcept?.coding?.length)!;
+      (wholeTooth.extension ??= []).push(location);
+
+      expect(parseDentalCoreBundle(bundle)).toBeUndefined();
+    }
+  });
+
+  it("rejects cantilever assertions on non-bridge devices", () => {
+    for (const record of [
+      { orthoAppliance: "bracket" } satisfies ToothRecord,
+      { retention: "clasp" } satisfies ToothRecord,
+    ]) {
+      const bundle = buildFhirBundle({ version: PAYLOAD_VERSION, globals: {}, teeth: { "14": record } }, options);
+      const device = bundle.entry?.find((entry) => entry.resource?.meta?.profile?.includes(DENTAL_CORE_PROFILES["dental-device"]))?.resource as import("fhir/r4").Device;
+      (device.extension ??= []).push({
+        url: `${DENTAL_CORE}/StructureDefinition/recorded-cantilever-pontic-role`,
+        valueBoolean: false,
+      });
+
+      expect(parseDentalCoreBundle(bundle)).toBeUndefined();
+    }
+  });
+
   it("rejects orphaned root qualifiers and explicit empty root maps instead of dropping them", () => {
     const base: OdontogramExportPayload = { version: PAYLOAD_VERSION, globals: {}, teeth: {} };
     for (const [record, field] of [
@@ -660,6 +821,10 @@ describe("Dental Core FHIR seam", () => {
     const empty = buildFhirBundle({ version: PAYLOAD_VERSION, globals: {}, teeth: {} }, options);
     expect(parseFhirBundle(empty)).toEqual({ version: PAYLOAD_VERSION, globals: {}, teeth: {} });
 
+    const legacyEmpty = structuredClone(empty);
+    legacyEmpty.identifier = { system: DENTAL_CORE, value: "odontogram-dental-core-0.6.0" };
+    expect(parseFhirBundle(legacyEmpty)).toEqual({ version: PAYLOAD_VERSION, globals: {}, teeth: {} });
+
     const invalidType = structuredClone(buildFhirBundle(fixture(), options));
     invalidType.type = "transaction";
     const duplicateChart = structuredClone(buildFhirBundle(fixture(), options));
@@ -725,6 +890,26 @@ describe("Dental Core FHIR seam", () => {
     if (plan) plan.activity = [{ reference: { reference: "ServiceRequest/not-generated" } }];
 
     expect(() => parseFhirBundle(invalid)).toThrow(DentalCoreBundleRejectedError);
+  });
+
+  it("rejects target-chart Goals addressed to another tooth's plan request", () => {
+    const source: OdontogramExportPayload = {
+      version: PAYLOAD_VERSION,
+      globals: {},
+      teeth: {},
+      plan: {
+        "16": { implantPosition: "mesial" },
+        "26": { cantilever: true },
+      },
+    };
+    const swapped = buildFhirBundle(source, options);
+    const goals = swapped.entry
+      ?.map((entry) => entry.resource)
+      .filter((resource): resource is import("fhir/r4").Goal => resource?.resourceType === "Goal") ?? [];
+    expect(goals).toHaveLength(2);
+    [goals[0].addresses, goals[1].addresses] = [goals[1].addresses, goals[0].addresses];
+
+    expect(() => parseFhirBundle(swapped)).toThrow(DentalCoreBundleRejectedError);
   });
 
   it("does not replace the chart after a rejected import", () => {

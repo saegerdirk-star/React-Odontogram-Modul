@@ -12,6 +12,7 @@ import { DentalPeriodontalFindingProfile } from "./generated/de-cognovis-fhir-de
 import { DentalProcedureProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Procedure_DentalProcedure";
 import { DentalRiskEvidenceProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalRiskEvidence";
 import { DentalServiceRequestProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/ServiceRequest_DentalServiceRequest";
+import { DentalTargetChartStateProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Goal_DentalTargetChartState";
 import { DentalToothStateProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalToothState";
 import { DENTAL_CORE_LOCAL_SYSTEM as LOCAL_SYSTEM, resolveSmokingStatus } from "./dentalCoreLocalCoding";
 import { LOCAL_VALUE_MAPS } from "../registry/valueCatalog";
@@ -36,6 +37,10 @@ import {
 } from "./dentalCoreContract";
 
 const dentalCoreProfileValues = new Set<string>(Object.values(DENTAL_CORE_PROFILES));
+const supportedBundleIdentifiers = new Set([
+  DENTAL_CORE_BUNDLE_IDENTIFIER,
+  "odontogram-dental-core-0.6.0",
+]);
 
 type ResourceRecord = Resource & Record<string, unknown>;
 type GeneratedProfile = { from(resource: never): unknown };
@@ -119,6 +124,12 @@ const extensionString = (target: unknown, url: string): string | undefined => {
   const extension = uniqueExtension(target, url);
   return typeof extension?.valueString === "string" && extension.valueString ? extension.valueString : undefined;
 };
+const optionalExtensionString = (target: unknown, url: string): { valid: boolean; value?: string } => {
+  const extensions = extensionsAt(target, url);
+  if (extensions.length === 0) return { valid: true };
+  if (extensions.length !== 1 || typeof extensions[0].valueString !== "string" || !extensions[0].valueString) return { valid: false };
+  return { valid: true, value: extensions[0].valueString };
+};
 const componentSurface = (target: unknown): string | undefined => {
   const value = extensionCoding(target, DENTAL_CORE_PROFILES["tooth-surface"]);
   return value?.system === TOOTH_SURFACE_SYSTEM ? SURFACE_VALUES[value.code ?? ""] : undefined;
@@ -177,9 +188,9 @@ function applyToothState(record: ToothRecord, resource: ResourceRecord): boolean
     if (!kind) return false;
     if (kind === "root-endodontic-state" && !value) {
       const text = item.valueCodeableConcept?.text;
-      const root = extensionString(item, LOCATION_DETAIL_URL);
-      if (typeof text !== "string" || !["filling", "post", "incomplete", "temporary"].includes(text) || !root) return false;
-      const states = (record.endoCanals ??= {})[root] ??= [];
+      const root = optionalExtensionString(item, LOCATION_DETAIL_URL);
+      if (typeof text !== "string" || !["filling", "post", "incomplete", "temporary"].includes(text) || !root.valid || !root.value) return false;
+      const states = (record.endoCanals ??= {})[root.value] ??= [];
       if (states.includes(text)) return false;
       states.push(text);
       continue;
@@ -198,7 +209,11 @@ function applyToothState(record: ToothRecord, resource: ResourceRecord): boolean
       if (seenSingletons.has(kind) || !isLocalValue("toothSubstrate", value)) return false;
       seenSingletons.add(kind);
       record.toothSubstrate = value;
-    } else if (kind === "root-endodontic-state" && isLocalValue("endo", value)) record.endo = value;
+    } else if (kind === "root-endodontic-state" && isLocalValue("endo", value)) {
+      if (seenSingletons.has(kind) || extensionsAt(item, LOCATION_DETAIL_URL).length) return false;
+      seenSingletons.add(kind);
+      record.endo = value;
+    }
     else if (kind === "restoration-type" && surface && value === "direct-filling") {
       (record.fillingSurfaces ??= []).push(surface);
     } else if (kind === "restoration-type" && !surface && isLocalValue("restorationType", value)) record.restorationType = value;
@@ -352,8 +367,9 @@ function applyChart(record: ToothRecord, observation: Observation): boolean {
     } else {
       (record as Record<string, unknown>)[mapping.field] = source;
       if (mapping.field === "rootFracture") {
-        const root = extensionString(component, LOCATION_DETAIL_URL);
-        if (root) record.rootFractureRoot = root;
+        const root = optionalExtensionString(component, LOCATION_DETAIL_URL);
+        if (!root.valid) return false;
+        if (root.value) record.rootFractureRoot = root.value;
       }
     }
   }
@@ -361,10 +377,10 @@ function applyChart(record: ToothRecord, observation: Observation): boolean {
   if (extensionsAt(observation, RECORDED_ROOT_RESECTION_URL).length > 1) return false;
   if (resection) {
     const description = extensionString(resection, "description");
-    const root = extensionString(resection, "root");
-    if (!description || !["none", "hemisection", "amputation", "premolarisation"].includes(description)) return false;
+    const root = optionalExtensionString(resection, "root");
+    if (!description || !root.valid || !["none", "hemisection", "amputation", "premolarisation"].includes(description)) return false;
     record.rootResection = description;
-    if (root) record.rootResectionRoot = root;
+    if (root.value) record.rootResectionRoot = root.value;
   }
   const progression = uniqueExtension(observation, RECORDED_ORTHODONTIC_PROGRESSION_URL);
   if (extensionsAt(observation, RECORDED_ORTHODONTIC_PROGRESSION_URL).length > 1) return false;
@@ -413,10 +429,10 @@ function applyChart(record: ToothRecord, observation: Observation): boolean {
   if (apical.length > 1) return false;
   if (apical.length === 1) {
     const description = extensionString(apical[0], "description");
-    const root = extensionString(apical[0], "root");
-    if (!description || !isLocalValue("apicalDx", description) || !root) return false;
+    const root = optionalExtensionString(apical[0], "root");
+    if (!description || !root.valid || !root.value || !isLocalValue("apicalDx", description)) return false;
     record.apicalDx = description;
-    record.apicalRoot = root;
+    record.apicalRoot = root.value;
   }
   return true;
 }
@@ -427,15 +443,15 @@ function applyTargetChartState(record: ToothRecord, resource: ResourceRecord): b
   let wholeTooth = false;
   for (const assertion of endodontic) {
     const description = extensionString(assertion, "description");
-    const root = extensionString(assertion, "root");
-    if (!description) return false;
-    if (!root) {
+    const root = optionalExtensionString(assertion, "root");
+    if (!description || !root.valid) return false;
+    if (!root.value) {
       if (wholeTooth || !isLocalValue("endo", description)) return false;
       wholeTooth = true;
       record.endo = description;
     } else {
       if (!["filling", "post", "incomplete", "temporary"].includes(description)) return false;
-      const states = (record.endoCanals ??= {})[root] ??= [];
+      const states = (record.endoCanals ??= {})[root.value] ??= [];
       if (states.includes(description)) return false;
       states.push(description);
     }
@@ -444,19 +460,19 @@ function applyTargetChartState(record: ToothRecord, resource: ResourceRecord): b
   if (fractures.length > 1) return false;
   if (fractures.length === 1) {
     const description = extensionString(fractures[0], "description");
-    const root = extensionString(fractures[0], "root");
-    if (!description || !["vertical", "horizontal"].includes(description)) return false;
+    const root = optionalExtensionString(fractures[0], "root");
+    if (!description || !root.valid || !["vertical", "horizontal"].includes(description)) return false;
     record.rootFracture = description;
-    if (root) record.rootFractureRoot = root;
+    if (root.value) record.rootFractureRoot = root.value;
   }
   const apical = extensionsAt(resource, RECORDED_APICAL_FINDING_URL);
   if (apical.length > 1) return false;
   if (apical.length === 1) {
     const description = extensionString(apical[0], "description");
-    const root = extensionString(apical[0], "root");
-    if (!description || !isLocalValue("apicalDx", description)) return false;
+    const root = optionalExtensionString(apical[0], "root");
+    if (!description || !root.valid || !isLocalValue("apicalDx", description)) return false;
     record.apicalDx = description;
-    if (root) record.apicalRoot = root;
+    if (root.value) record.apicalRoot = root.value;
   }
   return true;
 }
@@ -497,7 +513,7 @@ function applyDevice(record: ToothRecord, resource: ResourceRecord): boolean {
   const cantilever = extensionsAt(resource, RECORDED_CANTILEVER_ROLE_URL);
   if (cantilever.length > 1) return false;
   if (cantilever.length === 1) {
-    if (typeof cantilever[0].valueBoolean !== "boolean") return false;
+    if (text !== "Bridge abutment" || typeof cantilever[0].valueBoolean !== "boolean") return false;
     record.cantilever = cantilever[0].valueBoolean;
   }
   return true;
@@ -525,7 +541,9 @@ function applyFinding(record: ToothRecord, resource: ResourceRecord): boolean {
 export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload | undefined {
   const bundle = input as Bundle;
   if (bundle?.resourceType !== "Bundle" || bundle.type !== "collection" || !Array.isArray(bundle.entry)) return undefined;
-  const hasBundleMarker = bundle.identifier?.system === DENTAL_CORE && bundle.identifier?.value === DENTAL_CORE_BUNDLE_IDENTIFIER;
+  const hasBundleMarker = bundle.identifier?.system === DENTAL_CORE
+    && typeof bundle.identifier?.value === "string"
+    && supportedBundleIdentifiers.has(bundle.identifier.value);
   const hasAdmittedProfile = bundle.entry.some((entry) => {
     const profiles = (entry.resource as ResourceRecord | undefined)?.meta?.profile;
     return Array.isArray(profiles) && profiles.some((profile) => typeof profile === "string" && dentalCoreProfileValues.has(profile));
@@ -599,6 +617,8 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
   const riskCodes = new Set<string>();
   const sharedFields = new Set<string>();
   const claims = new Map<string, string>();
+  const exclusiveCarrierClaims = new Map<string, ResourceRecord>();
+  const exclusiveCarrierFields = new Set(["implantPosition", "orthoBracketSide", "cantilever"]);
   let carePlan: ResourceRecord | undefined;
   let diagnosis: ResourceRecord | undefined;
   let provenance: ResourceRecord | undefined;
@@ -611,9 +631,15 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
     claims.set(key, encoded);
     return true;
   };
-  const mergeDecoded = (fdi: string, decoded: ToothRecord, planned: boolean): boolean => {
+  const mergeDecoded = (fdi: string, decoded: ToothRecord, planned: boolean, carrier: ResourceRecord): boolean => {
     const target = planned ? ((payload.plan ??= {})[fdi] ??= {}) : (payload.teeth[fdi] ??= {});
     for (const [field, value] of Object.entries(decoded)) {
+      if (exclusiveCarrierFields.has(field)) {
+        const carrierKey = `${planned ? "plan" : "status"}:${fdi}:${field}`;
+        const previousCarrier = exclusiveCarrierClaims.get(carrierKey);
+        if (previousCarrier && previousCarrier !== carrier) return false;
+        exclusiveCarrierClaims.set(carrierKey, carrier);
+      }
       if (!claim(fdi, field, value, planned ? "plan" : "status")) return false;
       (target as Record<string, unknown>)[field] = value;
     }
@@ -687,15 +713,22 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
     }
     if (resource.resourceType === "Goal" && Array.isArray(resource.meta?.profile) && resource.meta.profile.includes(TARGET_CHART_STATE_PROFILE_URL)) {
       const description = (resource.description as { text?: unknown } | undefined)?.text;
-      if (!carePlan || !carePlanGoals?.has(resource) || !["planned", "active"].includes(String(resource.lifecycleStatus)) || typeof description !== "string" || !description) return undefined;
+      if (!hasAdmittedProfileResource(resource, TARGET_CHART_STATE_PROFILE_URL)
+        || !validGeneratedProfile(DentalTargetChartStateProfile, resource)
+        || !carePlan || !carePlanGoals?.has(resource) || !["planned", "active"].includes(String(resource.lifecycleStatus))
+        || typeof description !== "string" || !description) return undefined;
       const positions = extensionsAt(resource, DENTAL_CORE_PROFILES["tooth-position"]);
       const position = positions.length === 1 ? positions[0].valueCoding as { system?: unknown; code?: unknown } | undefined : undefined;
       const fdi = position?.system === FDI_SYSTEM && typeof position.code === "string" ? position.code : undefined;
       const addresses = Array.isArray(resource.addresses) ? resource.addresses as Array<{ reference?: unknown }> : [];
       const request = addresses.length === 1 ? resolveReference(addresses[0].reference)?.resource : undefined;
-      if (!fdi || !isDentalCoreFdi(fdi) || !request || request.resourceType !== "ServiceRequest" || planGoals.has(resource)) return undefined;
+      const requestFdi = request?.resourceType === "ServiceRequest" && Array.isArray(request.bodySite)
+        ? codeAt(request.bodySite[0] as { coding?: Array<{ system?: string; code?: string }> }, FDI_SYSTEM)
+        : undefined;
+      if (!fdi || !isDentalCoreFdi(fdi) || !request || request.resourceType !== "ServiceRequest"
+        || !planActivities?.has(request) || requestFdi !== fdi || planGoals.has(resource)) return undefined;
       const decoded: ToothRecord = {};
-      if (!applyTargetChartState(decoded, resource) || !mergeDecoded(fdi, decoded, true)) return undefined;
+      if (!applyTargetChartState(decoded, resource) || !mergeDecoded(fdi, decoded, true, resource)) return undefined;
       planGoals.add(resource);
       plannedFdi.add(fdi);
       captureIdentity(`Goal/target/${fdi}`, resolvedEntry, resource);
@@ -721,7 +754,7 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
       const planned = isPlannedObservation(resource);
       if (!fdi || !isDentalCoreFdi(fdi) || planned === undefined || profileIds.has(`tooth-state:${planned}:${fdi}`)) return undefined;
       const decoded: ToothRecord = {};
-      if (!applyToothState(decoded, resource) || !mergeDecoded(fdi, decoded, planned)) return undefined;
+      if (!applyToothState(decoded, resource) || !mergeDecoded(fdi, decoded, planned, resource)) return undefined;
       profileIds.add(`tooth-state:${planned}:${fdi}`);
       if (planned) plannedFdi.add(fdi);
       captureIdentity(`Observation/tooth-state/${planned ? "plan/" : ""}${fdi}`, resolvedEntry, resource);
@@ -735,7 +768,7 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
       const rootValue = !surface ? /^root-caries-(.+)$/.exec(localValue(resource.valueCodeableConcept) ?? "")?.[1] : undefined;
       if (rootValue) {
         if (!fdi || !isDentalCoreFdi(fdi) || planned === undefined || !LOCAL_VALUE_MAPS.rootCaries?.[rootValue] || profileIds.has(`root-caries:${planned}:${fdi}`)) return undefined;
-        if (!mergeDecoded(fdi, { rootCaries: rootValue }, planned)) return undefined;
+        if (!mergeDecoded(fdi, { rootCaries: rootValue }, planned, resource)) return undefined;
         profileIds.add(`root-caries:${planned}:${fdi}`);
         if (planned) plannedFdi.add(fdi);
         captureIdentity(`Observation/caries/${planned ? "plan/" : ""}root/${fdi}`, resolvedEntry, resource);
@@ -765,7 +798,7 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
       const focused = focus.length === 1 ? resolveReference(focus[0].reference)?.resource : undefined;
       if (!fdi || !isDentalCoreFdi(fdi) || profileIds.has(`peri-implant:${fdi}`) || !focused || !hasAdmittedProfileResource(focused, DENTAL_CORE_PROFILES["dental-implant"])) return undefined;
       const decoded: ToothRecord = {};
-      if (!applyPeriImplant(decoded, resource) || !mergeDecoded(fdi, decoded, false)) return undefined;
+      if (!applyPeriImplant(decoded, resource) || !mergeDecoded(fdi, decoded, false, resource)) return undefined;
       profileIds.add(`peri-implant:${fdi}`);
       captureIdentity(`Observation/peri-implant/${fdi}`, resolvedEntry, resource);
       continue;
@@ -776,7 +809,7 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
       const planned = isPlannedObservation(resource);
       if (!fdi || !isDentalCoreFdi(fdi) || planned === undefined || profileIds.has(`periodontal:${planned}:${fdi}`)) return undefined;
       const decoded: ToothRecord = {};
-      if (!applyPeriodontal(decoded, resource) || !mergeDecoded(fdi, decoded, planned)) return undefined;
+      if (!applyPeriodontal(decoded, resource) || !mergeDecoded(fdi, decoded, planned, resource)) return undefined;
       profileIds.add(`periodontal:${planned}:${fdi}`);
       if (planned) plannedFdi.add(fdi);
       captureIdentity(`Observation/periodontal/${planned ? "plan/" : ""}${fdi}`, resolvedEntry, resource);
@@ -788,7 +821,7 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
       const planned = isPlannedObservation(resource);
       if (!fdi || !isDentalCoreFdi(fdi) || planned === undefined || profileIds.has(`recession:${planned}:${fdi}`)) return undefined;
       const decoded: ToothRecord = {};
-      if (!applyRecession(decoded, resource) || !mergeDecoded(fdi, decoded, planned)) return undefined;
+      if (!applyRecession(decoded, resource) || !mergeDecoded(fdi, decoded, planned, resource)) return undefined;
       profileIds.add(`recession:${planned}:${fdi}`);
       if (planned) plannedFdi.add(fdi);
       captureIdentity(`Observation/recession/${planned ? "plan/" : ""}${fdi}`, resolvedEntry, resource);
@@ -815,7 +848,7 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
         if (value === undefined || (mapping.kind !== "set" && !claim(fdi, mapping.field, value, planned ? "plan" : "status"))) return undefined;
       }
       const decoded: ToothRecord = {};
-      if (!applyChart(decoded, resource as unknown as Observation) || !mergeDecoded(fdi, decoded, planned)) return undefined;
+      if (!applyChart(decoded, resource as unknown as Observation) || !mergeDecoded(fdi, decoded, planned, resource)) return undefined;
       if (planned) plannedFdi.add(fdi);
       captureIdentity(`Observation/chart/${planned ? "plan" : "status"}/${fdi}`, resolvedEntry, resource);
       continue;
@@ -921,7 +954,7 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
       const fdi = position?.valueCoding?.system === FDI_SYSTEM ? position.valueCoding.code : undefined;
       if (!fdi || !isDentalCoreFdi(fdi) || profileIds.has(`implant:${fdi}`)) return undefined;
       const decoded: ToothRecord = {};
-      if (!applyImplant(decoded, resource) || !mergeDecoded(fdi, decoded, false)) return undefined;
+      if (!applyImplant(decoded, resource) || !mergeDecoded(fdi, decoded, false, resource)) return undefined;
       profileIds.add(`implant:${fdi}`);
       captureIdentity(`Device/implant/${fdi}`, resolvedEntry, resource);
       continue;
@@ -936,7 +969,7 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
       const field = text === "Orthodontic bracket" || text === "Orthodontic band" ? "orthoAppliance" : text === "Parapulpal pin" ? "parapulpalPin" : text === "Bridge abutment" ? "bridgePillar" : text?.startsWith("Prosthesis retention ") ? "retention" : undefined;
       const value = text === "Orthodontic bracket" ? "bracket" : text === "Orthodontic band" ? "band" : text === "Parapulpal pin" || text === "Bridge abutment" ? true : text?.replace("Prosthesis retention ", "");
       const decoded: ToothRecord = {};
-      if (!fdi || !field || value === undefined || deviceIds.has(`${fdi}:${field}`) || !isDentalCoreFdi(fdi) || !applyDevice(decoded, resource) || !mergeDecoded(fdi, decoded, false)) return undefined;
+      if (!fdi || !field || value === undefined || deviceIds.has(`${fdi}:${field}`) || !isDentalCoreFdi(fdi) || !applyDevice(decoded, resource) || !mergeDecoded(fdi, decoded, false, resource)) return undefined;
       deviceIds.add(`${fdi}:${field}`);
       captureIdentity(`Device/${fdi}/${field}`, resolvedEntry, resource);
       continue;

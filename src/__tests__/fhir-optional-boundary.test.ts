@@ -156,7 +156,7 @@ describe("optional FHIR package boundary", () => {
     }
   });
 
-  it("documents the sole Dental Core contract and independent root posts in every language guide", () => {
+  it("documents the current Dental Core preservation contract in every language guide", () => {
     const guides = readdirSync(resolve(root, "lang"))
       .filter((name) => /^README-.*\.md$/.test(name))
       .map((name) => `lang/${name}`);
@@ -164,9 +164,15 @@ describe("optional FHIR package boundary", () => {
     expect(guides).toHaveLength(12);
     for (const guide of guides) {
       const text = source(guide);
-      expect(text, guide).toContain("de.cognovis.fhir.dental.core#0.6.0");
-      expect(text, guide).toContain("@cognovis/fhir-release@0.2.4");
-      expect(text, guide).toContain("rootPostType");
+      for (const required of [
+        "de.cognovis.fhir.dental.core#0.6.1",
+        "odontogram-dental-core-0.6.0",
+        "rootPostType",
+        "Goal",
+        "implantPosition",
+        "endoCanals",
+        "apicalRoot",
+      ]) expect(text, guide).toContain(required);
     }
 
     const layoutGuides = guides.filter((guide) => source(guide).includes("`src/registry/`"));

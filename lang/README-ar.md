@@ -583,7 +583,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-تحويل FHIR هو إسقاط اختياري ونقي لوثيقة واجهة المستخدم. يُعد Dental Core ‏`de.cognovis.fhir.dental.core#0.6.0` من الإسقاط الدقيق `@cognovis/fhir-release@0.2.4` عقد FHIR الوحيد. يزيل الإصدار 3 التمثيل السابق غير التابع لـ Dental Core واختيار اللهجة أثناء التشغيل؛ وتُرفض Bundles الأجنبية أو غير المدعومة أو غير الصالحة صراحةً. يبقى وتد الجذر مستقلاً عن كل حالة حشو عبر `rootPostType`. تُرحَّل ملفات JSON القديمة وقيم Dental Core السابقة `endo-glass-pin` / `endo-metal-pin` إلى `endo-filling` مع مادة الوتد؛ ولا يدمج الإخراج الجديد المحورين مرة أخرى.
+تحويل FHIR هو إسقاط اختياري ونقي لوثيقة واجهة المستخدم. يُعد Dental Core ‏`de.cognovis.fhir.dental.core#0.6.1` عقد FHIR الوحيد؛ وتظل العلامة المعروفة `odontogram-dental-core-0.6.0` مقبولة للمجموعات القديمة الفارغة، بينما تُرفض علامات اللهجات غير المعروفة. يحافظ الاستيراد والتصدير وإعادة التصدير على محاور المصدر الأحد عشر: `implantPosition` و`crownFractureType` و`orthoProgressive` و`rootResection` و`papillaLoss` و`orthoBracketSide` و`cantilever` و`endoCanals` و`rootFractureRoot` و`rootResectionRoot` و`apicalRoot`. تستخدم هذه المحاور في الخطط مورد `Goal` مرجعياً لحالة السن المستهدفة، بينما تستمر حقول الخطة الحالية في استخدام Observations مخططة ذات ملفات تعريف. تبقى الحالة المخططة منفصلة عن الحالة المرصودة ولا تُنشأ Devices أو Procedures منفذة بشكل مصطنع. تُرفض التأكيدات المكررة أو المتعارضة أو غير الصالحة أو ذات العنوان الملتبس أو غير المتوافقة مع السن. تبقى أوتاد الجذور مستقلة عبر `rootPostType`؛ وتُرحّل القيم القديمة `endo-glass-pin` و`endo-metal-pin` إلى `endo-filling` مع مادة الوتد.
 
 **وضع Aidbox الحي (تطوير، ابتداءً من 2.50.0):**
 
