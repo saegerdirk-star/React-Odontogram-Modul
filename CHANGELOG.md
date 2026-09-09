@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 3.3.0 - 2026-09-09
 
 ### Lossless Dental Core chart-state exchange (odontogram-1sa)
 
