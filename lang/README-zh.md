@@ -576,7 +576,7 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR 转换是 UI 领域文档的纯可选投影。Dental Core `de.cognovis.fhir.dental.core#0.6.1` 是唯一的 FHIR 合约；已识别的 `odontogram-dental-core-0.6.0` 标记仍可用于空的旧版集合，未知方言标记会被拒绝。导入、导出和重新导出会保留十一个源状态轴：`implantPosition`、`crownFractureType`、`orthoProgressive`、`rootResection`、`papillaLoss`、`orthoBracketSide`、`cantilever`、`endoCanals`、`rootFractureRoot`、`rootResectionRoot` 和 `apicalRoot`。在治疗计划中，这些轴使用被引用的目标牙位状态 `Goal`；既有计划字段继续使用带配置文件的计划 Observations。计划状态与观察状态保持分离，且不会虚构 Devices 或已执行的 Procedures。重复、冲突、格式错误、地址含糊或与牙位不兼容的断言会被拒绝。根管桩通过 `rootPostType` 保持独立；旧的 `endo-glass-pin` 和 `endo-metal-pin` 值会迁移为 `endo-filling` 加桩材料。
+FHIR 转换是 UI 领域文档的纯可选投影。Dental Core `de.cognovis.fhir.dental.core#0.7.1` 是唯一的 FHIR 合约；已识别的 `odontogram-dental-core-0.6.0` 标记仍可用于空的旧版集合，未知方言标记会被拒绝。导入、导出和重新导出会保留十一个源状态轴：`implantPosition`、`crownFractureType`、`orthoProgressive`、`rootResection`、`papillaLoss`、`orthoBracketSide`、`cantilever`、`endoCanals`、`rootFractureRoot`、`rootResectionRoot` 和 `apicalRoot`。在治疗计划中，这些轴使用被引用的目标牙位状态 `Goal`；既有计划字段继续使用带配置文件的计划 Observations。计划状态与观察状态保持分离，且不会虚构 Devices 或已执行的 Procedures。重复、冲突、格式错误、地址含糊或与牙位不兼容的断言会被拒绝。根管桩通过 `rootPostType` 保持独立；旧的 `endo-glass-pin` 和 `endo-metal-pin` 值会迁移为 `endo-filling` 加桩材料。
 
 **Aidbox 实时模式（开发用，自 2.50.0 起）：**
 

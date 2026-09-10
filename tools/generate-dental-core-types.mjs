@@ -7,7 +7,7 @@ import { promisify } from "node:util";
 import { APIBuilder, prettyReport } from "@cognovis/codegen";
 
 const execFileAsync = promisify(execFile);
-const fhirReleaseProjection = { name: "@cognovis/fhir-release", version: "0.2.4" };
+const fhirReleaseProjection = { name: "@cognovis/fhir-release", version: "0.2.9" };
 const fhirReleaseManifestPath = join("node_modules", "@cognovis", "fhir-release", "cognovis-fhir-release.manifest.json");
 const fhirReleaseManifest = JSON.parse(await readFile(fhirReleaseManifestPath, "utf8"));
 if (fhirReleaseManifest.projectionVersion !== fhirReleaseProjection.version) {
@@ -29,8 +29,8 @@ if (localCandidateBytes) {
 }
 const dentalCoreClosure = fhirReleaseManifest.closure?.find((entry) =>
   entry.packageId === "de.cognovis.fhir.dental.core" && entry.scope === "estate");
-if (!localCandidateArchive && (!dentalCoreClosure || dentalCoreClosure.version !== "0.6.0" || typeof dentalCoreClosure.integrity !== "string")) {
-  throw new Error("FHIR release projection does not contain the Dental Core 0.6.0 estate package");
+if (!localCandidateArchive && (!dentalCoreClosure || dentalCoreClosure.version !== "0.7.1" || typeof dentalCoreClosure.integrity !== "string")) {
+  throw new Error("FHIR release projection does not contain the Dental Core 0.7.1 estate package");
 }
 const localCandidateMetadata = localCandidateArchive
   ? JSON.parse((await execFileAsync("tar", ["-xzOf", localCandidateArchive, "package/package.json"])).stdout)
@@ -131,28 +131,6 @@ async function normalizeGeneratedWhitespace(directory) {
   }));
 }
 
-// @cognovis/codegen currently emits `args ?? {}` for complex extension
-// constructors even when both constructor input shapes have required fields.
-// Keep the generated required-input type and runtime validation intact by
-// removing only that unreachable fallback. Optional constructors are untouched.
-async function normalizeRequiredExtensionConstructors(directory) {
-  const entries = await readdir(directory, { withFileTypes: true });
-  await Promise.all(entries.map(async (entry) => {
-    const path = join(directory, entry.name);
-    if (entry.isDirectory()) return normalizeRequiredExtensionConstructors(path);
-    if (!entry.isFile() || !entry.name.endsWith(".ts")) return undefined;
-    const content = await readFile(path, "utf8");
-    const pattern = /static createResource \(args: ([A-Za-z0-9]+)Raw \| \1Flat\) : Extension \{\n        const resolvedExtensions = \1\.resolveInput\(args \?\? \{\}\);/g;
-    const normalized = content.replace(pattern, (_match, profile) =>
-      `static createResource (args: ${profile}Raw | ${profile}Flat) : Extension {\n        const resolvedExtensions = ${profile}.resolveInput(args);`);
-    if (/static createResource \(args: [^\n]+\)[\s\S]{0,300}resolveInput\(args \?\? \{\}\)/u.test(normalized)) {
-      throw new Error(`Unexpected required complex-extension constructor shape in ${path}`);
-    }
-    if (normalized !== content) await writeFile(path, normalized);
-    return undefined;
-  }));
-}
-
 async function verifyPackageArchive() {
   const archive = localCandidateBytes
     ? localCandidateBytes
@@ -216,6 +194,5 @@ await writeGeneratedContract(join(dentalCoreStageDir, "package"), {
   sha256: verifiedPackage.sha256,
   sha512: verifiedPackage.sha512,
 });
-await normalizeRequiredExtensionConstructors(dentalCoreGeneratedRoot);
 await normalizeGeneratedWhitespace(dentalCoreGeneratedRoot);
 console.log(prettyReport(report));

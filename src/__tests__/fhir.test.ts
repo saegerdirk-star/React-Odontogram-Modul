@@ -131,25 +131,25 @@ describe("generated Dental Core contract", () => {
 
   it("pins the immutable published package and exposes its profiles and terminology", () => {
     expect(DENTAL_CORE_PACKAGE_NAME).toBe("de.cognovis.fhir.dental.core");
-    expect(["0.6.0", "0.6.1"]).toContain(DENTAL_CORE_PACKAGE_VERSION);
+    expect(DENTAL_CORE_PACKAGE_VERSION).toBe("0.7.1");
     expect(DENTAL_CORE_PACKAGE_SHA512).toHaveLength(128);
     expect(DENTAL_CORE_PACKAGE_SHA256).toMatch(/^[a-f0-9]{64}$/);
     expect(FHIR_RELEASE_PROJECTION_PACKAGE).toBe("@cognovis/fhir-release");
-    expect(FHIR_RELEASE_PROJECTION_VERSION).toBe("0.2.4");
+    expect(FHIR_RELEASE_PROJECTION_VERSION).toBe("0.2.9");
     expect(FHIR_RELEASE_PROJECTION_IDENTITY).toMatch(/^sha256:[a-f0-9]{64}$/);
     expect(FHIR_RELEASE_PROJECTION_CLOSURE_DIGEST).toMatch(/^sha256:[a-f0-9]{64}$/);
     if ((DENTAL_CORE_PACKAGE_SOURCE as string) === "released-projection") {
-      expect(DENTAL_CORE_PACKAGE_VERSION).toBe("0.6.0");
+      expect(DENTAL_CORE_PACKAGE_VERSION).toBe("0.7.1");
       expect(DENTAL_CORE_PACKAGE_ARCHIVE_URL).toMatch(/^https:\/\//);
       expect(DENTAL_CORE_CLOSURE_ENTRY).toMatchObject({
         packageId: "de.cognovis.fhir.dental.core",
-        version: "0.6.0",
+        version: "0.7.1",
         scope: "estate",
         integrity: expect.stringMatching(/^sha512-/),
       });
     } else {
       expect(DENTAL_CORE_PACKAGE_SOURCE).toBe("local-candidate");
-      expect(DENTAL_CORE_PACKAGE_VERSION).toBe("0.6.1");
+      expect(DENTAL_CORE_PACKAGE_VERSION).toBe("0.7.1");
       expect(DENTAL_CORE_PACKAGE_ARCHIVE_URL).toMatch(/^local-candidate:/);
       expect(DENTAL_CORE_CLOSURE_ENTRY).toBeNull();
     }

@@ -15,13 +15,12 @@
   brackets, or bridge devices.
 - Reject invalid values, duplicate singleton assertions, duplicate papilla
   sides, ambiguous source carriers, and inconsistent plan references.
-- Allow the Dental Core generator to consume an unpublished local candidate
-  archive only with its expected SHA-256. Generated metadata identifies that
-  input as a local candidate and does not claim release-projection provenance.
-- Pin `@cognovis/codegen` 0.2.0 to match Dental Core. Until the upstream
-  required-complex-extension constructor bug is fixed, generation removes only
-  its unreachable `args ?? {}` fallback from constructors whose input remains
-  required; unexpected generated shapes fail generation.
+- Generate the shipped FHIR contract from the published
+  `de.cognovis.fhir.dental.core#0.7.1` package in the exact
+  `@cognovis/fhir-release@0.2.9` projection.
+- Pin `@cognovis/codegen` 0.2.3, which preserves required complex-extension
+  constructor inputs directly; the consumer-side generated-code rewrite is no
+  longer needed.
 
 ## 3.2.0 - 2026-09-03
 
