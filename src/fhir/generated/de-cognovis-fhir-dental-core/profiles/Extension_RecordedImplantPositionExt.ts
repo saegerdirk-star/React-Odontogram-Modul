@@ -22,7 +22,7 @@ export type RecordedImplantPositionExtProfileRaw = {
     valueString: string;
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/recorded-implant-position (pkg: de.cognovis.fhir.dental.core#0.6.1)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/recorded-implant-position (pkg: de.cognovis.fhir.dental.core#0.7.1)
 export class RecordedImplantPositionExtProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/recorded-implant-position";
 

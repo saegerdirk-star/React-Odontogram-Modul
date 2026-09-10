@@ -32,7 +32,7 @@ export type RecordedRootEndodonticStateExtProfileFlat = {
     root?: string;
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/recorded-root-endodontic-state (pkg: de.cognovis.fhir.dental.core#0.6.1)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/recorded-root-endodontic-state (pkg: de.cognovis.fhir.dental.core#0.7.1)
 export class RecordedRootEndodonticStateExtProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/recorded-root-endodontic-state";
 

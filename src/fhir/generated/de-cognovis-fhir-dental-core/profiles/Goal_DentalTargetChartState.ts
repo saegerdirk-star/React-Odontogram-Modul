@@ -62,8 +62,9 @@ export type DentalTargetChartStateProfileRaw = {
     addresses: Reference<"Condition" | "MedicationStatement" | "NutritionOrder" | "Observation" | "RiskAssessment" | "ServiceRequest">[];
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-target-chart-state (pkg: de.cognovis.fhir.dental.core#0.6.1)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-target-chart-state (pkg: de.cognovis.fhir.dental.core#0.7.1)
 export class DentalTargetChartStateProfile {
+    static readonly resourceType = "Goal";
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-target-chart-state";
 
     private resource: Goal;

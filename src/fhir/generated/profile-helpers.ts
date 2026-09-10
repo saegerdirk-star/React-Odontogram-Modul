@@ -369,11 +369,23 @@ export const validateExcluded = (res: object, profileName: string, field: string
         : [];
 };
 
-/** Checks that `field` structurally contains the expected fixed value. */
+/** Checks that a present `field` structurally contains the expected fixed value. */
 export const validateFixedValue = (res: object, profileName: string, field: string, expected: unknown): string[] => {
-    return matchesValue((res as Record<string, unknown>)[field], expected)
+    const value = (res as Record<string, unknown>)[field];
+    return value === undefined || matchesValue(value, expected)
         ? []
         : [`${profileName}: field '${field}' does not match expected fixed value`];
+};
+
+/**
+ * Containment constraint for a field that may be absent: absence is
+ * `validateRequired`'s concern, so an absent field passes; a present one must
+ * structurally contain `expected`.
+ */
+export const validatePatternValue = (res: object, profileName: string, field: string, expected: unknown): string[] => {
+    const value = (res as Record<string, unknown>)[field];
+    if (value === undefined || value === null) return [];
+    return matchesValue(value, expected) ? [] : [`${profileName}: field '${field}' does not match expected pattern`];
 };
 
 /**

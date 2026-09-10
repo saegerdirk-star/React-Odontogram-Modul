@@ -34,7 +34,7 @@ export type RecordedPapillaLossExtProfileFlat = {
     classification: string;
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/recorded-papilla-loss (pkg: de.cognovis.fhir.dental.core#0.6.1)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/recorded-papilla-loss (pkg: de.cognovis.fhir.dental.core#0.7.1)
 export class RecordedPapillaLossExtProfile {
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/recorded-papilla-loss";
 

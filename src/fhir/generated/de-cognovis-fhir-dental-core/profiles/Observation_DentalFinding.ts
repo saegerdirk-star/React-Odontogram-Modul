@@ -36,8 +36,9 @@ export type DentalFindingProfileRaw = {
     status: ("registered" | "preliminary" | "final" | "amended" | "corrected" | "cancelled" | "entered-in-error" | "unknown");
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-finding (pkg: de.cognovis.fhir.dental.core#0.6.1)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-finding (pkg: de.cognovis.fhir.dental.core#0.7.1)
 export class DentalFindingProfile {
+    static readonly resourceType = "Observation";
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-finding";
 
     private resource: Observation;

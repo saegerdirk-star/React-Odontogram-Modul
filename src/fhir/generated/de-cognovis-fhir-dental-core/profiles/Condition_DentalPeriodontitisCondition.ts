@@ -37,8 +37,9 @@ export type DentalPeriodontitisConditionProfileRaw = {
     evidence: ConditionEvidence[];
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-periodontitis-condition (pkg: de.cognovis.fhir.dental.core#0.6.1)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-periodontitis-condition (pkg: de.cognovis.fhir.dental.core#0.7.1)
 export class DentalPeriodontitisConditionProfile {
+    static readonly resourceType = "Condition";
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-periodontitis-condition";
 
     private resource: Condition;

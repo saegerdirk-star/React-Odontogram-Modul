@@ -49,8 +49,9 @@ export type DentalCephalometricLandmarkProfileRaw = {
     component?: ObservationComponent[];
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-cephalometric-landmark (pkg: de.cognovis.fhir.dental.core#0.6.1)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-cephalometric-landmark (pkg: de.cognovis.fhir.dental.core#0.7.1)
 export class DentalCephalometricLandmarkProfile {
+    static readonly resourceType = "Observation";
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-cephalometric-landmark";
 
     private static readonly xCoordinateSliceMatch: Record<string, unknown> = {

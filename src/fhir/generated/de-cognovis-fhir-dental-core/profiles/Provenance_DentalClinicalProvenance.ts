@@ -25,8 +25,9 @@ export type DentalClinicalProvenanceProfileRaw = {
     agent: ProvenanceAgent[];
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-clinical-provenance (pkg: de.cognovis.fhir.dental.core#0.6.1)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-clinical-provenance (pkg: de.cognovis.fhir.dental.core#0.7.1)
 export class DentalClinicalProvenanceProfile {
+    static readonly resourceType = "Provenance";
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-clinical-provenance";
 
     private resource: Provenance;

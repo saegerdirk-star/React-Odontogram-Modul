@@ -27,8 +27,9 @@ export type DentalRiskEvidenceProfileRaw = {
     subject: Reference<"Device" | "Group" | "Location" | "Patient">;
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-risk-evidence (pkg: de.cognovis.fhir.dental.core#0.6.1)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-risk-evidence (pkg: de.cognovis.fhir.dental.core#0.7.1)
 export class DentalRiskEvidenceProfile {
+    static readonly resourceType = "Observation";
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-risk-evidence";
 
     private resource: Observation;

@@ -38,8 +38,9 @@ export type DentalImplantProfileRaw = {
     patient: Reference<"Patient">;
 }
 
-// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-implant (pkg: de.cognovis.fhir.dental.core#0.6.1)
+// CanonicalURL: https://fhir.cognovis.de/dental-core/StructureDefinition/dental-implant (pkg: de.cognovis.fhir.dental.core#0.7.1)
 export class DentalImplantProfile {
+    static readonly resourceType = "Device";
     static readonly canonicalUrl = "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-implant";
 
     private resource: Device;
