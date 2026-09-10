@@ -56,6 +56,7 @@
     "build": "tsc -b && vite build",
     "build:lib": "vite build --config vite.lib.config.ts",
     "verify:lib-artifacts": "node tools/verify-library-artifacts.mjs",
+    "fhir:validate": "node tools/fhir-validate.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "NODE_OPTIONS=--max-old-space-size=8192 vitest run",

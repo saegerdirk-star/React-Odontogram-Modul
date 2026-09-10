@@ -50,7 +50,8 @@ import {
   PerioChart,             // standalone periodontal chart
   getOdontogramSummary,
   exportStatus, importStatus,   // JSON state serialization / hydration
-  exportFhir, exportSvg, exportImage,
+  exportSvg, exportImage,
+  createOdontogramSession, // FHIR: session.loadFromAidbox / saveToAidbox
   setReadOnly, startIntroTour,
 } from "react-advanced-odontogram";
 ```
