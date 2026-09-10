@@ -79,7 +79,7 @@
     "react-dom": "^18 || ^19"
   },
   "dependencies": {
-    "@cognovis/fhir-sdk": "0.11.0",
+    "@cognovis/fhir-sdk": "file:vendor/cognovis-fhir-sdk-0.11.0.tgz",
     "@types/fhir": "^0.0.44",
     "dompurify": "^3.4.13",
     "jspdf": "^4.2.1"
