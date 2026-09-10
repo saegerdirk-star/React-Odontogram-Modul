@@ -1,22 +1,48 @@
 import type { Bundle, BundleEntry, CarePlan, Condition, Device, Goal, Observation, Procedure, Provenance, Resource, ServiceRequest } from "fhir/r4";
 import type { DentalCoreResourceIdentity, FhirExportOptions, OdontogramExportPayload, ToothRecord } from "./types";
-import { DentalChartStateProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalChartState";
-import { DentalClinicalProvenanceProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Provenance_DentalClinicalProvenance";
-import { DentalCariesFindingProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalCariesFinding";
-import { DentalDeviceProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Device_DentalDevice";
-import { DentalFindingProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalFinding";
-import { DentalGingivalRecessionAssessmentProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalGingivalRecessionAssessment";
-import { DentalImplantProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Device_DentalImplant";
-import { DentalPeriImplantFindingProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalPeriImplantFinding";
-import { DentalPeriodontalFindingProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalPeriodontalFinding";
-import { DentalProcedureProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Procedure_DentalProcedure";
-import { DentalRiskEvidenceProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalRiskEvidence";
-import { DentalServiceRequestProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/ServiceRequest_DentalServiceRequest";
-import { DentalToothStateProfile } from "./generated/de-cognovis-fhir-dental-core/profiles/Observation_DentalToothState";
-import { CHART_MAPPINGS, COMPONENT_SYSTEM, DENTAL_CORE, DENTAL_CORE_BUNDLE_IDENTIFIER, DENTAL_CORE_PROFILES, FDI_SYSTEM, isDentalCoreDiagnosis, isDentalCoreFdi, isDentalCoreRiskValue, normalizeLegacyRootPost, PROPERTY_SYSTEM, PROVENANCE_SYSTEM, VALUE_SYSTEM } from "./dentalCoreContract";
+import {
+  DentalChartStateProfile,
+  DentalTargetChartStateProfile,
+  DentalToothStateProfile,
+  DentalCariesFindingProfile,
+  DentalClinicalProvenanceProfile,
+  DentalDeviceProfile,
+  DentalFindingProfile,
+  DentalGingivalRecessionAssessmentProfile,
+  DentalImplantProfile,
+  DentalPeriImplantFindingProfile,
+  DentalPeriodontalFindingProfile,
+  DentalProcedureProfile,
+  DentalRiskEvidenceProfile,
+  DentalServiceRequestProfile,
+  RecordedRootFractureExtProfile,
+  RecordedApicalFindingExtProfile,
+  RecordedBracketSurfaceExtProfile,
+  RecordedCantileverPonticRoleExtProfile,
+  RecordedCrownFractureTypeExtProfile,
+  RecordedImplantPositionExtProfile,
+  RecordedOrthodonticProgressionExtProfile,
+  RecordedPapillaLossExtProfile,
+  RecordedRootEndodonticStateExtProfile,
+  RecordedRootResectionExtProfile,
+  DENTAL_CORE_PACKAGE,
+} from "@cognovis/fhir-sdk/dental-core";
+import { CHART_MAPPINGS, COMPONENT_SYSTEM, DENTAL_CORE, DENTAL_CORE_BUNDLE_IDENTIFIER, DENTAL_CORE_PROFILES, FDI_SYSTEM, isDentalCoreDiagnosis, isOdontogramFdi, isDentalCoreRiskValue, normalizeLegacyRootPost, PROPERTY_SYSTEM, PROVENANCE_SYSTEM, VALUE_SYSTEM } from "./dentalCoreContract";
 import { DENTAL_CORE_LOCAL_SYSTEM as LOCAL_SYSTEM, resolveSmokingStatus } from "./dentalCoreLocalCoding";
 import { LOCAL_VALUE_MAPS } from "../registry/valueCatalog";
 import { isSourceRootIdentity, isValidEndodonticStates } from "./sourceStateValidation";
+
+void DENTAL_CORE_PACKAGE;
+void RecordedRootFractureExtProfile;
+void RecordedApicalFindingExtProfile;
+void RecordedBracketSurfaceExtProfile;
+void RecordedCantileverPonticRoleExtProfile;
+void RecordedCrownFractureTypeExtProfile;
+void RecordedImplantPositionExtProfile;
+void RecordedOrthodonticProgressionExtProfile;
+void RecordedPapillaLossExtProfile;
+void RecordedRootEndodonticStateExtProfile;
+void RecordedRootResectionExtProfile;
 
 export class UnsupportedDentalCoreContentError extends Error {
   constructor(field: string) {
@@ -374,11 +400,11 @@ function sharedResourceMatches(payload: OdontogramExportPayload, options: FhirEx
 
 function assertDentalCoreComplete(payload: OdontogramExportPayload, options: FhirExportOptions, identity: DentalCoreIdentityResolver): void {
   for (const [fdi, record] of Object.entries(payload.teeth ?? {})) {
-    if (!isDentalCoreFdi(fdi) && hasClinicalValue(record)) throw new UnsupportedDentalCoreContentError(`teeth.${fdi}`);
+    if (!isOdontogramFdi(fdi) && hasClinicalValue(record)) throw new UnsupportedDentalCoreContentError(`teeth.${fdi}`);
     assertMappedTooth(record, `teeth.${fdi}`);
   }
   for (const [fdi, record] of Object.entries(payload.plan ?? {})) {
-    if (!isDentalCoreFdi(fdi) && hasClinicalValue(record)) throw new UnsupportedDentalCoreContentError(`plan.${fdi}`);
+    if (!isOdontogramFdi(fdi) && hasClinicalValue(record)) throw new UnsupportedDentalCoreContentError(`plan.${fdi}`);
     assertMappedTooth(record, `plan.${fdi}`);
     const unsupportedPlanField = [...IMPLANT_FIELDS, ...PERI_IMPLANT_FIELDS, ...SERVICE_REQUEST_FIELDS]
       .find((field) => hasOwn(record, field) && hasClinicalValue(record[field], String(field)));
@@ -522,7 +548,7 @@ function targetChartState(record: ToothRecord, fdi: string, options: FhirExportO
     ],
   });
   if (!extension.length) return undefined;
-  return {
+  return generated(DentalTargetChartStateProfile, {
     resourceType: "Goal",
     meta: { profile: [`${DENTAL_CORE}/StructureDefinition/dental-target-chart-state`] },
     lifecycleStatus: "planned",
@@ -530,7 +556,7 @@ function targetChartState(record: ToothRecord, fdi: string, options: FhirExportO
     subject: { reference: subjectReference(options, identity) },
     addresses: [{ reference: identity.reference(`ServiceRequest/${fdi}`) }],
     extension: [{ url: DENTAL_CORE_PROFILES["tooth-position"], valueCoding: coding(FDI_SYSTEM, fdi) }, ...extension],
-  };
+  });
 }
 
 function procedure(record: ToothRecord, fdi: string, payload: OdontogramExportPayload, options: FhirExportOptions, identity: DentalCoreIdentityResolver): Array<[string, Procedure]> {
@@ -981,7 +1007,7 @@ export function buildDentalCoreBundle(payload: OdontogramExportPayload, options:
   assertDentalCoreComplete(safe, options, identity);
   const entries: BundleEntry[] = [];
   if (!options.subject) entries.push(identity.entry("Patient/subject", { resourceType: "Patient" }));
-  for (const [fdi, record] of Object.entries(safe.teeth ?? {}).filter(([fdi]) => isDentalCoreFdi(fdi))) {
+  for (const [fdi, record] of Object.entries(safe.teeth ?? {}).filter(([fdi]) => isOdontogramFdi(fdi))) {
     const chart = chartState(record, fdi, safe, options, identity, false);
     if (chart) entries.push(identity.entry(`Observation/chart/status/${fdi}`, chart));
     for (const [key, resource] of [...procedure(record, fdi, safe, options, identity), ...devices(record, fdi, options, identity), ...observedFindings(record, fdi, safe, options, identity)]) entries.push(identity.entry(key, resource));
@@ -990,7 +1016,7 @@ export function buildDentalCoreBundle(payload: OdontogramExportPayload, options:
   }
   if (safe.plan && Object.keys(safe.plan).length) {
     const activity = Object.entries(safe.plan)
-      .filter(([fdi, record]) => isDentalCoreFdi(fdi) && Object.keys(record).length > 0)
+      .filter(([fdi, record]) => isOdontogramFdi(fdi) && Object.keys(record).length > 0)
       .map(([fdi]) => ({ reference: { reference: identity.reference(`ServiceRequest/${fdi}`) } }));
     const plan: CarePlan = {
       resourceType: "CarePlan", status: "active", intent: "plan",
@@ -1000,7 +1026,7 @@ export function buildDentalCoreBundle(payload: OdontogramExportPayload, options:
     };
     entries.push(identity.entry("CarePlan/plan", plan));
   }
-  for (const [fdi, record] of Object.entries(safe.plan ?? {}).filter(([fdi]) => isDentalCoreFdi(fdi))) {
+  for (const [fdi, record] of Object.entries(safe.plan ?? {}).filter(([fdi]) => isOdontogramFdi(fdi))) {
     const chart = chartState(record, fdi, safe, options, identity, true);
     if (chart) entries.push(identity.entry(`Observation/chart/plan/${fdi}`, chart));
     const request = plannedRequest(fdi, record, options, identity);

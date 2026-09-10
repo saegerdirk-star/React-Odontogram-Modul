@@ -10,10 +10,6 @@ import { t, onI18nChange, getI18nLanguage } from "./i18n/useI18n";
 import { toLabel, type NumberingSystem } from "./utils/numbering";
 import { type OdontogramPlugin, getQuadrant, LAYER_Z } from "./plugin";
 import { sanitizePluginSvg } from "./pluginSanitize";
-import { buildFhirBundle } from "./fhir/toFhir";
-import { parseFhirBundle } from "./fhir/fromFhir";
-import { MissingDentalCoreEffectiveDateError, UnsupportedDentalCoreContentError } from "./fhir/toFhirDentalCore";
-import { type Bundle, type FhirExportOptions } from "./fhir/types";
 import type { OdontogramDocument, ExaminationSnapshotRecord } from "./document";
 import type { CvmStage, SmiStage } from "./skeletalAge";
 import { PAYLOAD_VERSION } from "./document";
@@ -9833,7 +9829,7 @@ function collectExportPayload(){
 }
 
 /** TEST-ONLY: collect the full export payload ({version, globals, teeth[,
- *  plan]}) exactly as exportStatus()/exportFhir() would serialize it.
+ *  plan]}) exactly as exportStatus() would serialize it.
  *  Not part of the public API. */
 export function __collectExportPayloadForTest(): Any {
   return collectExportPayload();
@@ -13684,16 +13680,6 @@ export function exportStatus(){
 }
 
 /**
- * Export the current odontogram as an HL7 FHIR R4 collection Bundle (JSON).
- * @param options - Optional subject reference (e.g. "Patient/123"); when
- *   omitted a placeholder Patient is embedded. Clinical content requires a
- *   caller-supplied or examination-supplied effective date.
- */
-export function exportFhir(options?: FhirExportOptions){
-  downloadJson(getActiveOdontogramSession().exportFhirBundle(options), "odontogram-fhir");
-}
-
-/**
  * R2-A Task 2 (D3, RATIFIED): the DATA-ONLY half of the import path — no
  * DOM/UI calls, so it is directly unit-testable without a live
  * initOdontogram() mount (mirrors why other module-state tests use
@@ -13714,8 +13700,7 @@ export function exportFhir(options?: FhirExportOptions){
 function hydrateImportedCharts(data: Any): void {
   synchronizeActiveFhirIdentity(data.fhirIdentity);
   // FIX 1: only re-infer the legacy caries∩filling recurrent-caries intersection
-  // for pre-2.3 payloads. A native ≥2.3 payload (including any FHIR bundle, which
-  // parseFhirBundle tags "2.3") carries explicit `secondaryCaries` scores, so an
+  // for pre-2.3 payloads. A native ≥2.3 payload carries explicit `secondaryCaries`
   // unscored caried+filled surface stays PRIMARY. A missing version → legacy.
   const inferLegacySecondaryCaries = isLegacyPayloadVersion(data.version);
   const teeth = data.teeth || {};
@@ -13885,15 +13870,6 @@ export function __importStatusForTest(data: Any): void {
   hydrateImportedCharts(data);
   resetActiveChartToStatusAfterImport();
   adoptImportAsBaseline(broughtItsOwnArchive);
-}
-
-/** Import a FHIR R4 Bundle produced by this module; return whether it was applied. */
-export function importFhirBundle(input: Any): boolean {
-  let bundle = input;
-  if(typeof input === "string"){
-    try{ bundle = JSON.parse(input); }catch(e){ console.error("Invalid FHIR JSON", e); return false; }
-  }
-  return getActiveOdontogramSession().importFhirBundle(bundle);
 }
 
 function applyStatusExtra(option: Any){
@@ -14340,12 +14316,6 @@ async function buildGrid(token: number){
     grid.addEventListener("touchend", onGridTouchEnd);
     buildArchToggle();
   }
-}
-
-let pendingImportFormat: "status" | "fhir" = "status";
-/** Set which parser the next file import uses. Defaults back to "status" after each import. */
-export function setImportFormat(format: "status" | "fhir"){
-  pendingImportFormat = format === "fhir" ? "fhir" : "status";
 }
 
 // ---- Controls wiring ----
@@ -15128,27 +15098,10 @@ function wireControls(){
   });
 
   const exportBtn = $("#btnStatusExport") as HTMLButtonElement | null;
-  const fhirBtn = $("#btnStatusFhirExport") as HTMLButtonElement | null;
   const importBtn = $("#btnStatusImport") as HTMLButtonElement | null;
   const importInput = $("#statusImportInput") as HTMLInputElement | null;
   if(exportBtn){
     exportBtn.onclick = () => exportStatus();
-  }
-  if(fhirBtn){
-    fhirBtn.onclick = () => {
-      try {
-        exportFhir();
-      } catch (error) {
-        console.error("FHIR export failed", error);
-        if(error instanceof MissingDentalCoreEffectiveDateError){
-          window.alert(t("fhir.export.missingEffectiveDate"));
-        }else if(error instanceof UnsupportedDentalCoreContentError){
-          window.alert(t("fhir.export.unsupportedContent", { message: error.message }));
-        }else{
-          window.alert(error instanceof Error ? error.message : String(error));
-        }
-      }
-    };
   }
   const pngBtn = $("#btnStatusPngExport") as HTMLButtonElement | null;
   const jpgBtn = $("#btnStatusJpgExport") as HTMLButtonElement | null;
@@ -15176,20 +15129,14 @@ function wireControls(){
     importInput.onchange = async ()=>{
       const file = importInput.files?.[0];
       if(!file) return;
-      const format = pendingImportFormat;
       try{
         const text = await file.text();
         const data = JSON.parse(text);
-        if(format === "fhir"){
-          importFhirBundle(data);
-        }else{
-          importStatus(data);
-        }
+        importStatus(data);
       }catch(e){
         console.error("Odontogram import failed", e);
       }finally{
         importInput.value = "";
-        pendingImportFormat = "status";
       }
     };
   }
@@ -15992,8 +15939,6 @@ export { setOcclusalVisible, setWisdomVisible, setShowBase, setHealthyPulpVisibl
 export interface OdontogramSession {
   /** Stable identity, useful for logging and React keys. */
   readonly id: string;
-  /** Immutable FHIR configuration shared by host calls and the built-in buttons. */
-  readonly fhir: Readonly<OdontogramSessionFhirConfiguration>;
   /** The current UI-domain document. Always a detached copy. */
   getDocument(): OdontogramDocument;
   /** Replace the whole document. `null`/`undefined` resets to a blank chart. */
@@ -16006,10 +15951,6 @@ export interface OdontogramSession {
   activate(): void;
   /** Give the engine back to the session that was live before `activate()`. */
   release(): void;
-  /** Export the current document through the sole Dental Core seam. */
-  exportFhirBundle(options?: FhirExportOptions): Bundle;
-  /** Import Dental Core without replacing state on rejection. */
-  importFhirBundle(input: unknown): boolean;
   /** This session's chart mode. Works without claiming the engine. */
   getChartMode(): ChartMode;
   /** Record or apply chart mode for this session. */
@@ -16018,14 +15959,6 @@ export interface OdontogramSession {
   getPlanChart(): Any;
   /** This session's status-vs-plan diff. `[]` until a plan exists. */
   getPlanChanges(): PlanChange[];
-}
-
-export interface OdontogramSessionFhirConfiguration {
-  exportOptions?: FhirExportOptions;
-}
-
-export interface OdontogramSessionOptions {
-  fhir?: Partial<OdontogramSessionFhirConfiguration>;
 }
 
 function blankDocument(): OdontogramDocument {
@@ -16127,7 +16060,6 @@ let sessionCounter = 0;
 
 class ClinicalSession implements OdontogramSession {
   readonly id: string;
-  readonly fhir: Readonly<OdontogramSessionFhirConfiguration>;
   /** The document while this session is NOT live. Ignored while live, where
    *  the engine's own state is the single source of truth.
    *  @internal — module-private; not part of the public session contract. */
@@ -16138,15 +16070,11 @@ class ClinicalSession implements OdontogramSession {
   private liveFhirIdentity: OdontogramDocument["fhirIdentity"];
   private readonly listeners = new Set<(doc: OdontogramDocument) => void>();
 
-  constructor(initial?: OdontogramDocument | null, id?: string, options?: OdontogramSessionOptions){
+  constructor(initial?: OdontogramDocument | null, id?: string){
     this.id = id ?? `odontogram-session-${++sessionCounter}`;
     this.stored = initial ? cloneDocument(initial) : blankDocument();
     this.storedChartMode = "status";
     this.liveFhirIdentity = undefined;
-    const exportOptions = options?.fhir?.exportOptions;
-    this.fhir = Object.freeze({
-      ...(exportOptions ? { exportOptions: Object.freeze({ ...exportOptions }) } : {}),
-    });
   }
 
   getDocument(): OdontogramDocument {
@@ -16185,24 +16113,6 @@ class ClinicalSession implements OdontogramSession {
   activate(): void { activateSession(this); }
 
   release(): void { releaseSession(this); }
-
-  exportFhirBundle(options?: FhirExportOptions): Bundle {
-    return buildFhirBundle(this.getDocument(), {
-      ...this.fhir.exportOptions,
-      ...options,
-    });
-  }
-
-  importFhirBundle(input: unknown): boolean {
-    try {
-      const payload = parseFhirBundle(input);
-      this.setDocument(payload);
-      return true;
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : "FHIR import failed");
-      return false;
-    }
-  }
 
   getChartMode(): ChartMode {
     return this.isActive() ? readLiveChartMode() : this.storedChartMode;
@@ -16284,8 +16194,8 @@ function releaseSession(session: ClinicalSession): void {
  * Two sessions never share clinical state: an edit made through one is
  * invisible to the other, in both directions.
  */
-export function createOdontogramSession(initial?: OdontogramDocument | null, options?: OdontogramSessionOptions): OdontogramSession {
-  return new ClinicalSession(initial, undefined, options);
+export function createOdontogramSession(initial?: OdontogramDocument | null): OdontogramSession {
+  return new ClinicalSession(initial);
 }
 
 /** The session backing the module-level standalone API. */

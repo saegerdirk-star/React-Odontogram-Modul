@@ -45,15 +45,16 @@ describe("optional FHIR package boundary", () => {
     expect(documentSource).toContain("The payload/document version this engine writes");
   });
 
-  it("publishes an optional FHIR entry without changing the root entry", () => {
+  it("does not publish a JSON-bundle FHIR entry", () => {
     const packageJson = JSON.parse(source("package.json")) as {
       exports: Record<string, unknown>;
     };
 
     expect(packageJson.exports).toHaveProperty(".");
-    expect(packageJson.exports).toHaveProperty("./fhir");
-    expect(source("src/fhir/index.ts")).toContain("buildFhirBundle");
-    expect(source("vite.lib.config.ts")).toContain("fhir: path.resolve");
+    expect(packageJson.exports).not.toHaveProperty("./fhir");
+    expect(source("src/fhir/index.ts")).not.toContain("buildFhirBundle");
+    expect(source("src/fhir/index.ts")).toContain("buildDentalCoreBundle");
+    expect(source("vite.lib.config.ts")).not.toContain("fhir: path.resolve");
     expect(source("src/fhir/index.ts")).not.toMatch(new RegExp(`${["Dental", "De"].join("")}|${removedDialectPattern.source}`));
   });
 
@@ -66,9 +67,9 @@ describe("optional FHIR package boundary", () => {
 
     expect(packageJson.types).toBe("./dist/index.d.ts");
     expect(packageJson.exports["."]?.types).toBe("./dist/index.d.ts");
-    expect(packageJson.exports["./fhir"]?.types).toBe("./dist/fhir.d.ts");
+    expect(packageJson.exports["./fhir"]).toBeUndefined();
     expect(viteLibraryConfig).toMatch(/index:\s*path\.resolve\(__dirname, ['"]src\/index\.ts['"]\)/);
-    expect(viteLibraryConfig).toMatch(/fhir:\s*path\.resolve\(__dirname, ['"]src\/fhir\/index\.ts['"]\)/);
+    expect(viteLibraryConfig).not.toMatch(/fhir:\s*path\.resolve\(__dirname, ['"]src\/fhir\/index\.ts['"]\)/);
   });
 
   it("keeps document types and payload version in one source module", () => {
@@ -102,21 +103,19 @@ describe("optional FHIR package boundary", () => {
     }
   });
 
-  it("pins and verifies the released Dental Core generation input", () => {
-    const generator = source("tools/generate-dental-core-types.mjs");
-    const packageJson = JSON.parse(source("package.json")) as { devDependencies?: Record<string, string> };
+  it("maps Dental Core through the SDK without a local generator", () => {
+    const packageJson = JSON.parse(source("package.json")) as {
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+      scripts?: Record<string, string>;
+    };
 
-    expect(packageJson.devDependencies?.["@cognovis/codegen"]).toBe("0.2.3");
-    expect(packageJson.devDependencies?.["@cognovis/fhir-release"]).toBe("0.2.9");
-    expect(generator).toContain('name: "@cognovis/fhir-release", version: "0.2.9"');
-    expect(generator).toContain("cognovis-fhir-release.manifest.json");
-    expect(generator).toContain('entry.packageId === "de.cognovis.fhir.dental.core" && entry.scope === "estate"');
-    expect(generator).toContain('dentalCoreClosure.version !== "0.7.1"');
-    expect(generator).not.toContain("normalizeRequiredExtensionConstructors");
-    expect(generator).toContain("dental-core-contract.ts");
-    expect(generator).not.toMatch(removedDialectPattern);
-    expect(generator).not.toMatch(/de\.cognovis\.fhir\.dental"/i);
-    expect(generator).toContain("@cognovis/codegen");
+    expect(packageJson.dependencies?.["@cognovis/fhir-sdk"]).toBe("0.11.0");
+    expect(packageJson.devDependencies?.["@cognovis/codegen"]).toBeUndefined();
+    expect(packageJson.devDependencies?.["@cognovis/fhir-release"]).toBeUndefined();
+    expect(packageJson.scripts?.["fhir:generate"]).toBeUndefined();
+    expect(existsSync(resolve(root, "tools/generate-dental-core-types.mjs"))).toBe(false);
+    expect(source("src/fhir/dentalCoreContract.ts")).toMatch(/from\s+["']@cognovis\/fhir-sdk\//);
   });
 
   it("exposes one Dental Core seam without a selectable legacy implementation", () => {
@@ -182,9 +181,10 @@ describe("optional FHIR package boundary", () => {
     for (const guide of layoutGuides) {
       const text = source(guide);
       for (const currentModule of [
-        "toFhir.ts", "fromFhir.ts", "toFhirDentalCore.ts", "fromFhirDentalCore.ts", "dentalCoreContract.ts", "dentalCoreLocalCoding.ts",
+        "toFhirDentalCore.ts", "fromFhirDentalCore.ts", "dentalCoreContract.ts", "dentalCoreLocalCoding.ts",
       ]) expect(text, guide).toContain(currentModule);
-      for (const removedModule of ["codesystems.ts", "primitives.ts", "registry/fhir.ts", "registry/fromFhir.ts", "fieldMappings.ts"]) {
+      expect(text, guide).toContain("@cognovis/fhir-sdk");
+      for (const removedModule of ["toFhir.ts", "fromFhir.ts", "codesystems.ts", "primitives.ts", "registry/fhir.ts", "registry/fromFhir.ts", "fieldMappings.ts"]) {
         expect(text, guide).not.toContain(removedModule);
       }
     }

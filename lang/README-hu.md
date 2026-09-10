@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-3.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-4.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -93,9 +93,7 @@ import {
   getToothStateSummary,
   onStateChange,             // feliratkozás állapotváltozásokra
   // export / import
-  exportFhir,                // HL7 FHIR R4 bundle
   exportSvg, exportImage,    // vektoros / raszteres diagram export
-  setImportFormat,
   // vezérlés
   setReadOnly, getReadOnly,
   clearSelection,
@@ -105,7 +103,7 @@ import {
 } from "react-advanced-odontogram";
 ```
 
-A teljes felület (≈ 44 függvény + olyan típusok, mint az `OdontogramSummary`, `OdontogramThemeConfig`, `OdontogramPlugin`, `FhirExportOptions`, `PerioViewMode`, …) teljesen típusosan szerepel a mellékelt deklarációkban.
+A teljes felület (≈ 44 függvény + olyan típusok, mint az `OdontogramSummary`, `OdontogramThemeConfig`, `OdontogramPlugin`, `PerioViewMode`, …) teljesen típusosan szerepel a mellékelt deklarációkban.
 
 #### Használat Next.js-szel (App Router)
 
@@ -124,7 +122,7 @@ export default function OdontogramClient() {
 Vagy töltsd be egy kizárólag kliensoldali dinamikus importtal: `dynamic(() => import("./OdontogramClient"), { ssr: false })`.
 
 #### Fontos megjegyzések és jelenlegi korlátok
-- **Kizárólag ESM** — a csomag fő ES modult (`dist/odontogram.js`) és opcionális FHIR ES modult (`dist/fhir.js`) publikál, a megfelelő típusdeklarációkkal (`dist/index.d.ts` és `dist/fhir.d.ts`). A bundler modulfeloldást célozza; nincs CommonJS build.
+- **Kizárólag ESM** — a csomag fő ES modult (`dist/odontogram.js`) publikál, a megfelelő típusdeklarációkkal (`dist/index.d.ts`). A bundler modulfeloldást célozza; nincs CommonJS build.
 - **A stíluslap külön van** — kötelező egyszer importálnod a `react-advanced-odontogram/style.css` fájlt; ez nem töltődik be automatikusan. A stílus globális CSS, amely a `.odontogram-root` alá van skálázva, és `--odon-*` CSS változók vezérlik.
 - **SSR / kizárólag kliensoldali** — a komponens csatoláskor (mount) olvassa a DOM-ot (`document`), ezért a böngészőben kell futnia. SSR keretrendszerekben egy Client Component-ben (`"use client"`) vagy kizárólag kliensoldali dinamikus importon keresztül kell renderelni.
 - **Az eszközök (assets) önállóak** — a fog- és ikon-SVG-k build időben be vannak ágyazva a JavaScript bundle-be; **nincs futásidejű asset lekérés**, amit be kellene állítani, és semmi extrát nem kell átmásolni a public mappádba.
@@ -204,7 +202,7 @@ Vagy töltsd be egy kizárólag kliensoldali dinamikus importtal: `dynamic(() =>
 - 🔒 Csak olvasható mód: összes interakció letiltása nyomtatási/jelentés/megtekintési nézetekhez
 - ✨ Kijelölési animációk: pulzáló szaggatott keret és ragyogó árnyék a kijelölt fogakon (prefers-reduced-motion támogatással)
 - 📝 Fogankénti megjegyzések: dupla kattintás megjegyzés hozzáadásához/szerkesztéséhez, megjegyzés ikon a fogszám mellett, hover tooltip a megjegyzés szövegével, egy "Egyedi megjegyzések" sor a teljes szájüreg összegző panelen, szerepeltetés a PDF jelentésben, JSON export/import
-- 🔀 Státusz ↔ Terv diagram-felosztás: a diagram fejlécében lévő `Státusz | Terv` kapcsoló egy aktuális **státusz** diagram és egy **terv** (tervezett, kezelés utáni állapot) diagram között vált, mindkettő saját fogállapotokkal; a terv diagram az első váltáskor a státusz másolataként indul, és az egyik diagramon végzett szerkesztés sosem hat a másikra. Az export/import (`exportStatus`/`exportFhir`/fájl import) mindig a státusz diagramot célozza; a terv diagram külön, saját API-n keresztül olvasható/írható (lásd a Nyilvános API-t lentebb), és — ha eltér a státusztól — kiegészítő `plan` szekcióként szerepel a JSON exportban
+- 🔀 Státusz ↔ Terv diagram-felosztás: a diagram fejlécében lévő `Státusz | Terv` kapcsoló egy aktuális **státusz** diagram és egy **terv** (tervezett, kezelés utáni állapot) diagram között vált, mindkettő saját fogállapotokkal; a terv diagram az első váltáskor a státusz másolataként indul, és az egyik diagramon végzett szerkesztés sosem hat a másikra. Az export/import (`exportStatus`/fájl import) mindig a státusz diagramot célozza; a terv diagram külön, saját API-n keresztül olvasható/írható (lásd a Nyilvános API-t lentebb), és — ha eltér a státusztól — kiegészítő `plan` szekcióként szerepel a JSON exportban
 - 📝 "Mi változik" doboz: amikor a terv eltér az aktuális státusztól, a Fogadatok panel alatti doboz fogankénti és kezelési tengelyenkénti (jelenlét, szubsztrátum, pótlás, protetika, tervezett korona, ortodoncia, pulpa/endo, apikális) bontásban felsorol minden eltérést `fog: tengely  ettől → erre` sor formájában; programozottan is elérhető a `getPlanChanges()` függvényen keresztül
 
 ![Parodontális státusz diagram (magyar)](screenshot_hu_perio.png)
@@ -588,7 +586,7 @@ A FHIR-konverzió a felhasználói felület dokumentumának tiszta, opcionális 
 
 **Aidbox élő mód (fejlesztés, 2.50.0-tól):**
 
-Egy második fejlesztői szerverbelépési pont, a `live.html` (`src/live`), egyetlen beteg fogazati kártyáját tölti be közvetlenül egy izolált Reetfurt local-UAT Aidboxból, a fenti munkamenet API-n keresztül a megszokott keretben jeleníti meg, és a változtatásokat Dental Core erőforrásokként írja vissza determinisztikus azonosítók alatt, így egy ismételt mentés frissít, nem duplikál. Először indítson egy elnevezett Reetfurt példányt (`POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local up --instance <id>` az mvz-reetfurt checkoutban), majd futtassa: `npm run live:provision -- --instance <id>` — ez létrehozza a korlátozott `odontogram-live` gépi klienst és a verziókezelésből kizárt `.env` fájlt. Adminisztrátori hitelesítő adat soha ne kerüljön `VITE_*` kulcsba. Fejlesztői eszköz, nem része a közzétett csomagnak: a `@cognovis/fhir-sdk` egy devDependency, a `dependencies` változatlan, és sem az `src/live`, sem a `live.html` nem kerül publikálásra. A beállítás, a betöltés/mentés mechanikája és a charly adapter dialektusához dokumentált eltérés a [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md) fájlban található. Megjegyzendő, hogy a jelen tárolóban a devDependencies telepítése mostantól hitelesítést igényel az `npm.cognovis.de`-hez (lásd a dokumentumot); az `npm ci --omit=dev` és a közzétett csomag használata nem.
+Egy második fejlesztői szerverbelépési pont, a `live.html` (`src/live`), egyetlen beteg fogazati kártyáját tölti be közvetlenül egy izolált Reetfurt local-UAT Aidboxból, a fenti munkamenet API-n keresztül a megszokott keretben jeleníti meg, és a változtatásokat Dental Core erőforrásokként írja vissza determinisztikus azonosítók alatt, így egy ismételt mentés frissít, nem duplikál. Először indítson egy elnevezett Reetfurt példányt (`POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local up --instance <id>` az mvz-reetfurt checkoutban), majd futtassa: `npm run live:provision -- --instance <id>` — ez létrehozza a korlátozott `odontogram-live` gépi klienst és a verziókezelésből kizárt `.env` fájlt. Adminisztrátori hitelesítő adat soha ne kerüljön `VITE_*` kulcsba. Fejlesztői eszköz, nem része a közzétett csomagnak: a `@cognovis/fhir-sdk` runtime dependency a Dental Core osztályokhoz; `src/live` nem kerül publikálásra, és sem az `src/live`, sem a `live.html` nem kerül publikálásra. A beállítás, a betöltés/mentés mechanikája és a charly adapter dialektusához dokumentált eltérés a [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md) fájlban található. Megjegyzendő, hogy a jelen tárolóban a devDependencies telepítése mostantól hitelesítést igényel az `npm.cognovis.de`-hez (lásd a dokumentumot); az `npm ci --omit=dev` és a közzétett csomag használata nem.
 
 **Dátumozott vizsgálatok, felmérési státusz és peri-implantáris rögzítés (2.4.0-tól):**
 
@@ -751,15 +749,12 @@ npm run docs           # TypeDoc dokumentáció generálása a docs/ mappába
 | `setStageOverride(v)` | A levezetett parodontális stádium felülbírálása — `"I"` / `"II"` / `"III"` / `"IV"`, vagy `null` a törléshez (visszaáll a levezetett értékre) |
 | `setGradeOverride(v)` | A levezetett parodontális grádus felülbírálása — `"A"` / `"B"` / `"C"`, vagy `null` a törléshez (visszaáll a levezetett értékre) |
 | `setExtentOverride(v)` | A levezetett parodontális kiterjedtség felülbírálása — `"localized"` / `"generalized"` / `"molar-incisor"`, vagy `null` a törléshez (visszaáll a levezetett értékre) |
-| `exportFhir(options?)` | Az odontogram exportálása HL7 FHIR R4 collection Bundle-ként (JSON letöltés). Opcionális `{ subject }` referencia; egyébként placeholder Patient kerül be |
 | `exportImage(format)` | Az odontogram letöltése képként — `"png"` vagy `"jpg"` |
 | `exportSvg()` | Az odontogram letöltése méretezhető SVG-ként (vektoros) |
 | `hasAnyPerioData()` | `true`, ha bármely parodontális tengely rögzítve van bárhol a szájüregben — ez vezérli a parodontális export automatikus kihagyását, és üres diagram esetén letiltja a parodontális export-menüpontokat |
 | `exportPerioSvg()` | A teljes parodontális diagram (fog-grafikák + számsorok + 2017-es klasszifikáció) letöltése egyetlen önálló vektoros SVG-ként, amely az állapotból, DOM nélkül épül fel a `buildPerioSvg()` segítségével |
 | `exportPerioImage(format)` | A parodontális diagram letöltése raszterizált képként — `"png"` vagy `"jpg"` |
 | `exportPdf(opts)` | Egy jsPDF-natív PDF jelentés letöltése (`{patientData, odontogramChart, odontogramDescription, individualNotes, perioStatus, perioDescription}`, mindegyik szekció opcionális) — vektoros szöveg plusz raszterizált fog-/parodontális diagram képek; az egyedi megjegyzések szekció automatikusan kimarad, ha egyetlen fogon sincs megjegyzés, a két parodontális szekció pedig akkor, amikor a `hasAnyPerioData()` hamis, függetlenül az `opts`-tól |
-| `importFhirBundle(input)` | A modul által készített FHIR R4 Bundle importálása (objektum vagy JSON szöveg) |
-| `setImportFormat(format)` | A következő fájlimport értelmezőjének beállítása — `"status"` vagy `"fhir"` |
 | `startIntroTour()` | A 12 lépéses interaktív bemutató túra indítása |
 
 ### 💾 Állapot Export/Import formátum
@@ -846,7 +841,7 @@ Az odontogram saját Státusz JSON / FHIR / PNG / JPG / SVG exportján túl a **
 - `src/i18n/` - fordítások (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR) és i18n hook
 - `src/utils/numbering.ts` - FDI, Universal, Palmer számozási konverzió
 - `src/registry/` - deklaratív klinikai tengely- és UI-regiszter: tengelymetaadatok, SVG-aktiválás, pótlás típus×anyag mátrix, értékkatalógus és opciólisták; a FHIR-megfeleltetések a `src/fhir/` felelőssége
-- `src/fhir/` - az egyetlen Dental Core HL7 FHIR R4 kapcsolódási pont: `toFhir.ts`/`fromFhir.ts` belépési pontok, `toFhirDentalCore.ts`/`fromFhirDentalCore.ts` kodek, `dentalCoreContract.ts` és generált profilok/szerződések, valamint `dentalCoreLocalCoding.ts` segédek
+- `src/fhir/` - az egyetlen Dental Core HL7 FHIR R4 kapcsolódási pont: `toFhirDentalCore.ts`/`fromFhirDentalCore.ts` kodek az `@cognovis/fhir-sdk` fölött, `dentalCoreContract.ts`, valamint `dentalCoreLocalCoding.ts` segédek
 - `src/bridgeOverlay.ts` - több fogra kiterjedő híd-csatlakozó overlay (ívhez igazodó nyereg-geometria)
 - `src/SettingsModal.tsx` - lapozott (tabos) Beállítások ablak (Általános/Panelek/Fogadatok/Caries/Pulpa/Jegyzetek/Periodontal)
 - `src/perioExport.ts` - `buildPerioSvg()`: a teljes parodontális diagram egyetlen önálló vektoros SVG-ként

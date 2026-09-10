@@ -203,6 +203,44 @@ describe("odontogram-6fi: assembling a load", () => {
     expect(result.report.unsupported[0].reason).toMatch(/not part of the Dental Core contract/i);
   });
 
+  it("lists a Dental Core chart-state with an unmapped property as unsupported without rejecting the chart", () => {
+    const foreign: Record<string, unknown> = {
+      resourceType: "Observation",
+      id: "foreign-chart-16",
+      meta: { profile: ["https://fhir.cognovis.de/dental-core/StructureDefinition/dental-chart-state"] },
+      status: "final",
+      code: { coding: [{ system: "http://loinc.org", code: "11536-8" }] },
+      subject: { reference: `Patient/${PATIENT}` },
+      component: [{
+        code: {
+          coding: [{
+            system: "https://fhir.cognovis.de/dental-core/CodeSystem/dental-chart-property",
+            code: "not-an-odontogram-property",
+          }],
+        },
+        valueCodeableConcept: {
+          coding: [{
+            system: "https://fhir.cognovis.de/dental-core/CodeSystem/dental-chart-value",
+            code: "not-an-odontogram-value",
+          }],
+        },
+      }],
+    };
+    const result = assembleLoadResult({
+      patientId: PATIENT,
+      resources: [{ resourceType: "Patient", id: PATIENT }, ...savedResources(), foreign],
+    });
+    expect(result.report.parsed).toBe(true);
+    expect(result.document?.teeth["16"]).toMatchObject({ caries: ["caries-occlusal"] });
+    expect(result.report.unsupported).toEqual([
+      expect.objectContaining({
+        reference: "Observation/foreign-chart-16",
+        profile: "https://fhir.cognovis.de/dental-core/StructureDefinition/dental-chart-state",
+        reason: expect.stringMatching(/outside this odontogram's mappings/),
+      }),
+    ]);
+  });
+
   it("still charts the supported findings when a foreign resource sits beside them", () => {
     const result = assembleLoadResult({
       patientId: PATIENT,

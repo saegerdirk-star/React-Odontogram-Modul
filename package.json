@@ -1,9 +1,9 @@
 {
   "name": "react-advanced-odontogram",
-  "version": "3.3.0",
+  "version": "4.0.0",
   "license": "MIT",
   "type": "module",
-  "description": "Interactive, SVG-based dental odontogram (dental chart) editor for React + TypeScript — multi-surface caries/filling charting, endodontic/prosthetic/periodontal states, FDI/Universal/Palmer numbering, HL7 FHIR R4 export/import, and ICDAS scoring.",
+  "description": "Interactive, SVG-based dental odontogram (dental chart) editor for React + TypeScript — multi-surface caries/filling charting, endodontic/prosthetic/periodontal states, FDI/Universal/Palmer numbering, Dental Core via @cognovis/fhir-sdk against Aidbox, and ICDAS scoring.",
   "author": "Zoltán Dul",
   "homepage": "https://react-odontogram-modul.vercel.app/",
   "repository": {
@@ -44,10 +44,6 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/odontogram.js"
     },
-    "./fhir": {
-      "types": "./dist/fhir.d.ts",
-      "import": "./dist/fhir.js"
-    },
     "./style.css": "./dist/style.css"
   },
   "engines": {
@@ -66,7 +62,6 @@
     "test:watch": "NODE_OPTIONS=--max-old-space-size=8192 vitest",
     "test:coverage": "NODE_OPTIONS=--max-old-space-size=8192 vitest run --coverage",
     "parity:capture": "PARITY_CAPTURE=1 NODE_OPTIONS=--max-old-space-size=8192 vitest run src/__tests__/parity/capture.test.ts",
-    "fhir:generate": "node tools/generate-dental-core-types.mjs",
     "toothgen:spender": "uv run tools/toothgen/build.py --set all && uv run tools/toothgen/occlusal.py",
     "toothgen:redraw": "npm run toothgen:spender && python3 tools/toothgen/redraw_alle.py src/assets/teeth-svgs && python3 tools/toothgen/redraw_occl.py src/assets/teeth-svgs && npm run toothgen:flaechen",
     "toothgen:build": "uv run tools/toothgen/build.py",
@@ -83,14 +78,12 @@
     "react-dom": "^18 || ^19"
   },
   "dependencies": {
+    "@cognovis/fhir-sdk": "0.11.0",
     "@types/fhir": "^0.0.44",
     "dompurify": "^3.4.13",
     "jspdf": "^4.2.1"
   },
   "devDependencies": {
-    "@cognovis/codegen": "0.2.3",
-    "@cognovis/fhir-release": "0.2.9",
-    "@cognovis/fhir-sdk": "0.2.0",
     "@eslint/js": "^9.39.2",
     "@microsoft/api-extractor": "^7.58.12",
     "@testing-library/jest-dom": "^6.9.1",

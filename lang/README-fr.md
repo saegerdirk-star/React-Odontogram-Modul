@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-3.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-4.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -89,9 +89,7 @@ import {
   getOdontogramSummary,
   getToothStateSummary,
   onStateChange,             // s'abonner aux changements d'état
-  exportFhir,                // bundle HL7 FHIR R4
   exportSvg, exportImage,    // exportation vectorielle / image du schéma
-  setImportFormat,
   setReadOnly, getReadOnly,
   clearSelection,
   registerPlugins, setPluginState, getPluginState,
@@ -158,7 +156,7 @@ La conversion FHIR est une projection optionnelle et pure du document d’interf
 
 **Mode live Aidbox (développement, à partir de 2.50.0) :**
 
-Un second point d'entrée du serveur de développement, `live.html` (`src/live`), charge la fiche d'un patient directement depuis un Aidbox Reetfurt local-UAT isolé, la restitue dans la coquille habituelle via l'API de session décrite ci-dessus, et réécrit les modifications sous forme de ressources Dental Core avec des identifiants déterministes, de sorte qu'un nouvel enregistrement met à jour au lieu de dupliquer. Démarrez une instance Reetfurt nommée (`POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local up --instance <id>` dans le checkout mvz-reetfurt), puis exécutez `npm run live:provision -- --instance <id>` pour créer le client machine à portée restreinte `odontogram-live` et écrire le `.env` exclu du contrôle de version. Ne placez jamais des identifiants d'administrateur dans `VITE_*`. C'est un outil de développement, ne faisant pas partie du paquet publié : `@cognovis/fhir-sdk` est une devDependency, `dependencies` reste inchangé, et ni `src/live` ni `live.html` ne sont publiés. La configuration, la mécanique de chargement/enregistrement et l'écart documenté avec le dialecte de l'adaptateur charly figurent dans [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). L'installation des devDependencies de ce dépôt nécessite toujours un identifiant pour `npm.cognovis.de` ; `npm ci --omit=dev` et l'utilisation du paquet publié n'en ont pas besoin.
+Un second point d'entrée du serveur de développement, `live.html` (`src/live`), charge la fiche d'un patient directement depuis un Aidbox Reetfurt local-UAT isolé, la restitue dans la coquille habituelle via l'API de session décrite ci-dessus, et réécrit les modifications sous forme de ressources Dental Core avec des identifiants déterministes, de sorte qu'un nouvel enregistrement met à jour au lieu de dupliquer. Démarrez une instance Reetfurt nommée (`POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local up --instance <id>` dans le checkout mvz-reetfurt), puis exécutez `npm run live:provision -- --instance <id>` pour créer le client machine à portée restreinte `odontogram-live` et écrire le `.env` exclu du contrôle de version. Ne placez jamais des identifiants d'administrateur dans `VITE_*`. C'est un outil de développement, ne faisant pas partie du paquet publié : `@cognovis/fhir-sdk` est une dépendance d'exécution pour les classes Dental Core ; `src/live` n'est pas publié, et ni `src/live` ni `live.html` ne sont publiés. La configuration, la mécanique de chargement/enregistrement et l'écart documenté avec le dialecte de l'adaptateur charly figurent dans [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). L'installation des devDependencies de ce dépôt nécessite toujours un identifiant pour `npm.cognovis.de` ; `npm ci --omit=dev` et l'utilisation du paquet publié n'en ont pas besoin.
 
 **Examens datés, statut d'évaluation et relevé péri-implantaire (à partir de 2.4.0) :**
 

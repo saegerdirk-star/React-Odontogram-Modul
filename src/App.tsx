@@ -2,8 +2,8 @@
 // Created by Zoltan Dul (https://github.com/ZoliQua) 2025-2026
 
 import { useEffect, useRef, useState } from "react";
-import { destroyOdontogram, initOdontogram, setNumberingSystem, clearSelection, setOcclusalVisible, setWisdomVisible, setShowBase, setHealthyPulpVisible, registerPlugins, setPluginState, getPluginState, getToothStateSummary, getOdontogramSummary, formatToothLabel, onStateChange, setReadOnly, getReadOnly, setNotesEnabled, getNotesEnabled, setIcdasEnabled, getIcdasEnabled, setPulpDetailLevel, getPulpDetailLevel, setSecondaryCariesMode, getSecondaryCariesMode, setRootCariesMode, getRootCariesMode, setRadiographicDepthMode, getRadiographicDepthMode, setCariesDepthEnabled, getCariesDepthEnabled, setWearDetailLevel, getWearDetailLevel, setDiscolorationDetailLevel, getDiscolorationDetailLevel, setSurfaceNotation, getSurfaceNotation, exportFhir, exportImage, exportSvg, setImportFormat, openPerioOverlay, closePerioOverlay, isPerioOverlayOpen, getPerioViewMode, setPerioViewMode, getPerioRowVisibility, setPerioRowVisibility, getPerioIndexNameMode, setPerioIndexNameMode, isDualStateConfirmPending, acceptDualStateConfirm, cancelDualStateConfirm, hasAnyPerioData, getImportAsBaseline, setImportAsBaseline, getChartMode, setChartMode, getStatusChart, getPlanChart, setPlanChart, getPlanChanges, exportStatus, importStatus, exportPdf, exportPerioImage, exportPerioSvg, selectToothInChart, setChartSelection, applyShorthand, onChartSelectionChange, getBefundDockEnabled, setBefundDockEnabled, setShorthandMaterial, getShorthandMaterialChar } from "./odontogram";
-export { clearSelection, setOcclusalVisible, setWisdomVisible, setShowBase, setHealthyPulpVisible, registerPlugins, setPluginState, getPluginState, getToothStateSummary, getOdontogramSummary, formatToothLabel, onStateChange, setReadOnly, getReadOnly, setNotesEnabled, getNotesEnabled, setIcdasEnabled, getIcdasEnabled, setPulpDetailLevel, getPulpDetailLevel, setSecondaryCariesMode, getSecondaryCariesMode, setRootCariesMode, getRootCariesMode, setRadiographicDepthMode, getRadiographicDepthMode, setCariesDepthEnabled, getCariesDepthEnabled, setWearDetailLevel, getWearDetailLevel, setDiscolorationDetailLevel, getDiscolorationDetailLevel, setSurfaceNotation, getSurfaceNotation, exportFhir, exportImage, exportSvg, setImportFormat, getPerioViewMode, setPerioViewMode, getPerioRowVisibility, setPerioRowVisibility, getPerioIndexNameMode, setPerioIndexNameMode, isDualStateConfirmPending, acceptDualStateConfirm, cancelDualStateConfirm, getImportAsBaseline, setImportAsBaseline, initOdontogram, destroyOdontogram, setNumberingSystem, getChartMode, setChartMode, getStatusChart, getPlanChart, setPlanChart, getPlanChanges, openPerioOverlay, closePerioOverlay, isPerioOverlayOpen, hasAnyPerioData, exportStatus, importStatus, exportPdf, exportPerioImage, exportPerioSvg };
+import { destroyOdontogram, initOdontogram, setNumberingSystem, clearSelection, setOcclusalVisible, setWisdomVisible, setShowBase, setHealthyPulpVisible, registerPlugins, setPluginState, getPluginState, getToothStateSummary, getOdontogramSummary, formatToothLabel, onStateChange, setReadOnly, getReadOnly, setNotesEnabled, getNotesEnabled, setIcdasEnabled, getIcdasEnabled, setPulpDetailLevel, getPulpDetailLevel, setSecondaryCariesMode, getSecondaryCariesMode, setRootCariesMode, getRootCariesMode, setRadiographicDepthMode, getRadiographicDepthMode, setCariesDepthEnabled, getCariesDepthEnabled, setWearDetailLevel, getWearDetailLevel, setDiscolorationDetailLevel, getDiscolorationDetailLevel, setSurfaceNotation, getSurfaceNotation, exportImage, exportSvg, openPerioOverlay, closePerioOverlay, isPerioOverlayOpen, getPerioViewMode, setPerioViewMode, getPerioRowVisibility, setPerioRowVisibility, getPerioIndexNameMode, setPerioIndexNameMode, isDualStateConfirmPending, acceptDualStateConfirm, cancelDualStateConfirm, hasAnyPerioData, getImportAsBaseline, setImportAsBaseline, getChartMode, setChartMode, getStatusChart, getPlanChart, setPlanChart, getPlanChanges, exportStatus, importStatus, exportPdf, exportPerioImage, exportPerioSvg, selectToothInChart, setChartSelection, applyShorthand, onChartSelectionChange, getBefundDockEnabled, setBefundDockEnabled, setShorthandMaterial, getShorthandMaterialChar } from "./odontogram";
+export { clearSelection, setOcclusalVisible, setWisdomVisible, setShowBase, setHealthyPulpVisible, registerPlugins, setPluginState, getPluginState, getToothStateSummary, getOdontogramSummary, formatToothLabel, onStateChange, setReadOnly, getReadOnly, setNotesEnabled, getNotesEnabled, setIcdasEnabled, getIcdasEnabled, setPulpDetailLevel, getPulpDetailLevel, setSecondaryCariesMode, getSecondaryCariesMode, setRootCariesMode, getRootCariesMode, setRadiographicDepthMode, getRadiographicDepthMode, setCariesDepthEnabled, getCariesDepthEnabled, setWearDetailLevel, getWearDetailLevel, setDiscolorationDetailLevel, getDiscolorationDetailLevel, setSurfaceNotation, getSurfaceNotation, exportImage, exportSvg, getPerioViewMode, setPerioViewMode, getPerioRowVisibility, setPerioRowVisibility, getPerioIndexNameMode, setPerioIndexNameMode, isDualStateConfirmPending, acceptDualStateConfirm, cancelDualStateConfirm, getImportAsBaseline, setImportAsBaseline, initOdontogram, destroyOdontogram, setNumberingSystem, getChartMode, setChartMode, getStatusChart, getPlanChart, setPlanChart, getPlanChanges, openPerioOverlay, closePerioOverlay, isPerioOverlayOpen, hasAnyPerioData, exportStatus, importStatus, exportPdf, exportPerioImage, exportPerioSvg };
 export { default as PerioChart } from "./PerioChart";
 // Bead odontogram-3l1: the controlled-integration surface (UI-domain document
 // + instance-isolated clinical sessions) and the Dental Core codec.
@@ -15,7 +15,7 @@ import {
 export {
   createOdontogramSession, getDefaultOdontogramSession, getActiveOdontogramSession,
 } from "./odontogram";
-export type { OdontogramSession, OdontogramDocument, OdontogramSessionFhirConfiguration, OdontogramSessionOptions, ChartMode, PlanChange } from "./odontogram";
+export type { OdontogramSession, OdontogramDocument, ChartMode, PlanChange } from "./odontogram";
 // Bead odontogram-2vd: examination identity, dated examination snapshots, and
 // the explicit periodontal assessment status (assessed-normal / not assessed /
 // unmeasurable / not applicable).
@@ -29,13 +29,10 @@ export {
 export type { ExaminationContext, AssessmentStatus, PerioAssessmentAxis } from "./odontogram";
 export type { ExaminationSnapshotRecord, ExaminationContextRecord } from "./document";
 import type { EngineClaim } from "./odontogram";
-import type { OdontogramSession, OdontogramDocument, OdontogramSessionOptions } from "./odontogram";
-export { buildFhirBundle } from "./fhir/toFhir";
-export { parseFhirBundle } from "./fhir/fromFhir";
+import type { OdontogramSession, OdontogramDocument } from "./odontogram";
 import type { OdontogramSummary, PulpDetailLevel, SecondaryCariesMode, RootCariesMode, RadiographicDepthMode, ToothDetailLevel, SurfaceNotation, PerioViewMode, PerioRowId, PerioIndexNameMode } from "./odontogram";
 export type { PulpDetailLevel, SecondaryCariesMode, RootCariesMode, RadiographicDepthMode, ToothDetailLevel, SurfaceNotation, PerioViewMode, PerioRowId, PerioIndexNameMode } from "./odontogram";
 export type { OdontogramSummary, OdontogramSummarySection } from "./odontogram";
-export type { FhirExportOptions } from "./fhir/types";
 import { startIntroTour } from "./tour";
 export { startIntroTour } from "./tour";
 import { useI18n } from "./i18n/useI18n";
@@ -200,8 +197,6 @@ type AppProps = {
    * to it unchanged.
    */
   session?: OdontogramSession;
-  /** Configure the private session created for this component instance. */
-  fhir?: OdontogramSessionOptions["fhir"];
   /**
    * Initialize this instance from a UI-domain document — the same versioned
    * JSON `exportStatus()` produces. Supplying it (without `session`) makes the
@@ -291,7 +286,6 @@ export default function App({
   showStatusCard: showStatusCardProp,
   showOrthoCard: showOrthoCardProp,
   session: sessionProp,
-  fhir: fhirProp,
   document: documentProp,
   onDocumentChange,
 }: AppProps){
@@ -475,8 +469,8 @@ export default function App({
   const ownedSessionRef = useRef<OdontogramSession | null | undefined>(undefined);
   if (ownedSessionRef.current === undefined) {
     ownedSessionRef.current = sessionProp
-      ?? (documentProp !== undefined || fhirProp !== undefined
-        ? createOdontogramSession(documentProp ?? null, { fhir: fhirProp })
+      ?? (documentProp !== undefined
+        ? createOdontogramSession(documentProp ?? null)
         : null);
   }
   const instanceSession = sessionProp ?? ownedSessionRef.current;
@@ -873,7 +867,6 @@ export default function App({
           </div>
           {/* Hidden export buttons kept for host capture + wireControls wiring */}
           <button id="btnStatusExport" hidden aria-hidden="true" tabIndex={-1}>{t("topbar.exportStatus")}</button>
-          <button id="btnStatusFhirExport" hidden aria-hidden="true" tabIndex={-1}>{t("topbar.exportFhir")}</button>
           <button id="btnStatusPngExport" hidden aria-hidden="true" tabIndex={-1}>{t("topbar.exportPng")}</button>
           <button id="btnStatusJpgExport" hidden aria-hidden="true" tabIndex={-1}>{t("topbar.exportJpg")}</button>
           <button id="btnStatusSvgExport" hidden aria-hidden="true" tabIndex={-1}>{t("export.menu.svg")}</button>
@@ -887,7 +880,6 @@ export default function App({
             {exportOpen && (
               <div className="dropdown-menu" role="menu" aria-label={t("topbar.export")}>
                 <button className="dropdown-item" role="menuitem" onClick={() => { (document.getElementById("btnStatusExport") as HTMLButtonElement | null)?.click(); setExportOpen(false); }}>{t("export.menu.statusJson")}</button>
-                <button className="dropdown-item" role="menuitem" onClick={() => { (document.getElementById("btnStatusFhirExport") as HTMLButtonElement | null)?.click(); setExportOpen(false); }}>{t("export.menu.fhir")}</button>
                 <button className="dropdown-item" role="menuitem" onClick={() => { (document.getElementById("btnStatusPngExport") as HTMLButtonElement | null)?.click(); setExportOpen(false); }}>{t("export.menu.png")}</button>
                 <button className="dropdown-item" role="menuitem" onClick={() => { (document.getElementById("btnStatusJpgExport") as HTMLButtonElement | null)?.click(); setExportOpen(false); }}>{t("export.menu.jpg")}</button>
                 <button className="dropdown-item" role="menuitem" onClick={() => { (document.getElementById("btnStatusSvgExport") as HTMLButtonElement | null)?.click(); setExportOpen(false); }}>{t("export.menu.svg")}</button>
@@ -909,8 +901,7 @@ export default function App({
             </button>
             {importOpen && (
               <div className="dropdown-menu" role="menu" aria-label={t("topbar.import")}>
-                <button className="dropdown-item" role="menuitem" onClick={() => { setImportFormat("status"); (document.getElementById("btnStatusImport") as HTMLButtonElement | null)?.click(); setImportOpen(false); }}>{t("import.menu.statusJson")}</button>
-                <button className="dropdown-item" role="menuitem" onClick={() => { setImportFormat("fhir"); (document.getElementById("btnStatusImport") as HTMLButtonElement | null)?.click(); setImportOpen(false); }}>{t("import.menu.fhir")}</button>
+                <button className="dropdown-item" role="menuitem" onClick={() => { (document.getElementById("btnStatusImport") as HTMLButtonElement | null)?.click(); setImportOpen(false); }}>{t("import.menu.statusJson")}</button>
                 {/* Bead odontogram-ap7: an imported chart is somebody else's
                     record, so by default it becomes the initial examination
                     and everything in it reads as pre-existing. A document that

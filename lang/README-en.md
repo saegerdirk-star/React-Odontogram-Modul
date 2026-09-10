@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-3.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-4.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -93,9 +93,7 @@ import {
   getToothStateSummary,
   onStateChange,             // subscribe to state changes
   // export / import
-  exportFhir,                // HL7 FHIR R4 bundle
   exportSvg, exportImage,    // vector / raster chart export
-  setImportFormat,
   // control
   setReadOnly, getReadOnly,
   clearSelection,
@@ -105,7 +103,7 @@ import {
 } from "react-advanced-odontogram";
 ```
 
-The full surface (≈ 44 functions + types such as `OdontogramSummary`, `OdontogramThemeConfig`, `OdontogramPlugin`, `FhirExportOptions`, `PerioViewMode`, …) is fully typed in the bundled declarations.
+The full surface (≈ 44 functions + types such as `OdontogramSummary`, `OdontogramThemeConfig`, `OdontogramPlugin`, `PerioViewMode`, …) is fully typed in the bundled declarations.
 
 #### Using it with Next.js (App Router)
 
@@ -124,7 +122,7 @@ export default function OdontogramClient() {
 Or load it with a client-only dynamic import: `dynamic(() => import("./OdontogramClient"), { ssr: false })`.
 
 #### Important notes & current limitations
-- **ESM-only** — the package publishes a main ES module (`dist/odontogram.js`) and an optional FHIR ES module (`dist/fhir.js`), with matching type declarations (`dist/index.d.ts` and `dist/fhir.d.ts`). It targets bundler module resolution; there is no CommonJS build.
+- **ESM-only** — the package publishes a main ES module (`dist/odontogram.js`), with matching type declarations (`dist/index.d.ts`). It targets bundler module resolution; there is no CommonJS build.
 - **The stylesheet is separate** — you **must** import `react-advanced-odontogram/style.css` once; it is not injected automatically. Styling is global CSS scoped under `.odontogram-root` and driven by `--odon-*` CSS variables.
 - **SSR / client-only** — the component reads the DOM on mount (`document`), so it must run in the browser. In SSR frameworks, render it in a Client Component (`"use client"`) or via a client-only dynamic import.
 - **Assets are self-contained** — the tooth and icon SVGs are inlined into the JavaScript bundle at build time; there is **no runtime asset fetch** to configure and nothing extra to copy to your public folder.
@@ -188,8 +186,8 @@ Or load it with a client-only dynamic import: `dynamic(() => import("./Odontogra
 - 🩹 Secondary-caries (CARS) settings control merged into the Caries settings tab, positioned above Radiographic depth (the separate "Secondary caries" tab is retired)
 - 🎚️ Tooth details detail level (Settings → Tooth details): a simple/complex setting for tooth wear and for discoloration. Simple mode shows a yes/no toggle per finding (wear on → attrition/abrasion, discoloration on → other); complex mode (default) keeps the type/cause dropdowns, and the stored value is preserved when switching levels
 - 📋 Tooth information panel: live text summary of the whole chart (tooth counts, present/missing lists, caries incl. secondary, fillings, root canals, prosthetics, implants, periodontal status) — shown by default, toggleable in Settings
-- 🗂️ Consolidated Export dropdown (Status JSON / FHIR / PNG / JPG)
-- 📥 Import dropdown with FHIR import (round-trips exported Bundles)
+- 🗂️ Consolidated Export dropdown (Status JSON / PNG / JPG)
+- 📥 Import dropdown (Status JSON)
 - ⏳ Progress overlay during image export
 - 🎓 12-step interactive intro tour
 - 🔢 Three numbering systems (FDI, Universal, Palmer)
@@ -205,7 +203,7 @@ Or load it with a client-only dynamic import: `dynamic(() => import("./Odontogra
 - 🔒 Read-only mode: disable all interactions for print/report/view use cases
 - ✨ Selection animations: pulsing dashed border and glowing drop-shadow on selected teeth (with prefers-reduced-motion support)
 - 📝 Per-tooth notes: double-click to add/edit notes, note icon next to tooth number, hover tooltip with note text, an "Individual notes" line in the whole-mouth summary panel, inclusion in the PDF report, JSON export/import
-- 🔀 Status ↔ Plan chart split: a `Status | Plan` toggle in the chart header switches between a current-**status** chart and a **plan** (intended post-treatment) chart, each with its own tooth states; the plan chart starts as a copy of status the first time you switch to it, and edits in one chart never affect the other. Export/import (`exportStatus`/`exportFhir`/file import) always target the status chart; the plan chart is read/written separately via its own API (see Public API below) and — when it differs from status — is included as an additive `plan` section in the JSON export
+- 🔀 Status ↔ Plan chart split: a `Status | Plan` toggle in the chart header switches between a current-**status** chart and a **plan** (intended post-treatment) chart, each with its own tooth states; the plan chart starts as a copy of status the first time you switch to it, and edits in one chart never affect the other. Export/import (`exportStatus`/file import) always target the status chart; the plan chart is read/written separately via its own API (see Public API below) and — when it differs from status — is included as an additive `plan` section in the JSON export
 - 📝 "What changes" box: whenever the plan differs from the current status, a box under the Tooth-information panel lists every difference per tooth and per treatment axis (presence, substrate, restoration, prosthesis, planned crown, orthodontics, pulp/endo, apical) as a `tooth: axis  from → to` line; also available programmatically via `getPlanChanges()`
 
 ![Full-mouth periodontal chart — English](screenshot_en_perio.png)
@@ -596,11 +594,11 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR conversion is a pure optional projection of the UI-domain document. Dental Core `de.cognovis.fhir.dental.core#0.7.1` is the sole FHIR contract; the recognized `odontogram-dental-core-0.6.0` marker remains readable for empty legacy collections, while unknown dialect markers are rejected. Import, export, and re-export preserve the eleven source axes `implantPosition`, `crownFractureType`, `orthoProgressive`, `rootResection`, `papillaLoss`, `orthoBracketSide`, `cantilever`, `endoCanals`, `rootFractureRoot`, `rootResectionRoot`, and `apicalRoot`. For plans, those axes use a referenced target-chart `Goal`, while established plan fields continue to use profiled planned Observations; planned state stays separate from observed state and does not fabricate Devices or performed Procedures. Duplicate, conflicting, malformed, ambiguously addressed, or tooth-incompatible assertions are rejected. Root posts remain independent through `rootPostType`; legacy JSON and older `endo-glass-pin` / `endo-metal-pin` values migrate to `endo-filling` plus the post material. `buildFhirBundle` requires a caller-provided or examination-context effective date and refuses exports that would lose populated clinical state.
+FHIR conversion is a pure optional projection of the UI-domain document. Dental Core `de.cognovis.fhir.dental.core#0.7.1` is the sole FHIR contract; the recognized `odontogram-dental-core-0.6.0` marker remains readable for empty legacy collections, while unknown dialect markers are rejected. Version 4.0.0 maps through `@cognovis/fhir-sdk` only: there is no public `./fhir` JSON-bundle API and no local codegen. Live load/save go through Aidbox. Import, export, and re-export preserve the eleven source axes `implantPosition`, `crownFractureType`, `orthoProgressive`, `rootResection`, `papillaLoss`, `orthoBracketSide`, `cantilever`, `endoCanals`, `rootFractureRoot`, `rootResectionRoot`, and `apicalRoot`. For plans, those axes use a referenced target-chart `Goal`, while established plan fields continue to use profiled planned Observations; planned state stays separate from observed state and does not fabricate Devices or performed Procedures. Duplicate, conflicting, malformed, ambiguously addressed, or tooth-incompatible assertions are rejected. Root posts remain independent through `rootPostType`; legacy JSON and older `endo-glass-pin` / `endo-metal-pin` values migrate to `endo-filling` plus the post material. A clinical write requires a caller-provided or examination-context effective date and refuses writes that would lose populated clinical state.
 
 **Aidbox live mode (development, from 2.50.0):**
 
-A second dev-server entry, `live.html` (`src/live`), loads one patient's chart straight from an isolated Reetfurt local-UAT Aidbox, renders it in the ordinary shell through the session API above, and writes changes back as Dental Core resources under deterministic ids, so a re-save updates instead of duplicating. Start a named Reetfurt instance (`POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local up --instance <id>` in the mvz-reetfurt checkout), then run `npm run live:provision -- --instance <id>` to create the scoped `odontogram-live` machine client and write the git-ignored `.env`. Never put an admin credential in `VITE_*`. It is a development tool, not part of the published package: `@cognovis/fhir-sdk` is a devDependency, `dependencies` is unchanged, and neither `src/live` nor `live.html` is published. Setup, the load/save mechanics, and the documented delta to the charly adapter's dialect are in [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). Installing this repository's devDependencies still requires a credential for `npm.cognovis.de`; `npm ci --omit=dev` and consuming the published package do not.
+A second dev-server entry, `live.html` (`src/live`), loads one patient's chart straight from an isolated Reetfurt local-UAT Aidbox, renders it in the ordinary shell through the session API above, and writes changes back as Dental Core resources under deterministic ids, so a re-save updates instead of duplicating. Start a named Reetfurt instance (`POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local up --instance <id>` in the mvz-reetfurt checkout), then run `npm run live:provision -- --instance <id>` to create the scoped `odontogram-live` machine client and write the git-ignored `.env`. Never put an admin credential in `VITE_*`. It is a development tool, not part of the published package: `@cognovis/fhir-sdk` is a runtime dependency for Dental Core classes; neither `src/live` nor `live.html` is published. Setup, the load/save mechanics, and the documented delta to the charly adapter's dialect are in [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). A published odontogram 4.0.0 consumer installs `@cognovis/fhir-sdk@0.11.0`; this worktree currently resolves that pin from the packed 0.11.0 tarball.
 
 **Dated examinations, assessment status and peri-implant capture (from 2.4.0):**
 
@@ -760,15 +758,12 @@ npm run docs           # Generate TypeDoc docs in docs/
 | `setStageOverride(v)` | Override the derived periodontal stage — `"I"` / `"II"` / `"III"` / `"IV"`, or `null` to clear (revert to derived) |
 | `setGradeOverride(v)` | Override the derived periodontal grade — `"A"` / `"B"` / `"C"`, or `null` to clear (revert to derived) |
 | `setExtentOverride(v)` | Override the derived periodontal extent — `"localized"` / `"generalized"` / `"molar-incisor"`, or `null` to clear (revert to derived) |
-| `exportFhir(options?)` | Export the chart as an HL7 FHIR R4 collection Bundle (JSON download). Optional `{ subject }` reference; otherwise a placeholder Patient is embedded |
 | `exportImage(format)` | Download the chart as an image — `"png"` or `"jpg"` |
 | `exportSvg()` | Download the chart as a scalable SVG (vector) |
 | `hasAnyPerioData()` | `true` iff any periodontal axis is charted anywhere in the mouth — drives the perio export auto-skip and disables the perio export-menu items on a blank chart |
 | `exportPerioSvg()` | Download the full periodontal chart (tooth graphics + numeric rows + 2017 classification) as one standalone vector SVG, built headlessly from state via `buildPerioSvg()` |
 | `exportPerioImage(format)` | Download the periodontal chart as a rasterized image — `"png"` or `"jpg"` |
 | `exportPdf(opts)` | Download a jsPDF-native PDF report (`{patientData, odontogramChart, odontogramDescription, individualNotes, perioStatus, perioDescription}`, each section optional) — vector text plus raster tooth/perio-chart images; the individual-notes section auto-skips when no tooth has a note, and the two perio sections auto-skip whenever `hasAnyPerioData()` is false, regardless of `opts` |
-| `importFhirBundle(input)` | Import a FHIR R4 Bundle (object or JSON string) produced by this module |
-| `setImportFormat(format)` | Set the next file import's parser — `"status"` or `"fhir"` |
 | `startIntroTour()` | Launch the 12-step interactive intro tour |
 
 ### 💾 Status Export/Import Format
@@ -840,7 +835,7 @@ The export creates a JSON file (version `2.20`; imports also accept legacy `1.4`
 - `case` - optional object holding case-level (not per-tooth) metadata, shared by both the status and plan charts (mirrors the top-level `globals` key). Omit-when-empty: absent entirely when every field is at its default, so a case-less export stays byte-identical apart from the version number. Fields (each omitted when at its default): `age`; `smokingStatus` (+ `cigarettesPerDay`); `diabetesStatus` (+ `hba1c`); `toothLossPerio`; `maxRblPercent`; the four 2017-classification per-axis clinician overrides `diagnosisOverride` / `stageOverride` / `gradeOverride` / `extentOverride`; (version 2.19) `patientName` / `examDate`; and (version 2.20) `patientDob`. It feeds the periodontal staging/grading classification and the PDF report header; read/written via `getCaseMeta()` and the `setCase*` setters (see Public API above). Patient name, date of birth and exam date are chart-identity metadata only — they are **not** part of the FHIR export.
 
 ### 🖨️ Export
-Beyond the odontogram's own Status JSON / FHIR / PNG / JPG / SVG export, the **periodontal chart** has its own export path:
+Beyond the odontogram's own Status JSON / PNG / JPG / SVG export, the **periodontal chart** has its own export path:
 - **Perio SVG/PNG/JPG:** `exportPerioSvg()` / `exportPerioImage("png"|"jpg")` render the full perio chart (tooth graphics + numeric rows + the 2017 classification) as one standalone vector SVG (`buildPerioSvg()`), independent of the mounted `PerioChart` DOM. The three export-menu items are disabled whenever `hasAnyPerioData()` is false (a blank chart has nothing perio to export).
 - **PDF report:** the export menu's "PDF report…" item opens `ExportOptionsModal` — a settings dialog (patient name + date of birth + exam date fields, wired straight to the case metadata, with exam date defaulting to today; section checkboxes: patient data, odontogram chart, odontogram description, individual notes — disabled when no tooth has a note — perio status, perio description) before calling `exportPdf(opts)`. An empty identity field prints as **"not specified"**, never as an invented value (`odontogram-in2`): a report that *looks* complete while carrying a fabricated date of birth is not an incomplete finding but a wrong one, and nobody holding the sheet can tell that the date did not come from the patient. The line stays rather than being dropped — a missing line reads as "nothing here", a labelled empty one as "not recorded". The **exam** date is the one exception and still falls back to today: a report is written today, and that is no claim about the patient. The PDF is assembled jsPDF-natively — vector text via `.text()`, raster tooth/perio-chart images via `.addImage()` — with **no svg2pdf.js dependency**. The individual-notes section is auto-skipped when no tooth has a note, and the two perio sections whenever `hasAnyPerioData()` is false, regardless of the dialog's checkboxes.
 - **mPI/mBI implant-gating:** the peri-implant Mombelli indices (mPI/mBI) only render as rows in an arch that contains at least one implant tooth — on both the live perio chart and the SVG/PDF exports.
@@ -855,7 +850,7 @@ Beyond the odontogram's own Status JSON / FHIR / PNG / JPG / SVG export, the **p
 - `src/i18n/` - translations (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR/AR/ZH/FR) and i18n hook
 - `src/utils/numbering.ts` - FDI, Universal, Palmer numbering conversion
 - `src/registry/` - declarative clinical-axis and UI registry: axis metadata, SVG activation, restoration type×material matrix, value catalogue, and option lists; FHIR mappings are owned by `src/fhir/`
-- `src/fhir/` - sole Dental Core HL7 FHIR R4 seam: `toFhir.ts`/`fromFhir.ts` entry points, `toFhirDentalCore.ts`/`fromFhirDentalCore.ts` codec, `dentalCoreContract.ts` plus generated profiles/contracts, and `dentalCoreLocalCoding.ts` helpers
+- `src/fhir/` - sole Dental Core HL7 FHIR R4 seam: `toFhirDentalCore.ts`/`fromFhirDentalCore.ts` codec over `@cognovis/fhir-sdk`, `dentalCoreContract.ts`, and `dentalCoreLocalCoding.ts` helpers
 - `src/bridgeOverlay.ts` - multi-tooth bridge-span connector overlay (arch-aware saddle geometry)
 - `src/SettingsModal.tsx` - tabbed Settings dialog (General/Panels/Tooth details/Caries/Pulpa/Notes/Periodontal)
 - `src/perioExport.ts` - `buildPerioSvg()`: the full perio chart as one standalone vector SVG

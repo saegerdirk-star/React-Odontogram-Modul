@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-3.3.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-4.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -95,9 +95,7 @@ import {
   getToothStateSummary,
   onStateChange,             // subscribe to state changes
   // export / import
-  exportFhir,                // HL7 FHIR R4 bundle
   exportSvg, exportImage,    // vector / raster chart export
-  setImportFormat,
   // control
   setReadOnly, getReadOnly,
   clearSelection,
@@ -107,7 +105,7 @@ import {
 } from "react-advanced-odontogram";
 ```
 
-كامل الواجهة (نحو 44 دالة + أنواع مثل `OdontogramSummary`، `OdontogramThemeConfig`، `OdontogramPlugin`، `FhirExportOptions`، `PerioViewMode`، …) مُنمَّطة بالكامل ضمن التصريحات المرفقة.
+كامل الواجهة (نحو 44 دالة + أنواع مثل `OdontogramSummary`، `OdontogramThemeConfig`، `OdontogramPlugin`، `PerioViewMode`، …) مُنمَّطة بالكامل ضمن التصريحات المرفقة.
 
 #### الاستخدام مع Next.js (موجِّه التطبيق App Router)
 
@@ -126,7 +124,7 @@ export default function OdontogramClient() {
 أو حمّله عبر استيراد ديناميكي مخصَّص لجهة العميل فقط: `dynamic(() => import("./OdontogramClient"), { ssr: false })`.
 
 #### ملاحظات مهمة وقيود حالية
-- **ESM فقط** — تنشر الحزمة وحدة ES رئيسية (`dist/odontogram.js`) ووحدة FHIR ES اختيارية (`dist/fhir.js`) مع تصريحات الأنواع المقابلة (`dist/index.d.ts` و`dist/fhir.d.ts`). وهي موجَّهة لاستبانة وحدات حزم التجميع (bundler)؛ لا يوجد بناء CommonJS.
+- **ESM فقط** — تنشر الحزمة وحدة ES رئيسية (`dist/odontogram.js`) مع تصريحات الأنواع المقابلة (`dist/index.d.ts`). وهي موجَّهة لاستبانة وحدات حزم التجميع (bundler)؛ لا يوجد بناء CommonJS.
 - **ملف التنسيق منفصل** — **يجب** عليك استيراد `react-advanced-odontogram/style.css` مرة واحدة؛ فهو لا يُحقَن تلقائيًا. التنسيق عبارة عن CSS عام محصور ضمن `.odontogram-root` ومُتحكَّم به عبر متغيرات CSS من نوع `--odon-*`.
 - **العرض من جهة الخادم / جهة العميل فقط** — يقرأ المكوّن DOM عند التركيب (`document`)، لذا يجب أن يعمل داخل المتصفح. في أطر عمل SSR، اعرضه ضمن مكوّن عميل (`"use client"`) أو عبر استيراد ديناميكي مخصَّص لجهة العميل فقط.
 - **الأصول مكتفية ذاتيًا** — تُدرَج رسومات الأسنان والأيقونات بصيغة SVG ضمن حزمة JavaScript وقت البناء؛ **لا يوجد** أي طلب أصول وقت التشغيل يلزم إعداده، ولا شيء إضافي يلزم نسخه إلى مجلدك العام.
@@ -206,7 +204,7 @@ export default function OdontogramClient() {
 - 🔒 وضع للقراءة فقط: تعطيل جميع التفاعلات لحالات الاستخدام مثل الطباعة/التقرير/العرض
 - ✨ رسوم متحركة للتحديد: إطار متقطع نابض وظل توهج على الأسنان المحددة (مع دعم `prefers-reduced-motion`)
 - 📝 ملاحظات لكل سن: نقر مزدوج لإضافة/تعديل الملاحظات، أيقونة ملاحظة بجانب رقم السن، تلميح عند المرور بالمؤشر يعرض نص الملاحظة، سطر "ملاحظات فردية" في لوحة ملخص كامل الفم، وتضمينها في تقرير PDF، تصدير/استيراد JSON
-- 🔀 فصل مخطط الحالة ↔ الخطة: مفتاح تبديل `Status | Plan` في رأس المخطط يبدّل بين مخطط **الحالة** الراهنة ومخطط **الخطة** (المعالجة المقصودة بعد العلاج)، ولكل منهما حالات أسنانه الخاصة؛ يبدأ مخطط الخطة كنسخة من الحالة عند أول تبديل إليه، ولا تؤثر التعديلات في أحد المخططين على الآخر أبدًا. يستهدف التصدير/الاستيراد (`exportStatus`/`exportFhir`/استيراد الملف) دائمًا مخطط الحالة؛ ويُقرأ/يُكتب مخطط الخطة بشكل منفصل عبر واجهته البرمجية الخاصة (انظر واجهة برمجة التطبيقات العامة أدناه) — وعند اختلافه عن الحالة، يُدرج كقسم إضافي `plan` في تصدير JSON
+- 🔀 فصل مخطط الحالة ↔ الخطة: مفتاح تبديل `Status | Plan` في رأس المخطط يبدّل بين مخطط **الحالة** الراهنة ومخطط **الخطة** (المعالجة المقصودة بعد العلاج)، ولكل منهما حالات أسنانه الخاصة؛ يبدأ مخطط الخطة كنسخة من الحالة عند أول تبديل إليه، ولا تؤثر التعديلات في أحد المخططين على الآخر أبدًا. يستهدف التصدير/الاستيراد (`exportStatus`/استيراد الملف) دائمًا مخطط الحالة؛ ويُقرأ/يُكتب مخطط الخطة بشكل منفصل عبر واجهته البرمجية الخاصة (انظر واجهة برمجة التطبيقات العامة أدناه) — وعند اختلافه عن الحالة، يُدرج كقسم إضافي `plan` في تصدير JSON
 - 📝 مربع "ما الذي تغيّر": كلما اختلفت الخطة عن الحالة الراهنة، يسرد مربع أسفل لوحة معلومات السن كل فرق لكل سن ولكل محور معالجة (الوجود، النسيج الأساسي، الترميم، التركيبة، التاج المخطط له، التقويم، اللب/العلاج اللبي، القمة) كسطر بصيغة `tooth: axis  from → to`؛ ومتاح أيضًا برمجيًا عبر `getPlanChanges()`
 
 ![مخطط اللثة للفم الكامل (العربية)](screenshot_ar_perio.png)
@@ -594,7 +592,7 @@ Aidbox Reetfurt local-UAT معزول، وتعرضه في الواجهة المع
 في مستودع mvz-reetfurt) ثم نفِّذ `npm run live:provision -- --instance <id>` لإنشاء عميل الآلة
 المحدود `odontogram-live` وكتابة ملف `.env` المستبعد من التحكم بالإصدارات. لا تضع بيانات اعتماد
 إدارية في `VITE_*` أبداً. إنها أداة تطوير، وليست جزءاً من الحزمة المنشورة: `@cognovis/fhir-sdk`
-هو devDependency، و`dependencies` يبقى دون تغيير، ولا يُنشر أيّ من `src/live` أو `live.html`.
+هو اعتماد وقت تشغيل لفئات Dental Core؛ ولا يُنشر أيّ من `src/live` أو `live.html`.
 الإعداد وآلية التحميل/الحفظ والفرق الموثَّق عن لهجة محوّل charly موجودة في
 [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). تثبيت devDependencies لهذا المستودع
 لا يزال يتطلب بيانات اعتماد لـ`npm.cognovis.de`؛ أما `npm ci --omit=dev` واستهلاك الحزمة المنشورة فلا يتطلبان ذلك.
@@ -753,15 +751,12 @@ npm run docs           # توليد توثيق TypeDoc داخل docs/
 | `setStageOverride(v)` | تجاوز مرحلة دواعم السن المشتقة — `"I"` / `"II"` / `"III"` / `"IV"`، أو `null` للمسح (العودة إلى القيمة المشتقة) |
 | `setGradeOverride(v)` | تجاوز درجة دواعم السن المشتقة — `"A"` / `"B"` / `"C"`، أو `null` للمسح (العودة إلى القيمة المشتقة) |
 | `setExtentOverride(v)` | تجاوز مدى دواعم السن المشتق — `"localized"` / `"generalized"` / `"molar-incisor"`، أو `null` للمسح (العودة إلى القيمة المشتقة) |
-| `exportFhir(options?)` | تصدير المخطط كحزمة تجميعية HL7 FHIR R4 (تنزيل JSON). مرجع اختياري `{ subject }`؛ وإلا يُضمَّن مريض بديل مؤقت |
 | `exportImage(format)` | تنزيل المخطط كصورة — `"png"` أو `"jpg"` |
 | `exportSvg()` | تنزيل المخطط كملف SVG متجهي قابل للتحجيم |
 | `hasAnyPerioData()` | `true` إذا كان أي محور من محاور دواعم السن مسجَّلًا في أي مكان في الفم — يتحكم في التخطي التلقائي لتصدير دواعم السن ويعطّل عناصر قائمة تصدير دواعم السن في مخطط فارغ |
 | `exportPerioSvg()` | تنزيل مخطط دواعم السن الكامل (رسوم الأسنان + الصفوف الرقمية + تصنيف 2017) كملف SVG متجهي مستقل، يُبنى بلا واجهة مباشرة من الحالة عبر `buildPerioSvg()` |
 | `exportPerioImage(format)` | تنزيل مخطط دواعم السن كصورة نقطية — `"png"` أو `"jpg"` |
 | `exportPdf(opts)` | تنزيل تقرير PDF أصلي عبر jsPDF (`{patientData, odontogramChart, odontogramDescription, individualNotes, perioStatus, perioDescription}`، كل قسم اختياري) — نص متجهي بالإضافة إلى صور نقطية للأسنان/مخطط دواعم السن؛ يُتخطى قسم الملاحظات الفردية تلقائيًا عندما لا يحمل أي سن ملاحظة، ويُتخطى قسما دواعم السن تلقائيًا كلما كانت `hasAnyPerioData()` تساوي `false`، بصرف النظر عن `opts` |
-| `importFhirBundle(input)` | استيراد حزمة FHIR R4 (كائن أو نص JSON) صادرة عن هذه الوحدة |
-| `setImportFormat(format)` | ضبط المحلِّل المستخدَم للاستيراد التالي للملف — `"status"` أو `"fhir"` |
 | `startIntroTour()` | إطلاق الجولة التعريفية التفاعلية من 12 خطوة |
 
 ### 💾 صيغة تصدير/استيراد الحالة
@@ -848,7 +843,7 @@ npm run docs           # توليد توثيق TypeDoc داخل docs/
 - `src/i18n/` - الترجمات (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR) وخطاف الترجمة
 - `src/utils/numbering.ts` - تحويل الترقيم بين FDI والعالمي وبالمر
 - `src/registry/` - سجل تصريحي للمحاور السريرية والواجهة: بيانات المحاور، وتفعيل SVG، ومصفوفة نوع×مادة الترميم، وكتالوج القيم وقوائم الخيارات؛ تعيينات FHIR من مسؤولية `src/fhir/`
-- `src/fhir/` - الحد الوحيد لـ Dental Core مع HL7 FHIR R4: نقطتا الدخول `toFhir.ts`/`fromFhir.ts`، ومرمّز/مفكّك `toFhirDentalCore.ts`/`fromFhirDentalCore.ts`، و`dentalCoreContract.ts` مع الملفات/العقود المولّدة، ومساعدات `dentalCoreLocalCoding.ts`
+- `src/fhir/` - الحد الوحيد لـ Dental Core مع HL7 FHIR R4: مرمّز/مفكّك `toFhirDentalCore.ts`/`fromFhirDentalCore.ts` فوق `@cognovis/fhir-sdk`، و`dentalCoreContract.ts`، ومساعدات `dentalCoreLocalCoding.ts`
 - `src/bridgeOverlay.ts` - تراكب موصل امتداد الجسر متعدد الأسنان (هندسة سرج مراعية لشكل القوس)
 - `src/SettingsModal.tsx` - نافذة إعدادات بعلامات تبويب (عام/اللوحات/تفاصيل السن/النخر/اللب/الملاحظات/دواعم السن)
 - `src/perioExport.ts` - `buildPerioSvg()`: مخطط دواعم السن الكامل كملف SVG متجهي مستقل واحد

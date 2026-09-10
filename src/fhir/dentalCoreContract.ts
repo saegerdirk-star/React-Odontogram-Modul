@@ -1,31 +1,44 @@
 import type { ToothRecord } from "../document";
+import { DENTAL_CORE_PACKAGE } from "@cognovis/fhir-sdk/dental-core";
 import {
-  DENTAL_CORE_CANONICAL,
-  DENTAL_CORE_CODE_SYSTEM_CODES,
-  DENTAL_CORE_CODE_SYSTEM_URLS,
-  DENTAL_CORE_PACKAGE_VERSION,
-  DENTAL_CORE_PROFILE_URLS,
-} from "./generated/dental-core-contract";
+  DE_COGNOVIS_FHIR_DENTAL_CORE_EXTENSIONS,
+  DE_COGNOVIS_FHIR_DENTAL_CORE_PACKAGE,
+  DE_COGNOVIS_FHIR_DENTAL_CORE_PROFILES,
+} from "@cognovis/fhir-sdk/canonicals";
+import { isFdiTooth } from "../utils/numbering";
 
-export const DENTAL_CORE = DENTAL_CORE_CANONICAL;
-export { DENTAL_CORE_PACKAGE_VERSION };
+export const DENTAL_CORE = DE_COGNOVIS_FHIR_DENTAL_CORE_PROFILES.DentalChartState.replace(
+  /\/StructureDefinition\/dental-chart-state$/,
+  "",
+);
+export const DENTAL_CORE_PACKAGE_VERSION = DENTAL_CORE_PACKAGE.version;
 export const DENTAL_CORE_BUNDLE_IDENTIFIER = `odontogram-dental-core-${DENTAL_CORE_PACKAGE_VERSION}`;
-export const DENTAL_CORE_PROFILES = DENTAL_CORE_PROFILE_URLS;
-export const PROPERTY_SYSTEM = DENTAL_CORE_CODE_SYSTEM_URLS["dental-chart-property"];
-export const VALUE_SYSTEM = DENTAL_CORE_CODE_SYSTEM_URLS["dental-chart-value"];
-export const COMPONENT_SYSTEM = DENTAL_CORE_CODE_SYSTEM_URLS["dental-component"];
-export const PROVENANCE_SYSTEM = DENTAL_CORE_CODE_SYSTEM_URLS["dental-provenance-activity"];
-export const FDI_SYSTEM = DENTAL_CORE_CODE_SYSTEM_URLS["tooth-position-fdi"];
 
-const propertyCodes = new Set<string>(DENTAL_CORE_CODE_SYSTEM_CODES["dental-chart-property"]);
-const valueCodes = new Set<string>(DENTAL_CORE_CODE_SYSTEM_CODES["dental-chart-value"]);
-const fdiCodes = new Set<string>(DENTAL_CORE_CODE_SYSTEM_CODES["tooth-position-fdi"]);
+void DE_COGNOVIS_FHIR_DENTAL_CORE_PACKAGE;
 
-export const isDentalCoreFdi = (value: string): boolean => fdiCodes.has(value);
-export const isDentalCoreProperty = (value: string): boolean => propertyCodes.has(value);
-export const isDentalCoreValue = (value: string): boolean => valueCodes.has(value);
+function kebabFromSdkName(name: string): string {
+  return name.replace(/Ext$/, "").replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+}
+
+export const DENTAL_CORE_PROFILES = {
+  ...Object.fromEntries(
+    Object.entries(DE_COGNOVIS_FHIR_DENTAL_CORE_PROFILES).map(([name, url]) => [kebabFromSdkName(name), url]),
+  ),
+  ...Object.fromEntries(
+    Object.entries(DE_COGNOVIS_FHIR_DENTAL_CORE_EXTENSIONS).map(([name, url]) => [kebabFromSdkName(name), url]),
+  ),
+} as Record<string, string>;
+
+export const PROPERTY_SYSTEM = `${DENTAL_CORE}/CodeSystem/dental-chart-property`;
+export const VALUE_SYSTEM = `${DENTAL_CORE}/CodeSystem/dental-chart-value`;
+export const COMPONENT_SYSTEM = `${DENTAL_CORE}/CodeSystem/dental-component`;
+export const PROVENANCE_SYSTEM = `${DENTAL_CORE}/CodeSystem/dental-provenance-activity`;
+export const FDI_SYSTEM = `${DENTAL_CORE}/CodeSystem/tooth-position-fdi`;
+
+export const isOdontogramFdi = (value: string): boolean => isFdiTooth(value);
+
 export const isDentalCoreDiagnosis = (value: string): boolean =>
-  ["health", "gingivitis", "periodontitis"].includes(value) && isDentalCoreValue(value);
+  ["health", "gingivitis", "periodontitis"].includes(value);
 
 export function isDentalCoreRiskValue(code: string, value: number): boolean {
   if (!Number.isFinite(value)) return false;
@@ -83,18 +96,95 @@ export const CHART_MAPPINGS: readonly ChartMapping[] = [
   { field: "rootPostType", property: "root-post-type", kind: "enum", defaultValue: "none", omitDefault: true, values: { none: "none", "glass-fiber": "glass-fiber-post", metal: "metal-post" } },
 ] as const;
 
-for (const mapping of CHART_MAPPINGS) {
-  if (!isDentalCoreProperty(mapping.property)) throw new Error(`Unsupported Dental Core property mapping: ${mapping.property}`);
-  for (const code of Object.values(mapping.values ?? {})) {
-    if (!isDentalCoreValue(code)) throw new Error(`Unsupported Dental Core value mapping: ${code}`);
-  }
-}
-
 export const mappingsByProperty = new Map<string, ChartMapping[]>();
 for (const mapping of CHART_MAPPINGS) {
   const mappings = mappingsByProperty.get(mapping.property) ?? [];
   mappings.push(mapping);
   mappingsByProperty.set(mapping.property, mappings);
+}
+
+const mappedValueCodes = new Set<string>(
+  CHART_MAPPINGS.flatMap((mapping) => Object.values(mapping.values ?? {})),
+);
+
+export function isMappedChartProperty(code: string): boolean {
+  return mappingsByProperty.has(code);
+}
+
+export function isMappedChartValue(code: string): boolean {
+  return mappedValueCodes.has(code);
+}
+
+const ADMITTED_CORE_PROFILES = new Set<string>([
+  DENTAL_CORE_PROFILES["dental-caries-finding"],
+  DENTAL_CORE_PROFILES["dental-chart-state"],
+  DENTAL_CORE_PROFILES["dental-clinical-provenance"],
+  DENTAL_CORE_PROFILES["dental-device"],
+  DENTAL_CORE_PROFILES["dental-finding"],
+  DENTAL_CORE_PROFILES["dental-gingival-recession-assessment"],
+  DENTAL_CORE_PROFILES["dental-implant"],
+  DENTAL_CORE_PROFILES["dental-peri-implant-finding"],
+  DENTAL_CORE_PROFILES["dental-periodontal-finding"],
+  DENTAL_CORE_PROFILES["dental-procedure"],
+  DENTAL_CORE_PROFILES["dental-risk-evidence"],
+  DENTAL_CORE_PROFILES["dental-service-request"],
+  DENTAL_CORE_PROFILES["dental-target-chart-state"],
+  DENTAL_CORE_PROFILES["dental-tooth-state"],
+]);
+
+const codeAt = (
+  concept: { coding?: Array<{ system?: string; code?: string }> } | undefined,
+  system: string,
+): string | undefined => concept?.coding?.find((coding) => coding.system === system)?.code;
+
+/**
+ * A Dental Core resource whose profile or chart property/value codes sit
+ * outside this odontogram's mappings. Live load lists those as unsupported
+ * instead of rejecting the rest of the collection.
+ */
+export function unmappedDentalCoreReason(resource: {
+  resourceType?: unknown;
+  meta?: { profile?: unknown };
+  component?: unknown;
+  code?: { coding?: Array<{ system?: string; code?: string }> };
+}): string | undefined {
+  const profiles = Array.isArray(resource.meta?.profile)
+    ? resource.meta.profile.filter((value): value is string => typeof value === "string")
+    : [];
+  const coreProfiles = profiles.filter((profile) => Object.values(DENTAL_CORE_PROFILES).includes(profile));
+  if (!coreProfiles.length) return undefined;
+  if (!coreProfiles.some((profile) => ADMITTED_CORE_PROFILES.has(profile))) {
+    return `Dental Core profile ${coreProfiles[0]} is outside this odontogram's mappings`;
+  }
+  if (resource.resourceType !== "Observation") return undefined;
+  if (coreProfiles.includes(DENTAL_CORE_PROFILES["dental-chart-state"])) {
+    const components = Array.isArray(resource.component) ? resource.component : [];
+    for (const component of components) {
+      if (!component || typeof component !== "object") continue;
+      const item = component as {
+        code?: { coding?: Array<{ system?: string; code?: string }> };
+        valueCodeableConcept?: { coding?: Array<{ system?: string; code?: string }> };
+      };
+      const property = codeAt(item.code, PROPERTY_SYSTEM);
+      if (property && !isMappedChartProperty(property)) {
+        return `Chart property ${property} is outside this odontogram's mappings`;
+      }
+      const coded = codeAt(item.valueCodeableConcept, VALUE_SYSTEM);
+      if (property && coded) {
+        const mappingValues = (mappingsByProperty.get(property) ?? []).flatMap((mapping) => Object.values(mapping.values ?? {}));
+        if (mappingValues.length && !mappingValues.includes(coded)) {
+          return `Chart value ${coded} is outside this odontogram's mappings`;
+        }
+      }
+    }
+  }
+  if (coreProfiles.includes(DENTAL_CORE_PROFILES["dental-finding"])) {
+    const property = codeAt(resource.code, PROPERTY_SYSTEM);
+    if (property && !isMappedChartProperty(property)) {
+      return `Finding property ${property} is outside this odontogram's mappings`;
+    }
+  }
+  return undefined;
 }
 
 /** Split the former combined endodontic post values into two orthogonal axes. */

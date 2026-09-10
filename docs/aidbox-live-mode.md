@@ -351,15 +351,15 @@ saved chart:
 
 ## Boundary (AC4)
 
-The published artifact stays free of the FHIR client SDK:
+The published artifact stays free of the FHIR **client**:
 
-* `@cognovis/fhir-sdk` is a **devDependency**; `dependencies` in `package.json`
-  is unchanged;
-* that package is imported by nothing outside `src/live`, and the transport
-  lives in exactly one module, `src/live/aidbox.ts`;
+* `@cognovis/fhir-sdk` is a **runtime dependency** for Dental Core mapping classes;
+  `@cognovis/fhir-sdk/client` is imported only from `src/live`;
+* the transport lives in exactly one module, `src/live/aidbox.ts`;
 * `src/live` is excluded from `tsconfig.build.json` and from the `vite-plugin-dts`
-  include, so no SDK type reaches `dist`;
+  include, so no SDK client type reaches `dist`;
 * `files` is still `["dist"]`, so neither `live.html` nor `src/live` is published;
+* there is no public `./fhir` JSON-bundle export;
 * the library build's entry graph (`src/index.ts`, `src/fhir/index.ts`) cannot
   reach `src/live`.
 
@@ -370,14 +370,11 @@ The published artifact stays free of the FHIR client SDK:
 `@cognovis/fhir-sdk` comes from the Cognovis registry; the repo-local `.npmrc`
 maps the scope, and authentication comes from the developer's own `~/.npmrc`.
 
-**This is not free for anyone who only wants the library.** Because the packages
-are in `devDependencies` and in `package-lock.json`, a plain `npm ci` or
-`npm install` in this repository now needs a credential for
-`npm.cognovis.de` — every contributor and every CI job, whether or not they
-ever open live mode. `npm ci --omit=dev` does not, and neither does consuming
-the published package, whose `dependencies` are unchanged. If that cost stops
-being worth it, the honest fix is to move `src/live` into its own workspace, not
-to loosen the boundary.
+**This is not free for anyone who only wants the library.** `@cognovis/fhir-sdk`
+is a runtime dependency (Dental Core classes). A plain `npm ci` in this
+worktree currently resolves it from the packed 0.11.0 tarball recorded in the
+lockfile. Consuming a published odontogram 4.0.0 will need that SDK on the
+registry. The FHIR **client** still stays out of the published library entry.
 
 ## One round trip normalises the resource set
 

@@ -19,7 +19,7 @@
 
 import type { Bundle } from "fhir/r4";
 import type { OdontogramDocument } from "../document";
-import { DENTAL_CORE, DENTAL_CORE_BUNDLE_IDENTIFIER, DENTAL_CORE_PROFILES } from "../fhir/dentalCoreContract";
+import { DENTAL_CORE, DENTAL_CORE_BUNDLE_IDENTIFIER, DENTAL_CORE_PROFILES, unmappedDentalCoreReason } from "../fhir/dentalCoreContract";
 import { parseDentalCoreBundle } from "../fhir/fromFhirDentalCore";
 import type { AidboxGateway } from "./aidbox";
 import { liveIdPrefix } from "./writePlan";
@@ -111,6 +111,11 @@ export function partitionResources(patientId: string, resources: ResourceRecord[
       continue;
     }
     if (profiles.some((profile) => dentalCoreProfiles.has(profile))) {
+      const reason = unmappedDentalCoreReason(resource);
+      if (reason) {
+        unsupported.push({ reference, ...(profiles.length ? { profile: profiles[0] } : {}), reason });
+        continue;
+      }
       core.push(resource);
       continue;
     }

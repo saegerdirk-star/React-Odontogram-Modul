@@ -176,8 +176,8 @@ export interface AidboxGateway {
 /**
  * A pass-through "profile" so the typed `ResourceClient` can be used for the
  * one resource this mode reads by id. The Dental Core resources have their own
- * generated profile classes in `src/fhir/generated`, which are not shaped like
- * the SDK's `ProfileClass` — mapping them would be a second codec, so the raw
+ * SDK Dental Core profile classes, which are not used as the live client's
+ * `ProfileClass` here — mapping them would be a second codec, so the raw
  * resource is what travels and `src/fhir` stays the only interpreter.
  */
 const PassThroughPatient = {

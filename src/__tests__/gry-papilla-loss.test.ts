@@ -17,8 +17,8 @@ import {
   __collectExportPayloadForTest, __hydrateImportedChartsForTest,
 } from "../odontogram";
 import { mesialIsLeft } from "../retention";
-import { buildFhirBundle } from "../fhir/toFhir";
-import { parseFhirBundle } from "../fhir/fromFhir";
+import { buildDentalCoreBundle } from "../fhir/toFhirDentalCore";
+import { parseDentalCoreBundle } from "../fhir/fromFhirDentalCore";
 
 beforeEach(() => { __resetChartStateForTest(); setChartMode("status"); });
 
@@ -184,15 +184,15 @@ describe("FHIR", () => {
   it("roundtrips populated papilla loss through its recorded source carrier", () => {
     __setToothStateForTest(46, {});
     setPapillaLoss(46, "mesial", 2);
-    const bundle = buildFhirBundle(
+    const bundle = buildDentalCoreBundle(
       __collectExportPayloadForTest() as never,
       { effectiveDateTime: "2026-08-14" },
     );
-    expect(parseFhirBundle(bundle).teeth["46"]?.papillaLoss).toEqual({ mesial: 2 });
+    expect(parseDentalCoreBundle(bundle).teeth["46"]?.papillaLoss).toEqual({ mesial: 2 });
   });
   it("does not emit papilla loss when none was assessed", () => {
     __setToothStateForTest(46, {});
-    const bundle = buildFhirBundle(
+    const bundle = buildDentalCoreBundle(
       __collectExportPayloadForTest() as never,
       { effectiveDateTime: "2026-08-14" },
     );

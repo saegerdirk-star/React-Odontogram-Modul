@@ -16,8 +16,8 @@
 import { PAYLOAD_VERSION } from "../document";
 import { describe, it, expect } from "vitest";
 import { __setToothStateForTest, __getToothStateForTest, __collectExportPayloadForTest } from "../odontogram";
-import { buildFhirBundle } from "../fhir/toFhir";
-import { parseFhirBundle } from "../fhir/fromFhir";
+import { buildDentalCoreBundle } from "../fhir/toFhirDentalCore";
+import { parseDentalCoreBundle } from "../fhir/fromFhirDentalCore";
 
 // `__getToothStateForTest` converts `cariesSeverity` to a plain object but leaves
 // `radiographicDepth` as a Map (it is not in that seam's conversion list), so
@@ -38,9 +38,9 @@ describe("SP6 Task 1: payload version 2.4", () => {
     expect(payload.version).toBe(PAYLOAD_VERSION);
   });
 
-  it("parseFhirBundle (fromFhir) emits version 2.4, independent of the input payload's own version tag", () => {
-    const bundle = buildFhirBundle({ version: "1.4", teeth: {} } as never);
-    const out = parseFhirBundle(bundle);
+  it("parseDentalCoreBundle (fromFhir) emits version 2.4, independent of the input payload's own version tag", () => {
+    const bundle = buildDentalCoreBundle({ version: "1.4", teeth: {} } as never);
+    const out = parseDentalCoreBundle(bundle);
     expect(out.version).toBe(PAYLOAD_VERSION);
   });
 

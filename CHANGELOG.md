@@ -1,6 +1,18 @@
 # Changelog
 
+## 4.0.0 - 2026-09-10
+
+### Breaking: Dental Core over `@cognovis/fhir-sdk` only (odontogram-wt5)
+
+- Drop local FHIR codegen (`src/fhir/generated/`, `tools/generate-dental-core-types.mjs`, `fhir:generate`) and the `@cognovis/fhir-release` / `@cognovis/codegen` pins. Mapping classes and canonicals come from `@cognovis/fhir-sdk@0.11.0` (`dental-core` and `canonicals` exports).
+- Remove the public JSON-bundle API: no `./fhir` package export, no `buildFhirBundle` / `parseFhirBundle`, no `exportFhir` / `setImportFormat("fhir")`, and no session `importFhirBundle` / `exportFhirBundle`. Hosts pass an injected SDK client; load/save go through `src/live`.
+- Drop CodeSystem concept-list validation. A Dental Core resource whose property or value code sits outside this odontogram's mappings is listed as unsupported on live load; it does not reject the rest of the chart. Aidbox plus the release-time HL7 validator own conformance.
+- Keep the odontogram-1sa source-preservation mapping (implantPosition, crownFractureType, orthoProgressive, rootResection, papillaLoss, orthoBracketSide, cantilever, endoCanals, rootFractureRoot, rootResectionRoot, apicalRoot, Goal-based planned state) re-pointed at SDK classes.
+
+There is no compatibility shim for the removed JSON-bundle API.
+
 ## 3.3.0 - 2026-09-09
+
 
 ### Lossless Dental Core chart-state exchange (odontogram-1sa)
 

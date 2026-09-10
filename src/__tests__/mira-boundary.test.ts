@@ -103,6 +103,6 @@ describe("odontogram-3l1 AC4: the component carries no transport coupling", () =
     expect(readme).toMatch(/UI-domain document/i);
     expect(readme).toMatch(/Dental Core/i);
     expect(readme).toMatch(/createOdontogramSession/);
-    expect(readme).toMatch(/buildFhirBundle/);
+    expect(readme).toMatch(/Aidbox/);
   });
 });

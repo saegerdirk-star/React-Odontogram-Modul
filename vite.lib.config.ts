@@ -8,7 +8,7 @@
 // `npm run build:lib` emits the consumable library. React and every runtime
 // dependency are externalized so the bundle ships only this component's own
 // code + inlined SVG/CSS — no second copy of React, no bundled jspdf.
-// vite-plugin-dts emits bundled declarations for the root and FHIR entries.
+// vite-plugin-dts emits bundled declarations for the root library entry.
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import dts from 'vite-plugin-dts'
@@ -18,7 +18,7 @@ export default defineConfig({
   plugins: [
     react(),
     dts({
-      // Bundled dist/index.d.ts and dist/fhir.d.ts declarations (via
+      // Bundled dist/index.d.ts declarations (via
       // @microsoft/api-extractor) instead of a tree of per-file .d.ts — hides internal __*ForTest declarations and
       // resolves cleanly under any moduleResolution (no extensionless relative
       // imports in the output). NOTE: vite-plugin-dts v5 calls this option
@@ -42,7 +42,6 @@ export default defineConfig({
     lib: {
       entry: {
         index: path.resolve(__dirname, 'src/index.ts'),
-        fhir: path.resolve(__dirname, 'src/fhir/index.ts'),
       },
       formats: ['es'],
       fileName: (_format, entryName) => entryName === 'index' ? 'odontogram.js' : `${entryName}.js`,
@@ -55,14 +54,20 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
-      // Do NOT bundle React or the one runtime dep — the consumer provides
+      // Do NOT bundle React or runtime deps — the consumer provides
       // React (peer) and jspdf (dep, lazy-loaded via dynamic import).
+      // `@cognovis/fhir-sdk` is a runtime dependency for live/mapping, but
+      // the published root entry must not pull the client or Core classes.
       external: [
         'react',
         'react-dom',
         'react/jsx-runtime',
         'react/jsx-dev-runtime',
         'jspdf',
+        '@cognovis/fhir-sdk',
+        '@cognovis/fhir-sdk/client',
+        '@cognovis/fhir-sdk/dental-core',
+        '@cognovis/fhir-sdk/canonicals',
       ],
     },
   },

@@ -15,7 +15,7 @@ export type {
 } from "../document";
 export { PAYLOAD_VERSION } from "../document";
 
-/** Options for buildFhirBundle and exportFhir. */
+/** Options for the internal Dental Core mapping (`buildDentalCoreBundle`). */
 export interface FhirExportOptions {
   subject?: string;
   effectiveDateTime?: string;
