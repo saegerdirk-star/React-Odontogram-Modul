@@ -51,11 +51,9 @@ describe("odontogram-wt5: FHIR layer is SDK-only", () => {
     expect(existsSync(resolve(root, "tools/generate-dental-core-types.mjs"))).toBe(false);
   });
 
-  it("pins packed-local @cognovis/fhir-sdk 0.11.0 and drops codegen packages", () => {
+  it("pins registry @cognovis/fhir-sdk 0.11.0 and drops codegen packages", () => {
     expect(packageJson.version).toBe("4.0.0");
-    expect(packageJson.dependencies?.["@cognovis/fhir-sdk"]).toBe(
-      "file:vendor/cognovis-fhir-sdk-0.11.0.tgz",
-    );
+    expect(packageJson.dependencies?.["@cognovis/fhir-sdk"]).toBe("0.11.0");
     expect(packageJson.devDependencies?.["@cognovis/fhir-sdk"]).toBeUndefined();
     expect(packageJson.dependencies?.["@cognovis/codegen"]).toBeUndefined();
     expect(packageJson.devDependencies?.["@cognovis/codegen"]).toBeUndefined();
@@ -68,8 +66,9 @@ describe("odontogram-wt5: FHIR layer is SDK-only", () => {
     };
     const sdk = lock.packages?.["node_modules/@cognovis/fhir-sdk"];
     expect(sdk?.version).toBe("0.11.0");
-    expect(sdk?.resolved).toBe("file:vendor/cognovis-fhir-sdk-0.11.0.tgz");
-    expect(existsSync(resolve(root, "vendor/cognovis-fhir-sdk-0.11.0.tgz"))).toBe(true);
+    expect(sdk?.resolved).not.toMatch(/file:vendor\//);
+    expect(sdk?.resolved).toMatch(/^https:\/\/npm\.cognovis\.de\//);
+    expect(existsSync(resolve(root, "vendor/cognovis-fhir-sdk-0.11.0.tgz"))).toBe(false);
   });
 
   it("does not publish a ./fhir JSON-bundle entry", () => {
