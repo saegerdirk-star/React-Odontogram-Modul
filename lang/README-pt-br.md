@@ -160,7 +160,7 @@ Ou carregue-o com um import dinâmico somente client-side: `dynamic(() => import
 - 🖐️ **Idade óssea** (`odontogram-c51.4`): quanto crescimento resta, lido de duas formas e mantido separado — maturação vertebral cervical (CVM, 6 estágios) na mesma telerradiografia e SMI de Fishman (11 estágios) na radiografia da mão. Os onze SMI mapeiam para os seis estágios CVM em pares fixos, então ambos dão a mesma faixa de crescimento restante; um CVM lido diretamente prevalece sobre o derivado da mão, e uma divergência é sinalizada, não resolvida. Ao lado do padrão de crescimento cefalométrico.
 - 📸 **Análise fotostática — Powell** (`odontogram-c51.3`): ângulos de foto de perfil, integrados no cartão cefalométrico mas marcados como MEIO distinto: cada medida e o perfil carregam `medium: "photo"`, e o seletor agrupa por ele (telerradiografia vs. fotostática), de modo que o registro diz se um valor de tecidos moles foi lido na radiografia ou na foto.
 - ⚠️ Ambos são por ora **estado de sessão**: não existe perfil Dental Core publicado, portanto não fazem parte do payload de exportação em vez de inventar um local
-- 🔗 Exportação HL7 FHIR R4 (Bundle de coleção com Observations por dente, codificação de dente ISO 3950 para dentição permanente, sistema de códigos local — mapeamento SNOMED CT planejado)
+- 🔗 Aidbox Dental Core via `@cognovis/fhir-sdk`: o anfitrião injeta um gateway; a sessão carrega e salva. Exportação/importação JSON de status com migrações
 - ✚ Interface de seleção de faces em cruz/mais (B/M/O/D/L) para cáries e restaurações
 - 🧱 Materiais de restauração por face (restaurações mistas, por exemplo amálgama vestibular + resina distal)
 - 🖼️ Exportação da imagem do odontograma em PNG/JPG/SVG (para download; PNG/JPG rasterizados a partir do SVG vetorial)

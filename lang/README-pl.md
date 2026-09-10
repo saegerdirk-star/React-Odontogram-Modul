@@ -157,7 +157,7 @@ Ewentualnie załaduj go za pomocą dynamicznego importu tylko po stronie klienta
 - 🖐️ **Wiek kostny** (`odontogram-c51.4`): ile wzrostu pozostało, odczytany na dwa sposoby i prowadzony osobno — dojrzewanie kręgów szyjnych (CVM, 6 stadiów) na tym samym zdjęciu bocznym i SMI Fishmana (11 stadiów) na zdjęciu ręki. Jedenaście SMI mapuje się na sześć stadiów CVM w stałych parach, więc oba dają ten sam przedział pozostałego wzrostu; bezpośrednio odczytany CVM ma pierwszeństwo przed wyprowadzonym z ręki, a rozbieżność jest zgłaszana, nie rozwiązywana. Obok kefalometrycznego wzorca wzrostu.
 - 📸 **Analiza fotostatyczna — Powell** (`odontogram-c51.3`): kąty ze zdjęcia profilowego, wpięte w kartę cefalometryczną, ale oznaczone jako inne MEDIUM: każda miara i profil niosą `medium: "photo"`, a lista grupuje według niego (telerentgen vs. fotostatyka), więc zapis mówi, czy wartość tkanek miękkich odczytano z rentgenu czy ze zdjęcia.
 - ⚠️ Oba są na razie **stanem sesji**: nie istnieje opublikowany profil Dental Core, więc nie są częścią eksportowanego payloadu zamiast wymyślania lokalnego
-- 🔗 Eksport HL7 FHIR R4 (kolekcja Bundle z obserwacjami na ząb, kodowanie zębów wg ISO 3950 dla uzębienia stałego, lokalny system kodów — mapowanie SNOMED CT planowane)
+- 🔗 Aidbox Dental Core przez `@cognovis/fhir-sdk`: host wstrzykuje gateway; sesja wczytuje i zapisuje. Eksport/import JSON stanu z migracjami
 - ✚ Interfejs wyboru powierzchni w układzie krzyżowym (B/M/O/D/L) dla próchnicy i wypełnień
 - 🧱 Materiały wypełnień na powierzchnię (mieszane wypełnienia, np. policzkowe amalgamat + dystalne kompozyt)
 - 🖼️ Eksport obrazu PNG/JPG/SVG wykresu (do pobrania; PNG/JPG rastrowane z wektorowego SVG)

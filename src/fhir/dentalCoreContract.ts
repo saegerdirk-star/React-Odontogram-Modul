@@ -12,9 +12,9 @@ export const DENTAL_CORE = DE_COGNOVIS_FHIR_DENTAL_CORE_PROFILES.DentalChartStat
   "",
 );
 export const DENTAL_CORE_PACKAGE_VERSION = DENTAL_CORE_PACKAGE.version;
+export const DENTAL_CORE_PACKAGE_ID = DENTAL_CORE_PACKAGE.id;
+export const DENTAL_CORE_CANONICAL_PACKAGE_VERSION = DE_COGNOVIS_FHIR_DENTAL_CORE_PACKAGE.version;
 export const DENTAL_CORE_BUNDLE_IDENTIFIER = `odontogram-dental-core-${DENTAL_CORE_PACKAGE_VERSION}`;
-
-void DE_COGNOVIS_FHIR_DENTAL_CORE_PACKAGE;
 
 function kebabFromSdkName(name: string): string {
   return name.replace(/Ext$/, "").replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();

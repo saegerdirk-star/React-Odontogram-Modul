@@ -27,10 +27,18 @@ export default defineConfig({
       entryRoot: './src',
       tsconfigPath: './tsconfig.build.json',
       include: ['src'],
-      // `src/live` is the Aidbox live-mode dev app. It is an entry beside the
-      // library, never a part of it: excluded here so no FHIR client SDK type
-      // can reach the published declarations.
-      exclude: ['src/main.tsx', 'src/live/**', 'src/**/__tests__/**', 'src/**/*.test.ts', 'src/**/*.test.tsx'],
+      // The live.html app and the FHIR client factory stay unpublished.
+      // Gateway SPI + load/save/writePlan are part of the session API.
+      exclude: [
+        'src/main.tsx',
+        'src/live/aidbox.ts',
+        'src/live/LiveApp.tsx',
+        'src/live/config.ts',
+        'src/live/main.tsx',
+        'src/**/__tests__/**',
+        'src/**/*.test.ts',
+        'src/**/*.test.tsx',
+      ],
     }),
   ],
   resolve: {
@@ -56,8 +64,8 @@ export default defineConfig({
     rollupOptions: {
       // Do NOT bundle React or runtime deps — the consumer provides
       // React (peer) and jspdf (dep, lazy-loaded via dynamic import).
-      // `@cognovis/fhir-sdk` is a runtime dependency for live/mapping, but
-      // the published root entry must not pull the client or Core classes.
+      // `@cognovis/fhir-sdk` is a runtime dependency for mapping + session
+      // Aidbox load/save. The published root entry must not pull `/client`.
       external: [
         'react',
         'react-dom',

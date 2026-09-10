@@ -3,7 +3,8 @@
 // Dirk Saeger, Malte Sussdorff 2026
 //
 // Internal Dental Core mapping. Not a package export: hosts talk to Aidbox
-// through `src/live` and an injected SDK client, never a JSON bundle.
+// through session.loadFromAidbox / session.saveToAidbox with an injected
+// gateway, never a JSON bundle.
 
 export {
   buildDentalCoreBundle,

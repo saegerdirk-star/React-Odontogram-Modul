@@ -21,11 +21,9 @@ import type { OdontogramSession } from "../session";
 import { createAidboxGateway } from "./aidbox";
 import { resolveLiveConfig } from "./config";
 import type { LiveConfig } from "./config";
-import { loadPatientChart } from "./load";
 import type { LoadReport } from "./load";
-import { buildWritePlan } from "./writePlan";
 import type { SkippedResource } from "./writePlan";
-import { executeWritePlan, isSaveAllowed } from "./save";
+import { isSaveAllowed } from "./save";
 import type { LoadOutcome } from "./save";
 
 type Status =
@@ -153,7 +151,7 @@ function LiveChart({ config }: { config: LiveConfig }) {
     setSkipped([]);
     setLoadOutcome(undefined);
     try {
-      const result = await loadPatientChart(gateway, config.patientId);
+      const result = await session.loadFromAidbox(gateway, config.patientId);
       setReport(result.report);
       setLoadOutcome({
         patientId: config.patientId,
@@ -166,7 +164,6 @@ function LiveChart({ config }: { config: LiveConfig }) {
         return;
       }
       effectiveRef.current = result.document.examination?.effectiveDateTime ?? today();
-      session.setDocument(result.document);
       if (result.report.error) {
         setStatus({ kind: "error", text: result.report.error });
         return;
@@ -183,13 +180,11 @@ function LiveChart({ config }: { config: LiveConfig }) {
   const save = useCallback(async () => {
     setStatus({ kind: "busy", text: "Saving ..." });
     try {
-      const plan = buildWritePlan({
-        document: session.getDocument(),
+      const result = await session.saveToAidbox(gateway, {
         patientId: config.patientId,
         effectiveDateTime: effectiveRef.current,
       });
-      setSkipped(plan.skipped);
-      const result = await executeWritePlan(gateway, plan);
+      setSkipped(result.skipped ?? []);
       if (result.failure) {
         const { op, status: httpStatus, message: text } = result.failure;
         setStatus({

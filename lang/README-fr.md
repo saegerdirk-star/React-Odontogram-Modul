@@ -274,7 +274,7 @@ Une portée suit l'**arcade**, pas la géométrie (`odontogram-apn`) : par-dessu
 - 🖐️ **Âge osseux** (`odontogram-c51.4`) : combien de croissance reste, lu de deux façons et tenu séparé — maturation vertébrale cervicale (CVM, 6 stades) sur la même téléradiographie et SMI de Fishman (11 stades) sur la radiographie de la main. Les onze SMI se projettent sur les six stades CVM par paires fixes, si bien que les deux donnent la même plage de croissance restante ; un CVM lu directement l'emporte sur celui dérivé de la main, et un désaccord est signalé, non résolu. À côté du schéma de croissance céphalométrique.
 - 📸 **Analyse photostatique — Powell** (`odontogram-c51.3`) : angles sur photo de profil, intégrés à la carte céphalométrique mais marqués comme un MÉDIA différent : chaque mesure et le profil portent `medium: "photo"`, et le sélecteur regroupe selon lui (téléradiographie vs photostatique), si bien que le relevé indique si une valeur des tissus mous a été lue sur le cliché ou sur la photo.
 - ⚠️ Les deux sont pour l'instant un **état de session** : aucun profil Dental Core publié n'existe, ils ne font donc pas partie du payload d'export plutôt que d'en inventer un local
-- 🔗 Exportation/Importation HL7 FHIR R4 et JSON
+- 🔗 Dental Core Aidbox via `@cognovis/fhir-sdk` : les hôtes injectent une passerelle ; la session charge et enregistre. Export/import JSON du statut avec migrations
 - 🖼️ Exportation d'images PNG / JPG / SVG et rapport PDF
 - 🔢 Numérotation FDI / Universelle / Palmer
 - 🌐 Interface disponible en 12 langues dont le Français (FR)

@@ -15,34 +15,11 @@ import {
   DentalProcedureProfile,
   DentalRiskEvidenceProfile,
   DentalServiceRequestProfile,
-  RecordedRootFractureExtProfile,
-  RecordedApicalFindingExtProfile,
-  RecordedBracketSurfaceExtProfile,
-  RecordedCantileverPonticRoleExtProfile,
-  RecordedCrownFractureTypeExtProfile,
-  RecordedImplantPositionExtProfile,
-  RecordedOrthodonticProgressionExtProfile,
-  RecordedPapillaLossExtProfile,
-  RecordedRootEndodonticStateExtProfile,
-  RecordedRootResectionExtProfile,
-  DENTAL_CORE_PACKAGE,
 } from "@cognovis/fhir-sdk/dental-core";
 import { CHART_MAPPINGS, COMPONENT_SYSTEM, DENTAL_CORE, DENTAL_CORE_BUNDLE_IDENTIFIER, DENTAL_CORE_PROFILES, FDI_SYSTEM, isDentalCoreDiagnosis, isOdontogramFdi, isDentalCoreRiskValue, normalizeLegacyRootPost, PROPERTY_SYSTEM, PROVENANCE_SYSTEM, VALUE_SYSTEM } from "./dentalCoreContract";
 import { DENTAL_CORE_LOCAL_SYSTEM as LOCAL_SYSTEM, resolveSmokingStatus } from "./dentalCoreLocalCoding";
 import { LOCAL_VALUE_MAPS } from "../registry/valueCatalog";
 import { isSourceRootIdentity, isValidEndodonticStates } from "./sourceStateValidation";
-
-void DENTAL_CORE_PACKAGE;
-void RecordedRootFractureExtProfile;
-void RecordedApicalFindingExtProfile;
-void RecordedBracketSurfaceExtProfile;
-void RecordedCantileverPonticRoleExtProfile;
-void RecordedCrownFractureTypeExtProfile;
-void RecordedImplantPositionExtProfile;
-void RecordedOrthodonticProgressionExtProfile;
-void RecordedPapillaLossExtProfile;
-void RecordedRootEndodonticStateExtProfile;
-void RecordedRootResectionExtProfile;
 
 export class UnsupportedDentalCoreContentError extends Error {
   constructor(field: string) {
@@ -1018,11 +995,13 @@ export function buildDentalCoreBundle(payload: OdontogramExportPayload, options:
     const activity = Object.entries(safe.plan)
       .filter(([fdi, record]) => isOdontogramFdi(fdi) && Object.keys(record).length > 0)
       .map(([fdi]) => ({ reference: { reference: identity.reference(`ServiceRequest/${fdi}`) } }));
+    const goals = Object.entries(safe.plan).flatMap(([fdi, record]) => targetChartState(record, fdi, options, identity)
+      ? [{ reference: identity.reference(`Goal/target/${fdi}`) }] : []);
     const plan: CarePlan = {
       resourceType: "CarePlan", status: "active", intent: "plan",
-      subject: { reference: subjectReference(options, identity) }, ...(activity.length ? { activity } : {}),
-      goal: Object.entries(safe.plan).flatMap(([fdi, record]) => targetChartState(record, fdi, options, identity)
-        ? [{ reference: identity.reference(`Goal/target/${fdi}`) }] : []),
+      subject: { reference: subjectReference(options, identity) },
+      ...(activity.length ? { activity } : {}),
+      ...(goals.length ? { goal: goals } : {}),
     };
     entries.push(identity.entry("CarePlan/plan", plan));
   }

@@ -15,32 +15,11 @@ import {
   DentalProcedureProfile,
   DentalRiskEvidenceProfile,
   DentalServiceRequestProfile,
-  RecordedRootFractureExtProfile,
-  RecordedApicalFindingExtProfile,
-  RecordedBracketSurfaceExtProfile,
-  RecordedCantileverPonticRoleExtProfile,
-  RecordedCrownFractureTypeExtProfile,
-  RecordedImplantPositionExtProfile,
-  RecordedOrthodonticProgressionExtProfile,
-  RecordedPapillaLossExtProfile,
-  RecordedRootEndodonticStateExtProfile,
-  RecordedRootResectionExtProfile,
 } from "@cognovis/fhir-sdk/dental-core";
 import { DENTAL_CORE_LOCAL_SYSTEM as LOCAL_SYSTEM, resolveSmokingStatus } from "./dentalCoreLocalCoding";
 import { LOCAL_VALUE_MAPS } from "../registry/valueCatalog";
 import type { DentalCoreResourceIdentity, OdontogramExportPayload, ToothRecord } from "./types";
 import { isSourceRootIdentity, isValidEndodonticStates } from "./sourceStateValidation";
-
-void RecordedRootFractureExtProfile;
-void RecordedApicalFindingExtProfile;
-void RecordedBracketSurfaceExtProfile;
-void RecordedCantileverPonticRoleExtProfile;
-void RecordedCrownFractureTypeExtProfile;
-void RecordedImplantPositionExtProfile;
-void RecordedOrthodonticProgressionExtProfile;
-void RecordedPapillaLossExtProfile;
-void RecordedRootEndodonticStateExtProfile;
-void RecordedRootResectionExtProfile;
 import {
   COMPONENT_SYSTEM,
   DENTAL_CORE,

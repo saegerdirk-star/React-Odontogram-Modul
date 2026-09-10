@@ -37,6 +37,16 @@ for (const typeEntry of typeEntries) {
       throw new Error(`Removed JSON-bundle API ${leaked} leaked into ${typeEntry}`);
     }
   }
+  for (const required of ["loadFromAidbox", "saveToAidbox", "AidboxGateway", "LoadResult", "WriteTarget"]) {
+    if (!declaration.includes(required)) {
+      throw new Error(`Published session Aidbox seam ${required} missing from ${typeEntry}`);
+    }
+  }
+}
+
+const jsArtifact = resolve(root, packageJson.module ?? "dist/odontogram.js");
+if (existsSync(jsArtifact) && readFileSync(jsArtifact, "utf8").includes("@cognovis/fhir-sdk/client")) {
+  throw new Error("Published odontogram.js must not import @cognovis/fhir-sdk/client");
 }
 
 const consumerDirectory = mkdtempSync(join(root, ".odontogram-library-consumer-"));

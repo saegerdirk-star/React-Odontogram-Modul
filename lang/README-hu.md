@@ -157,7 +157,7 @@ Vagy töltsd be egy kizárólag kliensoldali dinamikus importtal: `dynamic(() =>
 - 🖐️ **Csontkor** (`odontogram-c51.4`): mennyi növekedés van hátra, két módon leolvasva és külön vezetve — nyaki csigolyaérés (CVM, 6 stádium) ugyanazon a laterális felvételen, és Fishman SMI (11 stádium) a kézfelvételen. A tizenegy SMI rögzített párokban képződik le a hat CVM-stádiumra, így mindkettő ugyanazt a hátralévő-növekedési sávot adja; a közvetlenül leolvasott CVM veri a kézből származtatottat, az eltérést pedig jelzi, nem oldja fel. A kefalometriai növekedési mintázat mellett.
 - 📸 **Fotosztatikus elemzés — Powell** (`odontogram-c51.3`): profilfotó-szögek, a kefalometriai kártyába hajtva, de más MÉDIUMKÉNT jelölve: minden mérőszám és a profil `medium: "photo"` értéket visel, és a választó ez szerint csoportosít (távröntgen vs. fotosztát), így a rekord megmondja, filmről vagy fotóról olvasták-e le a lágyrészértéket.
 - ⚠️ Mindkettő egyelőre **munkamenet-állapot**: nincs publikált Dental Core profil, ezért nem részei az exportált payloadnak ahelyett, hogy helyit találnánk ki
-- 🔗 HL7 FHIR R4 export (collection Bundle fogankénti Observation-ökkel, ISO 3950 fogkódolás a maradó fogazatra, lokális kódrendszer — SNOMED CT megfeleltetés tervezett)
+- 🔗 Aidbox Dental Core `@cognovis/fhir-sdk` felett: a host egy gateway-t ad át; a munkamenet betölt és ment. JSON állapot export/import migrációkkal
 - ✚ Kereszt/plusz felület-választó UI (B/M/O/D/L) szuvasodáshoz és tömésekhez
 - 🧱 Felületenkénti tömőanyagok (vegyes tömések, pl. bukkális amalgám + disztális kompozit)
 - 🖼️ PNG/JPG/SVG képexport az odontogramról (letölthető; a PNG/JPG vektoros SVG-ből raszterizált)

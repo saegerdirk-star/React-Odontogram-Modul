@@ -159,7 +159,7 @@ export default function OdontogramClient() {
 - 🖐️ **骨龄**（`odontogram-c51.4`）：还剩多少生长量，用两种方式读取并分开记录——颈椎成熟度（CVM，6 个阶段）取自同一张头颅侧位片，Fishman SMI（11 个阶段）取自手腕片。十一个 SMI 以固定配对映射到六个 CVM 阶段，因此两者给出相同的剩余生长量区间；直接读取的 CVM 优先于由手腕片推得的，二者不一致时予以提示而非强行统一。位于头影测量生长型旁边。
 - 📸 **面部照相分析 — Powell**（`odontogram-c51.3`）：侧位照片角度，折入头影测量卡片，但标注为不同的**介质**：每个测量项与分析都带 `medium: "photo"`，选择器据此分组（头颅侧位片 vs 面部照相），因此记录会说明某个软组织值取自 X 光片还是照片。
 - ⚠️ 两者目前均为**会话状态**：尚无已发布的 Dental Core profile，因此它们不进入导出负载，而不是自行发明一个本地载体
-- 🔗 HL7 FHIR R4 导出（每颗牙齿一个 Observation 组成的 collection Bundle，恒牙列采用 ISO 3950 牙位编码，使用本地代码系统——SNOMED CT 映射计划中）
+- 🔗 Aidbox Dental Core via `@cognovis/fhir-sdk`：宿主注入网关；会话负责加载和保存。JSON 状态导出/导入带迁移
 - ✚ 十字/加号式牙面选择界面（B/M/O/D/L）用于龋齿和充填记录
 - 🧱 每个牙面独立的修复材料（混合充填，例如颊侧银汞合金 + 远中复合树脂）
 - 🖼️ 图表的 PNG/JPG/SVG 图像导出（可下载；PNG/JPG 由矢量 SVG 栅格化而成）

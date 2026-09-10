@@ -80,9 +80,17 @@ describe("odontogram-6fi AC4: the published library carries no SDK", () => {
     expect(packageJson.files).toEqual(["dist"]);
   });
 
-  it("keeps the declaration build out of src/live, so no SDK type reaches dist", () => {
+  it("keeps the declaration build out of the live app and client factory", () => {
     const buildConfig = JSON.parse(read("tsconfig.build.json")) as { exclude: string[] };
-    expect(buildConfig.exclude).toContain("src/live");
+    expect(buildConfig.exclude).toEqual(expect.arrayContaining([
+      "src/live/aidbox.ts",
+      "src/live/LiveApp.tsx",
+      "src/live/config.ts",
+      "src/live/main.tsx",
+    ]));
+    expect(buildConfig.exclude).not.toContain("src/live");
+    expect(read("vite.lib.config.ts")).toMatch(/src\/live\/aidbox\.ts/);
+    expect(read("vite.lib.config.ts")).not.toMatch(/exclude:\s*\[[^\]]*src\/live\/\*\*/);
   });
 });
 
@@ -94,12 +102,21 @@ describe("odontogram-6fi AC4: the SDK client stays inside src/live", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("is not reachable from the library entry point's own module graph", () => {
-    for (const relative of ["src/index.ts", "src/App.tsx", "src/session.ts"]) {
+  it("is not reachable from the library entry except the published Aidbox SPI", () => {
+    for (const relative of ["src/index.ts", "src/App.tsx"]) {
       expect(read(relative), `${relative} must not import the live app`).not.toMatch(/from\s+["'][^"']*\/live\//);
       expect(read(relative), `${relative} must not import a FHIR client SDK`).not.toMatch(/@cognovis\/fhir-sdk\/client/);
       expect(read(relative), `${relative} must not import PolarIS`).not.toMatch(/@polaris\//);
     }
+    for (const relative of ["src/session.ts", "src/odontogram.ts"]) {
+      expect(read(relative), `${relative} must not import the live app or client factory`).not.toMatch(/from\s+["'][^"']*\/live\/(?:aidbox|LiveApp|config|main)/);
+      expect(read(relative), `${relative} must not import a FHIR client SDK`).not.toMatch(/@cognovis\/fhir-sdk\/client/);
+      expect(read(relative), `${relative} must not import PolarIS`).not.toMatch(/@polaris\//);
+    }
+    expect(read("src/odontogram.ts")).toMatch(/from\s+["']\.\/live\/load["']/);
+    expect(read("src/odontogram.ts")).toMatch(/from\s+["']\.\/live\/save["']/);
+    expect(read("src/odontogram.ts")).toMatch(/from\s+["']\.\/live\/writePlan["']/);
+    expect(read("src/odontogram.ts")).toMatch(/from\s+["']\.\/live\/gateway["']/);
     expect(read("src/fhir/index.ts")).not.toMatch(/@cognovis\/fhir-sdk\/client/);
   });
 

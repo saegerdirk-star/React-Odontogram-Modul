@@ -157,7 +157,7 @@ Alebo ho načítajte pomocou dynamického importu iba na strane klienta: `dynami
 - 🖐️ **Kostný vek** (`odontogram-c51.4`): koľko rastu zostáva, čítaný dvoma spôsobmi a vedený oddelene — cervikálne vertebrálne dozrievanie (CVM, 6 štádií) na tom istom bočnom snímku a Fishmanov SMI (11 štádií) na snímke ruky. Jedenásť SMI sa mapuje na šesť CVM štádií v pevných pároch, takže oba dávajú rovnaké pásmo zostávajúceho rastu; priamo odčítaný CVM prevažuje nad odvodeným z ruky a nezhoda sa oznámi, neriieši. Vedľa kefalometrického rastového vzorca.
 - 📸 **Fotostatická analýza — Powell** (`odontogram-c51.3`): uhly z profilovej fotografie, vložené do kefalometrickej karty, ale označené ako iné MÉDIUM: každá veličina a profil nesú `medium: "photo"` a výber podľa neho zoskupuje (telerádiografia vs. fotostatika), takže záznam hovorí, či sa hodnota mäkkých tkanív odčítala zo snímky alebo z fotografie.
 - ⚠️ Oboje je zatiaľ **stav relácie**: neexistuje publikovaný Dental Core profile, preto nie sú súčasťou exportného payloadu namiesto vymýšľania lokálneho
-- 🔗 Export HL7 FHIR R4 (kolekcia Bundle s Observations pre každý zub, kódovanie zubov ISO 3950 pre trvalý chrup, lokálny systém kódov — mapovanie SNOMED CT plánované)
+- 🔗 Aidbox Dental Core cez `@cognovis/fhir-sdk`: hostitelia injektujú gateway; relácia načíta a uloží. JSON export/import stavu s migráciami
 - ✚ Krížový výber plôch (B/M/O/D/L) pre kaz a výplne
 - 🧱 Materiály reštaurácie pre každú plochu (zmiešané výplne, napr. bukálny amalgám + distálny kompozit)
 - 🖼️ Export obrázka odontogramu vo formáte PNG/JPG/SVG (na stiahnutie; PNG/JPG rastrovaný z vektorového SVG)

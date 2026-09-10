@@ -6,8 +6,10 @@ Aidbox, renders it in the ordinary playground shell, and writes changes back as
 Dental Core resources.
 
 It is a **development tool served by the Vite dev server**, not a product. The
-published library artifact does not contain it and does not depend on the SDK
-(see "Boundary" below).
+published library artifact does not contain `live.html` or
+`@cognovis/fhir-sdk/client`. It **does** depend on `@cognovis/fhir-sdk` for
+Dental Core mapping classes, and it publishes the Aidbox gateway SPI plus
+session `loadFromAidbox` / `saveToAidbox` delegates (see "Boundary" below).
 
 The owner-native server is an isolated **Reetfurt local-UAT** instance, not
 MIRA, not PolarIS runtime services, and not the shared isynet Aidbox on
@@ -354,14 +356,19 @@ saved chart:
 The published artifact stays free of the FHIR **client**:
 
 * `@cognovis/fhir-sdk` is a **runtime dependency** for Dental Core mapping classes;
-  `@cognovis/fhir-sdk/client` is imported only from `src/live`;
+  `@cognovis/fhir-sdk/client` is imported only from `src/live/aidbox.ts`;
 * the transport lives in exactly one module, `src/live/aidbox.ts`;
-* `src/live` is excluded from `tsconfig.build.json` and from the `vite-plugin-dts`
-  include, so no SDK client type reaches `dist`;
-* `files` is still `["dist"]`, so neither `live.html` nor `src/live` is published;
+* the published library **may** include the Aidbox gateway SPI (`src/live/gateway.ts`)
+  and the load/save/writePlan delegates; `session.loadFromAidbox` /
+  `session.saveToAidbox` are the public seam;
+* `tsconfig.build.json` and `vite-plugin-dts` exclude the live **app** and client
+  factory (`aidbox.ts`, `LiveApp.tsx`, `config.ts`, `main.tsx`), not the SPI;
+* `files` is still `["dist"]`, so neither `live.html` nor the live app sources
+  are published;
 * there is no public `./fhir` JSON-bundle export;
-* the library build's entry graph (`src/index.ts`, `src/fhir/index.ts`) cannot
-  reach `src/live`.
+* `src/index.ts` / `src/App.tsx` still cannot reach `aidbox.ts`, `LiveApp`, or
+  `config.ts`. `odontogram.ts` / `session.ts` may import `live/load`, `live/save`,
+  `live/writePlan`, and `live/gateway`.
 
 `src/__tests__/6fi-live-boundary.test.ts` holds all of it.
 

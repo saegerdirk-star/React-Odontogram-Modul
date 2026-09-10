@@ -14,6 +14,15 @@ import type { OdontogramDocument, ExaminationSnapshotRecord } from "./document";
 import type { CvmStage, SmiStage } from "./skeletalAge";
 import { PAYLOAD_VERSION } from "./document";
 export type { OdontogramDocument } from "./document";
+import { loadPatientChart, type LoadResult } from "./live/load";
+import type { AidboxGateway } from "./live/gateway";
+import { executeWritePlan, type WriteResult, type WriteTarget } from "./live/save";
+import { buildWritePlan } from "./live/writePlan";
+import { MissingDentalCoreEffectiveDateError } from "./fhir/toFhirDentalCore";
+export type { AidboxGateway, PagedSearchResult } from "./live/gateway";
+export type { LoadResult, LoadReport, UnsupportedResource } from "./live/load";
+export type { WriteTarget, WriteResult, WriteFailure, LoadOutcome } from "./live/save";
+export type { WritePlan, WriteOp, SkippedResource } from "./live/writePlan";
 import { type ImplantProduct, normalizeImplantProduct, isEmptyImplantProduct } from "./implantProduct";
 import { type RestorationProduct, normalizeRestorationProduct,
          isEmptyRestorationProduct } from "./restorationProduct";
@@ -15959,6 +15968,16 @@ export interface OdontogramSession {
   getPlanChart(): Any;
   /** This session's status-vs-plan diff. `[]` until a plan exists. */
   getPlanChanges(): PlanChange[];
+  /**
+   * Load a patient's Dental Core chart through an injected Aidbox gateway.
+   * Hosts pass a client, never a Bundle. Delegates to `loadPatientChart`.
+   */
+  loadFromAidbox(gateway: AidboxGateway, patientId: string): Promise<LoadResult>;
+  /**
+   * Write this session's document through an injected write target.
+   * Delegates to `buildWritePlan` + `executeWritePlan`.
+   */
+  saveToAidbox(target: WriteTarget, opts: { patientId: string; effectiveDateTime?: string }): Promise<WriteResult>;
 }
 
 function blankDocument(): OdontogramDocument {
@@ -16134,6 +16153,24 @@ class ClinicalSession implements OdontogramSession {
 
   getPlanChanges(): PlanChange[] {
     return this.isActive() ? readLivePlanChanges() : planChangesFromDocument(this.stored);
+  }
+
+  async loadFromAidbox(gateway: AidboxGateway, patientId: string): Promise<LoadResult> {
+    const result = await loadPatientChart(gateway, patientId);
+    if (result.document) this.setDocument(result.document);
+    return result;
+  }
+
+  async saveToAidbox(
+    target: WriteTarget,
+    opts: { patientId: string; effectiveDateTime?: string },
+  ): Promise<WriteResult> {
+    const document = this.getDocument();
+    const effectiveDateTime = opts.effectiveDateTime ?? document.examination?.effectiveDateTime;
+    if (!effectiveDateTime) throw new MissingDentalCoreEffectiveDateError();
+    const plan = buildWritePlan({ document, patientId: opts.patientId, effectiveDateTime });
+    const result = await executeWritePlan(target, plan);
+    return { ...result, skipped: plan.skipped };
   }
 
   /** Internal: fan a change out to this session's own subscribers only. */

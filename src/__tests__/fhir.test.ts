@@ -1062,6 +1062,18 @@ describe("Dental Core FHIR seam", () => {
     expect(provenance?.target?.[0]?.reference).toBe(`Condition/${condition?.id}`);
   });
 
+  it("omits CarePlan.goal when the plan has no target-chart Goals", () => {
+    const bundle = buildDentalCoreBundle({
+      version: PAYLOAD_VERSION,
+      globals: {},
+      teeth: { "36": { endo: "endo-filling" } },
+      plan: { "36": { restorationType: "crown", restorationMaterial: "zircon" } },
+    }, options);
+    const plan = bundle.entry?.find((entry) => entry.resource?.resourceType === "CarePlan")?.resource as import("fhir/r4").CarePlan | undefined;
+    expect(plan).toBeDefined();
+    expect(plan?.goal).toBeUndefined();
+  });
+
   it("fails closed instead of silently dropping unsupported populated Core state", () => {
     const unsupported: OdontogramExportPayload = {
       version: PAYLOAD_VERSION,
