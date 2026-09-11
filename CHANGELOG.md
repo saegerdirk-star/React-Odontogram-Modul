@@ -1,5 +1,39 @@
 # Changelog
 
+## 4.0.0 - 2026-09-10
+
+### Breaking: Dental Core over `@cognovis/fhir-sdk` only (odontogram-wt5)
+
+- Drop local FHIR codegen (`src/fhir/generated/`, `tools/generate-dental-core-types.mjs`, `fhir:generate`) and the `@cognovis/fhir-release` / `@cognovis/codegen` pins. Mapping classes and canonicals come from `@cognovis/fhir-sdk@0.11.0` on npm.cognovis.de (`dental-core` and `canonicals` exports).
+- Remove the public JSON-bundle API: no `./fhir` package export, no `buildFhirBundle` / `parseFhirBundle`, no `exportFhir` / `setImportFormat("fhir")`, and no session `importFhirBundle` / `exportFhirBundle`. Hosts inject an `AidboxGateway` and call `session.loadFromAidbox` / `session.saveToAidbox` (delegates to `src/live` load/save; never a Bundle). Mapping classes and canonicals come from `@cognovis/fhir-sdk` only.
+- Drop CodeSystem concept-list validation. A Dental Core resource whose property or value code sits outside this odontogram's mappings is listed as unsupported on live load; it does not reject the rest of the chart. Aidbox plus the release-time HL7 validator own conformance.
+- Keep the odontogram-1sa source-preservation mapping (implantPosition, crownFractureType, orthoProgressive, rootResection, papillaLoss, orthoBracketSide, cantilever, endoCanals, rootFractureRoot, rootResectionRoot, apicalRoot, Goal-based planned state) re-pointed at SDK classes.
+
+There is no compatibility shim for the removed JSON-bundle API.
+
+## 3.3.0 - 2026-09-09
+
+
+### Lossless Dental Core chart-state exchange (odontogram-1sa)
+
+- Preserve per-root endodontic states, root fracture and resection qualifiers,
+  apical root, two-sided papilla-loss grades, implant position, bracket side,
+  cantilever role, crown-fracture description, and orthodontic progression
+  through the public FHIR export/import and re-export APIs.
+- Keep observed source assertions distinct from planned target state. The
+  eleven newly preserved source assertions use a referenced Dental Core
+  target-chart `Goal`; established planned fields retain their profiled
+  Observation paths. Target Goals do not create performed procedures, implants,
+  brackets, or bridge devices.
+- Reject invalid values, duplicate singleton assertions, duplicate papilla
+  sides, ambiguous source carriers, and inconsistent plan references.
+- Generate the shipped FHIR contract from the published
+  `de.cognovis.fhir.dental.core#0.7.1` package in the exact
+  `@cognovis/fhir-release@0.2.9` projection.
+- Pin `@cognovis/codegen` 0.2.3, which preserves required complex-extension
+  constructor inputs directly; the consumer-side generated-code rewrite is no
+  longer needed.
+
 ## 3.2.0 - 2026-09-03
 
 ### Session-bound plan mode and plan diff (odontogram-082)

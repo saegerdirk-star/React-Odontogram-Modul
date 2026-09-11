@@ -13,7 +13,7 @@
 // prevented here — it can only be REPORTED, which is why the failure carries
 // the op and the HTTP status, and why the caller shows both.
 
-import type { WriteOp, WritePlan } from "./writePlan";
+import type { SkippedResource, WriteOp, WritePlan } from "./writePlan";
 
 export interface WriteFailure {
   op: WriteOp;
@@ -24,6 +24,7 @@ export interface WriteFailure {
 export interface WriteResult {
   written: WriteOp[];
   failure?: WriteFailure;
+  skipped?: SkippedResource[];
 }
 
 /** Only the write half of the gateway, so a test needs no server and no client. */

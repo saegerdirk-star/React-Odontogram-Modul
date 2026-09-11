@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-3.2.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-4.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -93,9 +93,7 @@ import {
   getToothStateSummary,
   onStateChange,             // odber zmien stavu
   // export / import
-  exportFhir,                // balík HL7 FHIR R4
   exportSvg, exportImage,    // vektorový / rastrový export karty
-  setImportFormat,
   // ovládanie
   setReadOnly, getReadOnly,
   clearSelection,
@@ -105,7 +103,7 @@ import {
 } from "react-advanced-odontogram";
 ```
 
-Celý rozsah (≈ 44 funkcií + typy ako `OdontogramSummary`, `OdontogramThemeConfig`, `OdontogramPlugin`, `FhirExportOptions`, `PerioViewMode`, …) je plne typovaný v priložených deklaráciách.
+Celý rozsah (≈ 44 funkcií + typy ako `OdontogramSummary`, `OdontogramThemeConfig`, `OdontogramPlugin`, `PerioViewMode`, …) je plne typovaný v priložených deklaráciách.
 
 #### Použitie s Next.js (App Router)
 
@@ -124,7 +122,7 @@ export default function OdontogramClient() {
 Alebo ho načítajte pomocou dynamického importu iba na strane klienta: `dynamic(() => import("./OdontogramClient"), { ssr: false })`.
 
 #### Dôležité poznámky a súčasné obmedzenia
-- **Iba ESM** — balík publikuje hlavný ES modul (`dist/odontogram.js`) a voliteľný FHIR ES modul (`dist/fhir.js`) s príslušnými deklaráciami typov (`dist/index.d.ts` a `dist/fhir.d.ts`). Je cielený na rozlíšenie modulov bundlerom; neexistuje CommonJS zostavenie.
+- **Iba ESM** — balík publikuje hlavný ES modul (`dist/odontogram.js`) s príslušnými deklaráciami typov (`dist/index.d.ts`). Je cielený na rozlíšenie modulov bundlerom; neexistuje CommonJS zostavenie.
 - **Hárok štýlov je samostatný** — **musíte** raz importovať `react-advanced-odontogram/style.css`; nevkladá sa automaticky. Štýlovanie je globálne CSS ohraničené pod `.odontogram-root` a riadené CSS premennými `--odon-*`.
 - **SSR / iba klient** — komponent pri pripojení číta DOM (`document`), preto musí bežať v prehliadači. V SSR frameworkoch ho vykresľujte v klientskom komponente (`"use client"`) alebo cez dynamický import iba na strane klienta.
 - **Zdroje sú samostatné** — SVG súbory zubov a ikon sú pri zostavení vložené priamo do JavaScriptového balíka; **nie je potrebné konfigurovať žiadne získavanie zdrojov za behu** a nič netreba kopírovať do vášho verejného priečinka.
@@ -159,7 +157,7 @@ Alebo ho načítajte pomocou dynamického importu iba na strane klienta: `dynami
 - 🖐️ **Kostný vek** (`odontogram-c51.4`): koľko rastu zostáva, čítaný dvoma spôsobmi a vedený oddelene — cervikálne vertebrálne dozrievanie (CVM, 6 štádií) na tom istom bočnom snímku a Fishmanov SMI (11 štádií) na snímke ruky. Jedenásť SMI sa mapuje na šesť CVM štádií v pevných pároch, takže oba dávajú rovnaké pásmo zostávajúceho rastu; priamo odčítaný CVM prevažuje nad odvodeným z ruky a nezhoda sa oznámi, neriieši. Vedľa kefalometrického rastového vzorca.
 - 📸 **Fotostatická analýza — Powell** (`odontogram-c51.3`): uhly z profilovej fotografie, vložené do kefalometrickej karty, ale označené ako iné MÉDIUM: každá veličina a profil nesú `medium: "photo"` a výber podľa neho zoskupuje (telerádiografia vs. fotostatika), takže záznam hovorí, či sa hodnota mäkkých tkanív odčítala zo snímky alebo z fotografie.
 - ⚠️ Oboje je zatiaľ **stav relácie**: neexistuje publikovaný Dental Core profile, preto nie sú súčasťou exportného payloadu namiesto vymýšľania lokálneho
-- 🔗 Export HL7 FHIR R4 (kolekcia Bundle s Observations pre každý zub, kódovanie zubov ISO 3950 pre trvalý chrup, lokálny systém kódov — mapovanie SNOMED CT plánované)
+- 🔗 Aidbox Dental Core cez `@cognovis/fhir-sdk`: hostitelia injektujú gateway; relácia načíta a uloží. JSON export/import stavu s migráciami
 - ✚ Krížový výber plôch (B/M/O/D/L) pre kaz a výplne
 - 🧱 Materiály reštaurácie pre každú plochu (zmiešané výplne, napr. bukálny amalgám + distálny kompozit)
 - 🖼️ Export obrázka odontogramu vo formáte PNG/JPG/SVG (na stiahnutie; PNG/JPG rastrovaný z vektorového SVG)
@@ -204,7 +202,7 @@ Alebo ho načítajte pomocou dynamického importu iba na strane klienta: `dynami
 - 🔒 Režim iba na čítanie: zakázanie všetkých interakcií pre prípady tlače/správ/prezerania
 - ✨ Animácie výberu: pulzujúci prerušovaný okraj a žiariaci tieň na vybraných zuboch (s podporou prefers-reduced-motion)
 - 📝 Poznámky ku každému zubu: dvojklik pre pridanie/úpravu poznámok, ikona poznámky vedľa čísla zuba, tooltip pri najetí s textom poznámky, riadok „Individuálne poznámky" v súhrnnom paneli za celé ústa, zahrnutie do PDF správy, export/import JSON
-- 🔀 Rozdelenie grafu Stav ↔ Plán: prepínač `Status | Plan` v hlavičke grafu prepína medzi aktuálnym grafom **stavu** (status) a grafom **plánu** (plan, zamýšľaný stav po ošetrení), pričom každý má vlastné stavy zubov; graf plánu sa pri prvom prepnutí naň vytvorí ako kópia stavu a úpravy v jednom grafe nikdy neovplyvnia druhý. Export/import (`exportStatus`/`exportFhir`/import súboru) sa vždy vzťahuje na graf stavu; graf plánu sa číta/zapisuje samostatne cez vlastné API (pozri Verejné API nižšie) a — keď sa líši od stavu — je zahrnutý ako doplnková sekcia `plan` v exporte JSON
+- 🔀 Rozdelenie grafu Stav ↔ Plán: prepínač `Status | Plan` v hlavičke grafu prepína medzi aktuálnym grafom **stavu** (status) a grafom **plánu** (plan, zamýšľaný stav po ošetrení), pričom každý má vlastné stavy zubov; graf plánu sa pri prvom prepnutí naň vytvorí ako kópia stavu a úpravy v jednom grafe nikdy neovplyvnia druhý. Export/import (`exportStatus`/import súboru) sa vždy vzťahuje na graf stavu; graf plánu sa číta/zapisuje samostatne cez vlastné API (pozri Verejné API nižšie) a — keď sa líši od stavu — je zahrnutý ako doplnková sekcia `plan` v exporte JSON
 - 📝 Rámček „Čo sa zmenilo": kedykoľvek sa plán líši od aktuálneho stavu, rámček pod panelom informácií o zuboch vypíše každý rozdiel podľa zuba a osi ošetrenia (prítomnosť, substrát, náhrada, protetika, plánovaná korunka, ortodoncia, dreň/endo, apikálna) ako riadok `zub: os  z → na`; dostupné aj programovo cez `getPlanChanges()`
 
 ![Parodontologická karta celých úst (slovenčina)](screenshot_sk_perio.png)
@@ -581,11 +579,11 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-Konverzia FHIR je čistá voliteľná projekcia dokumentu používateľského rozhrania. Dental Core `de.cognovis.fhir.dental.core#0.6.0` z presnej projekcie `@cognovis/fhir-release@0.2.4` je jediný FHIR kontrakt. Verzia 3 odstraňuje pôvodnú reprezentáciu mimo Dental Core aj výber dialektu za behu; cudzie, nepodporované alebo chybné Bundle sa výslovne odmietnu. Koreňový kolík zostáva cez `rootPostType` nezávislý od každého stavu koreňovej výplne. Starý JSON a staršie hodnoty Dental Core `endo-glass-pin` / `endo-metal-pin` sa migrujú na `endo-filling` plus materiál kolíka; nový výstup už obe osi nikdy nezlučuje.
+Konverzia FHIR je čistá voliteľná projekcia dokumentu používateľského rozhrania. Dental Core `de.cognovis.fhir.dental.core#0.7.1` je jediný FHIR kontrakt; rozpoznaná značka `odontogram-dental-core-0.6.0` zostáva čitateľná pre prázdne staršie kolekcie, neznáme značky dialektov sa odmietnu. Import, export a opätovný export zachovávajú jedenásť zdrojových osí `implantPosition`, `crownFractureType`, `orthoProgressive`, `rootResection`, `papillaLoss`, `orthoBracketSide`, `cantilever`, `endoCanals`, `rootFractureRoot`, `rootResectionRoot` a `apicalRoot`. V plánoch tieto osi používajú odkazovaný cieľový `Goal`; existujúce polia plánu naďalej používajú profilované plánované Observations. Plánovaný stav zostáva oddelený od pozorovaného a nevytvára Devices ani vykonané Procedures. Duplicitné, rozporné, chybné, nejednoznačne adresované alebo s daným zubom nezlučiteľné tvrdenia sa odmietnu. Koreňové kolíky zostávajú nezávislé cez `rootPostType`; staršie hodnoty `endo-glass-pin` a `endo-metal-pin` sa migrujú na `endo-filling` plus materiál kolíka.
 
 **Aidbox live režim (vývoj, od 2.50.0):**
 
-Druhý vstupný bod vývojového servera, `live.html` (`src/live`), načíta kartu jedného pacienta priamo z izolovaného Reetfurt local-UAT Aidboxu, zobrazí ju v bežnom rozhraní cez vyššie uvedené session API a zapisuje zmeny späť ako zdroje Dental Core pod deterministickými id, takže opätovné uloženie aktualizuje namiesto duplikovania. Najprv spustite pomenovanú inštanciu Reetfurt (`POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local up --instance <id>` v checkoute mvz-reetfurt), potom `npm run live:provision -- --instance <id>`: tým sa vytvorí obmedzený strojový klient `odontogram-live` a zapíše sa `.env` vylúčené z verzionovania. Administrátorské poverenie nikdy nepatrí do `VITE_*`. Je to vývojový nástroj, nie súčasť publikovaného balíka: `@cognovis/fhir-sdk` je devDependency, `dependencies` sa nemení a ani `src/live`, ani `live.html` sa nepublikujú. Nastavenie, mechanika načítania/uloženia a zdokumentovaný rozdiel voči dialektu adaptéra charly sú v [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). Upozornenie: inštalácia devDependencies tohto repozitára teraz vyžaduje poverenie pre `npm.cognovis.de` (pozri dokument); `npm ci --omit=dev` a používanie publikovaného balíka ho nevyžadujú.
+Druhý vstupný bod vývojového servera, `live.html` (`src/live`), načíta kartu jedného pacienta priamo z izolovaného Reetfurt local-UAT Aidboxu, zobrazí ju v bežnom rozhraní cez vyššie uvedené session API a zapisuje zmeny späť ako zdroje Dental Core pod deterministickými id, takže opätovné uloženie aktualizuje namiesto duplikovania. Najprv spustite pomenovanú inštanciu Reetfurt (`POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local up --instance <id>` v checkoute mvz-reetfurt), potom `npm run live:provision -- --instance <id>`: tým sa vytvorí obmedzený strojový klient `odontogram-live` a zapíše sa `.env` vylúčené z verzionovania. Administrátorské poverenie nikdy nepatrí do `VITE_*`. Je to vývojový nástroj, nie súčasť publikovaného balíka: `@cognovis/fhir-sdk` je runtime závislosťou tried Dental Core; `src/live` sa nepublikuje a ani `src/live`, ani `live.html` sa nepublikujú. Nastavenie, mechanika načítania/uloženia a zdokumentovaný rozdiel voči dialektu adaptéra charly sú v [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). Upozornenie: inštalácia devDependencies tohto repozitára teraz vyžaduje poverenie pre `npm.cognovis.de` (pozri dokument); `npm ci --omit=dev` a používanie publikovaného balíka ho nevyžadujú.
 
 **Datované vyšetrenia, stav posúdenia a peri-implantátový záznam (od 2.4.0):**
 
@@ -745,15 +743,12 @@ npm run docs           # Generovať dokumentáciu TypeDoc v docs/
 | `setStageOverride(v)` | Prepísať odvodené parodontálne štádium — `"I"` / `"II"` / `"III"` / `"IV"`, alebo `null` na vymazanie (návrat k odvodenej hodnote) |
 | `setGradeOverride(v)` | Prepísať odvodený parodontálny stupeň — `"A"` / `"B"` / `"C"`, alebo `null` na vymazanie (návrat k odvodenej hodnote) |
 | `setExtentOverride(v)` | Prepísať odvodený parodontálny rozsah — `"localized"` / `"generalized"` / `"molar-incisor"`, alebo `null` na vymazanie (návrat k odvodenej hodnote) |
-| `exportFhir(options?)` | Export odontogramu ako kolekcia HL7 FHIR R4 Bundle (stiahnutie JSON). Voliteľná referencia `{ subject }`; inak je vložený zástupný Patient |
 | `exportImage(format)` | Stiahnuť odontogram ako obrázok — `"png"` alebo `"jpg"` |
 | `exportSvg()` | Stiahnuť odontogram ako škálovateľný SVG (vektor) |
 | `hasAnyPerioData()` | `true`, ak je v ústach kdekoľvek zaznamenaná aspoň jedna parodontálna os — riadi automatické preskočenie parodontálneho exportu a deaktivuje položky ponuky parodontálneho exportu pri prázdnom grafe |
 | `exportPerioSvg()` | Stiahnuť celý parodontálny graf (grafika zubov + číselné riadky + klasifikácia 2017) ako jeden samostatný vektorový SVG, zostavený bez zobrazenia priamo zo stavu cez `buildPerioSvg()` |
 | `exportPerioImage(format)` | Stiahnuť parodontálny graf ako rastrovaný obrázok — `"png"` alebo `"jpg"` |
 | `exportPdf(opts)` | Stiahnuť PDF správu natívne cez jsPDF (`{patientData, odontogramChart, odontogramDescription, individualNotes, perioStatus, perioDescription}`, každá sekcia voliteľná) — vektorový text plus rastrové obrázky zuba/parodontálneho grafu; sekcia individuálnych poznámok sa automaticky preskočí, keď žiadny zub nemá poznámku, a obe parodontálne sekcie sa automaticky preskočia, keď je `hasAnyPerioData()` false, bez ohľadu na `opts` |
-| `importFhirBundle(input)` | Importovať FHIR R4 Bundle (objekt alebo reťazec JSON) produkovaný týmto modulom |
-| `setImportFormat(format)` | Nastaviť analyzátor pre nasledujúci import súboru — `"status"` alebo `"fhir"` |
 | `startIntroTour()` | Spustiť 12-krokový interaktívny úvodný sprievodca |
 
 ### 💾 Formát exportu/importu stavu
@@ -840,7 +835,7 @@ Okrem vlastného exportu odontogramu Stav JSON / FHIR / PNG / JPG / SVG má **pa
 - `src/i18n/` - preklady (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR) a i18n hook
 - `src/utils/numbering.ts` - konverzia číslovania FDI, Universal, Palmer
 - `src/registry/` - deklaratívny register klinických osí a UI: metadáta osí, aktivácia SVG, matica typ×materiál náhrady, katalóg hodnôt a zoznamy možností; mapovania FHIR patria do `src/fhir/`
-- `src/fhir/` - jediné rozhranie Dental Core pre HL7 FHIR R4: vstupné body `toFhir.ts`/`fromFhir.ts`, kodek `toFhirDentalCore.ts`/`fromFhirDentalCore.ts`, `dentalCoreContract.ts` s generovanými profilmi/kontraktmi a pomocné funkcie `dentalCoreLocalCoding.ts`
+- `src/fhir/` - jediné rozhranie Dental Core pre HL7 FHIR R4: kodek `toFhirDentalCore.ts`/`fromFhirDentalCore.ts` nad `@cognovis/fhir-sdk`, `dentalCoreContract.ts` a pomocné funkcie `dentalCoreLocalCoding.ts`
 - `src/bridgeOverlay.ts` - prekrytie konektora viaczubového mostíkového úseku (geometria sedla prispôsobená oblúku)
 - `src/SettingsModal.tsx` - záložkový dialóg Nastavenia (Všeobecné/Panely/Detaily zuba/Kaz/Dreň/Poznámky/Periodontálne)
 - `src/perioExport.ts` - `buildPerioSvg()`: celý parodontálny graf ako jeden samostatný vektorový SVG

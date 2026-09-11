@@ -46,9 +46,9 @@ const packageJson = JSON.parse(read("package.json")) as {
 };
 
 describe("odontogram-cpx AC1: live mode uses the provider-neutral FHIR client", () => {
-  it("keeps @cognovis/fhir-sdk in devDependencies only, never in dependencies", () => {
-    expect(Object.keys(packageJson.dependencies).filter((name) => name.startsWith("@cognovis/fhir-sdk"))).toEqual([]);
-    expect(Object.keys(packageJson.devDependencies)).toEqual(expect.arrayContaining(["@cognovis/fhir-sdk"]));
+  it("pins @cognovis/fhir-sdk as a runtime dependency for Dental Core classes", () => {
+    expect(packageJson.dependencies["@cognovis/fhir-sdk"]).toBe("0.11.0");
+    expect(packageJson.devDependencies["@cognovis/fhir-sdk"]).toBeUndefined();
   });
 
   it("imports the client surface from live-mode sources", () => {
@@ -80,25 +80,44 @@ describe("odontogram-6fi AC4: the published library carries no SDK", () => {
     expect(packageJson.files).toEqual(["dist"]);
   });
 
-  it("keeps the declaration build out of src/live, so no SDK type reaches dist", () => {
+  it("keeps the declaration build out of the live app and client factory", () => {
     const buildConfig = JSON.parse(read("tsconfig.build.json")) as { exclude: string[] };
-    expect(buildConfig.exclude).toContain("src/live");
+    expect(buildConfig.exclude).toEqual(expect.arrayContaining([
+      "src/live/aidbox.ts",
+      "src/live/LiveApp.tsx",
+      "src/live/config.ts",
+      "src/live/main.tsx",
+    ]));
+    expect(buildConfig.exclude).not.toContain("src/live");
+    expect(read("vite.lib.config.ts")).toMatch(/src\/live\/aidbox\.ts/);
+    expect(read("vite.lib.config.ts")).not.toMatch(/exclude:\s*\[[^\]]*src\/live\/\*\*/);
   });
 });
 
-describe("odontogram-6fi AC4: the SDK stays inside src/live", () => {
-  it("is imported by no source file outside src/live", () => {
+describe("odontogram-6fi AC4: the SDK client stays inside src/live", () => {
+  it("imports @cognovis/fhir-sdk/client from no source file outside src/live", () => {
     const offenders = sourceFiles(SRC)
       .filter((path) => !path.startsWith(`${SRC}/live/`) && !path.includes("/__tests__/"))
-      .filter((path) => /from\s+["']@(?:polaris|cognovis\/fhir-sdk)\//.test(readFileSync(path, "utf8")));
+      .filter((path) => readFileSync(path, "utf8").includes(FHIR_SDK_CLIENT));
     expect(offenders).toEqual([]);
   });
 
-  it("is not reachable from the library entry point's own module graph", () => {
-    for (const relative of ["src/index.ts", "src/App.tsx", "src/session.ts", "src/fhir/index.ts"]) {
+  it("is not reachable from the library entry except the published Aidbox SPI", () => {
+    for (const relative of ["src/index.ts", "src/App.tsx"]) {
       expect(read(relative), `${relative} must not import the live app`).not.toMatch(/from\s+["'][^"']*\/live\//);
-      expect(read(relative), `${relative} must not import a FHIR client SDK`).not.toMatch(/@(?:polaris|cognovis\/fhir-sdk)\//);
+      expect(read(relative), `${relative} must not import a FHIR client SDK`).not.toMatch(/@cognovis\/fhir-sdk\/client/);
+      expect(read(relative), `${relative} must not import PolarIS`).not.toMatch(/@polaris\//);
     }
+    for (const relative of ["src/session.ts", "src/odontogram.ts"]) {
+      expect(read(relative), `${relative} must not import the live app or client factory`).not.toMatch(/from\s+["'][^"']*\/live\/(?:aidbox|LiveApp|config|main)/);
+      expect(read(relative), `${relative} must not import a FHIR client SDK`).not.toMatch(/@cognovis\/fhir-sdk\/client/);
+      expect(read(relative), `${relative} must not import PolarIS`).not.toMatch(/@polaris\//);
+    }
+    expect(read("src/odontogram.ts")).toMatch(/from\s+["']\.\/live\/load["']/);
+    expect(read("src/odontogram.ts")).toMatch(/from\s+["']\.\/live\/save["']/);
+    expect(read("src/odontogram.ts")).toMatch(/from\s+["']\.\/live\/writePlan["']/);
+    expect(read("src/odontogram.ts")).toMatch(/from\s+["']\.\/live\/gateway["']/);
+    expect(read("src/fhir/index.ts")).not.toMatch(/@cognovis\/fhir-sdk\/client/);
   });
 
   it("keeps the transport in one module: only src/live/aidbox.ts talks to the client SDK", () => {

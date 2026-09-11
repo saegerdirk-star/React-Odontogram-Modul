@@ -18,12 +18,11 @@
 //     session.getChartMode();
 //     session.setChartMode("plan");
 //
-// WHAT STAYS OUT. This module exists to make the boundary legible and testable,
-// so it must stay free of transport concerns: no HTTP client, no server URL, no
-// authentication, no audit provenance, no persistence. A session may carry
-// immutable Dental Core export options. Its `importFhirBundle()` and
-// `exportFhirBundle()` methods are the same sole-Dental-Core seam used by the
-// built-in buttons. Sending any resulting Bundle remains the host's job.
+// Aidbox is the only FHIR seam: hosts inject a gateway and call
+// `session.loadFromAidbox` / `session.saveToAidbox`. This module may import the
+// live SPI (`./live/load`, `./live/save`, `./live/writePlan`, `./live/gateway`)
+// but never `./live/aidbox` or the FHIR SDK client factory. There is no
+// JSON-bundle method on the session.
 //
 // The implementation lives in `./odontogram` because it owns the clinical state;
 // this module is the documented public surface for it.
@@ -37,8 +36,18 @@ export {
 export type {
   OdontogramSession,
   OdontogramDocument,
-  OdontogramSessionFhirConfiguration,
-  OdontogramSessionOptions,
   ChartMode,
   PlanChange,
+  AidboxGateway,
+  PagedSearchResult,
+  LoadResult,
+  LoadReport,
+  UnsupportedResource,
+  WriteTarget,
+  WriteResult,
+  WriteFailure,
+  LoadOutcome,
+  WritePlan,
+  WriteOp,
+  SkippedResource,
 } from "./odontogram";

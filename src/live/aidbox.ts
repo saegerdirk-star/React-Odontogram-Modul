@@ -2,10 +2,10 @@
 // Cognovis fork - https://github.com/cognovis/React-Odontogram-Modul
 // Dirk Saeger, Malte Sussdorff 2026
 //
-// Bead odontogram-6fi: the ONLY module in this repository that talks to a
-// server. It lives under `src/live`, which the library entry point cannot
-// reach and the published artifact does not contain — the odontogram itself
-// stays free of transport, exactly as bead odontogram-3l1 fixed it.
+// Bead odontogram-6fi / odontogram-wt5: the ONLY module that talks to a
+// server. The published library may import the gateway SPI and load/save
+// delegates; it must not import this file. `@cognovis/fhir-sdk/client` stays
+// here.
 //
 // WHICH FACTORY, AND WHY. `@polaris/sdk/fhir` re-exports a `createFhirClient`
 // that performs an ADR-027 de-identification IG drift check at boot by reading
@@ -22,6 +22,9 @@
 import { createFetchTransport, createFhirClient, extractNextPageUrl } from "@cognovis/fhir-sdk/client";
 import type { FhirTransport } from "@cognovis/fhir-sdk/client";
 import type { LiveConfig } from "./config";
+import type { AidboxGateway, PagedSearchResult } from "./gateway";
+
+export type { AidboxGateway, PagedSearchResult } from "./gateway";
 
 /** Aidbox's FHIR endpoint sits under `/fhir` on the configured base URL. */
 export function fhirBaseUrl(baseUrl: string): string {
@@ -77,16 +80,6 @@ interface SearchPage {
   total?: number;
   entry?: Array<{ resource?: unknown }>;
   link?: Array<{ relation?: string; url?: string }>;
-}
-
-export interface PagedSearchResult {
-  resources: unknown[];
-  /** The budget ran out with a next link still offered — the result is PARTIAL. */
-  truncated: boolean;
-  /** What the server said the search matches (`Bundle.total`), when it says so. */
-  expected?: number;
-  /** Fewer resources arrived than the server counted — the result is PARTIAL. */
-  incomplete: boolean;
 }
 
 /**
@@ -165,19 +158,11 @@ function completeness(distinct: number, expected: number | undefined): { expecte
   return { expected, incomplete: distinct < expected };
 }
 
-/** The read/write surface the live mode needs, and nothing beyond it. */
-export interface AidboxGateway {
-  readPatient(patientId: string): Promise<Record<string, unknown> | null>;
-  search(resourceType: string, query: Record<string, string | string[]>): Promise<PagedSearchResult>;
-  put(path: string, resource: unknown): Promise<unknown>;
-  delete(path: string): Promise<unknown>;
-}
-
 /**
  * A pass-through "profile" so the typed `ResourceClient` can be used for the
  * one resource this mode reads by id. The Dental Core resources have their own
- * generated profile classes in `src/fhir/generated`, which are not shaped like
- * the SDK's `ProfileClass` — mapping them would be a second codec, so the raw
+ * SDK Dental Core profile classes, which are not used as the live client's
+ * `ProfileClass` here — mapping them would be a second codec, so the raw
  * resource is what travels and `src/fhir` stays the only interpreter.
  */
 const PassThroughPatient = {

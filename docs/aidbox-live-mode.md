@@ -6,8 +6,10 @@ Aidbox, renders it in the ordinary playground shell, and writes changes back as
 Dental Core resources.
 
 It is a **development tool served by the Vite dev server**, not a product. The
-published library artifact does not contain it and does not depend on the SDK
-(see "Boundary" below).
+published library artifact does not contain `live.html` or
+`@cognovis/fhir-sdk/client`. It **does** depend on `@cognovis/fhir-sdk` for
+Dental Core mapping classes, and it publishes the Aidbox gateway SPI plus
+session `loadFromAidbox` / `saveToAidbox` delegates (see "Boundary" below).
 
 The owner-native server is an isolated **Reetfurt local-UAT** instance, not
 MIRA, not PolarIS runtime services, and not the shared isynet Aidbox on
@@ -351,17 +353,22 @@ saved chart:
 
 ## Boundary (AC4)
 
-The published artifact stays free of the FHIR client SDK:
+The published artifact stays free of the FHIR **client**:
 
-* `@cognovis/fhir-sdk` is a **devDependency**; `dependencies` in `package.json`
-  is unchanged;
-* that package is imported by nothing outside `src/live`, and the transport
-  lives in exactly one module, `src/live/aidbox.ts`;
-* `src/live` is excluded from `tsconfig.build.json` and from the `vite-plugin-dts`
-  include, so no SDK type reaches `dist`;
-* `files` is still `["dist"]`, so neither `live.html` nor `src/live` is published;
-* the library build's entry graph (`src/index.ts`, `src/fhir/index.ts`) cannot
-  reach `src/live`.
+* `@cognovis/fhir-sdk` is a **runtime dependency** for Dental Core mapping classes;
+  `@cognovis/fhir-sdk/client` is imported only from `src/live/aidbox.ts`;
+* the transport lives in exactly one module, `src/live/aidbox.ts`;
+* the published library **may** include the Aidbox gateway SPI (`src/live/gateway.ts`)
+  and the load/save/writePlan delegates; `session.loadFromAidbox` /
+  `session.saveToAidbox` are the public seam;
+* `tsconfig.build.json` and `vite-plugin-dts` exclude the live **app** and client
+  factory (`aidbox.ts`, `LiveApp.tsx`, `config.ts`, `main.tsx`), not the SPI;
+* `files` is still `["dist"]`, so neither `live.html` nor the live app sources
+  are published;
+* there is no public `./fhir` JSON-bundle export;
+* `src/index.ts` / `src/App.tsx` still cannot reach `aidbox.ts`, `LiveApp`, or
+  `config.ts`. `odontogram.ts` / `session.ts` may import `live/load`, `live/save`,
+  `live/writePlan`, and `live/gateway`.
 
 `src/__tests__/6fi-live-boundary.test.ts` holds all of it.
 
@@ -370,14 +377,11 @@ The published artifact stays free of the FHIR client SDK:
 `@cognovis/fhir-sdk` comes from the Cognovis registry; the repo-local `.npmrc`
 maps the scope, and authentication comes from the developer's own `~/.npmrc`.
 
-**This is not free for anyone who only wants the library.** Because the packages
-are in `devDependencies` and in `package-lock.json`, a plain `npm ci` or
-`npm install` in this repository now needs a credential for
-`npm.cognovis.de` — every contributor and every CI job, whether or not they
-ever open live mode. `npm ci --omit=dev` does not, and neither does consuming
-the published package, whose `dependencies` are unchanged. If that cost stops
-being worth it, the honest fix is to move `src/live` into its own workspace, not
-to loosen the boundary.
+**This is not free for anyone who only wants the library.** `@cognovis/fhir-sdk`
+is a runtime dependency (Dental Core classes). A plain `npm ci` in this
+worktree currently resolves it from the packed 0.11.0 tarball recorded in the
+lockfile. Consuming a published odontogram 4.0.0 will need that SDK on the
+registry. The FHIR **client** still stays out of the published library entry.
 
 ## One round trip normalises the resource set
 

@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-3.2.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-4.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -93,9 +93,7 @@ import {
   getToothStateSummary,
   onStateChange,             // sottoscrizione ai cambiamenti di stato
   // esportazione / importazione
-  exportFhir,                // bundle HL7 FHIR R4
   exportSvg, exportImage,    // esportazione vettoriale / raster del grafico
-  setImportFormat,
   // controllo
   setReadOnly, getReadOnly,
   clearSelection,
@@ -105,7 +103,7 @@ import {
 } from "react-advanced-odontogram";
 ```
 
-La superficie completa (≈ 44 funzioni + tipi come `OdontogramSummary`, `OdontogramThemeConfig`, `OdontogramPlugin`, `FhirExportOptions`, `PerioViewMode`, …) è completamente tipizzata nelle dichiarazioni incluse.
+La superficie completa (≈ 44 funzioni + tipi come `OdontogramSummary`, `OdontogramThemeConfig`, `OdontogramPlugin`, `PerioViewMode`, …) è completamente tipizzata nelle dichiarazioni incluse.
 
 #### Utilizzo con Next.js (App Router)
 
@@ -124,7 +122,7 @@ export default function OdontogramClient() {
 Oppure caricalo con un import dinamico solo client-side: `dynamic(() => import("./OdontogramClient"), { ssr: false })`.
 
 #### Note importanti e limitazioni attuali
-- **Solo ESM** — il pacchetto pubblica un modulo ES principale (`dist/odontogram.js`) e un modulo ES FHIR opzionale (`dist/fhir.js`), con le corrispondenti dichiarazioni dei tipi (`dist/index.d.ts` e `dist/fhir.d.ts`). È destinato alla risoluzione dei moduli tramite bundler; non esiste una build CommonJS.
+- **Solo ESM** — il pacchetto pubblica un modulo ES principale (`dist/odontogram.js`), con le corrispondenti dichiarazioni dei tipi (`dist/index.d.ts`). È destinato alla risoluzione dei moduli tramite bundler; non esiste una build CommonJS.
 - **Il foglio di stile è separato** — **devi** importare `react-advanced-odontogram/style.css` una sola volta; non viene iniettato automaticamente. Lo stile è CSS globale ambito sotto `.odontogram-root` e guidato dalle variabili CSS `--odon-*`.
 - **SSR / solo client** — il componente legge il DOM al montaggio (`document`), quindi deve essere eseguito nel browser. Nei framework SSR, renderizzalo in un Client Component (`"use client"`) oppure tramite un import dinamico solo client-side.
 - **Risorse autonome** — gli SVG dei denti e delle icone sono incorporati nel bundle JavaScript in fase di build; non c'è **nessuna richiesta di risorse a runtime** da configurare e nulla da copiare in più nella tua cartella pubblica.
@@ -159,7 +157,7 @@ Oppure caricalo con un import dinamico solo client-side: `dynamic(() => import("
 - 🖐️ **Età ossea** (`odontogram-c51.4`): quanta crescita resta, letta in due modi e tenuta separata — maturazione vertebrale cervicale (CVM, 6 stadi) sulla stessa teleradiografia e SMI di Fishman (11 stadi) sulla radiografia della mano. Gli undici SMI si mappano sui sei stadi CVM in coppie fisse, quindi entrambi danno la stessa fascia di crescita residua; un CVM letto direttamente prevale su quello derivato dalla mano, e un disaccordo viene segnalato, non risolto. Accanto al pattern di crescita cefalometrico.
 - 📸 **Analisi fotostatica — Powell** (`odontogram-c51.3`): angoli da foto di profilo, integrati nella scheda cefalometrica ma marcati come MEDIUM diverso: ogni misura e il profilo portano `medium: "photo"`, e il selettore raggruppa per esso (teleradiografia vs. fotostatica), così il record dice se un valore dei tessuti molli è stato letto sulla lastra o sulla foto.
 - ⚠️ Entrambi sono per ora **stato di sessione**: non esiste un profilo Dental Core pubblicato, quindi non fanno parte del payload di esportazione anziché inventarne uno locale
-- 🔗 Esportazione HL7 FHIR R4 (Bundle di raccolta di Observation per dente, codifica dentale ISO 3950 per la dentizione permanente, sistema di codici locale — mappatura SNOMED CT pianificata)
+- 🔗 Aidbox Dental Core tramite `@cognovis/fhir-sdk`: l'host inietta un gateway; la sessione carica e salva. Export/import JSON dello stato con migrazioni
 - ✚ Interfaccia di selezione superfici a croce (B/M/O/D/L) per carie e otturazioni
 - 🧱 Materiali di restauro per superficie (otturazioni miste, es. buccale amalgama + distale composito)
 - 🖼️ Esportazione immagine PNG/JPG/SVG dell'odontogramma (scaricabile; PNG/JPG rasterizzato da SVG vettoriale)
@@ -204,7 +202,7 @@ Oppure caricalo con un import dinamico solo client-side: `dynamic(() => import("
 - 🔒 Modalità sola lettura: disabilita tutte le interazioni per casi d'uso di stampa/report/visualizzazione
 - ✨ Animazioni di selezione: bordo tratteggiato pulsante e ombra luminosa sui denti selezionati (con supporto prefers-reduced-motion)
 - 📝 Note per dente: doppio clic per aggiungere/modificare note, icona nota accanto al numero del dente, tooltip al passaggio del cursore con il testo della nota, una riga "Note individuali" nel pannello di riepilogo dell'intera bocca, inclusione nel report PDF, esportazione/importazione JSON
-- 🔀 Divisione tra grafico Stato e Piano: un interruttore `Status | Plan` nell'intestazione del grafico passa tra un grafico dello **stato** attuale e un grafico del **piano** (trattamento post-operatorio previsto), ciascuno con i propri stati dentali; il grafico del piano parte come copia dello stato la prima volta che vi si passa, e le modifiche in un grafico non influenzano mai l'altro. Esportazione/importazione (`exportStatus`/`exportFhir`/importazione file) hanno sempre come destinazione il grafico dello stato; il grafico del piano viene letto/scritto separatamente tramite la propria API (vedi API pubblica di seguito) e — quando differisce dallo stato — viene incluso come sezione aggiuntiva `plan` nell'esportazione JSON
+- 🔀 Divisione tra grafico Stato e Piano: un interruttore `Status | Plan` nell'intestazione del grafico passa tra un grafico dello **stato** attuale e un grafico del **piano** (trattamento post-operatorio previsto), ciascuno con i propri stati dentali; il grafico del piano parte come copia dello stato la prima volta che vi si passa, e le modifiche in un grafico non influenzano mai l'altro. Esportazione/importazione (`exportStatus`/importazione file) hanno sempre come destinazione il grafico dello stato; il grafico del piano viene letto/scritto separatamente tramite la propria API (vedi API pubblica di seguito) e — quando differisce dallo stato — viene incluso come sezione aggiuntiva `plan` nell'esportazione JSON
 - 📝 Riquadro "Cosa cambia": ogni volta che il piano differisce dallo stato attuale, un riquadro sotto il pannello informazioni dentali elenca ogni differenza per dente e per asse di trattamento (presenza, substrato, restauro, protesi, corona pianificata, ortodonzia, polpa/endodonzia, apicale) come riga `dente: asse  da → a`; disponibile anche a livello di programmazione tramite `getPlanChanges()`
 
 ![Grafico parodontale a bocca intera (italiano)](screenshot_it_perio.png)
@@ -585,11 +583,11 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-La conversione FHIR è una proiezione opzionale e pura del documento UI. Dental Core `de.cognovis.fhir.dental.core#0.6.0`, dalla proiezione esatta `@cognovis/fhir-release@0.2.4`, è l'unico contratto FHIR. La versione 3 rimuove la precedente rappresentazione non Dental Core e ogni selezione del dialetto a runtime; i Bundle estranei, non supportati o non validi vengono rifiutati esplicitamente. I perni radicolari restano indipendenti tramite `rootPostType`. I vecchi JSON e i precedenti valori Dental Core `endo-glass-pin` / `endo-metal-pin` migrano a `endo-filling` più il materiale del perno; il nuovo output non ricombina mai i due assi.
+La conversione FHIR è una proiezione opzionale e pura del documento UI. Dental Core `de.cognovis.fhir.dental.core#0.7.1` è l’unico contratto FHIR; il marcatore riconosciuto `odontogram-dental-core-0.6.0` resta leggibile per le raccolte legacy vuote, mentre i marcatori di dialetto sconosciuti vengono rifiutati. Importazione, esportazione e riesportazione conservano gli undici assi sorgente `implantPosition`, `crownFractureType`, `orthoProgressive`, `rootResection`, `papillaLoss`, `orthoBracketSide`, `cantilever`, `endoCanals`, `rootFractureRoot`, `rootResectionRoot` e `apicalRoot`. Nei piani questi assi usano un `Goal` di stato obiettivo referenziato; i campi di piano esistenti continuano a usare Observations pianificate profilate. Lo stato pianificato resta separato da quello osservato e non crea Devices o Procedures eseguite. Le asserzioni duplicate, in conflitto, malformate, indirizzate in modo ambiguo o incompatibili con il dente vengono rifiutate. I perni restano indipendenti tramite `rootPostType`; i vecchi valori `endo-glass-pin` e `endo-metal-pin` migrano a `endo-filling` più il materiale del perno.
 
 **Modalità live con Aidbox (sviluppo, dalla 2.50.0):**
 
-Un secondo punto di ingresso del server di sviluppo, `live.html` (`src/live`), carica la cartella di un paziente direttamente da un Aidbox Reetfurt local-UAT isolato, la visualizza nella shell abituale tramite l'API di sessione sopra descritta, e scrive le modifiche come risorse Dental Core con id deterministici, così un nuovo salvataggio aggiorna anziché duplicare. Avviare un'istanza Reetfurt nominata (`POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local up --instance <id>` nel checkout mvz-reetfurt), poi eseguire `npm run live:provision -- --instance <id>` per creare il client macchina con ambito limitato `odontogram-live` e scrivere il `.env` escluso dal controllo di versione. Non inserire mai una credenziale amministrativa in `VITE_*`. È uno strumento di sviluppo, non parte del pacchetto pubblicato: `@cognovis/fhir-sdk` è una devDependency, `dependencies` resta invariato, e né `src/live` né `live.html` vengono pubblicati. La configurazione, la meccanica di caricamento/salvataggio e la differenza documentata rispetto al dialetto dell'adattatore charly si trovano in [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). Da notare che installare le devDependencies di questo repository ora richiede una credenziale per `npm.cognovis.de` (vedi il documento); `npm ci --omit=dev` e l'uso del pacchetto pubblicato no.
+Un secondo punto di ingresso del server di sviluppo, `live.html` (`src/live`), carica la cartella di un paziente direttamente da un Aidbox Reetfurt local-UAT isolato, la visualizza nella shell abituale tramite l'API di sessione sopra descritta, e scrive le modifiche come risorse Dental Core con id deterministici, così un nuovo salvataggio aggiorna anziché duplicare. Avviare un'istanza Reetfurt nominata (`POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local up --instance <id>` nel checkout mvz-reetfurt), poi eseguire `npm run live:provision -- --instance <id>` per creare il client macchina con ambito limitato `odontogram-live` e scrivere il `.env` escluso dal controllo di versione. Non inserire mai una credenziale amministrativa in `VITE_*`. È uno strumento di sviluppo, non parte del pacchetto pubblicato: `@cognovis/fhir-sdk` è una dipendenza di runtime per le classi Dental Core; `src/live` non è pubblicato, e né `src/live` né `live.html` vengono pubblicati. La configurazione, la meccanica di caricamento/salvataggio e la differenza documentata rispetto al dialetto dell'adattatore charly si trovano in [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). Da notare che installare le devDependencies di questo repository ora richiede una credenziale per `npm.cognovis.de` (vedi il documento); `npm ci --omit=dev` e l'uso del pacchetto pubblicato no.
 
 **Esami datati, stato di valutazione e rilevazione perimplantare (dalla 2.4.0):**
 
@@ -752,15 +750,12 @@ npm run docs           # Genera la documentazione TypeDoc in docs/
 | `setStageOverride(v)` | Sovrascrive lo stadio parodontale derivato — `"I"` / `"II"` / `"III"` / `"IV"`, o `null` per cancellare (ripristina il valore derivato) |
 | `setGradeOverride(v)` | Sovrascrive il grado parodontale derivato — `"A"` / `"B"` / `"C"`, o `null` per cancellare (ripristina il valore derivato) |
 | `setExtentOverride(v)` | Sovrascrive l'estensione parodontale derivata — `"localized"` / `"generalized"` / `"molar-incisor"`, o `null` per cancellare (ripristina il valore derivato) |
-| `exportFhir(options?)` | Esporta l'odontogramma come Bundle HL7 FHIR R4 (download JSON). Riferimento `{ subject }` opzionale; altrimenti viene incorporato un Paziente segnaposto |
 | `exportImage(format)` | Scarica l'odontogramma come immagine — `"png"` o `"jpg"` |
 | `exportSvg()` | Scarica l'odontogramma come SVG scalabile (vettoriale) |
 | `hasAnyPerioData()` | `true` se e solo se è registrato qualsiasi asse parodontale in un punto qualsiasi della bocca — determina il salto automatico dell'esportazione parodontale e disabilita le voci del menu di esportazione parodontale su un grafico vuoto |
 | `exportPerioSvg()` | Scarica il grafico parodontale completo (grafica dentale + righe numeriche + classificazione 2017) come un unico SVG vettoriale autonomo, costruito senza interfaccia grafica dallo stato tramite `buildPerioSvg()` |
 | `exportPerioImage(format)` | Scarica il grafico parodontale come immagine rasterizzata — `"png"` o `"jpg"` |
 | `exportPdf(opts)` | Scarica un report PDF nativo jsPDF (`{patientData, odontogramChart, odontogramDescription, individualNotes, perioStatus, perioDescription}`, ciascuna sezione opzionale) — testo vettoriale più immagini rasterizzate di denti/grafico parodontale; la sezione delle note individuali viene saltata automaticamente quando nessun dente ha una nota, e le due sezioni parodontali vengono saltate automaticamente ogni volta che `hasAnyPerioData()` è falso, indipendentemente da `opts` |
-| `importFhirBundle(input)` | Importa un Bundle FHIR R4 (oggetto o stringa JSON) prodotto da questo modulo |
-| `setImportFormat(format)` | Imposta il parser per la prossima importazione file — `"status"` o `"fhir"` |
 | `startIntroTour()` | Avvia il tour introduttivo interattivo in 12 passi |
 
 ### 💾 Formato di esportazione/importazione dello stato
@@ -847,7 +842,7 @@ Oltre all'esportazione propria dell'odontogramma in Stato JSON / FHIR / PNG / JP
 - `src/i18n/` - traduzioni (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR) e hook i18n
 - `src/utils/numbering.ts` - conversione della numerazione FDI, Universal, Palmer
 - `src/registry/` - registro dichiarativo degli assi clinici e della UI: metadati degli assi, attivazione SVG, matrice tipo×materiale del restauro, catalogo valori ed elenchi di opzioni; le mappature FHIR appartengono a `src/fhir/`
-- `src/fhir/` - unico confine Dental Core per HL7 FHIR R4: punti di ingresso `toFhir.ts`/`fromFhir.ts`, codec `toFhirDentalCore.ts`/`fromFhirDentalCore.ts`, `dentalCoreContract.ts` più profili/contratti generati e gli helper `dentalCoreLocalCoding.ts`
+- `src/fhir/` - unico confine Dental Core per HL7 FHIR R4: codec `toFhirDentalCore.ts`/`fromFhirDentalCore.ts` su `@cognovis/fhir-sdk`, `dentalCoreContract.ts` e gli helper `dentalCoreLocalCoding.ts`
 - `src/bridgeOverlay.ts` - overlay connettore del tratto di ponte multi-dente (geometria a sella sensibile all'arcata)
 - `src/SettingsModal.tsx` - finestra di dialogo Impostazioni a schede (Generale/Pannelli/Dettagli dentali/Carie/Polpa/Note/Parodontale)
 - `src/perioExport.ts` - `buildPerioSvg()`: il grafico parodontale completo come un unico SVG vettoriale autonomo

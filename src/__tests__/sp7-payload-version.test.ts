@@ -12,8 +12,8 @@
 import { PAYLOAD_VERSION } from "../document";
 import { describe, it, expect } from "vitest";
 import { __collectExportPayloadForTest } from "../odontogram";
-import { buildFhirBundle } from "../fhir/toFhir";
-import { parseFhirBundle } from "../fhir/fromFhir";
+import { buildDentalCoreBundle } from "../fhir/toFhirDentalCore";
+import { parseDentalCoreBundle } from "../fhir/fromFhirDentalCore";
 
 describe("SP7 Task 6: payload version 2.5", () => {
   it("collectExportPayload emits version 2.5", () => {
@@ -21,9 +21,9 @@ describe("SP7 Task 6: payload version 2.5", () => {
     expect(payload.version).toBe(PAYLOAD_VERSION);
   });
 
-  it("parseFhirBundle (fromFhir) emits version 2.5, independent of the input payload's own version tag", () => {
-    const bundle = buildFhirBundle({ version: "2.4", teeth: {} } as never);
-    const out = parseFhirBundle(bundle);
+  it("parseDentalCoreBundle (fromFhir) emits version 2.5, independent of the input payload's own version tag", () => {
+    const bundle = buildDentalCoreBundle({ version: "2.4", teeth: {} } as never);
+    const out = parseDentalCoreBundle(bundle);
     expect(out.version).toBe(PAYLOAD_VERSION);
   });
 });

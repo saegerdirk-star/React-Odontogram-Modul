@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-3.2.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-4.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -95,9 +95,7 @@ import {
   getToothStateSummary,
   onStateChange,             // subscribe to state changes
   // export / import
-  exportFhir,                // HL7 FHIR R4 bundle
   exportSvg, exportImage,    // vector / raster chart export
-  setImportFormat,
   // control
   setReadOnly, getReadOnly,
   clearSelection,
@@ -107,7 +105,7 @@ import {
 } from "react-advanced-odontogram";
 ```
 
-完整的 API 表面（约 44 个函数，以及 `OdontogramSummary`、`OdontogramThemeConfig`、`OdontogramPlugin`、`FhirExportOptions`、`PerioViewMode` 等类型）在随附的声明文件中均有完整的类型定义。
+完整的 API 表面（约 44 个函数，以及 `OdontogramSummary`、`OdontogramThemeConfig`、`OdontogramPlugin`、`PerioViewMode` 等类型）在随附的声明文件中均有完整的类型定义。
 
 #### 与 Next.js（App Router）搭配使用
 
@@ -126,7 +124,7 @@ export default function OdontogramClient() {
 或者使用仅限客户端的动态导入来加载它：`dynamic(() => import("./OdontogramClient"), { ssr: false })`。
 
 #### 重要说明与当前限制
-- **仅支持 ESM** —— 该包发布主 ES 模块（`dist/odontogram.js`）和可选 FHIR ES 模块（`dist/fhir.js`），并附带相应的类型声明（`dist/index.d.ts` 和 `dist/fhir.d.ts`）。它面向打包工具的模块解析方式；不提供 CommonJS 构建版本。
+- **仅支持 ESM** —— 该包发布主 ES 模块（`dist/odontogram.js`），并附带相应的类型声明（`dist/index.d.ts`）。它面向打包工具的模块解析方式；不提供 CommonJS 构建版本。
 - **样式表是独立的** —— 你**必须**导入一次 `react-advanced-odontogram/style.css`；它不会被自动注入。样式为全局 CSS，作用域限定在 `.odontogram-root` 下，并由 `--odon-*` CSS 变量驱动。
 - **SSR / 仅限客户端** —— 该组件在挂载时会读取 DOM（`document`），因此必须在浏览器中运行。在支持 SSR 的框架中，请在 Client Component（`"use client"`）中渲染它，或通过仅限客户端的动态导入方式加载。
 - **资源是自包含的** —— 牙齿和图标的 SVG 在构建时被内联到 JavaScript 包中；**无需配置任何运行时资源请求**，也无需向你的 public 文件夹额外复制任何文件。
@@ -161,7 +159,7 @@ export default function OdontogramClient() {
 - 🖐️ **骨龄**（`odontogram-c51.4`）：还剩多少生长量，用两种方式读取并分开记录——颈椎成熟度（CVM，6 个阶段）取自同一张头颅侧位片，Fishman SMI（11 个阶段）取自手腕片。十一个 SMI 以固定配对映射到六个 CVM 阶段，因此两者给出相同的剩余生长量区间；直接读取的 CVM 优先于由手腕片推得的，二者不一致时予以提示而非强行统一。位于头影测量生长型旁边。
 - 📸 **面部照相分析 — Powell**（`odontogram-c51.3`）：侧位照片角度，折入头影测量卡片，但标注为不同的**介质**：每个测量项与分析都带 `medium: "photo"`，选择器据此分组（头颅侧位片 vs 面部照相），因此记录会说明某个软组织值取自 X 光片还是照片。
 - ⚠️ 两者目前均为**会话状态**：尚无已发布的 Dental Core profile，因此它们不进入导出负载，而不是自行发明一个本地载体
-- 🔗 HL7 FHIR R4 导出（每颗牙齿一个 Observation 组成的 collection Bundle，恒牙列采用 ISO 3950 牙位编码，使用本地代码系统——SNOMED CT 映射计划中）
+- 🔗 Aidbox Dental Core via `@cognovis/fhir-sdk`：宿主注入网关；会话负责加载和保存。JSON 状态导出/导入带迁移
 - ✚ 十字/加号式牙面选择界面（B/M/O/D/L）用于龋齿和充填记录
 - 🧱 每个牙面独立的修复材料（混合充填，例如颊侧银汞合金 + 远中复合树脂）
 - 🖼️ 图表的 PNG/JPG/SVG 图像导出（可下载；PNG/JPG 由矢量 SVG 栅格化而成）
@@ -189,7 +187,7 @@ export default function OdontogramClient() {
 - 🩹 继发龋（CARS）设置已合并入“龋齿”设置标签页，位置排在“影像学深度”之上（原独立的“继发龋”标签页已废除）
 - 🎚️ 牙齿详情详情级别（设置 → 牙齿详情）：针对牙齿磨耗和变色的简单/复杂设置。简单模式下每项发现显示一个是/否开关（磨耗开启 → 磨耗/磨损，变色开启 → 其他）；复杂模式（默认）保留类型/病因下拉菜单，切换级别时已存储的数值保持不变
 - 📋 牙齿信息面板：整个图表的实时文字摘要（牙齿计数、现有/缺失列表、龋齿（含继发龋）、充填、根管治疗、修复体、种植体、牙周状态）——默认显示，可在设置中开关
-- 🗂️ 合并的导出下拉菜单（状态 JSON / FHIR / PNG / JPG）
+- 🗂️ 合并的导出下拉菜单（状态 JSON / PNG / JPG）
 - 📥 带 FHIR 导入功能的导入下拉菜单（可回读已导出的 Bundle）
 - ⏳ 图像导出过程中的进度浮层
 - 🎓 12 步交互式新手导览
@@ -206,7 +204,7 @@ export default function OdontogramClient() {
 - 🔒 只读模式：为打印/报告/查看场景禁用所有交互
 - ✨ 选中动画：选中牙齿呈现脉动虚线边框和发光阴影效果（支持 prefers-reduced-motion）
 - 📝 每颗牙齿的备注：双击添加/编辑备注，牙号旁显示备注图标，悬停提示显示备注文字，全口摘要面板中新增一行“个别备注”，并纳入 PDF 报告，支持 JSON 导出/导入
-- 🔀 现状 ↔ 计划图表切换：图表标题栏中的 `Status | Plan`（现状 | 计划）切换开关可在**现状**图表与**计划**（拟定治疗后）图表之间切换，二者各自拥有独立的牙齿状态；首次切换到计划图表时，它会以现状图表为初始副本，此后一个图表中的编辑不会影响另一个图表。导出/导入（`exportStatus`/`exportFhir`/文件导入）始终针对现状图表；计划图表通过其自身的 API 单独读写（见下文“公共 API”）——当其与现状不同时，会作为附加的 `plan` 区块包含在 JSON 导出中
+- 🔀 现状 ↔ 计划图表切换：图表标题栏中的 `Status | Plan`（现状 | 计划）切换开关可在**现状**图表与**计划**（拟定治疗后）图表之间切换，二者各自拥有独立的牙齿状态；首次切换到计划图表时，它会以现状图表为初始副本，此后一个图表中的编辑不会影响另一个图表。导出/导入（`exportStatus`/文件导入）始终针对现状图表；计划图表通过其自身的 API 单独读写（见下文“公共 API”）——当其与现状不同时，会作为附加的 `plan` 区块包含在 JSON 导出中
 - 📝 “变更内容”提示框：只要计划与当前现状存在差异，牙齿信息面板下方的一个提示框会按牙位、按治疗轴（存在与否、基质、修复体、可摘修复、拟定牙冠、正畸、牙髓/根管、根尖）逐条列出差异，格式为 `牙位: 轴  从 → 到`；也可通过 `getPlanChanges()` 以编程方式获取
 
 ![全口牙周图（简体中文）](screenshot_zh_perio.png)
@@ -576,11 +574,11 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-FHIR 转换是 UI 领域文档的纯可选投影。来自精确 `@cognovis/fhir-release@0.2.4` 投影的 Dental Core `de.cognovis.fhir.dental.core#0.6.0` 是唯一的 FHIR 合约。版本 3 删除了原先非 Dental Core 的表示以及运行时方言选择；外来、不受支持或格式错误的 Bundle 会被明确拒绝。根管桩通过 `rootPostType` 与所有根管充填状态保持独立。旧 JSON 和较早的 Dental Core 值 `endo-glass-pin` / `endo-metal-pin` 会迁移为 `endo-filling` 加桩材料；新的输出绝不会再次合并这两个轴。
+FHIR 转换是 UI 领域文档的纯可选投影。Dental Core `de.cognovis.fhir.dental.core#0.7.1` 是唯一的 FHIR 合约；已识别的 `odontogram-dental-core-0.6.0` 标记仍可用于空的旧版集合，未知方言标记会被拒绝。导入、导出和重新导出会保留十一个源状态轴：`implantPosition`、`crownFractureType`、`orthoProgressive`、`rootResection`、`papillaLoss`、`orthoBracketSide`、`cantilever`、`endoCanals`、`rootFractureRoot`、`rootResectionRoot` 和 `apicalRoot`。在治疗计划中，这些轴使用被引用的目标牙位状态 `Goal`；既有计划字段继续使用带配置文件的计划 Observations。计划状态与观察状态保持分离，且不会虚构 Devices 或已执行的 Procedures。重复、冲突、格式错误、地址含糊或与牙位不兼容的断言会被拒绝。根管桩通过 `rootPostType` 保持独立；旧的 `endo-glass-pin` 和 `endo-metal-pin` 值会迁移为 `endo-filling` 加桩材料。
 
 **Aidbox 实时模式（开发用，自 2.50.0 起）：**
 
-第二个开发服务器入口 `live.html`（`src/live`）直接从隔离的 Reetfurt local-UAT Aidbox 加载单个患者的病历，通过上文所述的会话 API 在常规外壳中渲染它，并以确定性 id 将更改作为 Dental Core 资源写回，因此再次保存会更新而不是重复。先在 mvz-reetfurt 检出中启动命名的 Reetfurt 实例（`POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local up --instance <id>`），再运行 `npm run live:provision -- --instance <id>`，以创建受限机器客户端 `odontogram-live` 并写入被版本控制忽略的 `.env`。切勿把管理员凭据写入 `VITE_*`。它是一个开发工具，不属于已发布的包：`@cognovis/fhir-sdk` 是 devDependency，`dependencies` 不变，`src/live` 和 `live.html` 均不发布。设置、加载/保存机制以及与 charly 适配器方言之间已记录的差异见 [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md)。请注意，安装本仓库的 devDependencies 现在需要 `npm.cognovis.de` 的凭据（见文档）；`npm ci --omit=dev` 以及使用已发布的包则不需要。
+第二个开发服务器入口 `live.html`（`src/live`）直接从隔离的 Reetfurt local-UAT Aidbox 加载单个患者的病历，通过上文所述的会话 API 在常规外壳中渲染它，并以确定性 id 将更改作为 Dental Core 资源写回，因此再次保存会更新而不是重复。先在 mvz-reetfurt 检出中启动命名的 Reetfurt 实例（`POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local up --instance <id>`），再运行 `npm run live:provision -- --instance <id>`，以创建受限机器客户端 `odontogram-live` 并写入被版本控制忽略的 `.env`。切勿把管理员凭据写入 `VITE_*`。它是一个开发工具，不属于已发布的包：`@cognovis/fhir-sdk` 是 Dental Core 类的运行时依赖；`src/live` 不发布，`src/live` 和 `live.html` 均不发布。设置、加载/保存机制以及与 charly 适配器方言之间已记录的差异见 [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md)。请注意，安装本仓库的 devDependencies 现在需要 `npm.cognovis.de` 的凭据（见文档）；`npm ci --omit=dev` 以及使用已发布的包则不需要。
 
 **带日期的检查、评估状态与种植体周围记录（自 2.4.0 起）：**
 
@@ -730,15 +728,12 @@ npm run docs           # 在 docs/ 目录生成 TypeDoc 文档
 | `setStageOverride(v)` | 覆盖推算得出的牙周分期——`"I"` / `"II"` / `"III"` / `"IV"`，`null` 表示清除（恢复为推算值） |
 | `setGradeOverride(v)` | 覆盖推算得出的牙周分级——`"A"` / `"B"` / `"C"`，`null` 表示清除（恢复为推算值） |
 | `setExtentOverride(v)` | 覆盖推算得出的牙周范围——`"localized"`（局限型）/ `"generalized"`（广泛型）/ `"molar-incisor"`（磨牙-切牙型），`null` 表示清除（恢复为推算值） |
-| `exportFhir(options?)` | 将图表导出为 HL7 FHIR R4 collection Bundle（JSON 下载）。可选 `{ subject }` 引用；否则会嵌入一个占位 Patient 资源 |
 | `exportImage(format)` | 将图表下载为图像——`"png"` 或 `"jpg"` |
 | `exportSvg()` | 将图表下载为可缩放的矢量 SVG |
 | `hasAnyPerioData()` | 只要口腔中任意位置记录了任意牙周轴数据即为 `true`——用于驱动牙周导出的自动跳过逻辑，并在空白图表上禁用牙周导出菜单项 |
 | `exportPerioSvg()` | 通过 `buildPerioSvg()` 从状态无头（headless）构建，将完整的牙周图表（牙齿图形 + 数值行 + 2017 年分类结果）下载为一份独立的矢量 SVG |
 | `exportPerioImage(format)` | 将牙周图表下载为栅格化图像——`"png"` 或 `"jpg"` |
 | `exportPdf(opts)` | 下载一份 jsPDF 原生生成的 PDF 报告（`{patientData, odontogramChart, odontogramDescription, individualNotes, perioStatus, perioDescription}`，各区块均为可选）——矢量文字加栅格化的牙齿/牙周图表图像；只要没有任何牙齿记录备注，“个别备注”区块就会自动跳过；只要 `hasAnyPerioData()` 为 false，两个牙周区块也会自动跳过，二者均与 `opts` 设置无关 |
-| `importFhirBundle(input)` | 导入由本模块生成的 FHIR R4 Bundle（对象或 JSON 字符串） |
-| `setImportFormat(format)` | 设置下一次文件导入所用的解析器——`"status"` 或 `"fhir"` |
 | `startIntroTour()` | 启动 12 步交互式新手导览 |
 
 ### 💾 状态导出/导入格式
@@ -810,7 +805,7 @@ npm run docs           # 在 docs/ 目录生成 TypeDoc 文档
 - `case` - 可选对象，保存病例级（非按牙位）元数据，由现状图表和计划图表共享（与顶层的 `globals` 键类似）。空值省略：当所有字段均为默认值时该字段完全不出现，因此无病例数据的导出除版本号外保持逐字节一致。各字段（在默认值时均被省略）：`age`（年龄）；`smokingStatus`（吸烟状况，+ `cigarettesPerDay`）；`diabetesStatus`（糖尿病状况，+ `hba1c`）；`toothLossPerio`（牙周炎致失牙数）；`maxRblPercent`（最大影像学骨吸收百分比）；2017 年分类的四个按轴临床医生覆盖值 `diagnosisOverride` / `stageOverride` / `gradeOverride` / `extentOverride`；以及（版本 2.19）`patientName` / `examDate`；以及（版本 2.20）`patientDob`。该字段用于牙周分期/分级分类及 PDF 报告标题；通过 `getCaseMeta()` 及 `setCase*` 系列设置函数读写（见上文“公共 API”）。患者姓名、出生日期与检查日期仅为图表身份标识元数据——**不**属于 FHIR 导出的一部分。
 
 ### 🖨️ 导出
-除了牙位图自身的状态 JSON / FHIR / PNG / JPG / SVG 导出外，**牙周图表**还拥有自己的一套导出路径：
+除了牙位图自身的状态 JSON / PNG / JPG / SVG 导出外，**牙周图表**还拥有自己的一套导出路径：
 - **牙周图 SVG/PNG/JPG：** `exportPerioSvg()` / `exportPerioImage("png"|"jpg")` 将完整的牙周图表（牙齿图形 + 数值行 + 2017 年分类结果）渲染为一份独立的矢量 SVG（`buildPerioSvg()`），不依赖已挂载的 `PerioChart` DOM。只要 `hasAnyPerioData()` 为 false（空白图表没有可导出的牙周数据），这三个导出菜单项就会被禁用。
 - **PDF 报告：** 导出菜单中的“PDF report…”（PDF 报告……）项会先打开 `ExportOptionsModal`——一个设置弹窗（患者姓名 + 出生日期 + 检查日期字段，直接绑定到病例元数据，检查日期默认为当天；区块复选框：患者数据、牙位图、牙位图说明、个别备注——未有任何牙齿记录备注时禁用——牙周状态、牙周描述），然后再调用 `exportPdf(opts)`。身份信息字段留空时打印为**“未填写”**，绝不填入编造的值（`odontogram-in2`）：一份*看起来*完整、却带着编造出生日期的报告不是不完整的记录，而是错误的记录——拿到这张纸的人无从判断这个日期并非来自患者。该行保留而不是删除：缺行读作“这里什么都没有”，有标签的空行读作“未记录”。**检查日期**是唯一的例外，仍然回退为今天——报告是今天写的，这并不是对患者的断言。该 PDF 采用 jsPDF 原生方式组装——矢量文字通过 `.text()`，栅格化的牙齿/牙周图表图像通过 `.addImage()`——**不依赖 svg2pdf.js**。当没有任何牙齿记录备注时，“个别备注”区块会自动跳过；只要 `hasAnyPerioData()` 为 false，两个牙周区块也会自动跳过，二者均与弹窗中的复选框状态无关。
 - **mPI/mBI 种植体限定：** 种植体周 Mombelli 指数（mPI/mBI）仅在包含至少一颗种植牙的牙弓中作为行渲染——无论是在实时牙周图表还是 SVG/PDF 导出中均如此。
@@ -825,7 +820,7 @@ npm run docs           # 在 docs/ 目录生成 TypeDoc 文档
 - `src/i18n/` - 翻译文件（HU/EN/DE/ES/IT/SK/PL/RU/PT-BR）及国际化 hook
 - `src/utils/numbering.ts` - FDI、通用编号法、Palmer 编号转换
 - `src/registry/` - 声明式临床轴和界面注册表：轴元数据、SVG 激活、修复体类型×材料矩阵、值目录和选项列表；FHIR 映射由 `src/fhir/` 负责
-- `src/fhir/` - 唯一的 Dental Core HL7 FHIR R4 边界：`toFhir.ts`/`fromFhir.ts` 入口、`toFhirDentalCore.ts`/`fromFhirDentalCore.ts` 编解码器、`dentalCoreContract.ts` 及生成的配置文件/契约，以及 `dentalCoreLocalCoding.ts` 辅助代码
+- `src/fhir/` - 唯一的 Dental Core HL7 FHIR R4 边界：`toFhirDentalCore.ts`/`fromFhirDentalCore.ts` 编解码器（基于 `@cognovis/fhir-sdk`）、`dentalCoreContract.ts`，以及 `dentalCoreLocalCoding.ts` 辅助代码
 - `src/bridgeOverlay.ts` - 多牙位桥跨越连接体叠加层（感知牙弓形态的桥体几何）
 - `src/SettingsModal.tsx` - 带标签页的设置弹窗（常规/面板/牙齿详情/龋齿/牙髓/备注/牙周）
 - `src/perioExport.ts` - `buildPerioSvg()`：将完整牙周图表构建为一份独立的矢量 SVG

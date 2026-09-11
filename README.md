@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
-[![Version](https://img.shields.io/badge/version-3.2.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
+[![Version](https://img.shields.io/badge/version-4.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](https://raw.githubusercontent.com/ZoliQua/React-Odontogram-Modul/main/src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
 
@@ -12,7 +12,7 @@
 
 🇬🇧 [English](lang/README-en.md) · 🇩🇪 [Deutsch](lang/README-de.md) · 🇪🇸 [Español](lang/README-es.md) · 🇫🇷 [Français](lang/README-fr.md) · 🇮🇹 [Italiano](lang/README-it.md) · 🇭🇺 [Magyar](lang/README-hu.md) · 🇵🇱 [Polski](lang/README-pl.md) · 🇧🇷 [Português (BR)](lang/README-pt-br.md) · 🇸🇰 [Slovenčina](lang/README-sk.md) · 🇷🇺 [Русский](lang/README-ru.md) · 🇸🇦 [العربية](lang/README-ar.md) · 🇨🇳 [简体中文](lang/README-zh.md)
 
-An interactive, SVG-based **dental odontogram (dental chart) editor** for **React + TypeScript** — with a full **periodontal charting module**, multi-surface caries/restorations, endodontic/prosthetic states, FDI/Universal/Palmer numbering, **HL7 FHIR R4** export/import, optional ICDAS scoring, and a 12-language UI.
+An interactive, SVG-based **dental odontogram (dental chart) editor** for **React + TypeScript** — with a full **periodontal charting module**, multi-surface caries/restorations, endodontic/prosthetic states, FDI/Universal/Palmer numbering, **Aidbox** Dental Core via `@cognovis/fhir-sdk` (hosts inject a gateway; the session loads and saves; no public FHIR JSON-bundle export), optional ICDAS scoring, and a 12-language UI.
 
 🔗 **Live demo:** https://react-odontogram-modul.vercel.app/ \
 📚 **API docs:** https://zoliqua.github.io/React-Odontogram-Modul/
@@ -50,7 +50,8 @@ import {
   PerioChart,             // standalone periodontal chart
   getOdontogramSummary,
   exportStatus, importStatus,   // JSON state serialization / hydration
-  exportFhir, exportSvg, exportImage,
+  exportSvg, exportImage,
+  createOdontogramSession, // FHIR: session.loadFromAidbox / saveToAidbox
   setReadOnly, startIntroTour,
 } from "react-advanced-odontogram";
 ```
@@ -110,35 +111,21 @@ every module-level entry point (`exportStatus`, `importStatus`, `getStatusChart`
 > through their session API. Ownership passes to a waiting instance when the
 > current one unmounts.
 
-### FHIR is a pure, optional projection
+### FHIR is a Dental Core mapping over `@cognovis/fhir-sdk`
 
-FHIR conversion is a pure adapter over the UI-domain document: it performs no DOM access, network I/O, wall-clock reads, randomness, transport, persistence, or authentication. Dental Core `de.cognovis.fhir.dental.core#0.6.0`, consumed from the exact `@cognovis/fhir-release@0.2.4` projection, is the sole FHIR import/export contract. Version 3 removes the former non-Dental-Core representation and all runtime dialect selection; foreign or malformed Bundles are rejected explicitly, and export fails when populated clinical state has no admitted Core carrier. The explicit boundary is `rootFractureRoot`: Core 0.6 carries the vertical/horizontal `rootFracture` but not its optional root qualifier, so export preserves and round-trips the orientation while deliberately omitting only the qualifier; a root name alone never implies an orientation. Root posts use the orthogonal `rootPostType` axis (`none`, `glass-fiber`, `metal`) and therefore remain representable beside every `endo` filling state, including `endo-filling-incomplete`. Legacy JSON and older Dental Core `endo-glass-pin` / `endo-metal-pin` values remain readable and migrate to `endo-filling` plus the corresponding post material; compatibility with the removed FHIR representation is deliberately not retained.
+FHIR conversion is a pure adapter over the UI-domain document: it performs no DOM access, network I/O, wall-clock reads, randomness, transport, persistence, or authentication. Dental Core `de.cognovis.fhir.dental.core#0.7.1` is the sole FHIR contract. Version 4.0.0 removes the public `./fhir` JSON-bundle API (`buildFhirBundle` / `parseFhirBundle`, `exportFhir`, `session.exportFhirBundle` / `importFhirBundle`) and local codegen. Hosts talk to Aidbox through `session.loadFromAidbox` / `session.saveToAidbox` with an injected gateway; mapping classes and canonicals come from `@cognovis/fhir-sdk` only. Foreign or unmapped Dental Core codes are listed as unsupported on live load rather than rejecting the rest of the chart. The current source-preservation contract retains eleven target axes: `implantPosition`, `crownFractureType`, `orthoProgressive`, `rootResection`, `papillaLoss`, `orthoBracketSide`, `cantilever`, `endoCanals`, `rootFractureRoot`, `rootResectionRoot`, and `apicalRoot`. These are structural source assertions: the adapter does not turn them into new diagnoses, numbered canals, implant products, or bridge relationships. Root posts use the orthogonal `rootPostType` axis (`none`, `glass-fiber`, `metal`) and therefore remain representable beside every `endo` filling state, including `endo-filling-incomplete`. Legacy JSON and older Dental Core `endo-glass-pin` / `endo-metal-pin` values remain readable and migrate to `endo-filling` plus the corresponding post material.
 
-The optional `buildFhirBundle` and `parseFhirBundle` helpers expose that same sole Dental Core seam when a host does not use a session.
+The adapter accepts only the root identities offered by the current tooth position, including `single` for a single-rooted tooth. It rejects empty `endoCanals` maps, mutually exclusive canal fill states, and root-fracture or root-resection qualifiers without their parent finding. The ordinary document serializer omits or clears those malformed shapes.
 
-```ts
-import { createOdontogramSession } from "react-advanced-odontogram";
+A clinical Dental Core write requires an effective date supplied by the caller, the examination context, or `case.examDate`. The codec projects the IG carrier contract across tooth and root caries, restorations, endodontic and diagnostic findings, periodontal and peri-implant findings, implant identity, treatment requests, assessments, and notes while retaining host resource identity.
 
-const session = createOdontogramSession(undefined, {
-  fhir: {
-    exportOptions: { subject: "Patient/123", effectiveDateTime: "2026-08-08" },
-  },
-});
-const bundle = session.exportFhirBundle();
-if (!session.importFhirBundle(bundle)) throw new Error("FHIR import rejected");
-```
+When the document carries a `plan` section, Dental Core emit includes `CarePlan/plan` and one `ServiceRequest/{fdi}` per planned tooth. The eleven source-preservation axes above use a referenced target-chart `Goal`; established plan fields continue to use their profiled planned Observations. The Goal keeps desired state separate from observed resources: a planned removed root, implant position, bracket side, or cantilever flag does not claim that a procedure was performed or that a device exists. Hosts derive the intent from `session.getPlanChanges()`.
 
-A clinical Dental Core export requires an effective date supplied by the caller, the examination context, or `case.examDate`. The codec projects the IG carrier contract across tooth and root caries, restorations, endodontic and diagnostic findings, periodontal and peri-implant findings, implant identity, treatment requests, assessments, and notes while retaining host resource identity.
-
-When the document carries a `plan` section, the existing Dental Core export already emits planned care as `CarePlan/plan`, one `ServiceRequest/{fdi}` per planned tooth (intent `plan`, `basedOn` that CarePlan), planned `Observation/chart/plan/{fdi}` chart states, and the planned clinical Observations (`tooth-state`, caries, periodontal, recession) also `basedOn` the CarePlan. The FHIR codec is unchanged; hosts derive the intent from `session.getPlanChanges()` and may export the same document through `session.exportFhirBundle()`.
-
-Diabetes, HbA1c, smoking, and edentulous resources remain owned by the host patient record and are never minted by this codec. When those document fields are populated, pass their existing Condition or Observation entries through `exportOptions.sharedResources`; the bundle carries them unchanged, records their references in Provenance, and fails closed if a required host resource is absent or inconsistent. The smoking-status Observation (LOINC 72166-2) may carry either the LOINC LL2201-3 / IPS Current Smoking Status answer codes or the engine-local codes.
-
-Hosts can import `DENTAL_CORE_CANONICAL`, `DENTAL_CORE_PROFILES`, `DENTAL_CORE_PACKAGE_VERSION`, and `DENTAL_CORE_CODE_SYSTEM_URLS` from `react-advanced-odontogram/fhir` for compatibility checks. Unsupported, malformed, or foreign Bundles are rejected rather than silently losing content.
+Diabetes, HbA1c, smoking, and edentulous resources remain owned by the host patient record and are never minted by this codec. When those document fields are populated, pass their existing Condition or Observation entries through the mapping's `sharedResources`; the collection carries them unchanged, records their references in Provenance, and fails closed if a required host resource is absent or inconsistent. The smoking-status Observation (LOINC 72166-2) may carry either the LOINC LL2201-3 / IPS Current Smoking Status answer codes or the engine-local codes.
 
 ### Aidbox live mode (development)
 
-A second dev-server entry, `live.html` (`src/live`), loads one patient's chart straight from an isolated Reetfurt local-UAT Aidbox, renders it in the ordinary shell through the session API above, and writes changes back as Dental Core resources under deterministic ids, so a re-save updates instead of duplicating. Start a named Reetfurt instance (`POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local up --instance <id>` in the mvz-reetfurt checkout), then run `npm run live:provision -- --instance <id>` to create the scoped `odontogram-live` machine client and write the git-ignored `.env`. Never put an admin credential in `VITE_*`. It is a development tool, not part of the published package: `@cognovis/fhir-sdk` is a devDependency, `dependencies` is unchanged, and neither `src/live` nor `live.html` is published. Setup, the load/save mechanics, and the documented delta to the charly adapter's dialect are in [`docs/aidbox-live-mode.md`](docs/aidbox-live-mode.md). Installing this repository's devDependencies still requires a credential for `npm.cognovis.de`; `npm ci --omit=dev` and consuming the published package do not.
+A second dev-server entry, `live.html`, loads one patient's chart straight from an isolated Reetfurt local-UAT Aidbox, renders it in the ordinary shell through the session API above, and writes changes back as Dental Core resources under deterministic ids, so a re-save updates instead of duplicating. Start a named Reetfurt instance (`POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local up --instance <id>` in the mvz-reetfurt checkout), then run `npm run live:provision -- --instance <id>` to create the scoped `odontogram-live` machine client and write the git-ignored `.env`. Never put an admin credential in `VITE_*`. The live.html app, `aidbox.ts` client factory, and config are development-only. The published library **does** ship the Aidbox gateway SPI and session load/save delegates; it still does **not** include `@cognovis/fhir-sdk/client` or `live.html`. `@cognovis/fhir-sdk` is a runtime dependency for Dental Core mapping classes. Setup, the load/save mechanics, and the documented delta to the charly adapter's dialect are in [`docs/aidbox-live-mode.md`](docs/aidbox-live-mode.md). A published odontogram 4.0.0 consumer installs `@cognovis/fhir-sdk@0.11.0`; this worktree currently resolves that pin from the packed 0.11.0 tarball.
 
 ## 🦷 Periodontal charting
 
@@ -270,7 +257,7 @@ yes, across the jaw never.
 - 🖐️ **Skeletal age** (`odontogram-c51.4`): how much growth is left, read two ways and kept separate — cervical vertebral maturation (CVM, 6 stages) off the same lateral ceph, and Fishman SMI (11 stages) off the hand-wrist film. The eleven SMIs map onto the six CVM stages in fixed pairs, so both give the same remaining-growth band and pubertal-peak reading; a directly-read CVM beats the hand-mapped one, and a disagreement is reported, not resolved. Beside the cephalometric growth pattern.
 - 📸 **Photostatic analysis — Powell** (`odontogram-c51.3`): profile-photo angles (facial plane, nasofrontal, nasofacial, nasomental, mentocervical, nasolabial, neck length), folded into the cephalometry card but marked as a different MEDIUM: every measure and the profile carry `medium: "photo"`, and the picker groups by it (Cephalometry vs Photostatic), so the record says whether a soft-tissue value was read off the film or the photograph.
 - ⚠️ Both are **session state** for now: the generated Dental Core package publishes related profile families, but this adapter does not project these module-specific records until their mappings are deliberately supported
-- 🔗 **HL7 FHIR R4** export/import; JSON export/import with migrations
+- 🔗 **Aidbox Dental Core** via `@cognovis/fhir-sdk` — hosts inject a gateway; the session loads and saves. JSON status export/import with migrations
 - 🖼️ PNG / JPG / SVG chart export and a **PDF report** (jsPDF, lazy-loaded)
 - ⌨️ **Charting by shorthand** (see above) — mark teeth by dragging, Shift+arrow or Shift+click, then type the finding; Tab walks the arch
 - 🪞 **Depth shading** — a body gradient across crown and root and a soft shading where the tooth enters the gum, so the arch reads as a relief rather than a cut-out. Only the tooth substance is shaded: colour carries meaning here. One switch in Settings → Tooth details

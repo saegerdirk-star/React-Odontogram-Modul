@@ -29,6 +29,13 @@ function isPrimaryFdi(fdi: number): boolean {
     || (fdi >= 81 && fdi <= 85);
 }
 
+/** True when `value` is an adult or primary FDI tooth this odontogram charts. */
+export function isFdiTooth(value: number | string): boolean {
+  const fdi = normalizeFdi(value);
+  if (fdi === null) return false;
+  return isAdultFdi(fdi) || isPrimaryFdi(fdi);
+}
+
 /**
  * Convert an FDI tooth number to the label for the requested numbering system.
  *

@@ -14,7 +14,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath, URL as NodeURL } from "node:url";
 import { __renderActiveLayers, __setToothStateForTest, __getToothStateForTest, __collectExportPayloadForTest } from "../../odontogram";
-import { buildFhirBundle } from "../../fhir/toFhir";
+import { buildDentalCoreBundle } from "../../fhir/toFhirDentalCore";
 import { restorationOptions } from "../../registry/restorations";
 
 // Node's own URL (not jsdom's) so this resolves relative to this file on disk
@@ -23,7 +23,7 @@ function svgText(name: string): string {
   return readFileSync(fileURLToPath(new NodeURL(`../../assets/teeth-svgs/${name}.svg`, import.meta.url)), "utf8");
 }
 
-function findCoding(bundle: ReturnType<typeof buildFhirBundle>, code: string) {
+function findCoding(bundle: ReturnType<typeof buildDentalCoreBundle>, code: string) {
   return bundle.entry
     ?.map((e) => e.resource)
     .find((r: any) => r?.code?.coding?.[0]?.code === code);

@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![Download](https://img.shields.io/badge/Download-React--Odontogram--Modul-blue?style=for-the-badge&logo=github)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
-[![Version](https://img.shields.io/badge/version-3.2.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
+[![Version](https://img.shields.io/badge/version-4.0.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul)
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](../src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
@@ -95,9 +95,7 @@ import {
   getToothStateSummary,
   onStateChange,             // Zustandsänderungen abonnieren
   // Export / Import
-  exportFhir,                // HL7-FHIR-R4-Bundle
   exportSvg, exportImage,    // Vektor-/Raster-Befundexport
-  setImportFormat,
   // Steuerung
   setReadOnly, getReadOnly,
   clearSelection,
@@ -107,7 +105,7 @@ import {
 } from "react-advanced-odontogram";
 ```
 
-Die vollständige Oberfläche (≈ 44 Funktionen + Typen wie `OdontogramSummary`, `OdontogramThemeConfig`, `OdontogramPlugin`, `FhirExportOptions`, `PerioViewMode`, …) ist in den mitgelieferten Deklarationen vollständig typisiert.
+Die vollständige Oberfläche (≈ 44 Funktionen + Typen wie `OdontogramSummary`, `OdontogramThemeConfig`, `OdontogramPlugin`, `PerioViewMode`, …) ist in den mitgelieferten Deklarationen vollständig typisiert.
 
 #### Verwendung mit Next.js (App Router)
 
@@ -126,7 +124,7 @@ export default function OdontogramClient() {
 Oder laden Sie sie mit einem rein clientseitigen dynamischen Import: `dynamic(() => import("./OdontogramClient"), { ssr: false })`.
 
 #### Wichtige Hinweise & aktuelle Einschränkungen
-- **Nur ESM** — das Paket veröffentlicht einen Haupt-ES-Modul-Einstieg (`dist/odontogram.js`) und einen optionalen FHIR-ES-Modul-Einstieg (`dist/fhir.js`), jeweils mit Typdeklarationen (`dist/index.d.ts` und `dist/fhir.d.ts`). Es zielt auf die Bundler-Modulauflösung ab; es gibt keinen CommonJS-Build.
+- **Nur ESM** — das Paket veröffentlicht einen Haupt-ES-Modul-Einstieg (`dist/odontogram.js`), jeweils mit Typdeklarationen (`dist/index.d.ts`). Es zielt auf die Bundler-Modulauflösung ab; es gibt keinen CommonJS-Build.
 - **Das Stylesheet ist separat** — Sie **müssen** `react-advanced-odontogram/style.css` einmal importieren; es wird nicht automatisch eingebunden. Das Styling ist globales CSS, das unter `.odontogram-root` skoped ist und von `--odon-*`-CSS-Variablen gesteuert wird.
 - **SSR / nur clientseitig** — die Komponente liest beim Mounten das DOM (`document`), daher muss sie im Browser laufen. Rendern Sie sie in SSR-Frameworks in einer Client-Komponente (`"use client"`) oder über einen rein clientseitigen dynamischen Import.
 - **Assets sind eigenständig** — die Zahn- und Icon-SVGs werden zur Build-Zeit in das JavaScript-Bundle eingebettet; es gibt **keinen Laufzeit-Asset-Abruf**, den man konfigurieren müsste, und nichts Zusätzliches, das in Ihren öffentlichen Ordner kopiert werden müsste.
@@ -161,7 +159,7 @@ Oder laden Sie sie mit einem rein clientseitigen dynamischen Import: `dynamic(()
 - 🖐️ **Skelettalter** (`odontogram-c51.4`): wie viel Wachstum übrig ist, auf zwei Weisen gelesen und getrennt geführt — zervikale Wirbelreife (CVM, 6 Stadien) am selben Fernröntgenbild und Fishman SMI (11 Stadien) am Handröntgen. Die elf SMIs bilden sich auf die sechs CVM-Stadien in festen Paaren ab, also liefern beide dasselbe Restwachstums-Band und dieselbe Gipfel-Aussage; ein direkt abgelesener CVM schlägt den aus der Hand abgeleiteten, und ein Widerspruch wird gemeldet, nicht aufgelöst. Neben dem kephalometrischen Wachstumsmuster.
 - 📸 **Fotostatische Analyse — Powell** (`odontogram-c51.3`): Profilfoto-Winkel (Fazialebene, nasofrontal, nasofazial, nasomental, mentozervikal, nasolabial, Halslänge), in die Kephalometrie-Karte gefaltet, aber als anderes MEDIUM markiert: jede Messgröße und das Profil tragen `medium: "photo"`, und der Wähler gruppiert danach (Fernröntgen vs. Fotostat), sodass der Datensatz sagt, ob ein Weichteilwert am Film oder am Foto abgelesen wurde.
 - ⚠️ Beides ist vorerst **Sitzungszustand**: für Modellauswertung und Kephalometrie existiert kein veröffentlichter Dental-Core-Profil, daher sind sie bewusst nicht Teil des Export-Payloads, statt einen lokalen zu erfinden
-- 🔗 HL7 FHIR R4 Export (Collection-Bundle aus Observations pro Zahn, ISO 3950 Zahnkodierung für das bleibende Gebiss, lokales Codesystem — SNOMED-CT-Mapping geplant)
+- 🔗 Aidbox Dental Core über `@cognovis/fhir-sdk`: Hosts übergeben ein Gateway; die Session lädt und speichert. JSON-Status-Export/Import mit Migrationen
 - ✚ Kreuz-/Plus-Oberflächenauswahl (B/M/O/D/L) für Karies und Füllungen
 - 🧱 Füllungsmaterialien pro Fläche (gemischte Füllungen, z. B. bukkal Amalgam + distal Komposit)
 - 🖼️ PNG/JPG/SVG-Bildexport des Befunds (herunterladbar; PNG/JPG aus Vektor-SVG gerastert)
@@ -189,7 +187,7 @@ Oder laden Sie sie mit einem rein clientseitigen dynamischen Import: `dynamic(()
 - 🩹 Die Sekundärkaries-(CARS-)Einstellungen wurden in den Karies-Tab der Einstellungen zusammengeführt, oberhalb der radiologischen Tiefe positioniert (der separate „Sekundärkaries"-Tab entfällt)
 - 🎚️ Zahndetails-Detailstufe (Einstellungen → Zahndetails): eine einfache/komplexe Einstellung für Zahnabrieb und für Verfärbung. Der einfache Modus zeigt pro Befund einen Ja/Nein-Umschalter (Abrieb an → Attrition/Abrasion, Verfärbung an → Sonstige); der komplexe Modus (Standard) behält die Typ-/Ursache-Dropdowns bei, und der gespeicherte Wert bleibt beim Wechsel der Stufe erhalten
 - 📋 Zahninformationen-Panel: textuelle Live-Zusammenfassung des gesamten Befunds (Zahnzahlen, vorhandene/fehlende Zähne, Karies inkl. Sekundärkaries, Füllungen, Wurzelbehandlungen, Zahnersatz, Implantate, Parodontalstatus) — standardmäßig sichtbar, in den Einstellungen umschaltbar
-- 🗂️ Konsolidiertes Export-Dropdown (Status JSON / FHIR / PNG / JPG)
+- 🗂️ Konsolidiertes Export-Dropdown (Status JSON / PNG / JPG)
 - 📥 Import-Dropdown mit FHIR-Import (liest exportierte Bundles zurück)
 - ⏳ Fortschrittsanzeige beim Bildexport
 - 🎓 12-stufige interaktive Einführungstour
@@ -206,7 +204,7 @@ Oder laden Sie sie mit einem rein clientseitigen dynamischen Import: `dynamic(()
 - 🔒 Schreibgeschützter Modus: alle Interaktionen deaktivieren für Druck-/Berichtsansichten
 - ✨ Auswahl-Animationen: pulsierende gestrichelte Umrandung und leuchtender Schatten auf ausgewählten Zähnen (mit Unterstützung für prefers-reduced-motion)
 - 📝 Per-Zahn Notizen: Doppelklick zum Hinzufügen/Bearbeiten, Notiz-Symbol neben der Zahnnummer, Hover-Tooltip mit Notiztext, eine „Individuelle Notizen"-Zeile im Ganzmund-Zusammenfassungspanel, Aufnahme in den PDF-Bericht, JSON Export/Import
-- 🔀 Trennung Status- und Plan-Chart: ein `Status | Plan`-Umschalter im Diagramm-Header wechselt zwischen einem aktuellen **Status**-Chart und einem **Plan**-Chart (beabsichtigte Behandlung), jeweils mit eigenen Zahnzuständen; das Plan-Chart startet beim ersten Wechsel dorthin als Kopie des Status-Charts, und Änderungen in einem Chart wirken sich nie auf das andere aus. Export/Import (`exportStatus`/`exportFhir`/Datei-Import) beziehen sich immer auf das Status-Chart; das Plan-Chart wird über eine eigene API separat gelesen/geschrieben (siehe Öffentliche API weiter unten) und ist — sofern es vom Status abweicht — als zusätzlicher `plan`-Abschnitt im JSON-Export enthalten
+- 🔀 Trennung Status- und Plan-Chart: ein `Status | Plan`-Umschalter im Diagramm-Header wechselt zwischen einem aktuellen **Status**-Chart und einem **Plan**-Chart (beabsichtigte Behandlung), jeweils mit eigenen Zahnzuständen; das Plan-Chart startet beim ersten Wechsel dorthin als Kopie des Status-Charts, und Änderungen in einem Chart wirken sich nie auf das andere aus. Export/Import (`exportStatus`/Datei-Import) beziehen sich immer auf das Status-Chart; das Plan-Chart wird über eine eigene API separat gelesen/geschrieben (siehe Öffentliche API weiter unten) und ist — sofern es vom Status abweicht — als zusätzlicher `plan`-Abschnitt im JSON-Export enthalten
 - 📝 „Was ändert sich"-Box: sobald sich der Plan vom aktuellen Status unterscheidet, listet eine Box unterhalb des Zahninformationen-Panels jede Abweichung pro Zahn und pro Behandlungsachse (Vorhandensein, Substrat, Restauration, Prothetik, geplante Krone, Kieferorthopädie, Pulpa/Endo, apikal) als `Zahn: Achse  von → nach`-Zeile auf; auch programmatisch über `getPlanChanges()` verfügbar
 
 ![Parodontalstatus-Chart (Deutsch)](screenshot_de_perio.png)
@@ -590,11 +588,11 @@ const lower: OdontogramSession = createOdontogramSession(savedLowerDocument);
 
 **FHIR / Dental Core:**
 
-Die FHIR-Konvertierung ist eine reine optionale Projektion des UI-Dokuments. Dental Core `de.cognovis.fhir.dental.core#0.6.0` aus der exakten Projektion `@cognovis/fhir-release@0.2.4` ist der einzige FHIR-Vertrag. Version 3 entfernt die frühere Nicht-Dental-Core-Darstellung und jede Laufzeitauswahl eines Dialekts; fremde, nicht unterstützte oder fehlerhafte Bundles werden ausdrücklich abgelehnt. Wurzelstifte bleiben über die unabhängige Achse `rootPostType` neben jedem Wurzelfüllungszustand darstellbar. Altes JSON und ältere Dental-Core-Werte `endo-glass-pin` / `endo-metal-pin` werden zu `endo-filling` plus Stiftmaterial migriert; neue Ausgaben führen beide Achsen nie wieder zusammen.
+Die FHIR-Konvertierung ist eine reine optionale Projektion des UI-Dokuments. Dental Core `de.cognovis.fhir.dental.core#0.7.1` ist der einzige FHIR-Vertrag; die bekannte Kennung `odontogram-dental-core-0.6.0` bleibt für leere Altsammlungen lesbar, unbekannte Dialektkennungen werden abgelehnt. Import, Export und erneuter Export erhalten die elf Quellachsen `implantPosition`, `crownFractureType`, `orthoProgressive`, `rootResection`, `papillaLoss`, `orthoBracketSide`, `cantilever`, `endoCanals`, `rootFractureRoot`, `rootResectionRoot` und `apicalRoot`. In Plänen verwenden diese Achsen ein referenziertes Zielbefund-`Goal`; bestehende Planfelder werden weiterhin als profilierte geplante Observations dargestellt. Plan und Befund bleiben getrennt, ohne Devices oder durchgeführte Procedures zu erfinden. Doppelte, widersprüchliche, fehlerhafte, mehrdeutig adressierte oder zum Zahn unpassende Angaben werden abgelehnt. Wurzelstifte bleiben über `rootPostType` unabhängig; ältere `endo-glass-pin`- und `endo-metal-pin`-Werte werden zu `endo-filling` plus Stiftmaterial migriert.
 
 **Aidbox-Live-Modus (Entwicklung, ab 2.50.0):**
 
-Ein zweiter Einstieg des Entwicklungsservers, `live.html` (`src/live`), laedt die Karte eines Patienten direkt aus einem isolierten Reetfurt-local-UAT-Aidbox, zeigt sie ueber die obige Session-Schnittstelle in der gewohnten Oberflaeche und schreibt Aenderungen als Dental-Core-Ressourcen unter abgeleiteten IDs zurueck — ein erneutes Speichern aktualisiert also, statt zu verdoppeln. Zuerst eine benannte Reetfurt-Instanz starten (`POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local up --instance <id>` im mvz-reetfurt-Checkout), dann `npm run live:provision -- --instance <id>` ausfuehren: das legt den eingeschraenkten Maschinen-Client `odontogram-live` an und schreibt die nicht versionierte `.env`. Administrator-Zugangsdaten gehoeren nie in `VITE_*`. Er ist ein Entwicklungswerkzeug und nicht Teil des veroeffentlichten Pakets: `@cognovis/fhir-sdk` ist eine devDependency, `dependencies` bleibt unveraendert, und weder `src/live` noch `live.html` wird ausgeliefert. Einrichtung, Lade- und Schreibweg sowie der dokumentierte Unterschied zum Dialekt des charly-Adapters stehen in [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). Die devDependencies dieses Repositoriums brauchen weiterhin eine Zugangsberechtigung fuer `npm.cognovis.de`; `npm ci --omit=dev` und die Nutzung des veroeffentlichten Pakets brauchen sie nicht.
+Ein zweiter Einstieg des Entwicklungsservers, `live.html` (`src/live`), laedt die Karte eines Patienten direkt aus einem isolierten Reetfurt-local-UAT-Aidbox, zeigt sie ueber die obige Session-Schnittstelle in der gewohnten Oberflaeche und schreibt Aenderungen als Dental-Core-Ressourcen unter abgeleiteten IDs zurueck — ein erneutes Speichern aktualisiert also, statt zu verdoppeln. Zuerst eine benannte Reetfurt-Instanz starten (`POLARIS_DIR=$HOME/code/polaris/platform bun run uat:local up --instance <id>` im mvz-reetfurt-Checkout), dann `npm run live:provision -- --instance <id>` ausfuehren: das legt den eingeschraenkten Maschinen-Client `odontogram-live` an und schreibt die nicht versionierte `.env`. Administrator-Zugangsdaten gehoeren nie in `VITE_*`. Er ist ein Entwicklungswerkzeug und nicht Teil des veroeffentlichten Pakets: `@cognovis/fhir-sdk` ist eine Runtime-Abhängigkeit für Dental-Core-Klassen; `src/live` wird nicht veröffentlicht, und weder `src/live` noch `live.html` wird ausgeliefert. Einrichtung, Lade- und Schreibweg sowie der dokumentierte Unterschied zum Dialekt des charly-Adapters stehen in [`docs/aidbox-live-mode.md`](../docs/aidbox-live-mode.md). Die devDependencies dieses Repositoriums brauchen weiterhin eine Zugangsberechtigung fuer `npm.cognovis.de`; `npm ci --omit=dev` und die Nutzung des veroeffentlichten Pakets brauchen sie nicht.
 
 **Datierte Untersuchungen, Erhebungsstatus und periimplantaere Erfassung (ab 2.4.0):**
 
@@ -756,15 +754,12 @@ npm run docs           # TypeDoc-Dokumentation in docs/ generieren
 | `setStageOverride(v)` | Das abgeleitete parodontale Stadium übersteuern — `"I"` / `"II"` / `"III"` / `"IV"`, oder `null` zum Löschen (zurück zum abgeleiteten Wert) |
 | `setGradeOverride(v)` | Den abgeleiteten parodontalen Grad übersteuern — `"A"` / `"B"` / `"C"`, oder `null` zum Löschen (zurück zum abgeleiteten Wert) |
 | `setExtentOverride(v)` | Die abgeleitete parodontale Ausdehnung übersteuern — `"localized"` / `"generalized"` / `"molar-incisor"`, oder `null` zum Löschen (zurück zum abgeleiteten Wert) |
-| `exportFhir(options?)` | Befund als HL7 FHIR R4 Collection-Bundle exportieren (JSON-Download). Optionale `{ subject }`-Referenz; sonst wird ein Platzhalter-Patient eingebettet |
 | `exportImage(format)` | Befund als Bild herunterladen — `"png"` oder `"jpg"` |
 | `exportSvg()` | Befund als skalierbares SVG (Vektor) herunterladen |
 | `hasAnyPerioData()` | `true`, sofern irgendeine parodontale Achse irgendwo im Mund erfasst ist — steuert das automatische Überspringen beim Parodontal-Export und deaktiviert die Parodontal-Export-Menüpunkte bei einem leeren Chart |
 | `exportPerioSvg()` | Das vollständige Parodontalstatus-Chart (Zahngrafiken + Zahlenreihen + Klassifikation nach 2017) als eigenständiges Vektor-SVG herunterladen, headless aus dem Zustand über `buildPerioSvg()` erstellt |
 | `exportPerioImage(format)` | Das Parodontalstatus-Chart als gerastertes Bild herunterladen — `"png"` oder `"jpg"` |
 | `exportPdf(opts)` | Einen jsPDF-nativen PDF-Bericht herunterladen (`{patientData, odontogramChart, odontogramDescription, individualNotes, perioStatus, perioDescription}`, jeder Abschnitt optional) — Vektortext plus gerasterte Zahn-/Parodontalstatus-Chart-Bilder; der Abschnitt der individuellen Notizen wird automatisch übersprungen, wenn kein Zahn eine Notiz hat, und die beiden Parodontal-Abschnitte werden automatisch übersprungen, sobald `hasAnyPerioData()` `false` ist, unabhängig von `opts` |
-| `importFhirBundle(input)` | Ein von diesem Modul erzeugtes FHIR-R4-Bundle importieren (Objekt oder JSON-String) |
-| `setImportFormat(format)` | Parser für den nächsten Datei-Import festlegen — `"status"` oder `"fhir"` |
 | `startIntroTour()` | Die 12-stufige interaktive Einführungstour starten |
 
 ### 💾 Status Export-/Importformat
@@ -851,7 +846,7 @@ Der Export erzeugt eine JSON-Datei (Version `2.20`; Importe akzeptieren weiterhi
 - `src/i18n/` - Übersetzungen (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR) und i18n-Hook
 - `src/utils/numbering.ts` - FDI, Universal, Palmer Nummerierungskonvertierung
 - `src/registry/` - deklaratives Register für klinische Achsen und UI: Achsenmetadaten, SVG-Aktivierung, Restaurationstyp×Material-Matrix, Wertekatalog und Optionslisten; die FHIR-Zuordnungen liegen in `src/fhir/`
-- `src/fhir/` - einzige Dental-Core-Naht für HL7 FHIR R4: Einstiegspunkte `toFhir.ts`/`fromFhir.ts`, Codec `toFhirDentalCore.ts`/`fromFhirDentalCore.ts`, `dentalCoreContract.ts` plus generierte Profile/Verträge sowie Hilfen in `dentalCoreLocalCoding.ts`
+- `src/fhir/` - einzige Dental-Core-Naht für HL7 FHIR R4: Codec `toFhirDentalCore.ts`/`fromFhirDentalCore.ts` über `@cognovis/fhir-sdk`, `dentalCoreContract.ts` sowie Hilfen in `dentalCoreLocalCoding.ts`
 - `src/bridgeOverlay.ts` - Mehrzahn-Brückenspann-Verbinder-Overlay (bogenbewusste Sattelgeometrie)
 - `src/SettingsModal.tsx` - tabbasierter Einstellungsdialog (Allgemein/Panels/Zahndetails/Karies/Pulpa/Notizen/Parodontal)
 - `src/perioExport.ts` - `buildPerioSvg()`: das vollständige Parodontalstatus-Chart als ein eigenständiges Vektor-SVG
