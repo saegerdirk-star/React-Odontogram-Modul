@@ -52,7 +52,11 @@ describe("odontogram-wt5: FHIR layer is SDK-only", () => {
   });
 
   it("pins registry @cognovis/fhir-sdk 0.11.0 and drops codegen packages", () => {
-    expect(packageJson.version).toBe("4.0.0");
+    // The SDK-only boundary is the 4.x line, not one patch of it: pin the
+    // major so a routine release (4.1.0, ...) does not trip a boundary test.
+    // Exact version consistency (package.json == lock == README badges) is
+    // z4y-repo-hygiene's job.
+    expect(packageJson.version.split(".")[0]).toBe("4");
     expect(packageJson.dependencies?.["@cognovis/fhir-sdk"]).toBe("0.11.0");
     expect(packageJson.devDependencies?.["@cognovis/fhir-sdk"]).toBeUndefined();
     expect(packageJson.dependencies?.["@cognovis/codegen"]).toBeUndefined();
