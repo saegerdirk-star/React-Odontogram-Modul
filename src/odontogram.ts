@@ -1916,11 +1916,17 @@ function updateOcclusalSplintOverlay(grid: HTMLElement | null){
     grid.appendChild(overlay);
   }
   while(overlay.firstChild) overlay.removeChild(overlay.firstChild);
-  const W = Math.max(1, Math.round(gridRect.width));
-  const H = Math.max(1, Math.round(gridRect.height));
-  overlay.setAttribute("width", String(W));
-  overlay.setAttribute("height", String(H));
-  overlay.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  // viewBox only, never width/height attributes — the same rule
+  // `renderGumOverlay`/`renderBridgeOverlay` follow. Pinning the SVG's size to
+  // the SCREEN-space gridRect nailed it to the grid's layout box only where the
+  // chart is NOT scaled; under the fit-to-window scale (clientWidth 1671 vs
+  // bounding-rect 1370) the overlay covered ~82% of the grid and every bar
+  // shifted up-and-left onto the wrong teeth. CSS (inset:0) stretches the SVG to
+  // the layout box; the viewBox (screen space, same space tileRectFor reads the
+  // bars in) then maps back 1:1. removeAttribute clears any stale sizing.
+  overlay.removeAttribute("width");
+  overlay.removeAttribute("height");
+  overlay.setAttribute("viewBox", `0 0 ${gridRect.width} ${gridRect.height}`);
   for(const span of spans){
     const rects = span.map(rectFor).filter((r): r is NonNullable<typeof r> => !!r);
     if(rects.length < 1) continue;
@@ -1964,11 +1970,17 @@ function updateSplintOverlay(grid: HTMLElement | null){
     grid.appendChild(overlay);
   }
   while(overlay.firstChild) overlay.removeChild(overlay.firstChild);
-  const W = Math.max(1, Math.round(gridRect.width));
-  const H = Math.max(1, Math.round(gridRect.height));
-  overlay.setAttribute("width", String(W));
-  overlay.setAttribute("height", String(H));
-  overlay.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  // viewBox only, never width/height attributes — the same rule
+  // `renderGumOverlay`/`renderBridgeOverlay` follow. Pinning the SVG's size to
+  // the SCREEN-space gridRect nailed it to the grid's layout box only where the
+  // chart is NOT scaled; under the fit-to-window scale (clientWidth 1671 vs
+  // bounding-rect 1370) the overlay covered ~82% of the grid and every bar
+  // shifted up-and-left onto the wrong teeth. CSS (inset:0) stretches the SVG to
+  // the layout box; the viewBox (screen space, same space tileRectFor reads the
+  // bars in) then maps back 1:1. removeAttribute clears any stale sizing.
+  overlay.removeAttribute("width");
+  overlay.removeAttribute("height");
+  overlay.setAttribute("viewBox", `0 0 ${gridRect.width} ${gridRect.height}`);
   for(const span of spans){
     // tileRectFor returns GridRelativeRect {x,y,width,height} — already
     // grid-relative, so no further gridRect subtraction.
@@ -2024,11 +2036,17 @@ function updateRetentionBarOverlay(grid: HTMLElement | null){
     grid.appendChild(overlay);
   }
   while(overlay.firstChild) overlay.removeChild(overlay.firstChild);
-  const W = Math.max(1, Math.round(gridRect.width));
-  const H = Math.max(1, Math.round(gridRect.height));
-  overlay.setAttribute("width", String(W));
-  overlay.setAttribute("height", String(H));
-  overlay.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  // viewBox only, never width/height attributes — the same rule
+  // `renderGumOverlay`/`renderBridgeOverlay` follow. Pinning the SVG's size to
+  // the SCREEN-space gridRect nailed it to the grid's layout box only where the
+  // chart is NOT scaled; under the fit-to-window scale (clientWidth 1671 vs
+  // bounding-rect 1370) the overlay covered ~82% of the grid and every bar
+  // shifted up-and-left onto the wrong teeth. CSS (inset:0) stretches the SVG to
+  // the layout box; the viewBox (screen space, same space tileRectFor reads the
+  // bars in) then maps back 1:1. removeAttribute clears any stale sizing.
+  overlay.removeAttribute("width");
+  overlay.removeAttribute("height");
+  overlay.setAttribute("viewBox", `0 0 ${gridRect.width} ${gridRect.height}`);
   for(const glyph of claspGlyphs){
     const path = document.createElementNS(SVG_NS, "path");
     path.setAttribute("class", "retention-overlay-clasp");
@@ -2096,11 +2114,17 @@ function updateOrthoOverlay(grid: HTMLElement | null){
     grid.appendChild(overlay);
   }
   while(overlay.firstChild) overlay.removeChild(overlay.firstChild);
-  const W = Math.max(1, Math.round(gridRect.width));
-  const H = Math.max(1, Math.round(gridRect.height));
-  overlay.setAttribute("width", String(W));
-  overlay.setAttribute("height", String(H));
-  overlay.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  // viewBox only, never width/height attributes — the same rule
+  // `renderGumOverlay`/`renderBridgeOverlay` follow. Pinning the SVG's size to
+  // the SCREEN-space gridRect nailed it to the grid's layout box only where the
+  // chart is NOT scaled; under the fit-to-window scale (clientWidth 1671 vs
+  // bounding-rect 1370) the overlay covered ~82% of the grid and every bar
+  // shifted up-and-left onto the wrong teeth. CSS (inset:0) stretches the SVG to
+  // the layout box; the viewBox (screen space, same space tileRectFor reads the
+  // bars in) then maps back 1:1. removeAttribute clears any stale sizing.
+  overlay.removeAttribute("width");
+  overlay.removeAttribute("height");
+  overlay.setAttribute("viewBox", `0 0 ${gridRect.width} ${gridRect.height}`);
 
   const bracketY = (tn: number, r: {y:number;height:number}) =>
     r.y + r.height * (isUpperTooth(tn) ? ORTHO_BRACKET_Y_UPPER : ORTHO_BRACKET_Y_LOWER);
@@ -8008,6 +8032,7 @@ function onToothClick(toothNo: Any, evt: Any){
       selectedTeeth = new Set(span);
       activeTooth = toothNo;
       updateSelectionUI();
+      focusTooth(toothNo);
       return;
     }
   }
@@ -8028,6 +8053,12 @@ function onToothClick(toothNo: Any, evt: Any){
   }
   selectionAnchor = toothNo;
   updateSelectionUI();
+  // Put keyboard focus on the tooth's canonical (side-view) tile — the same
+  // tile the Tab walk focuses. Without this, a click on the OCCLUSAL tile or
+  // the number label selects the tooth but focuses nothing (only the side view
+  // carries tabindex), so shorthand typed afterwards lands nowhere and a Tab
+  // step walks from the wrong tooth. Selection and the typing focus must agree.
+  if(activeTooth != null) focusTooth(activeTooth);
 }
 
 // ---- Keyboard accessibility ----

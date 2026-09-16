@@ -46,6 +46,13 @@ function kachel(toothNo: number): HTMLElement {
   return el;
 }
 
+function kachelOccl(toothNo: number): HTMLElement {
+  const el = document.querySelector<HTMLElement>(
+    `#toothGrid .tooth-tile.occl-view[data-tooth="${toothNo}"]`);
+  if(!el) throw new Error(`keine Aufsicht fuer ${toothNo}`);
+  return el;
+}
+
 /** Tippt auf der Kachel, die gerade den Fokus hat - so wie am Stuhl. */
 async function tippe(text: string, opts: { shift?: boolean } = {}){
   for(const key of text){
@@ -206,6 +213,44 @@ describe("Kurzschrift auf der Tastatur", () => {
     // (Die Testumgebung laeuft auf Englisch.)
     expect(text).toContain("Unknown");
     expect(text).not.toContain("Not chartable");
+  }, 90000);
+
+  it("Klick auf die Aufsicht fokussiert die Kachel, sodass Tippen ankommt", async () => {
+    // Regression: die Aufsicht/Draufsicht trug einen keydown-Handler, aber
+    // KEIN tabindex - ein Klick dort waehlte den Zahn, fokussierte aber nichts,
+    // und die danach getippte Kurzschrift landete nirgends ("nicht sauber").
+    // onToothClick fokussiert jetzt die kanonische Seitenansicht-Kachel.
+    await raster();
+    await act(async () => {
+      kachelOccl(16).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    // Der Klick auf die AUFSICHT muss die SEITENANSICHT fokussiert haben.
+    expect(document.activeElement).toBe(kachel(16));
+    // Und ab jetzt kommt Kurzschrift auf 16 an - ohne manuelles focus().
+    await tippe("Gk");
+    expect(zahn(16).restorationType).toBe("crown");
+    expect(zahn(16).restorationMaterial).toBe("gold");
+  }, 90000);
+
+  it("Bruecken-Overlay skaliert per viewBox, ohne width/height", async () => {
+    // Regression: renderBridgeOverlay (und die 4 Geschwister-Overlays) setzten
+    // width/height auf die SCREEN-Groesse (getBoundingClientRect). Bei fit-to-
+    // window-Skalierung (clientWidth != boundingRect) deckte die SVG nur ~82%
+    // des Rasters ab, und JEDER Verbinder rutschte nach oben-links auf die
+    // falschen Zaehne (Bruecke 17-15 zeichnete ihr Band ueber 18-17). Fix: nur
+    // viewBox, wie die gum-overlay. jsdom hat kein Layout, also wird hier der
+    // STRUKTURELLE Vertrag gepinnt: die Auflage traegt eine viewBox und KEINE
+    // width/height-Attribute.
+    await raster();
+    await act(async () => { kachel(17).dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    await tippe("Gk");                       // 17 Krone
+    await taste("Tab"); await tippe("b");    // 16 Brueckenglied
+    await taste("Tab"); await tippe("Gk");   // 15 Krone
+    const ov = document.querySelector("svg.bridge-overlay");
+    expect(ov).not.toBeNull();
+    expect(ov!.hasAttribute("viewBox")).toBe(true);
+    expect(ov!.hasAttribute("width")).toBe(false);
+    expect(ov!.hasAttribute("height")).toBe(false);
   }, 90000);
 
   it("Escape raeumt den Puffer, bevor es die Auswahl raeumt", async () => {

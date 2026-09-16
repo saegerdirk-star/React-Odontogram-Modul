@@ -583,11 +583,19 @@ export function renderBridgeOverlay(deps: RenderBridgeOverlayDeps): void {
   }
   while(overlay.firstChild) overlay.removeChild(overlay.firstChild);
 
-  const W = Math.max(1, Math.round(gridRect.width));
-  const H = Math.max(1, Math.round(gridRect.height));
-  overlay.setAttribute("width", String(W));
-  overlay.setAttribute("height", String(H));
-  overlay.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  // Size ONLY via viewBox, never width/height attributes — exactly as
+  // `renderGumOverlay` does. CSS (`inset:0`) stretches the SVG to the grid's
+  // LAYOUT box; the viewBox is in the grid's getBoundingClientRect (SCREEN)
+  // space, the same space `tileRectFor` reads the bars in, so the two map 1:1.
+  // Pinning width/height to the SCREEN size instead nailed the element to the
+  // grid's layout box only where the chart is NOT scaled: under the fit-to-width
+  // scale (clientWidth 1671 vs bounding-rect 1370) the overlay covered ~82% of
+  // the grid, shifting every connector up-and-left onto the wrong teeth (a
+  // bridge 17-15 drew its bars over 18-17). removeAttribute clears any stale
+  // width/height a previous render may have set.
+  overlay.removeAttribute("width");
+  overlay.removeAttribute("height");
+  overlay.setAttribute("viewBox", `0 0 ${gridRect.width} ${gridRect.height}`);
 
   // Bead odontogram-5hm: erst die Brueckenglied-Basen (gefuellt), dann die
   // Verbinder darueber, damit die Verbinder die Basiskante ueberdecken und die
