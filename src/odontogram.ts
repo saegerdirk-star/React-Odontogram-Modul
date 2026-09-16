@@ -1473,6 +1473,194 @@ function cloneChart(src: Map<Any, Any>, dst: Map<Any, Any>): void {
 // an import — a fresh plan carries no plan-edits.
 let planEditedTeeth = new Set<number>();
 
+// ---- Planalternativen (Phase 1, 16.09.2026) --------------------------------
+// From ONE plan to N NAMED alternatives against the same Befund (status):
+// "Bruecke" beside "Implantat" beside "Prothese". `charts.plan` and
+// `planEditedTeeth` stay ALIASES to the ACTIVE alternative - exactly the way
+// `toothState` aliases the active chart - so every existing "the plan" call
+// site (gate, mirror, undo snapshot, export of the active plan) keeps operating
+// unchanged; only WHICH alternative that is changes when the user switches.
+//
+// The odontogram never classifies an alternative as Regelversorgung /
+// gleichartig / andersartig: that is the HKP-Engine's job, downstream of the
+// FHIR store (Dirk, 16.09.2026). Here an alternative is a free name and a chart.
+export interface PlanAlternative { id: string; name: string }
+interface PlanAlternativeEntry { id: string; name: string; chart: Map<Any, Any>; editedTeeth: Set<number> }
+/** Insertion order is display order. */
+const planAlternatives: Map<string, PlanAlternativeEntry> = new Map();
+let activePlanId: string | null = null;
+let planIdSeq = 0;
+
+function newPlanId(): string {
+  let id: string;
+  do { id = `plan-${++planIdSeq}`; } while(planAlternatives.has(id));
+  return id;
+}
+
+/** "Plan 1", "Plan 2", ... - the name an alternative gets when none is given. */
+function defaultPlanName(): string { return `Plan ${planAlternatives.size + 1}`; }
+
+/** Point the plan aliases at `entry`; in plan mode the active-chart alias follows. */
+function activatePlanEntry(entry: PlanAlternativeEntry): void {
+  activePlanId = entry.id;
+  charts.plan = entry.chart;
+  planEditedTeeth = entry.editedTeeth;
+  planInitialized = true;
+  if(chartMode === "plan") toothState = charts.plan;
+}
+
+/** Drop EVERY alternative: the aliases point at fresh empties and the plan is
+ *  uninitialized again - the one rule for every reset/teardown/import path. */
+function clearPlanAlternatives(): void {
+  planAlternatives.clear();
+  activePlanId = null;
+  charts.plan = new Map();
+  planEditedTeeth = new Set<number>();
+  planInitialized = false;
+  // The active-chart alias must never dangle on a map that was just replaced.
+  if(chartMode === "plan") toothState = charts.plan;
+}
+
+/** A fresh alternative starts as a deep copy of the CURRENT status (a plan
+ *  begins as the Befund, like the very first plan always did) and becomes
+ *  active. `name` empty -> "Plan n". */
+function createPlanEntry(name?: string): PlanAlternativeEntry {
+  const entry: PlanAlternativeEntry = {
+    id: newPlanId(),
+    name: (name ?? "").trim() || defaultPlanName(),
+    chart: new Map(),
+    editedTeeth: new Set<number>(),
+  };
+  cloneChart(charts.status, entry.chart);
+  planAlternatives.set(entry.id, entry);
+  activatePlanEntry(entry);
+  return entry;
+}
+
+/** Build the alternatives an imported document carries. `plans` (an array of
+ *  `{id, name, teeth}`, active one named by `activePlanId`) wins; a legacy
+ *  single `plan` (payload 2.11 .. the last single-plan version) becomes one
+ *  alternative "Plan 1". Assumes `clearPlanAlternatives()` ran first. Ids are
+ *  kept where they are usable, so a re-import keeps referring to the same
+ *  alternative; `planIdSeq` is advanced past any imported `plan-N` so a later
+ *  `newPlanId()` cannot collide. */
+function hydratePlanAlternatives(data: Any, inferLegacySecondaryCaries: boolean): void {
+  const plans = Array.isArray(data?.plans) ? data.plans : null;
+  if(plans && plans.length > 0){
+    let activate: PlanAlternativeEntry | null = null;
+    for(const p of plans){
+      if(!p || typeof p !== "object") continue;
+      const wantedId = typeof p.id === "string" ? p.id.trim() : "";
+      const id = wantedId && !planAlternatives.has(wantedId) ? wantedId : newPlanId();
+      const m = /^plan-(\d+)$/.exec(id);
+      if(m) planIdSeq = Math.max(planIdSeq, Number(m[1]));
+      const entry: PlanAlternativeEntry = {
+        id,
+        name: (typeof p.name === "string" && p.name.trim()) || defaultPlanName(),
+        chart: new Map(),
+        editedTeeth: new Set<number>(),
+      };
+      const teeth = p.teeth && typeof p.teeth === "object" ? p.teeth : {};
+      for(const toothNo of ALL_TEETH){
+        entry.chart.set(toothNo, hydrateState(teeth[toothNo], inferLegacySecondaryCaries));
+      }
+      planAlternatives.set(entry.id, entry);
+      if(!activate || entry.id === data.activePlanId) activate = entry;
+    }
+    if(activate) activatePlanEntry(activate);
+    return;
+  }
+  if(data?.plan && typeof data.plan === "object"){
+    const entry: PlanAlternativeEntry = {
+      id: newPlanId(), name: defaultPlanName(), chart: new Map(), editedTeeth: new Set<number>(),
+    };
+    for(const toothNo of ALL_TEETH){
+      entry.chart.set(toothNo, hydrateState(data.plan[toothNo], inferLegacySecondaryCaries));
+    }
+    planAlternatives.set(entry.id, entry);
+    activatePlanEntry(entry);
+  }
+}
+
+/** Repaint every tooth from the ACTIVE chart - the same full-repaint loop
+ *  `importStatus()` and `applyLiveChartMode()` use, so no new render path. */
+function repaintActiveChart(): void {
+  for(const toothNo of ALL_TEETH){
+    applyStateToSvg(toothNo);
+    updateToothTileNumber(toothNo);
+    updateToothLabelNoteIcon(toothNo);
+  }
+  refreshToothSelectOptions();
+  if(activeTooth) syncControlsFromState(toothState.get(activeTooth));
+}
+
+/** The alternatives in display order. */
+export function listPlans(): PlanAlternative[] {
+  return Array.from(planAlternatives.values()).map((e) => ({ id: e.id, name: e.name }));
+}
+
+/** The active alternative's id, or `null` while no plan exists. */
+export function getActivePlanId(): string | null { return activePlanId; }
+
+/** Create a new alternative (a copy of the status) and make it active. In plan
+ *  mode the chart repaints to it at once. */
+export function createPlan(name?: string): PlanAlternative {
+  const entry = createPlanEntry(name);
+  resetShorthandInput();
+  pendingDualStateConfirm = null;
+  if(chartMode === "plan") repaintActiveChart();
+  notifyStateChange();
+  return { id: entry.id, name: entry.name };
+}
+
+/** Rename an alternative. An empty name is refused (`false`). */
+export function renamePlan(id: string, name: string): boolean {
+  const entry = planAlternatives.get(id);
+  const next = (name ?? "").trim();
+  if(!entry || !next) return false;
+  if(entry.name === next) return true;
+  entry.name = next;
+  notifyStateChange();
+  return true;
+}
+
+/** Make another alternative the active one. Unknown id -> `false`. */
+export function setActivePlan(id: string): boolean {
+  const entry = planAlternatives.get(id);
+  if(!entry) return false;
+  if(entry.id === activePlanId) return true;
+  activatePlanEntry(entry);
+  // The typing mode and a deferred confirm both belong to the alternative they
+  // were taken on; carrying either across a switch would apply it elsewhere.
+  resetShorthandInput();
+  pendingDualStateConfirm = null;
+  if(chartMode === "plan") repaintActiveChart();
+  notifyStateChange();
+  return true;
+}
+
+/** Delete an alternative. Deleting the active one activates the next in order;
+ *  deleting the last one leaves no plan (and, in plan mode, returns to status). */
+export function deletePlan(id: string): boolean {
+  const entry = planAlternatives.get(id);
+  if(!entry) return false;
+  planAlternatives.delete(id);
+  if(activePlanId === id){
+    const next = planAlternatives.values().next().value as PlanAlternativeEntry | undefined;
+    if(next){
+      activatePlanEntry(next);
+    }else{
+      clearPlanAlternatives();
+      if(chartMode === "plan"){ chartMode = "status"; toothState = charts.status; syncChartModeUi(); }
+    }
+    resetShorthandInput();
+    pendingDualStateConfirm = null;
+    repaintActiveChart();
+  }
+  notifyStateChange();
+  return true;
+}
+
 /** Deep-copy tooth `toothNo`'s STATUS state into the PLAN chart via the proven
  *  serializeState -> hydrateState round-trip (fresh Maps/Sets, no shared refs —
  *  same guarantee as {@link cloneChart}). Passes `false` for
@@ -1649,24 +1837,18 @@ function applyLiveChartMode(mode: ChartMode): void {
   if(mode !== "status" && mode !== "plan") return;
   if(mode === chartMode) return;
   if(mode === "plan" && !planInitialized){
-    cloneChart(charts.status, charts.plan);
-    planInitialized = true;
-    // DS-1: a freshly-cloned plan exactly matches status -> no plan-edits yet.
-    planEditedTeeth.clear();
+    // Planalternativen: the first entry into plan mode creates the first
+    // alternative ("Plan 1") as a deep copy of status and makes it active -
+    // the lazy clone the single plan always was, now as one alternative among
+    // possibly several. A fresh copy carries no plan-edits by construction.
+    createPlanEntry();
     resetShorthandInput();
   }
   chartMode = mode;
   toothState = charts[mode];
-  // Full repaint-all, reused verbatim from importStatus()'s post-populate loop.
-  for(const toothNo of ALL_TEETH){
-    applyStateToSvg(toothNo);
-    updateToothTileNumber(toothNo);
-    updateToothLabelNoteIcon(toothNo);
-  }
-  // 2.2.1: the tooth-base picker's option set is mode-dependent (Plan omits
-  // milk/subgingival) — rebuild it whenever the mode changes.
-  refreshToothSelectOptions();
-  if(activeTooth) syncControlsFromState(toothState.get(activeTooth));
+  // Full repaint-all (the same loop importStatus() uses), plus the 2.2.1
+  // mode-dependent tooth-base picker rebuild (Plan omits milk/subgingival).
+  repaintActiveChart();
   notifyStateChange();
   syncChartModeUi();
 }
@@ -5134,9 +5316,7 @@ export function __getPlanStateForTest(toothNo: number): Record<string, unknown> 
  *  instance. Not part of the public API. */
 export function __resetChartStateForTest(): void {
   charts.status.clear();
-  charts.plan.clear();
-  planInitialized = false;
-  planEditedTeeth.clear();
+  clearPlanAlternatives();
   resetShorthandInput();
   pendingDualStateConfirm = null;
   chartMode = "status";
@@ -9956,6 +10136,9 @@ export function setPlanChart(payload: Any): void {
   if(!payload || typeof payload !== "object") return;
   const inferLegacySecondaryCaries = isLegacyPayloadVersion(payload.version);
   const teeth = payload.teeth || {};
+  // Planalternativen: hydrate into the ACTIVE alternative; with none yet, a
+  // fresh one is created first so there is a plan to replace.
+  if(!planInitialized) createPlanEntry();
   for(const toothNo of ALL_TEETH){
     const raw = teeth[toothNo];
     charts.plan.set(toothNo, hydrateState(raw, inferLegacySecondaryCaries));
@@ -13759,20 +13942,13 @@ function hydrateImportedCharts(data: Any): void {
   // patient's examination to another's chart.
   examinationContext = readExaminationContext(data.examination);
   examinations = readExaminationSnapshots(data.examinations);
-  if(data.plan && typeof data.plan === "object"){
-    for(const toothNo of ALL_TEETH){
-      const raw = data.plan[toothNo];
-      charts.plan.set(toothNo, hydrateState(raw, inferLegacySecondaryCaries));
-    }
-    planInitialized = true;
-  }else{
-    charts.plan.clear();
-    planInitialized = false;
-  }
-  // DS-1: an import replaces the whole case — a freshly imported plan carries
-  // no runtime plan-edits (they are never serialized), so drop any stale marks
-  // regardless of whether the import brought a `plan` section.
-  planEditedTeeth.clear();
+  // Planalternativen: a document carries `plans` (several named alternatives,
+  // the active one by `activePlanId`) or - legacy - a single `plan`, which reads
+  // as one alternative "Plan 1". Either way the imported plans REPLACE whatever
+  // alternatives stood before; a document with neither has no plan. DS-1: fresh
+  // entries carry no runtime plan-edits by construction (never serialized).
+  clearPlanAlternatives();
+  hydratePlanAlternatives(data, inferLegacySecondaryCaries);
   resetShorthandInput();
   // DS-1 (review Fix 2): also drop any pending dual-state confirm. Its deferred
   // `applyFn` was captured against the PRE-import state; a later
@@ -15280,9 +15456,7 @@ export function destroyOdontogram(){
   // initOdontogram() starts clean (mirrors the pre-dual-state behavior of a
   // single cleared toothState).
   charts.status.clear();
-  charts.plan.clear();
-  planInitialized = false;
-  planEditedTeeth.clear();
+  clearPlanAlternatives();
   resetShorthandInput();
   pendingDualStateConfirm = null;
   chartMode = "status";
