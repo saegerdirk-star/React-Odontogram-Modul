@@ -182,13 +182,27 @@ export interface ToothRecord {
   note?: string;
 }
 
+/** One named plan alternative (Planalternativen, payload 2.47): a free name
+ *  and its own tooth chart against the same status. The odontogram never
+ *  classifies an alternative (Regelversorgung / gleichartig / andersartig) -
+ *  that is the HKP-Engine's job, downstream of the FHIR store. */
+export interface PlanAlternativeRecord {
+  id: string;
+  name: string;
+  teeth: Record<string, ToothRecord>;
+}
+
 /** The serialized odontogram export payload (matches exportStatus()'s object).
- * `plan` is additive and FHIR export/import reads only `teeth`/`globals`. */
+ * `plan` is additive and FHIR export/import reads only `teeth`/`globals`.
+ * `plans` (2.47) carries EVERY named alternative plus the active one's id;
+ * `plan` stays the active alternative's teeth for readers of the older shape. */
 export interface OdontogramExportPayload {
   version: string;
   globals?: Record<string, boolean>;
   teeth: Record<string, ToothRecord>;
   plan?: Record<string, ToothRecord>;
+  plans?: PlanAlternativeRecord[];
+  activePlanId?: string;
   case?: {
     age?: number;
     smokingStatus?: string;
@@ -296,7 +310,14 @@ export interface DentalCoreIdentity {
 // filling or caries lesion extends into the cervical region. Omitted entirely
 // when empty, so a document that never records it is byte-identical apart from
 // this version string, and an older document needs no migration.
-export const PAYLOAD_VERSION = "2.46";
+//
+// 2.47 (Planalternativen): `plans` carries every named plan alternative plus
+// `activePlanId`; `plan` stays as the active alternative's teeth for readers
+// of the older shape. Both are omitted while no alternative differs from the
+// status and only one exists, so a status-only document (and one where plan
+// mode was entered but nothing planned) stays byte-identical apart from this
+// version string. Import prefers `plans`, falls back to a single `plan`.
+export const PAYLOAD_VERSION = "2.47";
 
 /**
  * The UI-domain document (bead odontogram-3l1, AC2/AC4): a versioned,

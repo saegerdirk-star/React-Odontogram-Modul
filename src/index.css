@@ -221,20 +221,81 @@ select:focus{
   color:#fff;
 }
 .chart-mode-btn.is-active:hover{background: var(--accent)}
-/* Subtle-but-unmistakable chip; shown only while `.plan-mode` is active on
-   the chart card (see below) — toggled via the `.hidden` class. */
-.plan-badge{
+/* Planalternativen: the chooser between named plan alternatives, beside the
+   Status | Plan toggle. One pill per alternative in the toggle's own idiom
+   (same radius, same accent for the active one); "+" adds, "x" on the active
+   pill deletes. Rendered only in plan mode (PlanSelector returns null
+   otherwise), so status mode shows no row at all. */
+.plan-selector{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:6px;
+  margin-top:8px;
+}
+.plan-chip{
   display:inline-flex;
   align-items:center;
-  padding:3px 10px;
+  gap:2px;
   border-radius:999px;
-  font-size:11px;
-  font-weight:700;
-  letter-spacing:.4px;
-  background: rgba(59,123,255,.16);
-  color: var(--accent);
-  border:1px solid rgba(59,123,255,.4);
+  border:1px solid rgba(59,123,255,.35);
+  background: rgba(59,123,255,.08);
+  padding:0 2px 0 0;
 }
+.plan-chip-name{
+  border:none;
+  background:transparent;
+  color:var(--text);
+  padding:4px 10px;
+  border-radius:999px;
+  font-weight:600;
+  font-size:12px;
+  cursor:pointer;
+  max-width:16ch;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.plan-chip-name:hover{background: rgba(59,123,255,.14)}
+.plan-chip.is-active{
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.plan-chip.is-active .plan-chip-name{color:#fff}
+.plan-chip.is-active .plan-chip-name:hover{background: var(--accent)}
+.plan-chip-delete{
+  border:none;
+  background:transparent;
+  color:#fff;
+  font-size:14px;
+  line-height:1;
+  padding:2px 6px 3px 2px;
+  border-radius:999px;
+  cursor:pointer;
+  opacity:.8;
+}
+.plan-chip-delete:hover{opacity:1; background: rgba(0,0,0,.15)}
+.plan-chip-input{
+  border:1px solid var(--accent);
+  border-radius:999px;
+  padding:3px 9px;
+  font-size:12px;
+  font-weight:600;
+  background: var(--panel, #fff);
+  color:var(--text);
+  width:14ch;
+  outline:none;
+}
+.plan-chip-add{
+  border-style:dashed;
+  background:transparent;
+  color:var(--accent);
+  padding:4px 10px;
+  font-weight:600;
+  font-size:12px;
+  cursor:pointer;
+}
+.plan-chip-add:hover{background: rgba(59,123,255,.10)}
 /* Plan-mode visual cue on the chart card itself, so it's always obvious
    which chart (status vs. plan) is being edited. */
 .chart.plan-mode{
@@ -1047,16 +1108,17 @@ select:focus{
 }
 .dark .chart-mode-btn{color: var(--text)}
 .dark .chart-mode-btn:hover{background: rgba(96,165,250,.18)}
+.dark .plan-chip{border-color: rgba(96,165,250,.4); background: rgba(96,165,250,.10)}
+.dark .plan-chip-name{color: var(--text)}
+.dark .plan-chip-name:hover{background: rgba(96,165,250,.18)}
+.dark .plan-chip.is-active{background: rgba(96,165,250,.45); border-color: rgba(96,165,250,.6)}
+.dark .plan-chip-input{background: rgba(255,255,255,.06); color: var(--text)}
+.dark .plan-chip-add{color: rgba(147,197,253,1)}
 .dark .chart-mode-btn.is-active{
   background: rgba(96,165,250,.45);
   color:#fff;
 }
 .dark .chart-mode-btn.is-active:hover{background: rgba(96,165,250,.45)}
-.dark .plan-badge{
-  background: rgba(96,165,250,.18);
-  color:#93c5fd;
-  border-color: rgba(96,165,250,.45);
-}
 .dark .chart.plan-mode{
   border-color: rgba(96,165,250,.6);
   box-shadow: 0 0 0 2px rgba(96,165,250,.28);
@@ -1636,8 +1698,9 @@ select:focus{
 .tooth-info-note-item{margin:2px 0 0 12px}
 /* R2-B Task 2: "What changes" box — a tinted panel that visually separates
    the status->plan diff from the descriptive summary sections above it.
-   Reuses the same accent-blue "plan" visual language as .plan-badge/
-   .chart.plan-mode so the diff reads as belonging to the Plan chart. */
+   Reuses the same accent-blue "plan" visual language as the active
+   .chart-mode-btn / .chart.plan-mode so the diff reads as belonging to the
+   Plan chart. */
 .planned-changes{
   margin-top:10px;
   padding:8px 10px;

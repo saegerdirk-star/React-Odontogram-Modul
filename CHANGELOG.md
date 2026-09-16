@@ -1,5 +1,54 @@
 # Changelog
 
+## 4.1.0 - 2026-09-16
+
+### Plan alternatives (Planalternativen, Phase 1)
+
+- From one plan to several NAMED alternatives against the same status
+  (findings): "Brücke" beside "Implantat" beside "Prothese". New public API
+  `listPlans` / `createPlan(name?)` / `renamePlan` / `setActivePlan` /
+  `deletePlan` / `getActivePlanId`. The first entry into plan mode creates
+  "Plan 1" as a copy of the status (the lazy clone the single plan always
+  was); a new alternative starts as a copy of the status too. Each alternative
+  carries its own DS-1 plan-edit marks; the proposed (dashed) styling and
+  "What changes" follow the active one. `getPlanChart` / `setPlanChart` /
+  `getPlanChanges` keep addressing the active alternative, so hosts on the
+  single-plan API see no change.
+- A plan chooser beside the `Status | Plan` toggle (`src/PlanSelector.tsx`,
+  plan mode only): one chip per alternative, click switches, double-click
+  renames inline, "+ Alternative" adds, "×" on the active chip deletes after
+  confirmation. Hidden/locked under read-only.
+- Payload **2.47** (additive): `plans: [{id, name, teeth}]` plus
+  `activePlanId`; the older `plan` (the active alternative's teeth) is still
+  emitted for readers of that shape. Both are omitted while a single
+  alternative equals the status, so a status-only document — and one where
+  plan mode was entered with nothing planned — stays byte-identical apart from
+  the version string. Import prefers `plans`; a legacy single `plan` becomes
+  one alternative "Plan 1".
+- The odontogram never classifies an alternative (Regelversorgung /
+  gleichartig / andersartig): that is the HKP-Engine's job, downstream of the
+  FHIR store. Phase 2 — one Dental Core CarePlan per alternative — follows
+  with the Dental Core convergence.
+- SVG-fingerprint parity byte-identical: nothing about how a chart renders
+  changed, only which chart is drawn.
+- The separate "PLAN" badge beside the `Status | Plan` toggle is gone: the
+  highlighted Plan segment and the plan-alternative chips already say it, and
+  the third "PLAN" read as a duplicate.
+
+### Fixes
+
+- Shorthand typed after a click on the occlusal tile or the tooth number went
+  nowhere: only the side-view tile carries `tabindex`, and `onToothClick`
+  never focused, so the keys landed on nothing and a Tab step walked from the
+  wrong tooth. Every click now focuses the tooth's canonical side-view tile,
+  as the Tab walk always did.
+- Bridge, retention, splint and ortho overlays drifted onto the wrong teeth
+  once the chart was scaled to fit the window (a bridge 17–15 drew its
+  connectors over 18–17): they pinned the overlay SVG's `width`/`height` to
+  the screen-space size and so covered only part of the grid. All grid
+  overlays now size via `viewBox` only, like the gum overlay always did; the
+  export SVG (`buildOdontogramSvg`) keeps its attributes.
+
 ## 4.0.0 - 2026-09-10
 
 ### Breaking: Dental Core over `@cognovis/fhir-sdk` only (odontogram-wt5)

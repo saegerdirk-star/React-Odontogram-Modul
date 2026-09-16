@@ -49,6 +49,7 @@ import SchematicChart from "./SchematicChart";
 import SchematicKeypad from "./SchematicKeypad";
 // Bead odontogram-ap7: capture/correct the initial examination.
 import ExaminationCard from "./ExaminationCard";
+import { PlanSelector } from "./PlanSelector";
 import DualStateConfirm from "./DualStateConfirm";
 import ExportOptionsModal from "./ExportOptionsModal";
 import type { Language } from "./i18n/translations";
@@ -1186,8 +1187,11 @@ export default function App({
             <div id="chartModeToggle" className="chart-mode-toggle" role="tablist">
               <button id="chartModeStatus" type="button" className="chart-mode-btn is-active" role="tab" aria-selected="true">{t("chartMode.status")}</button>
               <button id="chartModePlan" type="button" className="chart-mode-btn" role="tab" aria-selected="false">{t("chartMode.plan")}</button>
-              <span id="chartModePlanBadge" className="plan-badge hidden">{t("chartMode.planBadge")}</span>
             </div>
+            {/* Planalternativen: the chooser between named plan alternatives.
+                Self-subscribing (onStateChange) and rendered only in plan
+                mode - no App state, no new engine call path. */}
+            <PlanSelector />
             {/* R2-C Task 2: "dashed = proposed" legend. Always rendered — its
                 visibility is pure CSS, scoped by the `.chart.plan-mode
                 #proposedLegend` descendant selector (src/index.css), which
