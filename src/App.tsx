@@ -1187,7 +1187,6 @@ export default function App({
             <div id="chartModeToggle" className="chart-mode-toggle" role="tablist">
               <button id="chartModeStatus" type="button" className="chart-mode-btn is-active" role="tab" aria-selected="true">{t("chartMode.status")}</button>
               <button id="chartModePlan" type="button" className="chart-mode-btn" role="tab" aria-selected="false">{t("chartMode.plan")}</button>
-              <span id="chartModePlanBadge" className="plan-badge hidden">{t("chartMode.planBadge")}</span>
             </div>
             {/* Planalternativen: the chooser between named plan alternatives.
                 Self-subscribing (onStateChange) and rendered only in plan

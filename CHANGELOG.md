@@ -31,6 +31,9 @@
   with the Dental Core convergence.
 - SVG-fingerprint parity byte-identical: nothing about how a chart renders
   changed, only which chart is drawn.
+- The separate "PLAN" badge beside the `Status | Plan` toggle is gone: the
+  highlighted Plan segment and the plan-alternative chips already say it, and
+  the third "PLAN" read as a duplicate.
 
 ### Fixes
 

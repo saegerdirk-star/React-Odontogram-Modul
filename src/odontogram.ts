@@ -1797,18 +1797,20 @@ function revertActiveControls(): void {
 
 /** R2-A Task 3: sync the `Status | Plan` toggle in the chart-header with the
  *  current `chartMode` — `.is-active` on whichever of #chartModeStatus /
- *  #chartModePlan matches, `.plan-mode` on the chart card (`.chart`, the
- *  visual border/tint cue), and the "TERV/PLAN" badge's `.hidden` class.
- *  Every lookup is null-safe: `setChartMode()` (and therefore this function)
- *  is exercised by module-state tests (e.g. r2a-dual-state.test.ts) with no
- *  DOM mounted at all, so a missing toggle/card/badge must be a silent no-op,
- *  not a throw. Not part of the public API. */
+ *  #chartModePlan matches and `.plan-mode` on the chart card (`.chart`, the
+ *  visual border/tint cue). The separate "TERV/PLAN" badge that once sat
+ *  beside the toggle is gone (4.1.0): the highlighted Plan button and the
+ *  plan-alternative chips already say it, and Dirk read the third "PLAN" as
+ *  a duplicate. Every lookup is null-safe: `setChartMode()` (and therefore
+ *  this function) is exercised by module-state tests (e.g.
+ *  r2a-dual-state.test.ts) with no DOM mounted at all, so a missing
+ *  toggle/card must be a silent no-op, not a throw. Not part of the public
+ *  API. */
 function syncChartModeUi(): void {
   const isPlan = chartMode === "plan";
   const statusBtn = $("#chartModeStatus") as HTMLElement | null;
   const planBtn = $("#chartModePlan") as HTMLElement | null;
   const chartCard = $(".chart") as HTMLElement | null;
-  const badge = $("#chartModePlanBadge") as HTMLElement | null;
   if(statusBtn){
     statusBtn.classList.toggle("is-active", !isPlan);
     statusBtn.setAttribute("aria-selected", String(!isPlan));
@@ -1818,7 +1820,6 @@ function syncChartModeUi(): void {
     planBtn.setAttribute("aria-selected", String(isPlan));
   }
   if(chartCard) chartCard.classList.toggle("plan-mode", isPlan);
-  if(badge) badge.classList.toggle("hidden", !isPlan);
 }
 
 /**

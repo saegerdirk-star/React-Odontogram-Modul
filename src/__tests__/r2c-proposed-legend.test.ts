@@ -146,7 +146,6 @@ describe("R2-C Task 2: real toggle wiring — legend reachable only under .chart
           <div id="chartModeToggle" class="chart-mode-toggle" role="tablist">
             <button id="chartModeStatus" type="button" class="chart-mode-btn is-active" role="tab" aria-selected="true">Status</button>
             <button id="chartModePlan" type="button" class="chart-mode-btn" role="tab" aria-selected="false">Plan</button>
-            <span id="chartModePlanBadge" class="plan-badge hidden">PLAN</span>
           </div>
           <div id="proposedLegend" class="proposed-legend">
             <span class="proposed-legend-swatch" aria-hidden="true"></span>

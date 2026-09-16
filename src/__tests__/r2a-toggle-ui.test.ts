@@ -9,7 +9,7 @@
 // topbar and the right Controls panel — wires #chartModeStatus/#chartModePlan
 // via wireControls() (odontogram.ts), and implements syncChartModeUi() for
 // real: `.is-active` on the two buttons, `.plan-mode` on the chart card
-// (`.chart`), and the "TERV/PLAN" badge's `.hidden` class.
+// (`.chart`).
 //
 // Two harnesses, mirroring the established split in this test suite (see
 // sp14-ortho-ui.test.ts):
@@ -25,8 +25,8 @@
 //      re-implemented), so calling them exercises the actual private
 //      syncChartModeUi() the production wireControls() click handlers invoke.
 //      This runs against a hand-built DOM fixture mirroring App.tsx's real
-//      markup (#chartModeStatus/#chartModePlan buttons, a `.chart` card,
-//      `#chartModePlanBadge`) with the SAME click-listener contract
+//      markup (#chartModeStatus/#chartModePlan buttons, a `.chart` card)
+//      with the SAME click-listener contract
 //      wireControls() installs (mirrors the "reproduces the production
 //      change-listener contract" pattern in sp13-tooth-details.test.ts).
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -161,14 +161,13 @@ describe("R2-A Task 3: real click wiring (setChartMode + syncChartModeUi via a p
   /** Mirrors App.tsx's real chart-header/chart-card markup closely enough for
    *  the REAL, private syncChartModeUi() (invoked inside the real, forwarded
    *  setChartMode()) to find every element it queries by id/class. */
-  function mountChartModeFixture(): { chartCard: HTMLElement; statusBtn: HTMLButtonElement; planBtn: HTMLButtonElement; badge: HTMLElement } {
+  function mountChartModeFixture(): { chartCard: HTMLElement; statusBtn: HTMLButtonElement; planBtn: HTMLButtonElement } {
     document.body.innerHTML = `
       <section class="chart">
         <div class="chart-header">
           <div id="chartModeToggle" class="chart-mode-toggle" role="tablist">
             <button id="chartModeStatus" type="button" class="chart-mode-btn is-active" role="tab" aria-selected="true">Status</button>
             <button id="chartModePlan" type="button" class="chart-mode-btn" role="tab" aria-selected="false">Plan</button>
-            <span id="chartModePlanBadge" class="plan-badge hidden">PLAN</span>
           </div>
         </div>
       </section>
@@ -176,17 +175,17 @@ describe("R2-A Task 3: real click wiring (setChartMode + syncChartModeUi via a p
     const chartCard = document.querySelector(".chart") as HTMLElement;
     const statusBtn = document.getElementById("chartModeStatus") as HTMLButtonElement;
     const planBtn = document.getElementById("chartModePlan") as HTMLButtonElement;
-    const badge = document.getElementById("chartModePlanBadge") as HTMLElement;
     // Reproduces the exact click-listener contract wireControls() installs
     // (`$("#chartModeStatus").addEventListener("click", ()=>setChartMode("status"))`
-    // + the Plan counterpart).
+    // + the Plan counterpart). The former "TERV/PLAN" badge is gone (4.1.0):
+    // the highlighted Plan segment and the plan-alternative chips carry the cue.
     statusBtn.addEventListener("click", () => setChartMode("status"));
     planBtn.addEventListener("click", () => setChartMode("plan"));
-    return { chartCard, statusBtn, planBtn, badge };
+    return { chartCard, statusBtn, planBtn };
   }
 
   it("clicking Plan switches mode, activates the Plan segment, and cues the chart card", () => {
-    const { chartCard, statusBtn, planBtn, badge } = mountChartModeFixture();
+    const { chartCard, statusBtn, planBtn } = mountChartModeFixture();
     expect(getChartMode()).toBe("status");
 
     planBtn.click();
@@ -195,11 +194,10 @@ describe("R2-A Task 3: real click wiring (setChartMode + syncChartModeUi via a p
     expect(planBtn.classList.contains("is-active")).toBe(true);
     expect(statusBtn.classList.contains("is-active")).toBe(false);
     expect(chartCard.classList.contains("plan-mode")).toBe(true);
-    expect(badge.classList.contains("hidden")).toBe(false);
   });
 
   it("clicking Status reverts mode, re-activates Status, and clears the cue", () => {
-    const { chartCard, statusBtn, planBtn, badge } = mountChartModeFixture();
+    const { chartCard, statusBtn, planBtn } = mountChartModeFixture();
     planBtn.click();
     expect(getChartMode()).toBe("plan");
 
@@ -209,16 +207,14 @@ describe("R2-A Task 3: real click wiring (setChartMode + syncChartModeUi via a p
     expect(statusBtn.classList.contains("is-active")).toBe(true);
     expect(planBtn.classList.contains("is-active")).toBe(false);
     expect(chartCard.classList.contains("plan-mode")).toBe(false);
-    expect(badge.classList.contains("hidden")).toBe(true);
   });
 
   it("clicking the already-active segment is a no-op (mode/classes unchanged)", () => {
-    const { chartCard, statusBtn, planBtn, badge } = mountChartModeFixture();
+    const { chartCard, statusBtn, planBtn } = mountChartModeFixture();
     statusBtn.click();
     expect(getChartMode()).toBe("status");
     expect(statusBtn.classList.contains("is-active")).toBe(true);
     expect(chartCard.classList.contains("plan-mode")).toBe(false);
-    expect(badge.classList.contains("hidden")).toBe(true);
   });
 
   it("setChartMode() with no chart-mode DOM mounted at all does not throw (null-safe syncChartModeUi)", () => {
