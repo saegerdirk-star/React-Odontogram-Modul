@@ -10031,8 +10031,16 @@ function collectGlobals(){
  */
 function collectExportPayload(){
   const statusTeeth = collectTeeth(charts.status);
+  const statusJson = JSON.stringify(statusTeeth);
   const planTeeth = planInitialized ? collectTeeth(charts.plan) : null;
-  const planDiffers = planTeeth !== null && JSON.stringify(planTeeth) !== JSON.stringify(statusTeeth);
+  const planDiffers = planTeeth !== null && JSON.stringify(planTeeth) !== statusJson;
+  // Planalternativen (2.47): every alternative by name, the active one by id.
+  // Emitted only when it carries more than `plan` does - a second alternative,
+  // or one that differs from the status - so a status-only document and one
+  // where plan mode was entered but nothing planned stay byte-identical.
+  const plansOut = Array.from(planAlternatives.values())
+    .map((e) => ({ id: e.id, name: e.name, teeth: collectTeeth(e.chart) }));
+  const emitPlans = plansOut.length > 1 || plansOut.some((p) => JSON.stringify(p.teeth) !== statusJson);
   return {
     version: PAYLOAD_VERSION,
     globals: collectGlobals(),
@@ -10045,6 +10053,7 @@ function collectExportPayload(){
     // `teeth` itself) and is omitted entirely when nothing was captured.
     ...(examinations.length === 0 ? {} : { examinations: examinations.map(serializeSnapshot) }),
     ...(planDiffers ? { plan: planTeeth } : {}),
+    ...(emitPlans ? { plans: plansOut, ...(activePlanId ? { activePlanId } : {}) } : {}),
   };
 }
 
@@ -10108,7 +10117,16 @@ function documentGlobals(doc: OdontogramDocument): Record<string, boolean> {
 
 function planChartFromDocument(doc: OdontogramDocument): Any {
   const inferLegacySecondaryCaries = isLegacyPayloadVersion(doc.version);
-  const planTeeth = doc.plan && typeof doc.plan === "object" ? doc.plan : undefined;
+  // Planalternativen: "the plan chart" of a 2.47 document is its ACTIVE
+  // alternative (by activePlanId, else the first in `plans`); a document of
+  // the older shape carries the single `plan`.
+  const plans = Array.isArray(doc.plans) ? doc.plans : null;
+  const activeAlt = plans && plans.length > 0
+    ? (plans.find((p) => p && p.id === doc.activePlanId) ?? plans[0])
+    : null;
+  const planTeeth = activeAlt && activeAlt.teeth && typeof activeAlt.teeth === "object"
+    ? activeAlt.teeth
+    : (doc.plan && typeof doc.plan === "object" ? doc.plan : undefined);
   const caseBlock = readCaseMeta(doc.case);
   const examination = readExaminationContext(doc.examination);
   return JSON.parse(JSON.stringify({

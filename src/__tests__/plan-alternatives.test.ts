@@ -16,7 +16,9 @@ import {
   listPlans, createPlan, renamePlan, setActivePlan, deletePlan, getActivePlanId,
   __setToothStateForTest, __getPlanStateForTest,
   __hydrateImportedChartsForTest, __resetChartStateForTest,
+  __collectExportPayloadForTest,
 } from "../odontogram";
+import { PAYLOAD_VERSION } from "../document";
 
 beforeEach(() => { __resetChartStateForTest(); });
 
@@ -131,6 +133,53 @@ describe("Planalternativen - Import", () => {
     __hydrateImportedChartsForTest({ version: "2.11", globals: {}, teeth: {} });
     expect(listPlans()).toEqual([]);
     expect(getActivePlanId()).toBeNull();
+  });
+
+  it("Export: ein Status-only-Dokument traegt weder `plan` noch `plans`", () => {
+    __setToothStateForTest(16, { restorationType: "crown" });
+    const out = __collectExportPayloadForTest();
+    expect(out.version).toBe(PAYLOAD_VERSION);
+    expect(out).not.toHaveProperty("plan");
+    expect(out).not.toHaveProperty("plans");
+  });
+
+  it("Export: Plan-Modus betreten, nichts geplant -> weiterhin weder `plan` noch `plans` (byte-identisch)", () => {
+    setChartMode("plan");
+    const out = __collectExportPayloadForTest();
+    expect(out).not.toHaveProperty("plan");
+    expect(out).not.toHaveProperty("plans");
+  });
+
+  it("Export: zwei Alternativen -> `plans` mit Namen + activePlanId; `plan` bleibt die aktive", () => {
+    setChartMode("plan");
+    const a = getActivePlanId()!;
+    __setToothStateForTest(16, { restorationType: "bridge" });          // in Plan 1
+    const b = createPlan("Implantat").id;
+    __setToothStateForTest(16, { toothSelection: "implant" });          // in Implantat (aktiv)
+    const out = __collectExportPayloadForTest();
+    expect(out.activePlanId).toBe(b);
+    expect(out.plans.map((p: { id: string; name: string }) => [p.id, p.name])).toEqual([[a, "Plan 1"], [b, "Implantat"]]);
+    expect(out.plan?.[16]?.toothSelection).toBe("implant");             // Alt-Feld = aktive Alternative
+    expect(out.plans[0].teeth[16].restorationType).toBe("bridge");
+  });
+
+  it("Round-Trip: Export -> Import erhaelt alle Alternativen, Namen, Inhalte und die aktive", () => {
+    setChartMode("plan");
+    const a = getActivePlanId()!;
+    renamePlan(a, "Bruecke");
+    __setToothStateForTest(16, { restorationType: "bridge" });
+    const b = createPlan("Implantat").id;
+    __setToothStateForTest(16, { toothSelection: "implant" });
+    setActivePlan(a);                                                   // Bruecke ist aktiv beim Export
+    const out = JSON.parse(JSON.stringify(__collectExportPayloadForTest()));
+
+    __resetChartStateForTest();
+    __hydrateImportedChartsForTest(out);
+    expect(listPlans().map((p) => [p.id, p.name])).toEqual([[a, "Bruecke"], [b, "Implantat"]]);
+    expect(getActivePlanId()).toBe(a);
+    expect(__getPlanStateForTest(16)?.restorationType).toBe("bridge");
+    setActivePlan(b);
+    expect(__getPlanStateForTest(16)?.toothSelection).toBe("implant");
   });
 
   it("neue ids kollidieren nicht mit importierten plan-N ids", () => {
