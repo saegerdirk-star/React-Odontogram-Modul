@@ -80,8 +80,37 @@ schematische Ansicht nicht.
 * Nebenbei behoben: im Oberkiefer standen die Kürzel K/B/V an den
   Wurzelspitzen statt an der Krone.
 
+## Was seitdem übernommen ist (25.09.2026, derselbe Tag)
+
+| Vorbild | übernommen |
+|---|---|
+| charly, tomedo, Dentport, derec: Aufsicht trägt Flächen, Seitenansicht Substanz | Krone auch in der Aufsicht; Aufsicht weiß gefüllt |
+| tomedo: Form der Aufsicht nach Zahnklasse | `occlGeom` Molar / Prämolar / Front — und Milchmolar |
+| tomedo, charly: Brücke sichtbar verbunden | Verbinder zwischen Aufsichten und Kronen |
+| tomedo: eine Linienfarbe, Farbe nur für Befunde | Schieferblau statt Fast-Schwarz |
+| charly (Gesamtmaske, `docs/charly/01-befund-gesamtmaske.png`): Proportionen | breite, niedrige Spalten; Schema volle Breite, Tastenfeld halb so hoch |
+| charly: dichtes Tastenfeld, Kürzel klein beschriftet | kleine Tasten ohne Karten; `m o d v l` klein |
+| charly: `C` vor Am/G/Kst/Ker | roter Karies-Schalter vorne in der Materialreihe |
+| charly: Tastatur — Tab 18→28, 38→48, Kürzel, Flächen sofort, `mod K3` | Tastatur auch im Schema; Flächen wirken beim Tastendruck |
+| charly `MZ`/`Milchzähne`, DS-Win Milchzahngebiss: Milchzähne als solche | Milchzähne kleiner, als 55 nummeriert, Milchmolar mit gespreizten Wurzeln; nicht Durchgebrochenes gepunktet |
+| DS-Win, Dentport, derec: nicht auf der Zeichnung eingeben | erster Klick wählt nur aus; Eingabe über Tastenfeld und Tastatur |
+
+Bewusst **nicht** übernommen: fotorealistische Zähne (derec, Z1 Premium) —
+Lizenz- und Datenprojekt, und Z1 Premium zeigt, dass Realismus die
+Übersicht nicht bringt.
+
 ## Was offen ist
 
+* **Fehlender Zahn als Buchstabe** (tomedo: ein großes `f` statt eines
+  Umrisses) — liest schneller als der gestrichelte Umriss, der dem
+  „nicht durchgebrochen“-Umriss ähnelt.
+* **Vorhanden vs. geplant** unterscheidet charly durch Schraffur (siehe
+  `zahnschema_01`: schraffiert = geplant). Wir haben dafür den Plan-Modus mit
+  gestrichelter Kontur in der anatomischen Ansicht, im Schema fehlt ein
+  Gegenstück noch.
+* **PA-Kurven an der Seitenansicht** (charly, Dentport) — im Schema bewusst
+  weggelassen, weil die Parodontalansicht eigene Wege hat; offen, ob eine
+  schlanke Taschentiefenlinie im Schema lohnt.
 * **Material am Bogen zurücknehmen?** Die Farbdisziplin der Schau spricht
   dafür, das Material nur noch in der Einzelzahnansicht zu zeigen und am Bogen
   nur „versorgt" zu zeichnen. Das ist eine fachliche Entscheidung, keine
