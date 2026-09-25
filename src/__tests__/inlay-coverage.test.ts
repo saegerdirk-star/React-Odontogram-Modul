@@ -65,7 +65,7 @@ describe("inlayCoverage model + schema", () => {
   it("draws the inlay surfaces in the schema occlusal box", () => {
     __setToothStateForTest(16, { restorationType: "inlay", restorationMaterial: "gold", inlayCoverage: ["occlusal"] });
     const svg = buildSchematicSvg(getToothDisplayState);
-    expect(svg).toContain("inlayClip-16");
+    expect(svg).toContain('class="schem-coverage"');   // the inlay's surface, versorgt
   });
 });
 
@@ -90,6 +90,6 @@ describe("veneerCoverage model + schema", () => {
   it("draws the veneer surfaces in the schema box", () => {
     __setToothStateForTest(11, { restorationType: "veneer", restorationMaterial: "emax", veneerCoverage: ["buccal"] });
     const svg = buildSchematicSvg(getToothDisplayState);
-    expect(svg).toContain("veneerClip-11");
+    expect(svg).toContain('class="schem-coverage"');   // the veneer's surface, versorgt
   });
 });

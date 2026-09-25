@@ -13,17 +13,16 @@ describe("schematic: replaced teeth (removable denture)", () => {
   it("draws a denture tooth for a missing tooth with a removable prosthesis", () => {
     __setToothStateForTest(24, { toothSelection: "none", prosthesis: "removable-partial" });
     const svg = buildSchematicSvg(getToothDisplayState);
-    expect(svg).toContain("#ecdcc4");   // denture-tooth colour (side + occlusal)
+    // Form D: versorgt (neutral) with a DASHED edge — removable, not fixed
+    expect(svg).toContain('fill="#aab8ca" stroke="#4f6179" stroke-width="2.6" stroke-linejoin="round" stroke-dasharray="4 3"');
     expect(svg).toContain(">e<");        // "ersetzt" badge
   });
 
-  it("a plain missing tooth stays a dashed ghost (no denture colour)", () => {
-    __setToothStateForTest(25, { toothSelection: "none" });
-    __setToothStateForTest(24, {}); // reset 24 from the previous test
-    const svg = buildSchematicSvg(getToothDisplayState);
-    // 25 alone → ghost; ensure a lone missing tooth doesn't get denture colour
+  it("a plain missing tooth is an 'f', its top view a faint dashed outline", () => {
     __setToothStateForTest(24, { toothSelection: "none" });
-    const svg2 = buildSchematicSvg(getToothDisplayState);
-    expect(svg2).toContain("stroke-dasharray=\"3 3\"");
+    const svg = buildSchematicSvg(getToothDisplayState);
+    expect(svg).toContain(">f</text>");
+    expect(svg).toContain('stroke="#c3cbd6" stroke-width="1.2" stroke-dasharray="3 4"');
+    expect(svg).not.toContain("stroke-dasharray=\"4 3\"");   // no denture tooth
   });
 });

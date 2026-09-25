@@ -1316,6 +1316,7 @@ export default function App({
               onSelectionChange={onSchematicSelectionChange}
               onSurface={onSchematicSurface}
               pocketLines={schematicPockets}
+              dark={isDark}
             />
             {!schematicShowAll && (
               <SchematicKeypad

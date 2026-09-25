@@ -55,6 +55,7 @@ export default function SchematicChart({
   onSelectionChange,
   onSurface,
   pocketLines = false,
+  dark = false,
 }: {
   /** The whole selection — every one gets the active highlight. */
   selected: number[];
@@ -64,6 +65,8 @@ export default function SchematicChart({
   onSurface: (toothNo: number, surfChar: string) => void;
   /** Draw the probing depths as lines with the WHO 3.5 / 5.5 mm references. */
   pocketLines?: boolean;
+  /** The dark palette (Form D's own dark feature set, not an inversion). */
+  dark?: boolean;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [svg, setSvg] = useState("");
@@ -79,10 +82,11 @@ export default function SchematicChart({
       label: formatToothLabel,
       hidden: (tn) => !getWisdomVisible() && WISDOM.has(tn),
       pocketDepths: pocketLines ? (tn) => getToothPerio(tn).pd : undefined,
+      theme: dark ? "dark" : "light",
     }));
     rebuild();
     return onStateChange(rebuild);
-  }, [pocketLines]);
+  }, [pocketLines, dark]);
 
   // Keyboard entry (Dirk, 25.09.2026 — charly works by keyboard): the schematic
   // view has no focusable tooth tile, so the keys are taken at the document
