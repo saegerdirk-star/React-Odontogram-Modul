@@ -24,16 +24,21 @@ import { bridgeConstructions } from "./bridgeOverlay";
 export const UPPER_ARCH = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
 export const LOWER_ARCH = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
 
-const CELL_W = 60;                 // px per tooth column
-const SIDE_H = 118;                // side-glyph cell height
-const OCCL_H = 74;                 // occlusal-box cell height
-const NUM_H = 18;                  // tooth-number row height
+// Proportions after charly's 01-Befund mask (docs/charly/01-befund-gesamtmaske.png,
+// Dirk 25.09.2026: "die Proportionen zwischen Zahnschema und Befundtasten
+// stimmen nicht"): WIDE, LOW columns with a big top view, so the chart can take
+// the full width and still leave room for the keypad below. The columns were
+// 60 x 210 — tall and narrow — and the height cap kept the chart at half width.
+const CELL_W = 76;                 // px per tooth column
+const SIDE_H = 100;                // side-glyph cell height
+const OCCL_H = 68;                 // occlusal-box cell height
+const NUM_H = 16;                  // tooth-number row height
 
 // Crown 2/5 : roots 3/5 of the tooth length.
 const CROWN_FRAC = 2 / 5;
-const TOOTH_LEN = 96;              // drawn tooth length inside the side cell
-const CROWN_W_FRONT = 30;          // Front = Praemolar
-const CROWN_W_MOLAR = 50;
+const TOOTH_LEN = 86;              // drawn tooth length inside the side cell
+const CROWN_W_FRONT = 38;          // Front = Praemolar
+const CROWN_W_MOLAR = 62;
 
 // --- colours -------------------------------------------------------------
 // One slate-blue ink for every outline instead of near-black: the market review
@@ -442,9 +447,9 @@ function occlGeom(toothNo: number): OcclGeom {
   const anterior = isAnteriorTooth(toothNo);
   const cx = CELL_W / 2, cy = OCCL_H / 2;
   const [boxW, boxH, outerRx, inW, inH, innerRx] =
-    anterior ? [40, 28, 7, 24, 8, 3]
-    : isMolar(toothNo) ? [48, 44, 9, 20, 18, 4]
-    : [38, 40, 14, 14, 16, 5];                       // premolar
+    anterior ? [52, 34, 8, 30, 10, 3]
+    : isMolar(toothNo) ? [64, 56, 11, 26, 22, 5]
+    : [50, 52, 18, 18, 20, 6];                       // premolar
   return {
     anterior, cx, cy, boxW, boxH, outerRx, inW, inH, innerRx,
     x0: cx - boxW / 2, y0: cy - boxH / 2, ix0: cx - inW / 2, iy0: cy - inH / 2,
@@ -576,7 +581,7 @@ function archRows(teeth: number[], getState: GetDisplayState, upper: boolean): s
   const occlY = upper ? SIDE_H : NUM_H;
   const numY = upper ? SIDE_H + OCCL_H : 0;
   const nums = teeth.map((tn, i) =>
-    `<text x="${i * CELL_W + CELL_W / 2}" y="${numY + (upper ? NUM_H - 4 : NUM_H - 6)}" text-anchor="middle" font-size="11" fill="${NUM_INK}">${tn}</text>`).join("");
+    `<text x="${i * CELL_W + CELL_W / 2}" y="${numY + (upper ? NUM_H - 4 : NUM_H - 6)}" text-anchor="middle" font-size="12" fill="${NUM_INK}">${tn}</text>`).join("");
   const rowSide = teeth.map((tn, i) => {
     const g = sideGlyph(tn, getState(tn), /*crownDown*/ upper);
     return `<g transform="translate(${i * CELL_W},${sideY})">${g}</g>`;

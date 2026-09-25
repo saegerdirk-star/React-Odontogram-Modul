@@ -61,8 +61,8 @@ describe("schematic: restoration badge at the crown end", () => {
   it("upper arch (flipped): the K sits at the bottom of the side cell, lower arch at the top", () => {
     __setToothStateForTest(16, { restorationType: "crown", restorationMaterial: "gold" });
     __setToothStateForTest(46, { restorationType: "crown", restorationMaterial: "gold" });
-    const ys = [...svg().matchAll(/<text x="55" y="([0-9.]+)" text-anchor="end" font-size="11" font-weight="600"[^>]*>K</g)]
+    const ys = [...svg().matchAll(/<text x="71" y="([0-9.]+)" text-anchor="end" font-size="11" font-weight="600"[^>]*>K</g)]
       .map(m => Number(m[1]));
-    expect(ys.sort((a, b) => a - b)).toEqual([14, 115]);
+    expect(ys.sort((a, b) => a - b)).toEqual([14, 97]);
   });
 });

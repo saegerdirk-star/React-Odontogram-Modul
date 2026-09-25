@@ -1536,10 +1536,13 @@ select:focus{
    Größe wird hier durch ZWEI Grenzen gesetzt — max-width (Breite, kompakt) UND
    max-height an der Fensterhöhe. Der Browser nimmt die kleinere und wahrt das
    Seitenverhältnis; so bleibt unter dem Chart immer Platz fürs Dock. */
-.schematic-chart-wrap{max-inline-size:1400px; margin-inline:auto}
+/* 25.09.2026 (charly's proportions, docs/charly/01-befund-gesamtmaske.png): the
+   chart is now wide and low, so it takes the FULL width and the height cap
+   rarely binds; the keypad below is about half the chart's height. */
+.schematic-chart-wrap{max-inline-size:1600px; margin-inline:auto}
 .schematic-chart-wrap svg.schematic-chart{
-  display:block; margin-inline:auto; width:auto; height:auto;
-  max-width:72%; max-height:40vh;
+  display:block; margin-inline:auto; width:100%; height:auto;
+  max-height:54vh;
 }
 .schematic-chart-outer{position:relative}
 
@@ -1627,34 +1630,38 @@ select:focus{
 
 /* The compact keypad. */
 .schematic-keypad{
-  max-inline-size:1400px; margin:6px auto 0; padding:10px 14px;
+  max-inline-size:1600px; margin:4px auto 0; padding:6px 10px 8px;
   background:rgba(255,255,255,.9); border:1px solid var(--line, #d8dde3);
-  border-radius:14px;
+  border-radius:10px;
 }
 .keypad-readout{margin-inline-start:auto; font:600 13px ui-monospace, SFMono-Regular, Menlo, monospace; padding:2px 8px; border-radius:6px; background:rgba(59,123,255,.10); color:#274b8f}
 .keypad-readout.is-notice{background:rgba(198,40,40,.10); color:#9b1c1c; font-family:inherit; font-weight:500}
 .schematic-keypad.is-disabled .keypad-row-label,
 .schematic-keypad.is-disabled .keypad-hint{opacity:.6}
-.keypad-head{display:flex; gap:12px; align-items:baseline; margin-bottom:10px}
-.keypad-title{font-weight:700; font-size:15px}
+.keypad-head{display:flex; gap:12px; align-items:baseline; margin-bottom:4px}
+.keypad-title{font-weight:700; font-size:14px}
 .keypad-active{color:var(--muted, #667); font-size:13px}
 /* Befund-Dock (Dirk 30.08.2026): the rows are grouped into titled cards laid
    out in a responsive grid, so all findings sit below the chart in reach. */
-.keypad-groups{display:grid; grid-template-columns:repeat(auto-fit,minmax(232px,1fr)); gap:10px 12px; align-items:start}
-.keypad-group{background:var(--panel, #fff); border:1px solid var(--line, #d8dde3); border-radius:11px; padding:9px 10px 10px}
-.keypad-group-title{font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted, #667); margin:0 0 8px; font-weight:700}
-.keypad-row{display:flex; flex-direction:column; align-items:flex-start; gap:5px; margin:7px 0 0}
+/* Dense like charly's key field (25.09.2026): no cards, the groups side by side
+   and separated by a hairline, a row label INLINE before its keys, small keys
+   with tight gaps — the keypad is about half the chart's height, not equal. */
+.keypad-groups{display:flex; flex-wrap:wrap; gap:6px 0; align-items:flex-start}
+.keypad-group{padding:0 12px; border-inline-start:1px solid var(--line, #d8dde3)}
+.keypad-group:first-child{padding-inline-start:0; border-inline-start:0}
+.keypad-group-title{font-size:10px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted, #667); margin:0 0 3px; font-weight:700}
+.keypad-row{display:flex; flex-direction:row; align-items:center; gap:5px; margin:3px 0 0}
 .keypad-row:first-of-type{margin-top:0}
 .keypad-row-label{
   inline-size:auto; flex:none; text-align:start;
   color:var(--muted, #667); font-size:10px; letter-spacing:.05em; text-transform:uppercase;
 }
-.keypad-keys{display:flex; flex-wrap:wrap; gap:6px; align-items:center}
+.keypad-keys{display:flex; flex-wrap:wrap; gap:3px; align-items:center}
 .keypad-btn{
   position:relative;
-  min-inline-size:40px; block-size:32px; padding:0 10px;
-  border:1px solid var(--line, #d8dde3); border-radius:8px;
-  background:#fff; color:#222; font-size:13px; font-weight:600; cursor:pointer;
+  min-inline-size:30px; block-size:27px; padding:0 7px;
+  border:1px solid var(--line, #d8dde3); border-radius:5px;
+  background:#fff; color:#222; font-size:12.5px; font-weight:600; cursor:pointer;
   transition:border-color .08s, color .08s, background .08s;
 }
 .keypad-btn:hover:not(:disabled){border-color:#3b7bff; color:#3b7bff}
@@ -1687,7 +1694,7 @@ select:focus{
 }
 .keypad-btn:active:not(:disabled){background:#eef4ff}
 .keypad-btn:disabled{opacity:.4; cursor:default}
-.keypad-surf{min-inline-size:34px}
+.keypad-surf{min-inline-size:30px}
 .keypad-mat.is-active{background:#3b7bff; color:#fff; border-color:#3b7bff}
 .keypad-hint{color:#8a94a2; font-size:12px; margin-inline-start:4px}
 .perio-inline-panel{min-height:480px}

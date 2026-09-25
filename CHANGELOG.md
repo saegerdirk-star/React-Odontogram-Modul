@@ -10,6 +10,13 @@
   shape tells molar, premolar and anterior tooth apart; a crown or bridge
   shows in the top view as well; bridge members are joined by connectors;
   outlines use one calmer slate ink.
+- Schematic view, proportions after charly's 01-Befund mask
+  (`docs/charly/01-befund-gesamtmaske.png`): wide, low tooth columns with a
+  larger top view (76 px columns instead of 60 × 210 tall ones), so the chart
+  takes the full width; the keypad is dense like charly's key field (no cards,
+  groups side by side, inline row labels, small keys) and about half the
+  chart's height instead of equal to it. The keypad is shared with the
+  anatomical view's Befund-Dock, which gets the same density.
 
 ### Fixed
 

@@ -30,10 +30,10 @@ describe("anterior incisal-edge Draufsicht", () => {
     __setToothStateForTest(11, {}); // anterior
     __setToothStateForTest(16, {}); // molar
     const svg = buildSchematicSvg(getToothDisplayState);
-    // molar keeps a near-square occlusal table (inner 20x18, rx=4); anterior gets
-    // a flatter box (boxH 28) with a wide incisal bar (inW 24, inH 8). Sizes per
-    // tooth class since the market-review refresh (occlGeom, 25.09.2026).
-    expect(svg).toContain('width="24" height="8"'); // anterior incisal bar
-    expect(svg).toContain('width="20" height="18"'); // molar occlusal table
+    // molar keeps a near-square occlusal table (inner 26x22); anterior gets a
+    // flatter box (boxH 34) with a wide incisal bar (inW 30, inH 10). Sizes per
+    // tooth class (occlGeom), scaled to charly's proportions on 25.09.2026.
+    expect(svg).toContain('width="30" height="10"'); // anterior incisal bar
+    expect(svg).toContain('width="26" height="22"'); // molar occlusal table
   });
 });
