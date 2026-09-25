@@ -8449,7 +8449,18 @@ function shorthandReadoutEl(): HTMLElement | null {
 let shorthandNotice = "";
 let shorthandNoticeTimer: ReturnType<typeof setTimeout> | null = null;
 
+/** A React view without the anatomical read-out element (the schematic
+ *  keypad) subscribes here to show what is being typed. */
+export interface ShorthandReadout { material: string | null; buffer: string; notice: string }
+const shorthandReadoutObservers = new Set<(r: ShorthandReadout) => void>();
+export function onShorthandReadout(cb: (r: ShorthandReadout) => void): () => void {
+  shorthandReadoutObservers.add(cb);
+  return () => { shorthandReadoutObservers.delete(cb); };
+}
+
 function syncShorthandReadout(){
+  const snapshot: ShorthandReadout = { material: shorthandMaterial, buffer: shorthandBuffer, notice: shorthandNotice };
+  for(const cb of shorthandReadoutObservers){ try{ cb(snapshot); }catch{ /* an observer must not break typing */ } }
   const el = shorthandReadoutEl();
   if(!el) return;
   if(shorthandNotice){
@@ -8839,6 +8850,100 @@ function onToothKeydown(toothNo: number, evt: KeyboardEvent){
         syncShorthandReadout();
       }
       break;
+  }
+}
+
+/**
+ * Keyboard entry for a view with no focused tooth tile — the schematic view.
+ * Dirk, 25.09.2026: "ich brauche auch die Tastatur wie in charly"; his recorded
+ * session shows `k`, `k`, `m` typed and nothing happening each time, because
+ * every key handler hung on the anatomical tile that holds the focus, and the
+ * schematic view has none. Same buffer, same commit rule, same Tab walk (from
+ * 18 when nothing is selected) and the same Cmd/Strg+Z as `onToothKeydown`.
+ * Two differences, both because there is no focus ring to follow: a plain
+ * arrow MOVES THE SELECTION (on a tile it only moves the focus), and — like
+ * Tab — it commits a pending buffer first, so keys typed for one tooth never
+ * land on the next. Returns whether the key was consumed; the caller leaves
+ * everything else (Enter on a focused button, typing in a field) alone.
+ */
+export function handleChartKeydown(evt: KeyboardEvent): boolean {
+  if(readOnly || !shorthandEnabled) return false;
+  if(handleShorthandUndoKey(evt)) return true;
+  const cur = (activeTooth && selectedTeeth.has(activeTooth)) ? activeTooth : null;
+  const commit = () => {
+    if(!shorthandBuffer) return;
+    const matBefore = shorthandMaterial;
+    reportShorthand(applyShorthand(shorthandBuffer));
+    shorthandBuffer = "";
+    // A typed material key (`K`, `G`, …) arms the dock chip too.
+    if(shorthandMaterial !== matBefore) notifyStateChange();
+  };
+  switch(evt.key){
+    case "Tab": {
+      if(!shorthandTabWalk) return false;
+      evt.preventDefault();
+      if(cur === null){
+        commit();
+        const first = ARCH_ROWS[0].find(isTileNavigable);
+        if(first !== undefined) selectToothForWalk(first);
+        syncShorthandReadout();
+      }else{
+        shorthandStep(cur, evt.shiftKey ? -1 : 1);
+      }
+      return true;
+    }
+    case "ArrowRight":
+    case "ArrowLeft":
+    case "ArrowUp":
+    case "ArrowDown": {
+      if(cur === null) return false;
+      evt.preventDefault();
+      const target = findNavTarget(cur, evt.key);
+      if(target === null) return true;
+      if(evt.shiftKey){
+        extendSelectionTo(target);
+      }else{
+        commit();
+        selectToothForWalk(target);
+      }
+      syncShorthandReadout();
+      return true;
+    }
+    case "Enter":
+      if(!shorthandBuffer) return false;
+      evt.preventDefault();
+      commit();
+      syncShorthandReadout();
+      return true;
+    case "Backspace":
+      if(!shorthandBuffer) return false;
+      evt.preventDefault();
+      shorthandBuffer = shorthandBuffer.slice(0, -1);
+      syncShorthandReadout();
+      return true;
+    case "Escape":
+      if(shorthandBuffer || shorthandMaterial){
+        evt.preventDefault();
+        const hadMaterial = !!shorthandMaterial;
+        shorthandBuffer = "";
+        shorthandMaterial = null;
+        syncShorthandReadout();
+        if(hadMaterial) notifyStateChange();   // the dock chip un-arms with it
+        return true;
+      }
+      return false;
+    default: {
+      if(!isShorthandKey(evt)) return false;
+      evt.preventDefault();
+      if(cur === null){
+        reportShorthandMessage(t("schematic.keypad.pickTooth"));
+        return true;
+      }
+      shorthandBuffer += evt.key;
+      if(shouldCommit(shorthandBuffer)) commit();
+      syncShorthandReadout();
+      return true;
+    }
   }
 }
 

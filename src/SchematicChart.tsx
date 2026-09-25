@@ -19,13 +19,14 @@
  *  - Clicking a root canal of a selected tooth cycles its endo state (or moves
  *    a resected root).
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   onStateChange,
   getToothDisplayState,
   getToothStateSummary,
   cycleEndoCanal,
   setRootResection,
+  handleChartKeydown,
 } from "./odontogram";
 import { teethBetween } from "./shorthand";
 import { buildSchematicSvg } from "./schematicGraphic";
@@ -71,8 +72,29 @@ export default function SchematicChart({
     return onStateChange(rebuild);
   }, []);
 
-  // Re-stamp the active columns after every (re)build (innerHTML wipes classes).
+  // Keyboard entry (Dirk, 25.09.2026 — charly works by keyboard): the schematic
+  // view has no focusable tooth tile, so the keys are taken at the document
+  // while this view is mounted and handed to the engine's shorthand
+  // (`handleChartKeydown`: buffer, Tab walk, arrows, Enter, Esc, Cmd+Z). Typing
+  // in a field or a dialog is left alone, and a key a tile already handled
+  // (the hidden anatomical grid keeps its own listeners) is not taken twice.
   useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
+      const el = e.target as Element | null;
+      if (el?.closest?.("input, textarea, select, [contenteditable=''], [contenteditable='true'], [role='dialog'], #toothGrid")) return;
+      handleChartKeydown(e);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
+  // Re-stamp the active columns after EVERY render, not only when `svg` or
+  // `selected` change: React can re-apply the innerHTML on a render where
+  // neither did, which wiped the highlight while the tooth stayed selected
+  // (seen after a key that wrote nothing, 25.09.2026). The classes are derived
+  // from `selected` alone, so re-deriving them each time is always right.
+  useLayoutEffect(() => {
     const root = wrapRef.current;
     if (!root) return;
     root.querySelectorAll(".schematic-hit.is-active").forEach((e) => e.classList.remove("is-active"));
@@ -84,7 +106,7 @@ export default function SchematicChart({
       root.querySelectorAll(`.schematic-surf-hit[data-tooth="${tn}"], .schematic-canal-hit[data-tooth="${tn}"]`)
         .forEach((e) => e.classList.add("is-armed"));
     }
-  }, [svg, selected]);
+  });
 
   return (
     <div className="schematic-chart-outer">

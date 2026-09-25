@@ -21,6 +21,14 @@
   on the way. A click on a surface or root of the SELECTED tooth enters the
   finding, and the same click again takes it off (new
   `toggleSurfaceShorthand`); before, a click could only add.
+- Schematic view, keyboard entry: keys typed there did nothing (every key
+  handler hung on the anatomical tooth tile holding the focus). The view now
+  takes the keys itself (`handleChartKeydown`): the same shorthand, Tab walk
+  18 → 28, then 38 → 48 (Shift+Tab back), arrows move the selection,
+  Enter/Backspace/Esc and Cmd/Strg+Z as on a tile. The keypad head shows what
+  has been typed (`onShorthandReadout`).
+- Schematic view: the selection highlight could vanish after a key that wrote
+  nothing while the tooth stayed selected.
 
 ## 4.1.0 - 2026-09-16
 

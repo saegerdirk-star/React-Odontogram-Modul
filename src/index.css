@@ -1631,6 +1631,8 @@ select:focus{
   background:rgba(255,255,255,.9); border:1px solid var(--line, #d8dde3);
   border-radius:14px;
 }
+.keypad-readout{margin-inline-start:auto; font:600 13px ui-monospace, SFMono-Regular, Menlo, monospace; padding:2px 8px; border-radius:6px; background:rgba(59,123,255,.10); color:#274b8f}
+.keypad-readout.is-notice{background:rgba(198,40,40,.10); color:#9b1c1c; font-family:inherit; font-weight:500}
 .schematic-keypad.is-disabled .keypad-row-label,
 .schematic-keypad.is-disabled .keypad-hint{opacity:.6}
 .keypad-head{display:flex; gap:12px; align-items:baseline; margin-bottom:10px}

@@ -6,6 +6,13 @@ Karteikarte ist vom 28.02.2005):
 * `01-befund-tastenfeld.png` — die Maske mit den Kariesstufen `K1 … K5`
 * `01-befund-materialauswahl.png` — dieselbe Maske, auf die erweiterte
   Materialauswahl umgeschaltet
+* `01-befund-gesamtmaske.png` — die ganze Maske in einer aktuellen Fassung
+  (Dirk, 25.09.2026; Befunddatum 21.09.2026, kein Patientenname im Bild):
+  Zahnschema und Tastenfeld zusammen. Abgelegt als Maßvorlage für die
+  PROPORTIONEN der schematischen Ansicht — das Schema nimmt die volle Breite
+  und rund zwei Drittel der Höhe, das Tastenfeld darunter ist halb so hoch wie
+  das Schema, vier dichte Tastenreihen, eine Einzeltaste etwa halb so breit wie
+  eine Zahnspalte.
 
 Grundlage für Bead **odontogram-t8y** — Befundeingabe über Kürzel statt Klickwege.
 Was hier steht, ist **abgelesen**, nicht erfunden. Wo eine Bedeutung nicht auf der

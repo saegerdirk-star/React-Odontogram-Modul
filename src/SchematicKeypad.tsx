@@ -23,8 +23,8 @@
  * labels, material names, hints, tooltips — goes through `t()` and follows the
  * UI language.
  */
-import { type ReactNode } from "react";
-import { applyShorthand, setRetention } from "./odontogram";
+import { type ReactNode, useEffect, useState } from "react";
+import { applyShorthand, setRetention, onShorthandReadout, getShorthandBuffer, type ShorthandReadout } from "./odontogram";
 import { t } from "./i18n/useI18n";
 
 type Btn = { label: string; token?: string; titleKey: string; mat?: boolean };
@@ -128,6 +128,8 @@ export default function SchematicKeypad({ tooth, mat, stage, onMat, onStage }: {
   onStage: (k: string) => void;
 }) {
   const enabled = tooth != null;
+  const [readout, setReadout] = useState<ShorthandReadout>(() => ({ material: null, buffer: getShorthandBuffer(), notice: "" }));
+  useEffect(() => onShorthandReadout(setReadout), []);
   const apply = (token: string) => { if (enabled) applyShorthand(token); };
   // Restoration keys that take a material get the chosen chip, defaulting to
   // ceramic ("E") — a crown/onlay/bridge with no material would only report
@@ -167,6 +169,13 @@ export default function SchematicKeypad({ tooth, mat, stage, onMat, onStage }: {
         <span className="keypad-active">
           {enabled ? t("schematic.keypad.tooth", { n: tooth }) : t("schematic.keypad.pickTooth")}
         </span>
+        {/* What the keyboard has typed so far (material mode + open buffer), or
+            what a key did NOT do — the same read-out the anatomical panel has. */}
+        {(readout.notice || readout.buffer || readout.material) && (
+          <span className={"keypad-readout" + (readout.notice ? " is-notice" : "")} aria-live="polite">
+            {readout.notice || [readout.material, readout.buffer].filter(Boolean).join(" ")}
+          </span>
+        )}
       </div>
       <div className="keypad-groups">
         <Group title={t("schematic.keypad.row.state")}>
