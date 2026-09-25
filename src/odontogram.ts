@@ -8669,6 +8669,19 @@ export function applyShorthand(input: string): { unknown: string[]; pending: { t
     pushShorthandUndo(Array.from(selectedTeeth) as number[]);
   }
   shorthandMaterial = r.material;
+  // `MZ` is a SWITCH (Dirk, 25.09.2026: "vom permanenten zum Milchzahn, aber
+  // nicht zurueck"): when every selected tooth that can be one already IS a
+  // milk tooth, it turns them back into permanent teeth; otherwise it makes
+  // them milk teeth. One direction for the whole selection, decided before
+  // writing, so a mixed selection never flips half one way and half the other.
+  // The findings on the teeth stay — `o.B.` was the only way back and wiped them.
+  for(const e of r.edits as Any[]){
+    if(e.kind === "axis" && e.field === "toothSelection" && e.value === "milktooth"){
+      const eligible = (Array.from(selectedTeeth) as number[]).filter(tn => PRIMARY_MILK.has(tn));
+      const allMilk = eligible.length > 0 && eligible.every(tn => toothState.get(tn)?.toothSelection === "milktooth");
+      if(allMilk) e.value = "tooth-base";
+    }
+  }
   if(r.edits.length > 0){
     // `o.B.` resets the whole tooth, so it cannot ride the per-field writer.
     const reset = r.edits.some(e => e.kind === "reset");
