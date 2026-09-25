@@ -40,12 +40,15 @@ const MATERIALS: { label: string; ch: string; labelKey: string }[] = [
 // charly's five caries stages K1…K5 → cariesSeverity 2…6 (SHORTHAND_DE); the
 // K-token is what rides into the shorthand string (`cK3o`).
 const CARIES_STAGES = ["K1", "K2", "K3", "K4", "K5"] as const;
+// Labelled in LOWER case, exactly what is typed (Dirk, 25.09.2026) — charly's
+// key field does the same. Upper case is a different key here: `D` is the
+// eruption stage, `K`/`A`/`G`/`E` are materials.
 const SURFACES: { label: string; ch: string; titleKey: string }[] = [
-  { label: "M", ch: "m", titleKey: "schematic.keypad.t.mesial" },
-  { label: "O", ch: "o", titleKey: "schematic.keypad.t.occlusal" },
-  { label: "D", ch: "d", titleKey: "schematic.keypad.t.distal" },
-  { label: "V", ch: "v", titleKey: "schematic.keypad.t.buccal" },
-  { label: "L", ch: "l", titleKey: "schematic.keypad.t.lingual" },
+  { label: "m", ch: "m", titleKey: "schematic.keypad.t.mesial" },
+  { label: "o", ch: "o", titleKey: "schematic.keypad.t.occlusal" },
+  { label: "d", ch: "d", titleKey: "schematic.keypad.t.distal" },
+  { label: "v", ch: "v", titleKey: "schematic.keypad.t.buccal" },
+  { label: "l", ch: "l", titleKey: "schematic.keypad.t.lingual" },
 ];
 const STATE_BTNS: Btn[] = [
   { label: "o.B.", token: "o.B.", titleKey: "schematic.keypad.t.oB" },

@@ -17,6 +17,9 @@
   groups side by side, inline row labels, small keys) and about half the
   chart's height instead of equal to it. The keypad is shared with the
   anatomical view's Befund-Dock, which gets the same density.
+- Keypad surface keys are labelled `m o d v l` in lower case — what is typed,
+  as in charly (upper-case `D` is the eruption stage, `K`/`A`/`G`/`E` are
+  materials).
 
 ### Fixed
 
