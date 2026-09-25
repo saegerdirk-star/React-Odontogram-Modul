@@ -366,10 +366,13 @@ export function parseShorthand(input: string, ctx: ShorthandContext = {}): Short
       edits.push({ kind: "axis", field: "restorationMaterial", value: MATERIALS[material].restoration! });
       if(run.length > 0) edits.push({ kind: "surfaces", target: "restoration-coverage", surfaces: run });
     } else {
-      // Surfaces with no material chosen. charly cannot reach this state — the
-      // block always has something selected — so it is a caller error, and we
-      // say so instead of guessing a material.
-      for(const s of run) unknown.push(s);
+      // Surfaces with no material chosen = CARIES. charly's mode block always
+      // has one key lit — `C` (caries) or a material — so "no material" is its
+      // `C` state, and the keypad now shows that state as its own switch (Dirk,
+      // 25.09.2026). This used to be reported as an error, which left the
+      // keyboard unable to do what the lit caries switch said: `mod` did
+      // nothing while the keypad's m/o/d keys entered caries.
+      edits.push({ kind: "surfaces", target: "caries", surfaces: run, severity: null });
     }
     run = [];
     runIsCaries = false;

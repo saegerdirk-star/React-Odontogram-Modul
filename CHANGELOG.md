@@ -20,6 +20,13 @@
 - Keypad surface keys are labelled `m o d v l` in lower case — what is typed,
   as in charly (upper-case `D` is the eruption stage, `K`/`A`/`G`/`E` are
   materials).
+- A visible **caries switch** in the keypad (schematic view and the anatomical
+  Befund-Dock), first in the mode row like charly's `C` before Am/G/Kst/Ker:
+  lit red while surface clicks and `m o d v l` enter caries, and one click
+  goes back to caries from an armed material.
+- Shorthand: surfaces typed with no material armed are caries (`mod` =
+  caries MOD) — charly's `C` state. Before, they were reported as unknown, so
+  the keyboard did nothing while the keypad's surface keys entered caries.
 
 ### Fixed
 

@@ -99,10 +99,14 @@ describe("Das Material steht VOR dem Befund und bleibt stehen", () => {
     ]);
   });
 
-  it("Flaechen ohne gewaehltes Material raten nichts, sondern melden", () => {
+  it("Flaechen ohne gewaehltes Material sind Karies - charlys C-Zustand", () => {
+    // charlys Modusblock hat immer eine Taste an: C (Karies) oder ein Material.
+    // Ohne Material ist das C; der Karies-Schalter im Tastenfeld zeigt es an.
     const r = parseShorthand("mod");
-    expect(r.edits).toEqual([]);
-    expect(r.unknown).toEqual(["mesial", "occlusal", "distal"]);
+    expect(r.edits).toEqual([
+      { kind: "surfaces", target: "caries", surfaces: ["mesial", "occlusal", "distal"], severity: null },
+    ]);
+    expect(r.unknown).toEqual([]);
   });
 });
 

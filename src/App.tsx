@@ -381,6 +381,10 @@ export default function App({
     const next = armedMat === ch ? null : ch;
     setArmedMat(next); setArmedStage(null); setShorthandMaterial(next);
   };
+  // The keypad's caries switch: caries mode, plain (no material, no stage).
+  const onArmCaries = () => {
+    setArmedMat(null); setArmedStage(null); setShorthandMaterial(null);
+  };
   const onArmStage = (k: string) => {
     const next = armedStage === k ? null : k;
     setArmedStage(next); setArmedMat(null); setShorthandMaterial(null);
@@ -1254,6 +1258,7 @@ export default function App({
                 stage={armedStage}
                 onMat={onArmMat}
                 onStage={onArmStage}
+                onCaries={onArmCaries}
               />
             )}
             {toothInfoCard}
@@ -1303,6 +1308,7 @@ export default function App({
                 stage={armedStage}
                 onMat={onArmMat}
                 onStage={onArmStage}
+                onCaries={onArmCaries}
               />
             )}
             {!schematicShowAll && toothInfoCard}

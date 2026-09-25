@@ -1696,6 +1696,12 @@ select:focus{
 .keypad-btn:disabled{opacity:.4; cursor:default}
 .keypad-surf{min-inline-size:30px}
 .keypad-mat.is-active{background:#3b7bff; color:#fff; border-color:#3b7bff}
+/* The caries switch lights in the caries red, not the material blue: it says
+   what a surface click will enter. */
+.keypad-caries{color:#b3261e}
+.keypad-caries.is-active{background:#c62828; color:#fff; border-color:#c62828}
+.keypad-caries:hover:not(:disabled){border-color:#c62828; color:#c62828}
+.keypad-caries.is-active:hover:not(:disabled){color:#fff}
 .keypad-hint{color:#8a94a2; font-size:12px; margin-inline-start:4px}
 .perio-inline-panel{min-height:480px}
 

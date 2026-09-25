@@ -120,7 +120,7 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-export default function SchematicKeypad({ tooth, mat, stage, onMat, onStage }: {
+export default function SchematicKeypad({ tooth, mat, stage, onMat, onStage, onCaries }: {
   tooth: number | null;
   // The armed material chip char (K/A/G/E) or null, and the armed caries stage
   // K-token or null — LIFTED to App so a surface click on the chart shares the
@@ -129,6 +129,8 @@ export default function SchematicKeypad({ tooth, mat, stage, onMat, onStage }: {
   stage: string | null;
   onMat: (ch: string) => void;
   onStage: (k: string) => void;
+  /** The visible caries switch: back to caries mode (no material, no stage). */
+  onCaries: () => void;
 }) {
   const enabled = tooth != null;
   const [readout, setReadout] = useState<ShorthandReadout>(() => ({ material: null, buffer: getShorthandBuffer(), notice: "" }));
@@ -189,6 +191,18 @@ export default function SchematicKeypad({ tooth, mat, stage, onMat, onStage }: {
         <Group title={t("schematic.keypad.row.restoration")}>
           <Row label="">{RESTO_BTNS.map(btn)}</Row>
           <Row label={t("schematic.keypad.row.material")}>
+            {/* The CARIES switch, first in the mode row like charly's `C` before
+                Am/G/Kst/Ker (Dirk, 25.09.2026: "ein Schalter, der Karies
+                einschaltet, sichtbar als Knopf"). Caries was the mode whenever
+                no material was armed, but nothing SHOWED it, and the only way
+                back from a material was to click that material again. Lit
+                whenever surfaces enter caries — with or without a stage K1-K5. */}
+            <button type="button" aria-pressed={mat === null} aria-label={t("schematic.keypad.row.caries")}
+              data-tip={t("schematic.keypad.hint.caries")} disabled={!enabled}
+              className={"keypad-btn keypad-mat keypad-caries" + (mat === null ? " is-active" : "")}
+              onClick={onCaries}>
+              {t("schematic.keypad.row.caries")}
+            </button>
             {MATERIALS.map((m) => (
               <button key={m.ch} type="button" aria-label={t(m.labelKey)} data-tip={t(m.labelKey)} disabled={!enabled}
                 className={"keypad-btn keypad-mat" + (mat === m.ch ? " is-active" : "")}
