@@ -2,7 +2,7 @@
 // Created by Zoltan Dul (https://github.com/ZoliQua) 2025-2026
 
 import { useEffect, useRef, useState } from "react";
-import { destroyOdontogram, initOdontogram, setNumberingSystem, clearSelection, setOcclusalVisible, setWisdomVisible, setShowBase, setHealthyPulpVisible, registerPlugins, setPluginState, getPluginState, getToothStateSummary, getOdontogramSummary, formatToothLabel, onStateChange, setReadOnly, getReadOnly, setNotesEnabled, getNotesEnabled, setIcdasEnabled, getIcdasEnabled, setPulpDetailLevel, getPulpDetailLevel, setSecondaryCariesMode, getSecondaryCariesMode, setRootCariesMode, getRootCariesMode, setRadiographicDepthMode, getRadiographicDepthMode, setCariesDepthEnabled, getCariesDepthEnabled, setWearDetailLevel, getWearDetailLevel, setDiscolorationDetailLevel, getDiscolorationDetailLevel, setSurfaceNotation, getSurfaceNotation, exportImage, exportSvg, openPerioOverlay, closePerioOverlay, isPerioOverlayOpen, getPerioViewMode, setPerioViewMode, getPerioRowVisibility, setPerioRowVisibility, getPerioIndexNameMode, setPerioIndexNameMode, isDualStateConfirmPending, acceptDualStateConfirm, cancelDualStateConfirm, hasAnyPerioData, getImportAsBaseline, setImportAsBaseline, getChartMode, setChartMode, getStatusChart, getPlanChart, setPlanChart, getPlanChanges, exportStatus, importStatus, exportPdf, exportPerioImage, exportPerioSvg, selectToothInChart, setChartSelection, applyShorthand, onChartSelectionChange, getBefundDockEnabled, setBefundDockEnabled, setShorthandMaterial, getShorthandMaterialChar } from "./odontogram";
+import { destroyOdontogram, initOdontogram, setNumberingSystem, clearSelection, setOcclusalVisible, setWisdomVisible, setShowBase, setHealthyPulpVisible, registerPlugins, setPluginState, getPluginState, getToothStateSummary, getOdontogramSummary, formatToothLabel, onStateChange, setReadOnly, getReadOnly, setNotesEnabled, getNotesEnabled, setIcdasEnabled, getIcdasEnabled, setPulpDetailLevel, getPulpDetailLevel, setSecondaryCariesMode, getSecondaryCariesMode, setRootCariesMode, getRootCariesMode, setRadiographicDepthMode, getRadiographicDepthMode, setCariesDepthEnabled, getCariesDepthEnabled, setWearDetailLevel, getWearDetailLevel, setDiscolorationDetailLevel, getDiscolorationDetailLevel, setSurfaceNotation, getSurfaceNotation, exportImage, exportSvg, openPerioOverlay, closePerioOverlay, isPerioOverlayOpen, getPerioViewMode, setPerioViewMode, getPerioRowVisibility, setPerioRowVisibility, getPerioIndexNameMode, setPerioIndexNameMode, isDualStateConfirmPending, acceptDualStateConfirm, cancelDualStateConfirm, hasAnyPerioData, getImportAsBaseline, setImportAsBaseline, getChartMode, setChartMode, getStatusChart, getPlanChart, setPlanChart, getPlanChanges, exportStatus, importStatus, exportPdf, exportPerioImage, exportPerioSvg, selectToothInChart, setChartSelection, applyShorthand, toggleSurfaceShorthand, onChartSelectionChange, getSelectedTeeth, getBefundDockEnabled, setBefundDockEnabled, setShorthandMaterial, getShorthandMaterialChar } from "./odontogram";
 export { clearSelection, setOcclusalVisible, setWisdomVisible, setShowBase, setHealthyPulpVisible, registerPlugins, setPluginState, getPluginState, getToothStateSummary, getOdontogramSummary, formatToothLabel, onStateChange, setReadOnly, getReadOnly, setNotesEnabled, getNotesEnabled, setIcdasEnabled, getIcdasEnabled, setPulpDetailLevel, getPulpDetailLevel, setSecondaryCariesMode, getSecondaryCariesMode, setRootCariesMode, getRootCariesMode, setRadiographicDepthMode, getRadiographicDepthMode, setCariesDepthEnabled, getCariesDepthEnabled, setWearDetailLevel, getWearDetailLevel, setDiscolorationDetailLevel, getDiscolorationDetailLevel, setSurfaceNotation, getSurfaceNotation, exportImage, exportSvg, getPerioViewMode, setPerioViewMode, getPerioRowVisibility, setPerioRowVisibility, getPerioIndexNameMode, setPerioIndexNameMode, isDualStateConfirmPending, acceptDualStateConfirm, cancelDualStateConfirm, getImportAsBaseline, setImportAsBaseline, initOdontogram, destroyOdontogram, setNumberingSystem, getChartMode, setChartMode, getStatusChart, getPlanChart, setPlanChart, getPlanChanges, openPerioOverlay, closePerioOverlay, isPerioOverlayOpen, hasAnyPerioData, exportStatus, importStatus, exportPdf, exportPerioImage, exportPerioSvg };
 export { default as PerioChart } from "./PerioChart";
 // Bead odontogram-3l1: the controlled-integration surface (UI-domain document
@@ -343,6 +343,9 @@ export default function App({
   // flipped by the "All options" toggle in the schematic header, reveals them.
   // Session-only UI state, never touches the case.
   const [schematicShowAll, setSchematicShowAll] = useState<boolean>(false);
+  // Pocket depths as lines in the schematic (Dirk, 25.09.2026): a display layer
+  // over the side views, off by default.
+  const [schematicPockets, setSchematicPockets] = useState<boolean>(false);
   // Anatomical Befund-Dock "Details" drawer: reveals the full card panel below
   // the dock (the long tail of rare options), mirroring the schematic view's
   // "All options" toggle. Session-only.
@@ -362,6 +365,13 @@ export default function App({
     setSchematicSelection(teeth);
     setSchematicTooth(prim);
   };
+  // …and the other way round: a selection the KEYBOARD makes in the engine (Tab
+  // walk, arrows, Shift+arrow — `handleChartKeydown`) shows in the schematic
+  // highlight and the keypad as well.
+  useEffect(() => onChartSelectionChange((tn) => {
+    setSchematicSelection(getSelectedTeeth());
+    setSchematicTooth(tn);
+  }), []);
   // Armed "filling vs caries" mode shared by the keypad chips AND a surface click
   // on the chart. Material chip (K/A/G/E) → filling; caries stage (cK1..cK5) →
   // graded caries; neither → default caries. Mutually exclusive.
@@ -373,6 +383,10 @@ export default function App({
   const onArmMat = (ch: string) => {
     const next = armedMat === ch ? null : ch;
     setArmedMat(next); setArmedStage(null); setShorthandMaterial(next);
+  };
+  // The keypad's caries switch: caries mode, plain (no material, no stage).
+  const onArmCaries = () => {
+    setArmedMat(null); setArmedStage(null); setShorthandMaterial(null);
   };
   const onArmStage = (k: string) => {
     const next = armedStage === k ? null : k;
@@ -390,7 +404,8 @@ export default function App({
   // same shorthand token the keypad's surface keys emit.
   const onSchematicSurface = (tn: number, ch: string) => {
     if (!schematicSelection.includes(tn)) { setChartSelection([tn], tn); setSchematicSelection([tn]); setSchematicTooth(tn); }
-    applyShorthand(armedMat ? armedMat + ch : "c" + (armedStage ?? "") + ch);
+    // A click toggles: the same finding on the same surface again takes it off.
+    toggleSurfaceShorthand(tn, armedMat ? armedMat + ch : "c" + (armedStage ?? "") + ch);
   };
 
   // Befund-Dock in the ANATOMICAL view (Dirk 30.08.2026): the finding keypad
@@ -1246,6 +1261,7 @@ export default function App({
                 stage={armedStage}
                 onMat={onArmMat}
                 onStage={onArmStage}
+                onCaries={onArmCaries}
               />
             )}
             {toothInfoCard}
@@ -1272,6 +1288,17 @@ export default function App({
           <div className="schematic-column" dir="ltr">
             <div className="schematic-toolbar">
               <span className="schematic-hint">{t("schematic.editHint")}</span>
+              <span className="schematic-toolbar-actions">
+              <button
+                type="button"
+                id="schematicPocketToggle"
+                className={"btn btn-ghost btn-sm" + (schematicPockets ? " is-active" : "")}
+                aria-pressed={schematicPockets}
+                title={t("schematic.pocketLinesTip")}
+                onClick={() => setSchematicPockets((v) => !v)}
+              >
+                {t("schematic.pocketLines")}
+              </button>
               <button
                 type="button"
                 id="schematicShowAllToggle"
@@ -1281,12 +1308,14 @@ export default function App({
               >
                 {schematicShowAll ? t("schematic.compact") : t("schematic.showAll")}
               </button>
+              </span>
             </div>
             <SchematicChart
               selected={schematicSelection}
               primary={schematicTooth}
               onSelectionChange={onSchematicSelectionChange}
               onSurface={onSchematicSurface}
+              pocketLines={schematicPockets}
             />
             {!schematicShowAll && (
               <SchematicKeypad
@@ -1295,6 +1324,7 @@ export default function App({
                 stage={armedStage}
                 onMat={onArmMat}
                 onStage={onArmStage}
+                onCaries={onArmCaries}
               />
             )}
             {!schematicShowAll && toothInfoCard}

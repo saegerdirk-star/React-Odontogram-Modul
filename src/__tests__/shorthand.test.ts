@@ -13,8 +13,7 @@ import { describe, it, expect } from "vitest";
 import {
   parseShorthand, tokenizeShorthand, SHORTHAND_DE, SHORTHAND_PENDING,
   nextChartTooth, CHARTING_ORDER, ARCH_ROWS, shouldCommit, dentureValueFor,
-  teethBetween,
-} from "../shorthand";
+  teethBetween, isCompleteShorthand, loneSeverity } from "../shorthand";
 
 describe("Zerlegung: laengste Uebereinstimmung, Gross- und Kleinschreibung", () => {
   it("liest Twf als EIN Kuerzel, nicht als T und wf", () => {
@@ -99,10 +98,14 @@ describe("Das Material steht VOR dem Befund und bleibt stehen", () => {
     ]);
   });
 
-  it("Flaechen ohne gewaehltes Material raten nichts, sondern melden", () => {
+  it("Flaechen ohne gewaehltes Material sind Karies - charlys C-Zustand", () => {
+    // charlys Modusblock hat immer eine Taste an: C (Karies) oder ein Material.
+    // Ohne Material ist das C; der Karies-Schalter im Tastenfeld zeigt es an.
     const r = parseShorthand("mod");
-    expect(r.edits).toEqual([]);
-    expect(r.unknown).toEqual(["mesial", "occlusal", "distal"]);
+    expect(r.edits).toEqual([
+      { kind: "surfaces", target: "caries", surfaces: ["mesial", "occlusal", "distal"], severity: null },
+    ]);
+    expect(r.unknown).toEqual([]);
   });
 });
 
@@ -432,16 +435,29 @@ describe("Wann ein Tastendruck sofort wirkt", () => {
     expect(shouldCommit("Kk")).toBe(true);
   });
 
-  it("c wartet - Karies ohne Flaechen ist nichts", () => {
-    // Wuerde c sofort wirken, laesen die folgenden Flaechen als FUELLUNG.
+  it("c wartet - Karies ohne Flaechen ist nichts; die Flaeche danach wirkt", () => {
     expect(shouldCommit("c")).toBe(false);
-    expect(shouldCommit("c m")).toBe(false);
+    expect(shouldCommit("c m")).toBe(true);
+    // Eine Stufe HINTER den Flaechen (Dirks "mod K3") wartet - sie stuft die
+    // eben eingetragenen Flaechen ein; das macht der Tasten-Handler.
     expect(shouldCommit("c mod K3")).toBe(false);
   });
 
-  it("Flaechen warten, damit mod eine Fuellung wird und nicht drei", () => {
-    expect(shouldCommit("A m")).toBe(false);
-    expect(shouldCommit("A mod")).toBe(false);
+  it("eine Flaeche wirkt sofort (Dirk, 25.09.2026: 'm o d und nichts erscheint')", () => {
+    expect(shouldCommit("m")).toBe(true);
+    expect(shouldCommit("A m")).toBe(true);
+    expect(shouldCommit("A mod")).toBe(true);
+    // o koennte noch o.B. werden - es wartet, ist aber schon vollstaendig und
+    // wird nach einer kurzen Pause eingetragen.
+    expect(shouldCommit("o")).toBe(false);
+    expect(isCompleteShorthand("o")).toBe(true);
+    expect(isCompleteShorthand("c")).toBe(false);
+  });
+
+  it("loneSeverity liest eine allein stehende Stufe", () => {
+    expect(loneSeverity("K3")).toBe(4);
+    expect(loneSeverity("K3o")).toBeNull();
+    expect(loneSeverity("k")).toBeNull();
   });
 
   it("die mehrstelligen Endo-Kuerzel wirken erst, wenn sie vollstaendig sind", () => {

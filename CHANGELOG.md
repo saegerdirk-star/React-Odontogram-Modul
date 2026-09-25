@@ -1,5 +1,73 @@
 # Changelog
 
+## 4.2.0 - 2026-09-25
+
+The schematic view, reworked after a review of how charly, DS-Win, Z1, tomedo,
+Dentport and derec draw a chart (`docs/marktschau/README.md`) and against
+charly's 01-Befund mask (`docs/charly/01-befund-gesamtmaske.png`).
+
+### Added
+
+- **Keyboard entry in the schematic view** (`handleChartKeydown`): the same
+  shorthand as on a tooth tile, Tab walk 18 → 28, then 38 → 48 (Shift+Tab
+  back), arrows move the selection, Enter/Backspace/Esc and Cmd/Strg+Z. The
+  keypad head shows what has been typed (`onShorthandReadout`).
+- A visible **caries switch** in the keypad (schematic and anatomical
+  Befund-Dock), first in the mode row like charly's `C` before
+  Am/G/Kst/Ker: lit red while surface clicks and `m o d v l` enter caries.
+- A **Dentition** row in the keypad: `MZ` (charly's key, also typable)
+  switches the selected teeth between milk tooth and permanent tooth, on
+  positions 1–5 only, keeping their findings; **Primary / Mixed dentition**
+  apply the presets from the compact view, after a confirmation.
+- **Pocket depths as lines** in the schematic (toolbar switch, off by default),
+  like charly's PA curves but with the WHO probe's thresholds instead of a
+  2 mm grid: an orange dotted line at 3.5 mm, a stronger red line at 5.5 mm.
+  Vestibular sites solid, oral dashed; each site a dot coloured by its band.
+  Display only, from the six probed sites; nominal scale (a drawn root = 10 mm).
+- **Milk teeth in the schematic**: smaller, crown-heavy, numbered as themselves
+  (55 on 15); at 4/5 a primary molar with thin, splayed roots (3 upper,
+  2 lower) and a molar top view. A tooth not erupted yet is a faint dotted
+  outline; a tooth under the gum carries the gum band over its whole crown.
+- `toggleSurfaceShorthand`: a click on a surface toggles its finding.
+
+### Changed
+
+- Schematic layout: the tooth numbers sit back to back on the occlusal plane
+  with a vertical midline; the top view's shape tells molar, premolar and
+  anterior tooth apart; a crown or bridge shows in the top view as well;
+  bridge members are joined by connectors; one calmer slate ink.
+- Schematic proportions after charly's mask: wide, low tooth columns (76 px
+  instead of 60 × 210) so the chart takes the full width; the keypad is dense
+  like charly's key field and about half the chart's height. The anatomical
+  Befund-Dock shares the keypad and its density.
+- Mouse entry in the schematic: the first click on a tooth only selects it; a
+  click on a surface or root of the selected tooth enters the finding.
+- Shorthand: a surface key applies on the keystroke (`m o d` shows as typed);
+  a stage right after grades the surfaces just entered (`mod K3`); surfaces
+  with no material are caries (charly's `C` state); a key that could still
+  grow (`o` → `o.B.`, `K` → `K3`) applies after a 0.6 s pause.
+- Keypad surface keys are labelled `m o d v l` in lower case, as typed.
+
+### Fixed
+
+- Schematic: milk teeth were drawn as the permanent tooth of their slot, so a
+  primary or mixed dentition showed a full permanent set; a not-erupted tooth
+  drew as present.
+- Schematic: tooth numbers ignored the numbering system, hidden wisdom teeth
+  showed, the tooltip showed the slot (34) for a milk tooth (74).
+- Schematic: in the upper arch the restoration badge stood at the root tips.
+- Schematic: selecting a tooth by mouse wrote caries or a root filling on the
+  way; a click could only add, never take a finding back.
+- Schematic: keys typed there did nothing; the selection highlight could
+  vanish after a key that wrote nothing.
+- Dark theme: the keypad had no dark variant (unreadable title), the top views
+  drew inverted, restoration badges vanished.
+- "All options" (schematic and anatomical dock): selects ran up to 250 px past
+  their card, and the panel was its own scroll box whose end could not be
+  reached — the page is now the only scroller.
+- The page background gradient tiled every window height and left a hard edge.
+- English keypad: the composite material read "Kunststoff".
+
 ## 4.1.0 - 2026-09-16
 
 ### Plan alternatives (Planalternativen, Phase 1)

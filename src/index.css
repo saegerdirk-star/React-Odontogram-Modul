@@ -35,7 +35,10 @@ html,body{height:100%}
 body{
   margin:0;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-  background: radial-gradient(1200px 600px at 15% 0%, #ffffff 0%, var(--bg) 60%);
+  /* The glow is painted ONCE at the top; the page ground continues below it.
+     Without no-repeat + a colour the gradient tiled every window height and
+     left a hard edge on a long page (All options, 25.09.2026). */
+  background: radial-gradient(1200px 600px at 15% 0%, #ffffff 0%, var(--bg) 60%) no-repeat, var(--bg);
   color:var(--text);
 }
 .topbar{
@@ -1108,6 +1111,21 @@ select:focus{
 }
 .dark .chart-mode-btn{color: var(--text)}
 .dark .chart-mode-btn:hover{background: rgba(96,165,250,.18)}
+/* Text drawn on the PAGE ground in the schematic (restoration badges) takes
+   the page's light text on the dark theme; the slate ink vanished there. */
+.dark svg.schematic-chart .schem-badge{fill:#cbd5e1}
+/* The keypad (schematic + anatomical Befund-Dock) had no dark variant: a
+   light panel with the page's light text on it — its title was unreadable
+   (found in the 25.09.2026 review). */
+.dark .schematic-keypad{background: rgba(30,41,59,.92); border-color: var(--line)}
+.dark .keypad-group{border-color: var(--line)}
+.dark .keypad-btn{background: rgba(255,255,255,.05); color: var(--text); border-color: var(--line)}
+.dark .keypad-btn:active:not(:disabled){background: rgba(96,165,250,.18)}
+.dark .keypad-mat.is-active{background:#3b7bff; color:#fff; border-color:#3b7bff}
+.dark .keypad-caries{color:#f28b82}
+.dark .keypad-caries.is-active{background:#c62828; color:#fff; border-color:#c62828}
+.dark .keypad-readout{background: rgba(96,165,250,.16); color:#bfd7ff}
+.dark .keypad-readout.is-notice{background: rgba(242,139,130,.14); color:#f6b8b1}
 .dark .plan-chip{border-color: rgba(96,165,250,.4); background: rgba(96,165,250,.10)}
 .dark .plan-chip-name{color: var(--text)}
 .dark .plan-chip-name:hover{background: rgba(96,165,250,.18)}
@@ -1536,10 +1554,13 @@ select:focus{
    Größe wird hier durch ZWEI Grenzen gesetzt — max-width (Breite, kompakt) UND
    max-height an der Fensterhöhe. Der Browser nimmt die kleinere und wahrt das
    Seitenverhältnis; so bleibt unter dem Chart immer Platz fürs Dock. */
-.schematic-chart-wrap{max-inline-size:1400px; margin-inline:auto}
+/* 25.09.2026 (charly's proportions, docs/charly/01-befund-gesamtmaske.png): the
+   chart is now wide and low, so it takes the FULL width and the height cap
+   rarely binds; the keypad below is about half the chart's height. */
+.schematic-chart-wrap{max-inline-size:1600px; margin-inline:auto}
 .schematic-chart-wrap svg.schematic-chart{
-  display:block; margin-inline:auto; width:auto; height:auto;
-  max-width:72%; max-height:40vh;
+  display:block; margin-inline:auto; width:100%; height:auto;
+  max-height:54vh;
 }
 .schematic-chart-outer{position:relative}
 
@@ -1551,6 +1572,7 @@ select:focus{
   display:flex; align-items:center; justify-content:space-between; gap:12px;
 }
 .schematic-hint{color:var(--muted, #667); font-size:13px}
+.schematic-toolbar-actions{display:flex; gap:8px; align-items:center}
 
 /* The transparent per-column hit rect. No fill (it must never tint the glyph);
    hover and the active column show as a stroked box only. */
@@ -1561,11 +1583,14 @@ select:focus{
    WFi -> Einlage -> leer). Laid over the column hit; its own pointer + hover so
    a root reads as clickable without tinting the drawing. */
 .schematic-canal-hit{cursor:pointer; stroke:transparent; stroke-width:1.5; transition:stroke .08s}
-.schematic-canal-hit:hover{stroke:#d98f4a}
+/* Only a SELECTED tooth's canals and surfaces take input (.is-armed, stamped by
+   SchematicChart); on any other tooth the first click just selects, so the
+   input highlight shows only where a click really enters a finding. */
+.schematic-canal-hit.is-armed:hover{stroke:#d98f4a}
 /* Clickable occlusal surface zones: click a surface to enter a filling (armed
    material) or caries. Faint hover so the target reads as clickable. */
 .schematic-surf-hit{cursor:pointer; stroke:transparent; stroke-width:1.2; transition:stroke .08s, fill .08s}
-.schematic-surf-hit:hover{stroke:#3b7bff; fill:rgba(59,123,255,.10)}
+.schematic-surf-hit.is-armed:hover{stroke:#3b7bff; fill:rgba(59,123,255,.10)}
 
 /* Hover read-out: the full finding text (getToothStateSummary), the same lines
    the anatomical tile tooltip carries. Fixed to the cursor. */
@@ -1589,15 +1614,17 @@ select:focus{
    Both drive the SAME wired controls + DS-1 gate. Scoped to .schematic-edit so
    the odontogram / perio / ortho views are completely untouched. */
 .layout.schematic-edit:not(.schematic-edit-all) aside.panel{display:none}
-.layout.schematic-edit.schematic-edit-all aside.panel{grid-column:1 / -1; display:block; margin-top:4px}
+.layout.schematic-edit.schematic-edit-all aside.panel{grid-column:1 / -1; display:block; margin-top:4px; overflow:visible}
 .layout.schematic-edit.schematic-edit-all .panel-body{
   display:grid;
   grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
   align-items:start;
   gap:12px;
-  max-height:46vh;
-  overflow:auto;
-  padding-right:4px;
+  /* No scroll box of its own (Dirk, 25.09.2026: "kann nicht bis zum Ende
+     scrollen"): a 46vh box inside the scrolling page kept its bottom below the
+     window, so its end could not be seen. The page is the only scroller. */
+  max-height:none;
+  overflow:visible;
 }
 
 /* Befund-Dock in the ANATOMICAL view (Dirk 30.08.2026, behind a flag): the
@@ -1611,45 +1638,70 @@ select:focus{
 .layout.dock-mode #toothGrid{zoom:0.82}
 /* "Details" drawer: the full card panel relocated below the dock, full-width
    as a horizontal band — same treatment as the schematic view's All-options. */
-.layout.dock-mode.dock-mode-all aside.panel{grid-column:1 / -1; display:block; margin-top:4px}
+.layout.dock-mode.dock-mode-all aside.panel{grid-column:1 / -1; display:block; margin-top:4px; overflow:visible}
 .layout.dock-mode.dock-mode-all .panel-body{
   display:grid;
   grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
   align-items:start;
   gap:12px;
-  max-height:46vh;
-  overflow:auto;
-  padding-right:4px;
+  /* No scroll box of its own (Dirk, 25.09.2026: "kann nicht bis zum Ende
+     scrollen"): a 46vh box inside the scrolling page kept its bottom below the
+     window, so its end could not be seen. The page is the only scroller. */
+  max-height:none;
+  overflow:visible;
 }
+
+/* All options, in both housings (schematic + anatomical dock): the relocated
+   card panel is a grid of 260 px tracks, but every <select> carries a 220 px
+   minimum and sits BESIDE its label — so label + select ran up to 250 px past
+   the card's frame (Dirk, 25.09.2026, screenshot). A grid item also defaults
+   to min-width:auto and grew past its track. Here the cards stay in their
+   track, a row wraps its label above the control when both do not fit, and a
+   select shrinks to the card instead of holding its 220 px. */
+.layout.schematic-edit.schematic-edit-all .panel-body > *,
+.layout.dock-mode.dock-mode-all .panel-body > *{min-width:0; max-width:100%}
+.layout.schematic-edit.schematic-edit-all .panel-body .row,
+.layout.dock-mode.dock-mode-all .panel-body .row{flex-wrap:wrap}
+.layout.schematic-edit.schematic-edit-all .panel-body select,
+.layout.dock-mode.dock-mode-all .panel-body select{min-width:0; max-width:100%; flex:1 1 150px}
+/* A label that WRAPS its select (wear, discoloration) must wrap too. */
+.layout.schematic-edit.schematic-edit-all .panel-body .row > label,
+.layout.dock-mode.dock-mode-all .panel-body .row > label{display:flex; flex-wrap:wrap; align-items:center; gap:6px; min-width:0; max-width:100%}
 
 /* The compact keypad. */
 .schematic-keypad{
-  max-inline-size:1400px; margin:6px auto 0; padding:10px 14px;
+  max-inline-size:1600px; margin:4px auto 0; padding:6px 10px 8px;
   background:rgba(255,255,255,.9); border:1px solid var(--line, #d8dde3);
-  border-radius:14px;
+  border-radius:10px;
 }
+.keypad-readout{margin-inline-start:auto; font:600 13px ui-monospace, SFMono-Regular, Menlo, monospace; padding:2px 8px; border-radius:6px; background:rgba(59,123,255,.10); color:#274b8f}
+.keypad-readout.is-notice{background:rgba(198,40,40,.10); color:#9b1c1c; font-family:inherit; font-weight:500}
 .schematic-keypad.is-disabled .keypad-row-label,
 .schematic-keypad.is-disabled .keypad-hint{opacity:.6}
-.keypad-head{display:flex; gap:12px; align-items:baseline; margin-bottom:10px}
-.keypad-title{font-weight:700; font-size:15px}
+.keypad-head{display:flex; gap:12px; align-items:baseline; margin-bottom:4px}
+.keypad-title{font-weight:700; font-size:14px}
 .keypad-active{color:var(--muted, #667); font-size:13px}
 /* Befund-Dock (Dirk 30.08.2026): the rows are grouped into titled cards laid
    out in a responsive grid, so all findings sit below the chart in reach. */
-.keypad-groups{display:grid; grid-template-columns:repeat(auto-fit,minmax(232px,1fr)); gap:10px 12px; align-items:start}
-.keypad-group{background:var(--panel, #fff); border:1px solid var(--line, #d8dde3); border-radius:11px; padding:9px 10px 10px}
-.keypad-group-title{font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted, #667); margin:0 0 8px; font-weight:700}
-.keypad-row{display:flex; flex-direction:column; align-items:flex-start; gap:5px; margin:7px 0 0}
+/* Dense like charly's key field (25.09.2026): no cards, the groups side by side
+   and separated by a hairline, a row label INLINE before its keys, small keys
+   with tight gaps — the keypad is about half the chart's height, not equal. */
+.keypad-groups{display:flex; flex-wrap:wrap; gap:6px 0; align-items:flex-start}
+.keypad-group{padding:0 12px; border-inline-start:1px solid var(--line, #d8dde3)}
+.keypad-group:first-child{padding-inline-start:0; border-inline-start:0}
+.keypad-group-title{font-size:10px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted, #667); margin:0 0 3px; font-weight:700}
+.keypad-row{display:flex; flex-direction:row; align-items:center; gap:5px; margin:3px 0 0}
 .keypad-row:first-of-type{margin-top:0}
 .keypad-row-label{
   inline-size:auto; flex:none; text-align:start;
   color:var(--muted, #667); font-size:10px; letter-spacing:.05em; text-transform:uppercase;
 }
-.keypad-keys{display:flex; flex-wrap:wrap; gap:6px; align-items:center}
+.keypad-keys{display:flex; flex-wrap:wrap; gap:3px; align-items:center}
 .keypad-btn{
   position:relative;
-  min-inline-size:40px; block-size:32px; padding:0 10px;
-  border:1px solid var(--line, #d8dde3); border-radius:8px;
-  background:#fff; color:#222; font-size:13px; font-weight:600; cursor:pointer;
+  min-inline-size:30px; block-size:27px; padding:0 7px;
+  border:1px solid var(--line, #d8dde3); border-radius:5px;
+  background:#fff; color:#222; font-size:12.5px; font-weight:600; cursor:pointer;
   transition:border-color .08s, color .08s, background .08s;
 }
 .keypad-btn:hover:not(:disabled){border-color:#3b7bff; color:#3b7bff}
@@ -1682,8 +1734,14 @@ select:focus{
 }
 .keypad-btn:active:not(:disabled){background:#eef4ff}
 .keypad-btn:disabled{opacity:.4; cursor:default}
-.keypad-surf{min-inline-size:34px}
+.keypad-surf{min-inline-size:30px}
 .keypad-mat.is-active{background:#3b7bff; color:#fff; border-color:#3b7bff}
+/* The caries switch lights in the caries red, not the material blue: it says
+   what a surface click will enter. */
+.keypad-caries{color:#b3261e}
+.keypad-caries.is-active{background:#c62828; color:#fff; border-color:#c62828}
+.keypad-caries:hover:not(:disabled){border-color:#c62828; color:#c62828}
+.keypad-caries.is-active:hover:not(:disabled){color:#fff}
 .keypad-hint{color:#8a94a2; font-size:12px; margin-inline-start:4px}
 .perio-inline-panel{min-height:480px}
 

@@ -3,7 +3,7 @@
 
 import { STATUS_EXTRAS } from "./status_extras";
 import {
-  ARCH_ROWS, nextChartTooth, parseShorthand, shouldCommit, dentureValueFor, teethBetween,
+  ARCH_ROWS, nextChartTooth, parseShorthand, shouldCommit, isCompleteShorthand, loneSeverity, dentureValueFor, teethBetween,
   type MaterialKey, type ShorthandEdit,
 } from "./shorthand";
 import { t, onI18nChange, getI18nLanguage } from "./i18n/useI18n";
@@ -8449,7 +8449,18 @@ function shorthandReadoutEl(): HTMLElement | null {
 let shorthandNotice = "";
 let shorthandNoticeTimer: ReturnType<typeof setTimeout> | null = null;
 
+/** A React view without the anatomical read-out element (the schematic
+ *  keypad) subscribes here to show what is being typed. */
+export interface ShorthandReadout { material: string | null; buffer: string; notice: string }
+const shorthandReadoutObservers = new Set<(r: ShorthandReadout) => void>();
+export function onShorthandReadout(cb: (r: ShorthandReadout) => void): () => void {
+  shorthandReadoutObservers.add(cb);
+  return () => { shorthandReadoutObservers.delete(cb); };
+}
+
 function syncShorthandReadout(){
+  const snapshot: ShorthandReadout = { material: shorthandMaterial, buffer: shorthandBuffer, notice: shorthandNotice };
+  for(const cb of shorthandReadoutObservers){ try{ cb(snapshot); }catch{ /* an observer must not break typing */ } }
   const el = shorthandReadoutEl();
   if(!el) return;
   if(shorthandNotice){
@@ -8506,6 +8517,9 @@ function writeShorthandEdit(s: Any, edit: ShorthandEdit, toothNo: number): void 
     return;
   }
   if(edit.kind === "axis"){
+    // `MZ`: a milk tooth exists only on positions 1-5 (PRIMARY_MILK); on a
+    // molar position the key writes nothing rather than an impossible tooth.
+    if(edit.field === "toothSelection" && edit.value === "milktooth" && !PRIMARY_MILK.has(toothNo)) return;
     s[edit.field] = edit.value;
     return;
   }
@@ -8655,6 +8669,19 @@ export function applyShorthand(input: string): { unknown: string[]; pending: { t
     pushShorthandUndo(Array.from(selectedTeeth) as number[]);
   }
   shorthandMaterial = r.material;
+  // `MZ` is a SWITCH (Dirk, 25.09.2026: "vom permanenten zum Milchzahn, aber
+  // nicht zurueck"): when every selected tooth that can be one already IS a
+  // milk tooth, it turns them back into permanent teeth; otherwise it makes
+  // them milk teeth. One direction for the whole selection, decided before
+  // writing, so a mixed selection never flips half one way and half the other.
+  // The findings on the teeth stay — `o.B.` was the only way back and wiped them.
+  for(const e of r.edits as Any[]){
+    if(e.kind === "axis" && e.field === "toothSelection" && e.value === "milktooth"){
+      const eligible = (Array.from(selectedTeeth) as number[]).filter(tn => PRIMARY_MILK.has(tn));
+      const allMilk = eligible.length > 0 && eligible.every(tn => toothState.get(tn)?.toothSelection === "milktooth");
+      if(allMilk) e.value = "tooth-base";
+    }
+  }
   if(r.edits.length > 0){
     // `o.B.` resets the whole tooth, so it cannot ride the per-field writer.
     const reset = r.edits.some(e => e.kind === "reset");
@@ -8677,6 +8704,47 @@ export function applyShorthand(input: string): { unknown: string[]; pending: { t
   }
   syncShorthandReadout();
   return { unknown: r.unknown, pending: r.pending, needsMaterial: r.needsMaterial };
+}
+
+/** A mouse click on a surface in the schematic view. The token is the one the
+ *  keypad's surface keys emit (`Ko`, `co`, `cK3o`), but a CLICK is a toggle:
+ *  when the clicked tooth already carries exactly that finding on every surface
+ *  of the token — caries there, or a filling of that material — the click takes
+ *  it off again, across the selection. Before, a click could only add, so a
+ *  surface clicked by mistake could not be taken back by mouse (Dirk,
+ *  25.09.2026). The keyboard stays additive — typing `co` twice must not undo
+ *  itself — which is why this is its own entry point rather than a change to
+ *  `applyShorthand`. Same gate (`applyToSelected` → DS-1) and the same undo
+ *  step as the shorthand. Anything else (a restoration coverage surface) is
+ *  applied exactly as the shorthand does. */
+export function toggleSurfaceShorthand(toothNo: number, token: string): "added" | "removed" {
+  const r = parseShorthand(token, { material: shorthandMaterial });
+  const edit: Any = r.edits.find((e: Any) => e.kind === "surfaces");
+  const st: Any = toothState.get(toothNo);
+  if(edit && st && (edit.target === "caries" || edit.target === "filling")){
+    const carries = (x: Any, surf: string) => edit.target === "caries"
+      ? x.caries.has(`caries-${surf}`)
+      : x.fillingSurfaces.has(surf) && x.fillingSurfaceMaterials.get(surf) === edit.material;
+    if(edit.surfaces.length > 0 && edit.surfaces.every((surf: string) => carries(st, surf))){
+      pushShorthandUndo(Array.from(selectedTeeth) as number[]);
+      applyToSelected((x: Any) => {
+        for(const surf of edit.surfaces){
+          if(!carries(x, surf)) continue;
+          if(edit.target === "caries"){
+            x.caries.delete(`caries-${surf}`);
+            x.cariesSeverity.delete(surf);
+          }else{
+            x.fillingSurfaces.delete(surf);
+            x.fillingSurfaceMaterials.delete(surf);
+          }
+        }
+      });
+      syncShorthandReadout();
+      return "removed";
+    }
+  }
+  applyShorthand(token);
+  return "added";
 }
 
 /** Selects a single tooth and puts the focus on it — what the Tab walk does. */
@@ -8722,6 +8790,77 @@ function handleShorthandUndoKey(evt: KeyboardEvent): boolean {
   }
   if(!undoShorthand()) reportShorthandMessage(t("shorthand.nothingToUndo"));
   return true;
+}
+
+/** The caries surfaces the last keystrokes entered on the current selection,
+ *  so a stage typed AFTER them grades them (`mod K3`, Dirk's charly order).
+ *  Consecutive surface keys add up (`m`, then `od`); anything else clears it. */
+let lastCariesRun: { teeth: string; surfaces: string[] } | null = null;
+const selectionKey = () => (Array.from(selectedTeeth) as number[]).sort((a, b) => a - b).join(",");
+
+/** Applies what is in the buffer to the selection and empties it. */
+function commitShorthandBuffer(): void {
+  if(shorthandIdleTimer){ clearTimeout(shorthandIdleTimer); shorthandIdleTimer = null; }
+  if(!shorthandBuffer) return;
+  const matBefore = shorthandMaterial;
+  const parsed = parseShorthand(shorthandBuffer, { material: shorthandMaterial });
+  const ungraded = parsed.edits.filter((e: Any) => e.kind === "surfaces" && e.target === "caries" && e.severity === null);
+  if(ungraded.length > 0 && ungraded.length === parsed.edits.length){
+    const key = selectionKey();
+    const prior = lastCariesRun && lastCariesRun.teeth === key ? lastCariesRun.surfaces : [];
+    const surfaces = new Set<string>(prior);
+    for(const e of ungraded) for(const surf of (e as Any).surfaces) surfaces.add(surf);
+    lastCariesRun = { teeth: key, surfaces: [...surfaces] };
+  }else if(parsed.edits.length > 0){
+    lastCariesRun = null;
+  }
+  reportShorthand(applyShorthand(shorthandBuffer));
+  shorthandBuffer = "";
+  // A typed material key (`K`, `G`, …) arms the dock chip too.
+  if(shorthandMaterial !== matBefore) notifyStateChange();
+}
+
+/** How long a buffer that is complete but COULD still grow (`o` → `o.B.`,
+ *  `K` → `K3`) waits for a further key before it is applied on its own. */
+const SHORTHAND_IDLE_MS = 600;
+let shorthandIdleTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** One typed shorthand key, the same on a tooth tile and in the schematic view.
+ *  A key that is a finding on its own applies at once — six anteriors marked
+ *  and one `k` is the whole gesture — and so does a SURFACE (Dirk, 25.09.2026:
+ *  "Ich aktiviere Karies und druecke m o d und nichts erscheint"). What waits:
+ *  a run opener (`c`, a stage), and a key some longer key begins with. The
+ *  latter is applied after a short pause if nothing follows, since at the end
+ *  of `mod` — or after a lone `o` — there is no next keystroke to resolve it. */
+function typeShorthandKey(key: string): void {
+  if(shorthandIdleTimer){ clearTimeout(shorthandIdleTimer); shorthandIdleTimer = null; }
+  shorthandBuffer += key;
+  // A stage right after caries surfaces grades those surfaces: `mod`, then `K3`.
+  const stage = loneSeverity(shorthandBuffer);
+  if(stage !== null && lastCariesRun && lastCariesRun.teeth === selectionKey()){
+    const surfaces = lastCariesRun.surfaces;
+    pushShorthandUndo(Array.from(selectedTeeth) as number[]);
+    applyToSelected((x: Any) => {
+      for(const surf of surfaces){
+        if(x.caries.has(`caries-${surf}`)) x.cariesSeverity.set(surf, stage);
+      }
+    });
+    shorthandBuffer = "";
+    syncShorthandReadout();
+    return;
+  }
+  if(shouldCommit(shorthandBuffer)){
+    commitShorthandBuffer();
+  }else if(isCompleteShorthand(shorthandBuffer)){
+    const waiting = shorthandBuffer;
+    shorthandIdleTimer = setTimeout(() => {
+      shorthandIdleTimer = null;
+      if(shorthandBuffer !== waiting) return;
+      commitShorthandBuffer();
+      syncShorthandReadout();
+    }, SHORTHAND_IDLE_MS);
+  }
+  syncShorthandReadout();
 }
 
 function onToothKeydown(toothNo: number, evt: KeyboardEvent){
@@ -8785,19 +8924,94 @@ function onToothKeydown(toothNo: number, evt: KeyboardEvent){
     default:
       if(shorthandEnabled && isShorthandKey(evt)){
         evt.preventDefault();
-        shorthandBuffer += evt.key;
-        // A key that is a finding on its own applies at once — six anteriors
-        // marked and one `k` is the whole gesture, and a confirming Enter after
-        // it would be a keystroke with no reason to exist. What still waits is
-        // what cannot be complete yet: a run opener, or a key some longer key
-        // begins with.
-        if(shouldCommit(shorthandBuffer)){
-          reportShorthand(applyShorthand(shorthandBuffer));
-          shorthandBuffer = "";
-        }
-        syncShorthandReadout();
+        typeShorthandKey(evt.key);
       }
       break;
+  }
+}
+
+/**
+ * Keyboard entry for a view with no focused tooth tile — the schematic view.
+ * Dirk, 25.09.2026: "ich brauche auch die Tastatur wie in charly"; his recorded
+ * session shows `k`, `k`, `m` typed and nothing happening each time, because
+ * every key handler hung on the anatomical tile that holds the focus, and the
+ * schematic view has none. Same buffer, same commit rule, same Tab walk (from
+ * 18 when nothing is selected) and the same Cmd/Strg+Z as `onToothKeydown`.
+ * Two differences, both because there is no focus ring to follow: a plain
+ * arrow MOVES THE SELECTION (on a tile it only moves the focus), and — like
+ * Tab — it commits a pending buffer first, so keys typed for one tooth never
+ * land on the next. Returns whether the key was consumed; the caller leaves
+ * everything else (Enter on a focused button, typing in a field) alone.
+ */
+export function handleChartKeydown(evt: KeyboardEvent): boolean {
+  if(readOnly || !shorthandEnabled) return false;
+  if(handleShorthandUndoKey(evt)) return true;
+  const cur = (activeTooth && selectedTeeth.has(activeTooth)) ? activeTooth : null;
+  const commit = commitShorthandBuffer;
+  switch(evt.key){
+    case "Tab": {
+      if(!shorthandTabWalk) return false;
+      evt.preventDefault();
+      if(cur === null){
+        commit();
+        const first = ARCH_ROWS[0].find(isTileNavigable);
+        if(first !== undefined) selectToothForWalk(first);
+        syncShorthandReadout();
+      }else{
+        shorthandStep(cur, evt.shiftKey ? -1 : 1);
+      }
+      return true;
+    }
+    case "ArrowRight":
+    case "ArrowLeft":
+    case "ArrowUp":
+    case "ArrowDown": {
+      if(cur === null) return false;
+      evt.preventDefault();
+      const target = findNavTarget(cur, evt.key);
+      if(target === null) return true;
+      if(evt.shiftKey){
+        extendSelectionTo(target);
+      }else{
+        commit();
+        selectToothForWalk(target);
+      }
+      syncShorthandReadout();
+      return true;
+    }
+    case "Enter":
+      if(!shorthandBuffer) return false;
+      evt.preventDefault();
+      commit();
+      syncShorthandReadout();
+      return true;
+    case "Backspace":
+      if(!shorthandBuffer) return false;
+      evt.preventDefault();
+      shorthandBuffer = shorthandBuffer.slice(0, -1);
+      syncShorthandReadout();
+      return true;
+    case "Escape":
+      if(shorthandBuffer || shorthandMaterial){
+        evt.preventDefault();
+        const hadMaterial = !!shorthandMaterial;
+        shorthandBuffer = "";
+        shorthandMaterial = null;
+        syncShorthandReadout();
+        if(hadMaterial) notifyStateChange();   // the dock chip un-arms with it
+        return true;
+      }
+      return false;
+    default: {
+      if(!isShorthandKey(evt)) return false;
+      evt.preventDefault();
+      if(cur === null){
+        reportShorthandMessage(t("schematic.keypad.pickTooth"));
+        return true;
+      }
+      typeShorthandKey(evt.key);
+      return true;
+    }
   }
 }
 
@@ -9036,7 +9250,12 @@ function setWisdomVisible(on: Any){
   // Wisdom teeth fade via opacity (no size change), so the ResizeObserver won't
   // fire — redraw the bridge overlay explicitly so a span onto a wisdom tooth stays current.
   updateBridgeOverlay();
+  // The schematic view draws from state, not from the tiles: tell it.
+  notifyStateChange();
 }
+/** Whether wisdom teeth (18/28/38/48) are shown — read by the schematic view,
+ *  which hides them exactly like the anatomical grid does. */
+export function getWisdomVisible(): boolean { return wisdomVisible; }
 
 /** Toggle visibility of the bone/gum base layer on all teeth. */
 function setShowBase(on: Any){
@@ -15386,6 +15605,8 @@ export function setNumberingSystem(system: NumberingSystem){
   numberingSystem = system;
   updateAllToothTileNumbers();
   updateActiveLabel();
+  // The schematic view and the summary print numbers from state: tell them.
+  notifyStateChange();
 }
 
 /**

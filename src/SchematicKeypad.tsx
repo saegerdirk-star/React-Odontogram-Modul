@@ -23,8 +23,8 @@
  * labels, material names, hints, tooltips — goes through `t()` and follows the
  * UI language.
  */
-import { type ReactNode } from "react";
-import { applyShorthand, setRetention } from "./odontogram";
+import { type ReactNode, useEffect, useState } from "react";
+import { applyShorthand, setRetention, onShorthandReadout, getShorthandBuffer, applyDentitionSuggestion, type ShorthandReadout } from "./odontogram";
 import { t } from "./i18n/useI18n";
 
 type Btn = { label: string; token?: string; titleKey: string; mat?: boolean };
@@ -40,12 +40,15 @@ const MATERIALS: { label: string; ch: string; labelKey: string }[] = [
 // charly's five caries stages K1…K5 → cariesSeverity 2…6 (SHORTHAND_DE); the
 // K-token is what rides into the shorthand string (`cK3o`).
 const CARIES_STAGES = ["K1", "K2", "K3", "K4", "K5"] as const;
+// Labelled in LOWER case, exactly what is typed (Dirk, 25.09.2026) — charly's
+// key field does the same. Upper case is a different key here: `D` is the
+// eruption stage, `K`/`A`/`G`/`E` are materials.
 const SURFACES: { label: string; ch: string; titleKey: string }[] = [
-  { label: "M", ch: "m", titleKey: "schematic.keypad.t.mesial" },
-  { label: "O", ch: "o", titleKey: "schematic.keypad.t.occlusal" },
-  { label: "D", ch: "d", titleKey: "schematic.keypad.t.distal" },
-  { label: "V", ch: "v", titleKey: "schematic.keypad.t.buccal" },
-  { label: "L", ch: "l", titleKey: "schematic.keypad.t.lingual" },
+  { label: "m", ch: "m", titleKey: "schematic.keypad.t.mesial" },
+  { label: "o", ch: "o", titleKey: "schematic.keypad.t.occlusal" },
+  { label: "d", ch: "d", titleKey: "schematic.keypad.t.distal" },
+  { label: "v", ch: "v", titleKey: "schematic.keypad.t.buccal" },
+  { label: "l", ch: "l", titleKey: "schematic.keypad.t.lingual" },
 ];
 const STATE_BTNS: Btn[] = [
   { label: "o.B.", token: "o.B.", titleKey: "schematic.keypad.t.oB" },
@@ -117,7 +120,7 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-export default function SchematicKeypad({ tooth, mat, stage, onMat, onStage }: {
+export default function SchematicKeypad({ tooth, mat, stage, onMat, onStage, onCaries }: {
   tooth: number | null;
   // The armed material chip char (K/A/G/E) or null, and the armed caries stage
   // K-token or null — LIFTED to App so a surface click on the chart shares the
@@ -126,8 +129,12 @@ export default function SchematicKeypad({ tooth, mat, stage, onMat, onStage }: {
   stage: string | null;
   onMat: (ch: string) => void;
   onStage: (k: string) => void;
+  /** The visible caries switch: back to caries mode (no material, no stage). */
+  onCaries: () => void;
 }) {
   const enabled = tooth != null;
+  const [readout, setReadout] = useState<ShorthandReadout>(() => ({ material: null, buffer: getShorthandBuffer(), notice: "" }));
+  useEffect(() => onShorthandReadout(setReadout), []);
   const apply = (token: string) => { if (enabled) applyShorthand(token); };
   // Restoration keys that take a material get the chosen chip, defaulting to
   // ceramic ("E") — a crown/onlay/bridge with no material would only report
@@ -167,16 +174,49 @@ export default function SchematicKeypad({ tooth, mat, stage, onMat, onStage }: {
         <span className="keypad-active">
           {enabled ? t("schematic.keypad.tooth", { n: tooth }) : t("schematic.keypad.pickTooth")}
         </span>
+        {/* What the keyboard has typed so far (material mode + open buffer), or
+            what a key did NOT do — the same read-out the anatomical panel has. */}
+        {(readout.notice || readout.buffer || readout.material) && (
+          <span className={"keypad-readout" + (readout.notice ? " is-notice" : "")} aria-live="polite">
+            {readout.notice || [readout.material, readout.buffer].filter(Boolean).join(" ")}
+          </span>
+        )}
       </div>
       <div className="keypad-groups">
         <Group title={t("schematic.keypad.row.state")}>
           <Row label="">{STATE_BTNS.map(btn)}</Row>
           <Row label={t("schematic.keypad.row.eruption")}>{ERUPTION_BTNS.map(btn)}</Row>
+          {/* Milk teeth (Dirk, 25.09.2026: "Wie schalte ich hier auf Milchzaehne
+              um?" - in the compact view there was no way). charly's `MZ` marks
+              the selected teeth as milk teeth; the two dentition presets reset
+              EVERY tooth, so they ask first, and they need no tooth selected. */}
+          <Row label={t("schematic.keypad.row.dentition")}>
+            <button type="button" className="keypad-btn" aria-label={t("schematic.keypad.t.mz")} data-tip={t("schematic.keypad.t.mz")}
+              disabled={!enabled} onClick={() => apply("MZ")}>MZ</button>
+            <button type="button" className="keypad-btn" onClick={() => {
+              if (window.confirm(t("schematic.keypad.confirmDentition"))) applyDentitionSuggestion("primary");
+            }}>{t("status.primaryDentition")}</button>
+            <button type="button" className="keypad-btn" onClick={() => {
+              if (window.confirm(t("schematic.keypad.confirmDentition"))) applyDentitionSuggestion("mixed");
+            }}>{t("status.mixedDentition")}</button>
+          </Row>
         </Group>
 
         <Group title={t("schematic.keypad.row.restoration")}>
           <Row label="">{RESTO_BTNS.map(btn)}</Row>
           <Row label={t("schematic.keypad.row.material")}>
+            {/* The CARIES switch, first in the mode row like charly's `C` before
+                Am/G/Kst/Ker (Dirk, 25.09.2026: "ein Schalter, der Karies
+                einschaltet, sichtbar als Knopf"). Caries was the mode whenever
+                no material was armed, but nothing SHOWED it, and the only way
+                back from a material was to click that material again. Lit
+                whenever surfaces enter caries — with or without a stage K1-K5. */}
+            <button type="button" aria-pressed={mat === null} aria-label={t("schematic.keypad.row.caries")}
+              data-tip={t("schematic.keypad.hint.caries")} disabled={!enabled}
+              className={"keypad-btn keypad-mat keypad-caries" + (mat === null ? " is-active" : "")}
+              onClick={onCaries}>
+              {t("schematic.keypad.row.caries")}
+            </button>
             {MATERIALS.map((m) => (
               <button key={m.ch} type="button" aria-label={t(m.labelKey)} data-tip={t(m.labelKey)} disabled={!enabled}
                 className={"keypad-btn keypad-mat" + (mat === m.ch ? " is-active" : "")}
