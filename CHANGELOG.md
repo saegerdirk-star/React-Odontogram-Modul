@@ -15,6 +15,12 @@
 
 - Schematic view: in the upper arch the restoration badge (K/B/V/…) stood at
   the root tips instead of at the crown.
+- Schematic view, mouse entry: the first click on a tooth now only selects
+  it. Before, the surface and root zones cover nearly the whole tooth, so
+  selecting a tooth by mouse wrote caries (top view) or a root filling (root)
+  on the way. A click on a surface or root of the SELECTED tooth enters the
+  finding, and the same click again takes it off (new
+  `toggleSurfaceShorthand`); before, a click could only add.
 
 ## 4.1.0 - 2026-09-16
 

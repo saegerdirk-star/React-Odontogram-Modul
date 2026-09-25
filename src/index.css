@@ -1561,11 +1561,14 @@ select:focus{
    WFi -> Einlage -> leer). Laid over the column hit; its own pointer + hover so
    a root reads as clickable without tinting the drawing. */
 .schematic-canal-hit{cursor:pointer; stroke:transparent; stroke-width:1.5; transition:stroke .08s}
-.schematic-canal-hit:hover{stroke:#d98f4a}
+/* Only a SELECTED tooth's canals and surfaces take input (.is-armed, stamped by
+   SchematicChart); on any other tooth the first click just selects, so the
+   input highlight shows only where a click really enters a finding. */
+.schematic-canal-hit.is-armed:hover{stroke:#d98f4a}
 /* Clickable occlusal surface zones: click a surface to enter a filling (armed
    material) or caries. Faint hover so the target reads as clickable. */
 .schematic-surf-hit{cursor:pointer; stroke:transparent; stroke-width:1.2; transition:stroke .08s, fill .08s}
-.schematic-surf-hit:hover{stroke:#3b7bff; fill:rgba(59,123,255,.10)}
+.schematic-surf-hit.is-armed:hover{stroke:#3b7bff; fill:rgba(59,123,255,.10)}
 
 /* Hover read-out: the full finding text (getToothStateSummary), the same lines
    the anatomical tile tooltip carries. Fixed to the cursor. */

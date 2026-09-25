@@ -11,11 +11,13 @@
  *  - Selecting teeth mirrors the anatomical grid — click / shift-range /
  *    ctrl-toggle / drag-select, all through `setChartSelection` (the same
  *    `selectedTeeth` the wired controls and `applyShorthand` read).
- *  - Clicking a SURFACE zone of the occlusal box enters a finding there via
+ *  - The FIRST click on a tooth only selects it. Clicking a SURFACE zone of a
+ *    tooth that is already selected enters a finding there via
  *    `applyShorthand` (filling with the armed material, else caries) — the same
  *    token the keypad's surface keys emit, so it batches over the whole
  *    selection exactly like the anatomical surface-cross checkboxes.
- *  - Clicking a root canal cycles its endo state (or moves a resected root).
+ *  - Clicking a root canal of a selected tooth cycles its endo state (or moves
+ *    a resected root).
  */
 import { useEffect, useRef, useState } from "react";
 import {
@@ -74,8 +76,13 @@ export default function SchematicChart({
     const root = wrapRef.current;
     if (!root) return;
     root.querySelectorAll(".schematic-hit.is-active").forEach((e) => e.classList.remove("is-active"));
+    root.querySelectorAll(".is-armed").forEach((e) => e.classList.remove("is-armed"));
     for (const tn of selected) {
       root.querySelector(`.schematic-hit[data-tooth="${tn}"]`)?.classList.add("is-active");
+      // Only a SELECTED tooth's surfaces and canals take input (see onClick);
+      // mark them so the hover highlight shows only where a click enters a finding.
+      root.querySelectorAll(`.schematic-surf-hit[data-tooth="${tn}"], .schematic-canal-hit[data-tooth="${tn}"]`)
+        .forEach((e) => e.classList.add("is-armed"));
     }
   }, [svg, selected]);
 
@@ -107,15 +114,23 @@ export default function SchematicChart({
         }}
         onClick={(e) => {
           if (suppressClick.current) { suppressClick.current = false; return; }
-          // 1) a surface zone → enter a finding there
+          // A surface or canal zone covers nearly every pixel of a tooth, so it
+          // enters a finding ONLY on a tooth that is already selected. The first
+          // click on a tooth selects it and writes nothing — before, it wrote
+          // caries (top view) or cycled a root filling (root) on the way to
+          // selecting it, so choosing a tooth by mouse charted a finding
+          // (Dirk, 25.09.2026: "Die Eingabe per Maus funktioniert nicht korrekt").
+          const armed = (el: HTMLElement | null) =>
+            !!el?.dataset.tooth && selected.includes(Number(el.dataset.tooth)) && !e.shiftKey && !e.metaKey && !e.ctrlKey;
+          // 1) a surface zone of a selected tooth → enter a finding there
           const surfEl = (e.target as Element | null)?.closest?.("[data-surf]") as HTMLElement | null;
-          if (surfEl?.dataset.tooth && surfEl.dataset.surf) {
+          if (armed(surfEl) && surfEl?.dataset.tooth && surfEl.dataset.surf) {
             onSurface(Number(surfEl.dataset.tooth), surfEl.dataset.surf);
             return;
           }
-          // 2) a root canal → cycle endo (or move a resected root)
+          // 2) a root canal of a selected tooth → cycle endo (or move a resected root)
           const canalEl = (e.target as Element | null)?.closest?.("[data-canal]") as HTMLElement | null;
-          if (canalEl?.dataset.tooth && canalEl.dataset.canal) {
+          if (armed(canalEl) && canalEl?.dataset.tooth && canalEl.dataset.canal) {
             const tn = Number(canalEl.dataset.tooth);
             const canal = canalEl.dataset.canal;
             const rr = getToothDisplayState(tn).rootResection;
@@ -123,7 +138,8 @@ export default function SchematicChart({
             else cycleEndoCanal(tn, canal);
             return;
           }
-          // 3) otherwise select — plain / shift-range / ctrl-toggle
+          // 3) otherwise select — plain / shift-range / ctrl-toggle (also the first
+          //    click on a surface or canal of a tooth that is not selected yet)
           const tn = toothAt(e.target);
           if (tn == null) return;
           if (e.shiftKey && primary != null) {

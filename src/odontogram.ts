@@ -8679,6 +8679,47 @@ export function applyShorthand(input: string): { unknown: string[]; pending: { t
   return { unknown: r.unknown, pending: r.pending, needsMaterial: r.needsMaterial };
 }
 
+/** A mouse click on a surface in the schematic view. The token is the one the
+ *  keypad's surface keys emit (`Ko`, `co`, `cK3o`), but a CLICK is a toggle:
+ *  when the clicked tooth already carries exactly that finding on every surface
+ *  of the token — caries there, or a filling of that material — the click takes
+ *  it off again, across the selection. Before, a click could only add, so a
+ *  surface clicked by mistake could not be taken back by mouse (Dirk,
+ *  25.09.2026). The keyboard stays additive — typing `co` twice must not undo
+ *  itself — which is why this is its own entry point rather than a change to
+ *  `applyShorthand`. Same gate (`applyToSelected` → DS-1) and the same undo
+ *  step as the shorthand. Anything else (a restoration coverage surface) is
+ *  applied exactly as the shorthand does. */
+export function toggleSurfaceShorthand(toothNo: number, token: string): "added" | "removed" {
+  const r = parseShorthand(token, { material: shorthandMaterial });
+  const edit: Any = r.edits.find((e: Any) => e.kind === "surfaces");
+  const st: Any = toothState.get(toothNo);
+  if(edit && st && (edit.target === "caries" || edit.target === "filling")){
+    const carries = (x: Any, surf: string) => edit.target === "caries"
+      ? x.caries.has(`caries-${surf}`)
+      : x.fillingSurfaces.has(surf) && x.fillingSurfaceMaterials.get(surf) === edit.material;
+    if(edit.surfaces.length > 0 && edit.surfaces.every((surf: string) => carries(st, surf))){
+      pushShorthandUndo(Array.from(selectedTeeth) as number[]);
+      applyToSelected((x: Any) => {
+        for(const surf of edit.surfaces){
+          if(!carries(x, surf)) continue;
+          if(edit.target === "caries"){
+            x.caries.delete(`caries-${surf}`);
+            x.cariesSeverity.delete(surf);
+          }else{
+            x.fillingSurfaces.delete(surf);
+            x.fillingSurfaceMaterials.delete(surf);
+          }
+        }
+      });
+      syncShorthandReadout();
+      return "removed";
+    }
+  }
+  applyShorthand(token);
+  return "added";
+}
+
 /** Selects a single tooth and puts the focus on it — what the Tab walk does. */
 function selectToothForWalk(toothNo: number): void {
   selectedTeeth = new Set([toothNo]);
