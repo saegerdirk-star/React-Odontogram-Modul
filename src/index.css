@@ -1560,7 +1560,11 @@ select:focus{
 .schematic-chart-wrap{max-inline-size:1600px; margin-inline:auto}
 .schematic-chart-wrap svg.schematic-chart{
   display:block; margin-inline:auto; width:100%; height:auto;
-  max-height:54vh;
+  /* the window height minus the header above and the keypad below (~410 px
+     together), so both fit without scrolling at every size — a fixed share
+     let the keypad run off a 760-high window once the shorthand lane made the
+     chart taller (Form D, 25.09.2026) */
+  max-height:max(300px, calc(100vh - 412px));
 }
 .schematic-chart-outer{position:relative}
 
@@ -1578,7 +1582,14 @@ select:focus{
    hover and the active column show as a stroked box only. */
 .schematic-hit{cursor:pointer; stroke:transparent; stroke-width:1.5; transition:stroke .08s}
 .schematic-hit:hover{stroke:#9bbcff}
-.schematic-hit.is-active{stroke:#3b7bff; stroke-width:2}
+/* Form D (docs/design/schematic-form-d.md): the selected tooth is marked by its
+   number as a pill, not by a blue column frame (Dirk, 25.09.2026). The hover
+   frame stays as the hint where a click lands. */
+.schematic-hit.is-active{stroke:transparent}
+.schematic-hit.is-active:hover{stroke:#9bbcff}
+svg.schematic-chart .schem-num-sel{display:none}
+svg.schematic-chart .schem-num-sel.is-selected{display:inline}
+svg.schematic-chart .schem-num.is-selected{display:none}
 /* Per-canal endo: a click on a root region cycles that canal (WF -> WF+Stift ->
    WFi -> Einlage -> leer). Laid over the column hit; its own pointer + hover so
    a root reads as clickable without tinting the drawing. */

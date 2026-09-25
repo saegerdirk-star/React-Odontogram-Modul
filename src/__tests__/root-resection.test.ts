@@ -29,16 +29,17 @@ describe("root resection + WSR — projection + schematic", () => {
     expect(svg).toContain("#b70000"); // red cut line
   });
 
-  it("draws a WSR badge for an apicoectomy, and combines with Hem", () => {
+  it("names an apicoectomy (charly's Res) beside an amputation in the shorthand lane", () => {
     __setToothStateForTest(46, { rootResection: "amputation", rootResectionRoot: "mesial", endoResection: true });
     const svg = buildSchematicSvg(getToothDisplayState);
-    expect(svg).toContain(">Amp·WSR<");
+    expect(svg).toContain(">Amp<");
+    expect(svg).toContain("> Res<");
   });
 
-  it("draws a WSR badge on its own", () => {
+  it("names an apicoectomy on its own (Res)", () => {
     __setToothStateForTest(36, { endoResection: true });
     const svg = buildSchematicSvg(getToothDisplayState);
-    expect(svg).toContain(">WSR<");
+    expect(svg).toContain(">Res<");
   });
 
   it("marks a premolarisation with its own badge (no root removed)", () => {

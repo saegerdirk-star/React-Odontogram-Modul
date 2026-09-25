@@ -115,8 +115,12 @@ export default function SchematicChart({
     if (!root) return;
     root.querySelectorAll(".schematic-hit.is-active").forEach((e) => e.classList.remove("is-active"));
     root.querySelectorAll(".is-armed").forEach((e) => e.classList.remove("is-armed"));
+    root.querySelectorAll(".is-selected").forEach((e) => e.classList.remove("is-selected"));
     for (const tn of selected) {
       root.querySelector(`.schematic-hit[data-tooth="${tn}"]`)?.classList.add("is-active");
+      // the number turns into a pill (Form D's selection marker)
+      root.querySelectorAll(`.schem-num[data-tooth="${tn}"], .schem-num-sel[data-tooth="${tn}"]`)
+        .forEach((e) => e.classList.add("is-selected"));
       // Only a SELECTED tooth's surfaces and canals take input (see onClick);
       // mark them so the hover highlight shows only where a click enters a finding.
       root.querySelectorAll(`.schematic-surf-hit[data-tooth="${tn}"], .schematic-canal-hit[data-tooth="${tn}"]`)

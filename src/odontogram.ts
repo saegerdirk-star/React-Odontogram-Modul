@@ -15807,6 +15807,8 @@ export type ToothDisplayState = {
   crownMarginType: string; crownMarginSide: string;
   splinted: boolean; occlusalSplint: boolean; occlusalFunction: string;
   rootCap: boolean; onlayCoverage: string[]; inlayCoverage: string[]; veneerCoverage: string[];
+  // read by the schematic's shorthand lane (charly's `)L(`, `Fra`, `+ − ?`, `p`)
+  missingClosed: boolean; rootFracture: string; sensibility: string; percussion: string;
 };
 
 export function getToothDisplayState(toothNo: number): ToothDisplayState {
@@ -15863,6 +15865,10 @@ export function getToothDisplayState(toothNo: number): ToothDisplayState {
     onlayCoverage: Array.isArray(s.onlayCoverage) ? [...s.onlayCoverage] : [],
     inlayCoverage: Array.isArray(s.inlayCoverage) ? [...s.inlayCoverage] : [],
     veneerCoverage: Array.isArray(s.veneerCoverage) ? [...s.veneerCoverage] : [],
+    missingClosed: !!s.missingClosed,
+    rootFracture: String(s.rootFracture ?? "none"),
+    sensibility: String(s.sensibility ?? "none"),
+    percussion: String(s.percussion ?? "none"),
   };
 }
 

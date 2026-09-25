@@ -45,10 +45,11 @@ describe("endo per canal — model + serialization", () => {
 });
 
 describe("endo per canal — schematic rendering", () => {
-  it("draws WF + post on one canal and shows the WF·St badge", () => {
+  it("draws WF + post on one canal and names both in the shorthand lane", () => {
     __setToothStateForTest(46, { endoCanals: { mesial: ["filling", "post"] } });
     const svg = buildSchematicSvg(getToothDisplayState);
-    expect(svg).toContain("WF·St");
+    expect(svg).toContain(">wf<");         // lane: charly's `wf` …
+    expect(svg).toContain("> Sti<");       // … and `Sti`
     expect(svg).toContain('class="schem-post"'); // post
     expect(svg).toContain('class="schem-wf"'); // root filling
   });
@@ -56,7 +57,8 @@ describe("endo per canal — schematic rendering", () => {
   it("falls back to the legacy whole-tooth endo scalar", () => {
     __setToothStateForTest(45, { endo: "endo-filling" });
     const svg = buildSchematicSvg(getToothDisplayState);
-    expect(svg).toContain("WF");
+    expect(svg).toContain(">wf<");
+    expect(svg).toContain('class="schem-wf"');
   });
 
   it("does not synthesize a whole-tooth post into every explicitly detailed canal", () => {

@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Schematic view in **Zahnform D with the colours of Variante B** — the Claude
+  Design handoff Dirk picked (`docs/design/schematic-form-d.md`, reference
+  scripts and SVGs in `docs/design/referenz/`):
+  - crowns hinting at cusps, a top view per tooth class (molar, premolar, the
+    canine as its own rhombus, incisor), roots from a neck narrower than the
+    crown with splayed molar roots; milk teeth derived from their permanent
+    counterparts;
+  - restorations "versorgt" in one neutral tone at the arch, caries the only
+    saturated surface colour; a band behind the top views and numbers; the
+    dark theme is its own palette;
+  - a missing tooth is a large "f", a not-erupted one a dotted outline set
+    10 deeper in the jaw;
+  - a **shorthand lane** between side view and top view shows per tooth what
+    one would type to enter its findings, material first (`G k`, `K do`,
+    `c mo`, `cK3 mod`, `wf Sti`) — the K/B/V and WF/St marks at the teeth are
+    gone;
+  - the selected tooth's number becomes a pill; the blue column frame is gone.
+- The chart's height is capped by the space the header and keypad leave, so
+  both fit without scrolling from 1280×760 up.
+
 ## 4.2.0 - 2026-09-25
 
 The schematic view, reworked after a review of how charly, DS-Win, Z1, tomedo,

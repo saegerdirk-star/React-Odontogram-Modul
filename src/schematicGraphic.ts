@@ -40,8 +40,8 @@ const SIDE_H = 100;
 const OCCL_H = 68;
 const ARCH_W = UPPER_ARCH.length * CELL_W;   // 1216
 const MID_X = ARCH_W / 2;                    // 608: the midline
-/** Height of the shorthand lane between side view and top view (0 = none). */
-const LANE_H = 0;
+/** Height of the shorthand lane between side view and top view. */
+const LANE_H = 36;
 
 // Side view, drawn for the LOWER jaw (crown up); the upper jaw is the same
 // drawing flipped with translate(0,100) scale(1,-1).
@@ -58,6 +58,7 @@ interface Palette {
   caries: string; cariesEdge: string; wf: string; wfTemp: string; post: string;
   neutral: string; neutralEdge: string; extraction: string;
   lane: string; laneCaries: string; implantFill: string; implantEdge: string;
+  selBg: string; selFg: string;
   calculus: string; gumFill: string; gumLine: string; metal: string;
   marginOverhang: string; marginFilling: string; stumpFill: string;
 }
@@ -68,6 +69,7 @@ const PALETTES: Record<SchematicTheme, Palette> = {
     caries: "#d32f2f", cariesEdge: "#8e1b1b", wf: "#e07b16", wfTemp: "#6fa8dc", post: "#6b737b",
     neutral: "#aab8ca", neutralEdge: "#4f6179", extraction: "#b70000",
     lane: "#26344d", laneCaries: "#b3261e", implantFill: "#dfe4e8", implantEdge: "#6b737b",
+    selBg: "#26344d", selFg: "#ffffff",
     calculus: "#bfa15c", gumFill: "#e9b8b1", gumLine: "#cf9089", metal: "#7b838c",
     marginOverhang: "#555d66", marginFilling: "#4a7fb5", stumpFill: "#eef1f5",
   },
@@ -77,6 +79,7 @@ const PALETTES: Record<SchematicTheme, Palette> = {
     caries: "#e5392e", cariesEdge: "#8e1b1b", wf: "#f28c28", wfTemp: "#8ab8e6", post: "#7d858c",
     neutral: "#9aabc2", neutralEdge: "#43556e", extraction: "#ff5a4f",
     lane: "#d2d9e3", laneCaries: "#ff8a80", implantFill: "#8d96a1", implantEdge: "#7d858c",
+    selBg: "#eef1f5", selFg: "#11151b",
     calculus: "#cdb06e", gumFill: "#b98a84", gumLine: "#d9a29b", metal: "#9aa2aa",
     marginOverhang: "#6b737b", marginFilling: "#7aa6d6", stumpFill: "#2a313b",
   },
@@ -477,27 +480,116 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean, P:
     parts.push(`<g stroke="${P.extraction}" stroke-width="2" stroke-linecap="round"><line x1="12" y1="10" x2="64" y2="90"/><line x1="64" y1="10" x2="12" y2="90"/></g>`);
   }
 
-  // Upright text, added AFTER the flip. The restoration badge (K/B/V/…) hangs on
-  // the crown end until the shorthand lane takes its place; root-canal and
-  // resection labels on the root end; mobility beside them.
-  const crownY = crownDown ? SIDE_H - 3 : 14;
+  // Upright text, added AFTER the flip: only the mobility grade stays at the
+  // tooth. The restoration, endo and resection codes moved to the shorthand
+  // lane (handoff: "Die Kürzel an der Krone (K/B/V) entfallen damit").
   const rootY = crownDown ? 14 : SIDE_H - 4;
   const anno: string[] = [];
-  const badge = crowned ? (rt === "bridge" ? "B" : "K") : replaced ? "e" : rt === "veneer" ? "V" : rt === "onlay" ? "On" : rt === "inlay" ? "I" : "";
-  if (badge) anno.push(`<text class="schem-badge" x="${CELL_W - 5}" y="${crownY}" text-anchor="end" font-size="11" font-weight="600" fill="${P.lane}">${badge}</text>`);
-  if (!implant && (anyFill || anyPost)) {
-    const t = anyFill && anyPost ? "WF·St" : anyPost ? "St" : "WF";
-    anno.push(`<text x="${CELL_W - 5}" y="${rootY}" text-anchor="end" font-size="9" font-weight="600" fill="${P.wf}">${t}</text>`);
-  }
   const mob = { m1: "I", m2: "II", m3: "III" }[s.mobility] ?? "";
   if (mob) anno.push(`<text x="5" y="${rootY}" font-size="10" fill="${P.num}">${mob}</text>`);
-  const resTxt = [
-    s.rootResection === "hemisection" ? "Hem" : s.rootResection === "amputation" ? "Amp" : s.rootResection === "premolarisation" ? "Prä" : "",
-    s.endoResection ? "WSR" : "",
-  ].filter(Boolean).join("·");
-  if (resTxt) anno.push(`<text x="5" y="${crownY}" font-size="9" fill="${P.extraction}">${resTxt}</text>`);
+  void anyFill; void anyPost;
 
   return flip(parts.join("")) + anno.join("");
+}
+
+// ---------------------------------------------------------------------------
+// Shorthand lane (handoff "Kürzelzeile"): per tooth up to two lines in charly's
+// vocabulary — Dirk's rule for the open point: the lane shows WHAT ONE WOULD
+// TYPE to enter the finding, material first (`G k` gold crown, `K do`
+// composite filling, `c mo` caries; `cK3 mo` with a stage). That settles the
+// K conflict by itself: lower `k` is the crown, upper `K` the composite.
+// Line 1: restoration, fillings, caries; line 2: endo and everything else.
+// Where the table has no key (metal-ceramic, a veneer, GIC) the lane uses the
+// short name charly prints.
+// ---------------------------------------------------------------------------
+export interface LaneToken { t: string; red?: boolean }
+const REST_KEY: Record<string, string> = { gradia: "K", gold: "G", emax: "E", zircon: "Zir", metal: "NEM", "metal-ceramic": "VMK", temporary: "prov" };
+const FILL_KEY: Record<string, string> = { amalgam: "A", composite: "K", gic: "GIZ", temporary: "prov" };
+const SURF_ORDER = ["mesial", "occlusal", "distal", "buccal", "lingual"];
+const SURF_CH: Record<string, string> = { mesial: "m", occlusal: "o", distal: "d", buccal: "v", lingual: "l" };
+const STAGE_KEY: Record<number, string> = { 2: "K1", 3: "K2", 4: "K3", 5: "K4", 6: "K5" };
+const surfCode = (list: string[]) => SURF_ORDER.filter((x) => list.includes(x)).map((x) => SURF_CH[x]).join("");
+const join = (...xs: (string | undefined)[]) => xs.filter(Boolean).join(" ");
+
+export function laneTokens(toothNo: number, s: ToothDisplayState): [LaneToken[], LaneToken[]] {
+  const l1: LaneToken[] = [], l2: LaneToken[] = [];
+  const sel = s.toothSelection, rt = s.restorationType, mat = s.restorationMaterial;
+  void toothNo;
+  if (sel === "not-erupted") return [l1, l2];
+  if (isReplaced(s)) {
+    l1.push({ t: "e" });
+  } else if (isMissing(s)) {
+    if (rt === "bridge") l1.push({ t: join(REST_KEY[mat], "b") });
+    if (s.missingClosed) l2.push({ t: ")L(" });
+    if (rt !== "bridge") return [l1, l2];
+  } else {
+    // restoration (an abutment is typed as a crown: Dirk's "Pfeiler = Krone")
+    if (rt === "crown" || rt === "bridge") l1.push({ t: mat === "telescope" ? "t" : join(REST_KEY[mat], "k") });
+    else if (rt === "onlay") l1.push({ t: join(REST_KEY[mat], "TK", surfCode(s.onlayCoverage)) });
+    else if (rt === "inlay") l1.push({ t: join(REST_KEY[mat], surfCode(s.inlayCoverage) || "I") });
+    else if (rt === "veneer") l1.push({ t: join(REST_KEY[mat], "V") });
+    // direct fillings, one token per material
+    const byMat = new Map<string, string[]>();
+    for (const surf of s.fillingSurfaces) {
+      const m = s.fillingSurfaceMaterials[surf] ?? "composite";
+      byMat.set(m, [...(byMat.get(m) ?? []), surf]);
+    }
+    for (const [m, list] of byMat) l1.push({ t: join(FILL_KEY[m] ?? m, surfCode(list)) });
+    // caries: `c` + the stage when every carious surface has the same one
+    const car = SURF_ORDER.filter((x) => s.caries.includes(`caries-${x}`));
+    if (car.length) {
+      const sev = car.map((x) => s.cariesSeverity[x]);
+      const stage = sev.every((v) => v != null && v === sev[0]) ? (STAGE_KEY[sev[0]] ?? "") : "";
+      l1.push({ t: `c${stage} ${surfCode(car)}`, red: true });
+    }
+  }
+  if (sel === "implant") l2.push({ t: "i" });
+  const endo = s.endo === "endo-filling" || s.endo === "endo-glass-pin" || s.endo === "endo-metal-pin" ? "wf"
+    : s.endo === "endo-filling-incomplete" ? "WFi"
+    : s.endo === "endo-medical-filling" ? "Twf"
+    : Object.values(s.endoCanals).some((f) => f.includes("filling")) ? "wf"
+    : Object.values(s.endoCanals).some((f) => f.includes("incomplete")) ? "WFi"
+    : Object.values(s.endoCanals).some((f) => f.includes("temporary")) ? "Twf" : "";
+  if (endo) l2.push({ t: endo });
+  if (s.rootPostType !== "none" || Object.values(s.endoCanals).some((f) => f.includes("post"))) l2.push({ t: "Sti" });
+  // charly's `Hem`; amputation and premolarisation have no key — their short names
+  const res = { hemisection: "Hem", amputation: "Amp", premolarisation: "Prä" }[s.rootResection];
+  if (res) l2.push({ t: res });
+  if (s.endoResection) l2.push({ t: "Res" });   // charly's Res = Wurzelspitzenresektion
+  if (s.rootFracture !== "none") l2.push({ t: "Fra" });
+  if (s.apicalDx !== "normal") l2.push({ t: s.periapicalType === "cyst" ? "Zys" : "Be", red: true });
+  if (s.toothSubstrate === "radix") l2.push({ t: "WR" });
+  if (s.toothSubstrate === "broken") l2.push({ t: "Fr" });
+  if (s.calculus) l2.push({ t: "Zst" });
+  const d = { emerging: "D1", "half-crown": "D2", "full-crown": "D3" }[s.eruptionStage];
+  if (d) l2.push({ t: d });
+  const ret = { clasp: "Kl", attachment: "Gesch", "bar-abutment": "Steg" }[s.retention];
+  if (ret) l2.push({ t: ret });
+  const sens = { vital: "+", "no-response": "−", questionable: "?" }[s.sensibility];
+  if (sens) l2.push({ t: sens });
+  if (s.percussion === "sensitive") l2.push({ t: "p" });
+  if (s.extractionPlan) l2.push({ t: "x", red: true });
+  return [l1, l2];
+}
+/** At most ~10 monospace characters fit a 76-wide cell; a longer line ends in
+ *  "…" (the hover read-out has the full finding). */
+const LANE_MAX = 10;
+function laneLine(tokens: LaneToken[], x: number, y: number, P: Palette): string {
+  if (!tokens.length) return "";
+  let used = 0; const spans: string[] = [];
+  for (const [i, tok] of tokens.entries()) {
+    const sep = i > 0 ? " " : "";
+    let text = sep + tok.t;
+    if (used + text.length > LANE_MAX) {
+      const room = LANE_MAX - used - 1;
+      text = room > 0 ? text.slice(0, room) + "…" : "…";
+      spans.push(`<tspan fill="${tok.red ? P.laneCaries : P.lane}">${escapeXml(text)}</tspan>`);
+      break;
+    }
+    used += text.length;
+    spans.push(`<tspan fill="${tok.red ? P.laneCaries : P.lane}">${escapeXml(text)}</tspan>`);
+  }
+  return `<text class="schem-lane" x="${x}" y="${y}" text-anchor="middle" font-size="12" font-weight="600" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" xml:space="preserve">${spans.join("")}</text>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -747,14 +839,31 @@ function archRows(teeth: number[], getState: GetDisplayState, upper: boolean, op
   const numY = upper ? L.nu : L.nl;
   // The number the chart SHOWS: numbering system and milk remap, like every
   // tooth number the anatomical chart prints.
-  const nums = teeth.map((tn, i) => hidden(tn) ? "" :
-    `<text class="schem-num" data-tooth="${tn}" x="${i * CELL_W + CELL_W / 2}" y="${numY}" text-anchor="middle" font-size="14" font-weight="600" fill="${P.num}">${escapeXml(label(tn))}</text>`).join("");
+  // A selected tooth shows its number as a PILL (handoff: the main selection
+  // marker). Both faces are drawn; the view shows one by stamping
+  // `.is-selected` (SchematicChart), so selecting needs no rebuild.
+  const nums = teeth.map((tn, i) => {
+    if (hidden(tn)) return "";
+    const x = i * CELL_W + CELL_W / 2, txt = escapeXml(label(tn));
+    const pw = Math.max(34, txt.length * 9 + 12);
+    return `<text class="schem-num" data-tooth="${tn}" x="${x}" y="${numY}" text-anchor="middle" font-size="14" font-weight="600" fill="${P.num}">${txt}</text>`
+      + `<g class="schem-num-sel" data-tooth="${tn}"><rect x="${x - pw / 2}" y="${numY - 14.5}" width="${pw}" height="19" rx="9.5" fill="${P.selBg}"/>`
+      + `<text x="${x}" y="${numY}" text-anchor="middle" font-size="14" font-weight="700" fill="${P.selFg}">${txt}</text></g>`;
+  }).join("");
   const rowSide = teeth.map((tn, i) => {
     if (hidden(tn)) return "";
     return `<g transform="translate(${i * CELL_W},${sideY})">${sideGlyph(tn, getState(tn), /*crownDown*/ upper, P)}</g>`;
   }).join("");
   const rowOccl = teeth.map((tn, i) => hidden(tn) ? "" :
     `<g transform="translate(${i * CELL_W},${occlY})">${occlBox(tn, getState(tn), P)}</g>`).join("");
+  // the shorthand lane between side view and top view
+  const laneY = upper ? SIDE_H : L.lOcc + OCCL_H - 4;
+  const lanes = teeth.map((tn, i) => {
+    if (hidden(tn)) return "";
+    const [a, b] = laneTokens(tn, getState(tn));
+    const x = i * CELL_W + CELL_W / 2;
+    return laneLine(a, x, laneY + 15, P) + laneLine(b, x, laneY + 29, P);
+  }).join("");
   // Brücke: the members of each bridge (abutment crowns + pontics, from the same
   // `bridgeConstructions` the anatomical overlay draws) are JOINED — between
   // neighbouring top views and neighbouring side-view crowns, versorgt. Drawn
@@ -840,7 +949,7 @@ function archRows(teeth: number[], getState: GetDisplayState, upper: boolean, op
     return `<g transform="translate(${i * CELL_W},${occlY})">${occlSurfaceHits(tn, s)}</g>`;
   }).join("");
   const pockets = opts.pocketDepths ? pocketLayer(teeth, getState, upper, sideY, opts.pocketDepths, hidden) : "";
-  return nums + connectors.join("") + rowSide + rowOccl + pockets + hits + canalHits + splintBars.join("") + splintGuard.join("") + surfHits;
+  return nums + connectors.join("") + rowSide + rowOccl + lanes + pockets + hits + canalHits + splintBars.join("") + splintGuard.join("") + surfHits;
 }
 
 /** Full schematic chart as one standalone <svg> string. */
