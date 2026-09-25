@@ -41,6 +41,6 @@ describe("Verblockung (splinting)", () => {
     __setToothStateForTest(13, { splinted: true });
     __setToothStateForTest(12, { splinted: true });
     const svg = buildSchematicSvg(getToothDisplayState);
-    expect(svg).toContain("#5c6166"); // splint bar stroke (unique to the splint bar)
+    expect(svg).toContain('class="schem-splint"'); // the splint bar
   });
 });

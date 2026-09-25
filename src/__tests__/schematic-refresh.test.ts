@@ -9,7 +9,7 @@
 // tests read the SVG string; state is reset before every test.
 import { describe, it, expect, beforeEach } from "vitest";
 import { __setToothStateForTest, __resetChartStateForTest, getToothDisplayState } from "../odontogram";
-import { buildSchematicSvg } from "../schematicGraphic";
+import { buildSchematicSvg, laneTokens } from "../schematicGraphic";
 
 beforeEach(() => { __resetChartStateForTest(); });
 
@@ -39,11 +39,11 @@ describe("schematic: bridge is joined", () => {
 });
 
 describe("schematic: crown in the top view", () => {
-  it("a crown fills the occlusal box as well as the side-view crown", () => {
-    const gold = 'fill="#e0a80d"';
-    const before = count(svg(), gold);
+  it("a crown fills the occlusal box as well as the side-view crown (versorgt)", () => {
+    const versorgt = 'fill="#aab8ca"';
+    const before = count(svg(), versorgt);
     __setToothStateForTest(16, { restorationType: "crown", restorationMaterial: "gold" });
-    expect(count(svg(), gold) - before).toBe(2);   // side crown + top view
+    expect(count(svg(), versorgt) - before).toBe(2);   // side crown + top view
   });
 });
 
@@ -57,30 +57,63 @@ describe("schematic: the top view's shape says the tooth class", () => {
   });
 });
 
-describe("schematic: restoration badge at the crown end", () => {
-  it("upper arch (flipped): the K sits at the bottom of the side cell, lower arch at the top", () => {
+describe("schematic: shorthand lane — what one would type (Form D)", () => {
+  const lane = (tn: number) => laneTokens(tn, getToothDisplayState(tn)).map(line => line.map(t => t.t).join(" "));
+  it("material first, lower k the crown, upper K the composite", () => {
     __setToothStateForTest(16, { restorationType: "crown", restorationMaterial: "gold" });
-    __setToothStateForTest(46, { restorationType: "crown", restorationMaterial: "gold" });
-    const ys = [...svg().matchAll(/<text class="schem-badge" x="71" y="([0-9.]+)" text-anchor="end" font-size="11" font-weight="600"[^>]*>K</g)]
-      .map(m => Number(m[1]));
-    expect(ys.sort((a, b) => a - b)).toEqual([14, 97]);
+    __setToothStateForTest(14, { fillingSurfaces: ["occlusal", "distal"], fillingSurfaceMaterials: { occlusal: "composite", distal: "composite" } });
+    __setToothStateForTest(12, { fillingSurfaces: ["mesial"], fillingSurfaceMaterials: { mesial: "amalgam" } });
+    expect(lane(16)).toEqual(["G k", ""]);
+    expect(lane(14)).toEqual(["K od", ""]);
+    expect(lane(12)).toEqual(["A m", ""]);
+  });
+  it("caries with and without a stage, marked as caries", () => {
+    __setToothStateForTest(15, { caries: ["caries-mesial", "caries-occlusal"] });
+    __setToothStateForTest(46, { caries: ["caries-mesial", "caries-occlusal", "caries-distal"], cariesSeverity: { mesial: 4, occlusal: 4, distal: 4 } });
+    expect(lane(15)).toEqual(["c mo", ""]);
+    expect(lane(46)).toEqual(["cK3 mod", ""]);
+    expect(laneTokens(15, getToothDisplayState(15))[0][0].red).toBe(true);
+  });
+  it("bridge: abutments typed as crowns, the pontic as b; endo on the second line", () => {
+    __setToothStateForTest(24, { restorationType: "crown", restorationMaterial: "zircon" });
+    __setToothStateForTest(25, { toothSelection: "none", restorationType: "bridge", restorationMaterial: "zircon" });
+    __setToothStateForTest(47, { endo: "endo-filling", rootPostType: "metal", restorationType: "crown", restorationMaterial: "emax" });
+    expect(lane(24)).toEqual(["Zir k", ""]);
+    expect(lane(25)).toEqual(["Zir b", ""]);
+    expect(lane(47)).toEqual(["E k", "wf Sti"]);
+  });
+  it("a missing tooth has an empty lane (it shows a big f)", () => {
+    __setToothStateForTest(18, { toothSelection: "none" });
+    expect(lane(18)).toEqual(["", ""]);
+    expect(svg()).toContain(">f</text>");
+  });
+});
+
+describe("schematic: the selected tooth's number as a pill", () => {
+  it("draws a hidden pill face beside every number, stamped by the view", () => {
+    const s = svg();
+    expect(count(s, 'class="schem-num"')).toBe(32);
+    expect(count(s, 'class="schem-num-sel"')).toBe(32);
+    expect(s).toContain('rx="9.5" fill="#26344d"');   // the light pill
   });
 });
 
 describe("schematic: milk teeth, not erupted, numbering, hidden wisdom teeth (25.09.2026 review)", () => {
   it("a milk tooth on 15 is drawn as 55, with a primary-molar top view", () => {
+    const premolar = buccalLeftX(svg(), 15);          // the slot's permanent premolar
     __setToothStateForTest(15, { toothSelection: "milktooth" });
     const s = svg();
     expect(s).toContain(">55<");
     expect(s).not.toMatch(/>15</);
-    // primary molar box 52 wide (x0 = 12) — not the 50-wide premolar box of the slot (x0 = 13)
-    expect(buccalLeftX(s, 15)).toBe(12);
+    // a primary MOLAR top view (the molar shape scaled 0.82) is wider than the
+    // premolar of its slot: its frame starts further left
+    expect(buccalLeftX(s, 15)).toBeLessThan(premolar);
   });
 
   it("an upper primary molar draws three roots, a lower two (premolar slot: one)", () => {
     // White tooth shapes (crowns + roots) all carry this exact attribute run;
     // the difference between two states is the number of roots added.
-    const shapes = () => count(svg(), 'fill="#fff" stroke="#3b4a63" stroke-width="1.6" stroke-linejoin="round"');
+    const shapes = () => count(svg(), 'fill="#ffffff" stroke="#26344d" stroke-width="2" stroke-linejoin="round"');
     const permanent = shapes();
     __setToothStateForTest(15, { toothSelection: "milktooth" });   // 55: 3 roots instead of 1
     expect(shapes() - permanent).toBe(2);
@@ -91,7 +124,7 @@ describe("schematic: milk teeth, not erupted, numbering, hidden wisdom teeth (25
   it("a tooth not erupted yet is a faint dotted outline and takes no surface click", () => {
     __setToothStateForTest(17, { toothSelection: "not-erupted" });
     const s = svg();
-    expect(s).toContain('stroke-dasharray="1 3"');
+    expect(s).toContain('stroke-dasharray="0.1 4"');
     expect(s).not.toContain('data-tooth="17" data-surf=');
   });
 

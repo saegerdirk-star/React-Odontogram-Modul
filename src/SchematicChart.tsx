@@ -55,6 +55,7 @@ export default function SchematicChart({
   onSelectionChange,
   onSurface,
   pocketLines = false,
+  dark = false,
 }: {
   /** The whole selection — every one gets the active highlight. */
   selected: number[];
@@ -64,6 +65,8 @@ export default function SchematicChart({
   onSurface: (toothNo: number, surfChar: string) => void;
   /** Draw the probing depths as lines with the WHO 3.5 / 5.5 mm references. */
   pocketLines?: boolean;
+  /** The dark palette (Form D's own dark feature set, not an inversion). */
+  dark?: boolean;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [svg, setSvg] = useState("");
@@ -79,10 +82,11 @@ export default function SchematicChart({
       label: formatToothLabel,
       hidden: (tn) => !getWisdomVisible() && WISDOM.has(tn),
       pocketDepths: pocketLines ? (tn) => getToothPerio(tn).pd : undefined,
+      theme: dark ? "dark" : "light",
     }));
     rebuild();
     return onStateChange(rebuild);
-  }, [pocketLines]);
+  }, [pocketLines, dark]);
 
   // Keyboard entry (Dirk, 25.09.2026 — charly works by keyboard): the schematic
   // view has no focusable tooth tile, so the keys are taken at the document
@@ -111,8 +115,12 @@ export default function SchematicChart({
     if (!root) return;
     root.querySelectorAll(".schematic-hit.is-active").forEach((e) => e.classList.remove("is-active"));
     root.querySelectorAll(".is-armed").forEach((e) => e.classList.remove("is-armed"));
+    root.querySelectorAll(".is-selected").forEach((e) => e.classList.remove("is-selected"));
     for (const tn of selected) {
       root.querySelector(`.schematic-hit[data-tooth="${tn}"]`)?.classList.add("is-active");
+      // the number turns into a pill (Form D's selection marker)
+      root.querySelectorAll(`.schem-num[data-tooth="${tn}"], .schem-num-sel[data-tooth="${tn}"]`)
+        .forEach((e) => e.classList.add("is-selected"));
       // Only a SELECTED tooth's surfaces and canals take input (see onClick);
       // mark them so the hover highlight shows only where a click enters a finding.
       root.querySelectorAll(`.schematic-surf-hit[data-tooth="${tn}"], .schematic-canal-hit[data-tooth="${tn}"]`)

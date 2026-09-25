@@ -136,8 +136,8 @@ describe("Dental Core 0.6 odontogram axes", () => {
       expect(activeIds).toContain("endo-filling-incomplete");
       expect(activeIds).toContain(rootPostType === "glass-fiber" ? "endo-glass-pin" : "endo-metal-pin");
       const schematic = buildSchematicSvg(getToothDisplayState);
-      expect(schematic).toContain("#d98f4a");
-      expect(schematic).toContain("#8a9096");
+      expect(schematic).toContain('class="schem-wf"');
+      expect(schematic).toContain('class="schem-post"');
 
       const parsed = parseDentalCoreBundle(buildDentalCoreBundle(source, options));
 

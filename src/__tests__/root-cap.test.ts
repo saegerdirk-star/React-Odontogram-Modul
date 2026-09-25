@@ -40,6 +40,6 @@ describe("Wurzelkappe (root cap)", () => {
   it("draws a metal coping in the schema for a capped radix", () => {
     __setToothStateForTest(14, { toothSubstrate: "radix", rootCap: true });
     const svg = buildSchematicSvg(getToothDisplayState);
-    expect(svg).toContain("#c7ccd0"); // cap fill
+    expect(svg).toContain('class="schem-rootcap"'); // the coping
   });
 });

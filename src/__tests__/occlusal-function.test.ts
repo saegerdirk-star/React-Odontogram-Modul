@@ -34,6 +34,6 @@ describe("occlusal function (Funktion)", () => {
   it("draws a red marker on the schema occlusal table", () => {
     __setToothStateForTest(16, { occlusalFunction: "premature" });
     const svg = buildSchematicSvg(getToothDisplayState);
-    expect(svg).toContain("#c62828");
+    expect(svg).toContain('class="schem-occl-fn"');
   });
 });

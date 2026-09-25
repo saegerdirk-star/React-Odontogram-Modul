@@ -46,6 +46,6 @@ describe("onlay coverage (Teilkrone pro Fläche)", () => {
   it("shades covered surfaces in the schema occlusal box", () => {
     __setToothStateForTest(16, { restorationType: "onlay", restorationMaterial: "gold", onlayCoverage: ["occlusal"] });
     const svg = buildSchematicSvg(getToothDisplayState);
-    expect(svg).toContain("onlayClip-16");
+    expect(svg).toContain('class="schem-coverage"');   // the onlay's surface, versorgt
   });
 });

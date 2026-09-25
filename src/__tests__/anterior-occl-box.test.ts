@@ -10,30 +10,32 @@ import { describe, it, expect } from "vitest";
 import { __setToothStateForTest, getToothDisplayState } from "../odontogram";
 import { buildSchematicSvg } from "../schematicGraphic";
 
+// Since Form D (docs/design/schematic-form-d.md, 25.09.2026) the arch shows a
+// restoration as "versorgt" in ONE neutral tone and caries as the only
+// saturated surface colour, so "separately colourable" now means: every
+// surface is its own zone, filled or carious on its own.
+const zones = (svg: string, fill: string) => svg.split(`fill="${fill}" stroke=`).length - 1;
+
 describe("anterior incisal-edge Draufsicht", () => {
-  it("keeps all five surfaces as distinct coloured zones on an anterior tooth", () => {
-    // mesial + distal caries (red), buccal amalgam, lingual GIC, incisal composite
+  it("keeps all five surfaces as distinct zones on an anterior tooth", () => {
+    // mesial + distal caries, buccal + lingual filled, incisal filled
     __setToothStateForTest(11, {
       caries: ["caries-mesial", "caries-distal"],
       fillingSurfaces: ["buccal", "lingual", "occlusal"],
       fillingSurfaceMaterials: { buccal: "amalgam", lingual: "gic", occlusal: "composite" },
     });
     const svg = buildSchematicSvg(getToothDisplayState);
-    // four distinct fills present → the zones render independently, not merged
-    expect(svg).toContain("#c62828"); // caries (mesial & distal)
-    expect(svg).toContain("#9aa0a4"); // amalgam (buccal)
-    expect(svg).toContain("#ecd9a6"); // GIC (lingual)
-    expect(svg).toContain("#ece5d6"); // composite (incisal/occlusal)
+    expect(zones(svg, "#d32f2f")).toBe(2);    // caries: mesial and distal, two zones
+    expect(zones(svg, "#aab8ca")).toBe(3);    // versorgt: buccal, lingual, and the incisal field
   });
 
-  it("uses the incisal-edge bar geometry only for anteriors, not molars", () => {
+  it("uses the incisal-edge geometry only for anteriors, not molars", () => {
     __setToothStateForTest(11, {}); // anterior
     __setToothStateForTest(16, {}); // molar
     const svg = buildSchematicSvg(getToothDisplayState);
-    // molar keeps a near-square occlusal table (inner 26x22); anterior gets a
-    // flatter box (boxH 34) with a wide incisal bar (inW 30, inH 10). Sizes per
-    // tooth class (occlGeom), scaled to charly's proportions on 25.09.2026.
-    expect(svg).toContain('width="30" height="10"'); // anterior incisal bar
-    expect(svg).toContain('width="26" height="22"'); // molar occlusal table
+    // Form D inner fields: incisor 23..53 x 29..37 (a flat incisal bar, r 3),
+    // molar 25..51 x 23..45 (a table, r 8) — drawn as rounded-rect paths
+    expect(svg).toContain('d="M26,29 L50,29'); // incisor incisal bar
+    expect(svg).toContain('d="M33,23 L43,23'); // molar occlusal table
   });
 });
