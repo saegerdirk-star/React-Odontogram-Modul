@@ -3,7 +3,7 @@
 
 import { STATUS_EXTRAS } from "./status_extras";
 import {
-  ARCH_ROWS, nextChartTooth, parseShorthand, shouldCommit, dentureValueFor, teethBetween,
+  ARCH_ROWS, nextChartTooth, parseShorthand, shouldCommit, isCompleteShorthand, loneSeverity, dentureValueFor, teethBetween,
   type MaterialKey, type ShorthandEdit,
 } from "./shorthand";
 import { t, onI18nChange, getI18nLanguage } from "./i18n/useI18n";
@@ -8776,6 +8776,77 @@ function handleShorthandUndoKey(evt: KeyboardEvent): boolean {
   return true;
 }
 
+/** The caries surfaces the last keystrokes entered on the current selection,
+ *  so a stage typed AFTER them grades them (`mod K3`, Dirk's charly order).
+ *  Consecutive surface keys add up (`m`, then `od`); anything else clears it. */
+let lastCariesRun: { teeth: string; surfaces: string[] } | null = null;
+const selectionKey = () => (Array.from(selectedTeeth) as number[]).sort((a, b) => a - b).join(",");
+
+/** Applies what is in the buffer to the selection and empties it. */
+function commitShorthandBuffer(): void {
+  if(shorthandIdleTimer){ clearTimeout(shorthandIdleTimer); shorthandIdleTimer = null; }
+  if(!shorthandBuffer) return;
+  const matBefore = shorthandMaterial;
+  const parsed = parseShorthand(shorthandBuffer, { material: shorthandMaterial });
+  const ungraded = parsed.edits.filter((e: Any) => e.kind === "surfaces" && e.target === "caries" && e.severity === null);
+  if(ungraded.length > 0 && ungraded.length === parsed.edits.length){
+    const key = selectionKey();
+    const prior = lastCariesRun && lastCariesRun.teeth === key ? lastCariesRun.surfaces : [];
+    const surfaces = new Set<string>(prior);
+    for(const e of ungraded) for(const surf of (e as Any).surfaces) surfaces.add(surf);
+    lastCariesRun = { teeth: key, surfaces: [...surfaces] };
+  }else if(parsed.edits.length > 0){
+    lastCariesRun = null;
+  }
+  reportShorthand(applyShorthand(shorthandBuffer));
+  shorthandBuffer = "";
+  // A typed material key (`K`, `G`, …) arms the dock chip too.
+  if(shorthandMaterial !== matBefore) notifyStateChange();
+}
+
+/** How long a buffer that is complete but COULD still grow (`o` → `o.B.`,
+ *  `K` → `K3`) waits for a further key before it is applied on its own. */
+const SHORTHAND_IDLE_MS = 600;
+let shorthandIdleTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** One typed shorthand key, the same on a tooth tile and in the schematic view.
+ *  A key that is a finding on its own applies at once — six anteriors marked
+ *  and one `k` is the whole gesture — and so does a SURFACE (Dirk, 25.09.2026:
+ *  "Ich aktiviere Karies und druecke m o d und nichts erscheint"). What waits:
+ *  a run opener (`c`, a stage), and a key some longer key begins with. The
+ *  latter is applied after a short pause if nothing follows, since at the end
+ *  of `mod` — or after a lone `o` — there is no next keystroke to resolve it. */
+function typeShorthandKey(key: string): void {
+  if(shorthandIdleTimer){ clearTimeout(shorthandIdleTimer); shorthandIdleTimer = null; }
+  shorthandBuffer += key;
+  // A stage right after caries surfaces grades those surfaces: `mod`, then `K3`.
+  const stage = loneSeverity(shorthandBuffer);
+  if(stage !== null && lastCariesRun && lastCariesRun.teeth === selectionKey()){
+    const surfaces = lastCariesRun.surfaces;
+    pushShorthandUndo(Array.from(selectedTeeth) as number[]);
+    applyToSelected((x: Any) => {
+      for(const surf of surfaces){
+        if(x.caries.has(`caries-${surf}`)) x.cariesSeverity.set(surf, stage);
+      }
+    });
+    shorthandBuffer = "";
+    syncShorthandReadout();
+    return;
+  }
+  if(shouldCommit(shorthandBuffer)){
+    commitShorthandBuffer();
+  }else if(isCompleteShorthand(shorthandBuffer)){
+    const waiting = shorthandBuffer;
+    shorthandIdleTimer = setTimeout(() => {
+      shorthandIdleTimer = null;
+      if(shorthandBuffer !== waiting) return;
+      commitShorthandBuffer();
+      syncShorthandReadout();
+    }, SHORTHAND_IDLE_MS);
+  }
+  syncShorthandReadout();
+}
+
 function onToothKeydown(toothNo: number, evt: KeyboardEvent){
   if(readOnly) return;
   if(shorthandEnabled && handleShorthandUndoKey(evt)) return;
@@ -8837,17 +8908,7 @@ function onToothKeydown(toothNo: number, evt: KeyboardEvent){
     default:
       if(shorthandEnabled && isShorthandKey(evt)){
         evt.preventDefault();
-        shorthandBuffer += evt.key;
-        // A key that is a finding on its own applies at once — six anteriors
-        // marked and one `k` is the whole gesture, and a confirming Enter after
-        // it would be a keystroke with no reason to exist. What still waits is
-        // what cannot be complete yet: a run opener, or a key some longer key
-        // begins with.
-        if(shouldCommit(shorthandBuffer)){
-          reportShorthand(applyShorthand(shorthandBuffer));
-          shorthandBuffer = "";
-        }
-        syncShorthandReadout();
+        typeShorthandKey(evt.key);
       }
       break;
   }
@@ -8870,14 +8931,7 @@ export function handleChartKeydown(evt: KeyboardEvent): boolean {
   if(readOnly || !shorthandEnabled) return false;
   if(handleShorthandUndoKey(evt)) return true;
   const cur = (activeTooth && selectedTeeth.has(activeTooth)) ? activeTooth : null;
-  const commit = () => {
-    if(!shorthandBuffer) return;
-    const matBefore = shorthandMaterial;
-    reportShorthand(applyShorthand(shorthandBuffer));
-    shorthandBuffer = "";
-    // A typed material key (`K`, `G`, …) arms the dock chip too.
-    if(shorthandMaterial !== matBefore) notifyStateChange();
-  };
+  const commit = commitShorthandBuffer;
   switch(evt.key){
     case "Tab": {
       if(!shorthandTabWalk) return false;
@@ -8939,9 +8993,7 @@ export function handleChartKeydown(evt: KeyboardEvent): boolean {
         reportShorthandMessage(t("schematic.keypad.pickTooth"));
         return true;
       }
-      shorthandBuffer += evt.key;
-      if(shouldCommit(shorthandBuffer)) commit();
-      syncShorthandReadout();
+      typeShorthandKey(evt.key);
       return true;
     }
   }

@@ -27,6 +27,12 @@
 - Shorthand: surfaces typed with no material armed are caries (`mod` =
   caries MOD) — charly's `C` state. Before, they were reported as unknown, so
   the keyboard did nothing while the keypad's surface keys entered caries.
+- Shorthand keyboard (tooth tile and schematic view): a surface key applies
+  ON THE KEYSTROKE — `m o d` shows caries (or, with a material, the filling)
+  as it is typed; before, surfaces collected until Tab/Enter and nothing
+  appeared. A stage typed right after (`mod K3`, charly's order) grades the
+  surfaces just entered. A key that is complete but could still grow (`o`
+  before `o.B.`, `K` before `K3`) applies after a 0.6 s pause.
 
 ### Fixed
 

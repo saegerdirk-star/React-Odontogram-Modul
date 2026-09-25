@@ -428,8 +428,14 @@ export function parseShorthand(input: string, ctx: ShorthandContext = {}): Short
 }
 
 /** Keys that ARE a finding on their own, as opposed to those that open a run
- *  and wait for what follows (surfaces, the caries marker, a severity). */
-const STANDALONE = new Set(["axis", "axes", "material", "reset", "denture"]);
+ *  and wait for what follows (the caries marker, a severity).
+ *
+ *  A SURFACE is one since 25.09.2026 (Dirk: "Ich aktiviere Karies und druecke
+ *  m o d und nichts erscheint"): with no material a surface is caries, with one
+ *  it is a filling — complete either way, so it appears on the keystroke, as in
+ *  charly. The buffer before it still rides along: `cK3m` commits as ONE caries
+ *  run at stage K3, `Km` as a composite filling. */
+const STANDALONE = new Set(["axis", "axes", "material", "reset", "denture", "surface"]);
 
 /** Whether some longer key begins with this one — `A` can still become `Am`,
  *  `K` can still become `K3` or `Kst`. */
@@ -448,15 +454,17 @@ function canExtend(token: string): boolean {
  *
  * It commits only when BOTH hold:
  *
- *   - the last key is a finding on its own (`k`, `e`, `x`, a material switch),
- *     not a run opener — `c` waits, because caries without surfaces is nothing
- *     and committing it early would make the surfaces that follow read as a
- *     FILLING instead;
+ *   - the last key is a finding on its own (`k`, `e`, `x`, a material switch,
+ *     a surface), not a run opener — `c` waits, because caries without
+ *     surfaces is nothing;
  *   - no longer key begins with it — `A` waits because it may still become
  *     `Am`, and `K` waits because it may still become `K3`, `Kst` or `Ker`.
  *
  * The waiting cases resolve on the next keystroke: `Ak` tokenizes as `A` + `k`,
  * whose last key is standalone and unextendable, so the pair commits together.
+ * A buffer that waits only because a longer key COULD follow (`o` before
+ * `o.B.`, `K` before `K3`) is committed by the caller after a short pause
+ * (`isCompleteShorthand`) — at the end of `mod` there is no next keystroke.
  */
 export function shouldCommit(buffer: string): boolean {
   const tokens = tokenizeShorthand(buffer);
@@ -465,6 +473,29 @@ export function shouldCommit(buffer: string): boolean {
   const entry = SHORTHAND_DE[last];
   if(!entry || !STANDALONE.has(entry.kind)) return false;
   return !canExtend(last);
+}
+
+/** The caries stage a buffer consists of, and nothing else (`K3` -> 4), or
+ *  null. Dirk's order is surfaces FIRST, stage after — "mod K3" (19.08.2026) —
+ *  and since a surface now applies on its keystroke, a stage typed right after
+ *  it grades the surfaces just entered; the key handler does that. */
+export function loneSeverity(buffer: string): number | null {
+  const tokens = tokenizeShorthand(buffer);
+  if(tokens.length !== 1) return null;
+  const entry = SHORTHAND_DE[tokens[0]];
+  return entry && entry.kind === "severity" ? entry.severity : null;
+}
+
+/** Whether a buffer that `shouldCommit` holds back would already mean
+ *  something if applied as it stands — its last key a complete finding that
+ *  merely COULD grow (`o` → `o.B.`, `K` → `K3`). The key handler commits such
+ *  a buffer after a short pause. A run opener alone (`c`, a stage) is not
+ *  complete: caries without a surface is nothing. */
+export function isCompleteShorthand(buffer: string): boolean {
+  const tokens = tokenizeShorthand(buffer);
+  if(tokens.length === 0) return false;
+  const entry = SHORTHAND_DE[tokens[tokens.length - 1]];
+  return !!entry && STANDALONE.has(entry.kind);
 }
 
 // -----------------------------------------------------------------------------

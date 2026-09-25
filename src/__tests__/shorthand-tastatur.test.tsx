@@ -148,16 +148,26 @@ describe("Kurzschrift auf der Tastatur", () => {
     expect(zahn(15).restorationType).toBe("bridge");
   }, 90000);
 
-  it("eine Flaechenkette wird erst mit dem Tabulator wirksam, dann als EINE Fuellung", async () => {
+  it("Flaechen erscheinen beim Tippen, ohne Tab oder Enter", async () => {
+    // Dirk, 25.09.2026: "Ich aktiviere Karies und druecke m o d und nichts
+    // erscheint." Frueher sammelten sich die Flaechen bis Tab/Enter.
     await raster();
     await act(async () => { kachel(36).dispatchEvent(new MouseEvent("click", { bubbles: true })); });
     kachel(36).focus();
-    await tippe("Amod");   // A wirkt sofort, m o d sammeln sich
-    // Noch nichts geschrieben - die Kette ist offen.
-    expect(zahn(36).fillingSurfaces ?? []).toEqual([]);
-    await taste("Tab");
+    await tippe("Amod");   // Amalgam, dann m o d - jede Flaeche wirkt sofort
     const flaechen = zahn(36).fillingSurfaces as string[];
     expect(new Set(flaechen)).toEqual(new Set(["mesial", "occlusal", "distal"]));
+  }, 90000);
+
+  it("Karies ohne Material: m o d erscheinen sofort, K3 danach stuft sie ein", async () => {
+    await raster();
+    await act(async () => { kachel(46).dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    kachel(46).focus();
+    await tippe("mod");
+    expect(new Set(zahn(46).caries as string[]))
+      .toEqual(new Set(["caries-mesial", "caries-occlusal", "caries-distal"]));
+    await tippe("K3");     // Dirks Reihenfolge: "mod K3"
+    expect(zahn(46).cariesSeverity).toEqual({ mesial: 4, occlusal: 4, distal: 4 });
   }, 90000);
 
   it("Totalprothese: alles markiert, ein e", async () => {
