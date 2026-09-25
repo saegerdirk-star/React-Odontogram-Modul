@@ -35,7 +35,10 @@ html,body{height:100%}
 body{
   margin:0;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-  background: radial-gradient(1200px 600px at 15% 0%, #ffffff 0%, var(--bg) 60%);
+  /* The glow is painted ONCE at the top; the page ground continues below it.
+     Without no-repeat + a colour the gradient tiled every window height and
+     left a hard edge on a long page (All options, 25.09.2026). */
+  background: radial-gradient(1200px 600px at 15% 0%, #ffffff 0%, var(--bg) 60%) no-repeat, var(--bg);
   color:var(--text);
 }
 .topbar{
@@ -1610,15 +1613,17 @@ select:focus{
    Both drive the SAME wired controls + DS-1 gate. Scoped to .schematic-edit so
    the odontogram / perio / ortho views are completely untouched. */
 .layout.schematic-edit:not(.schematic-edit-all) aside.panel{display:none}
-.layout.schematic-edit.schematic-edit-all aside.panel{grid-column:1 / -1; display:block; margin-top:4px}
+.layout.schematic-edit.schematic-edit-all aside.panel{grid-column:1 / -1; display:block; margin-top:4px; overflow:visible}
 .layout.schematic-edit.schematic-edit-all .panel-body{
   display:grid;
   grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
   align-items:start;
   gap:12px;
-  max-height:46vh;
-  overflow:auto;
-  padding-right:4px;
+  /* No scroll box of its own (Dirk, 25.09.2026: "kann nicht bis zum Ende
+     scrollen"): a 46vh box inside the scrolling page kept its bottom below the
+     window, so its end could not be seen. The page is the only scroller. */
+  max-height:none;
+  overflow:visible;
 }
 
 /* Befund-Dock in the ANATOMICAL view (Dirk 30.08.2026, behind a flag): the
@@ -1632,15 +1637,17 @@ select:focus{
 .layout.dock-mode #toothGrid{zoom:0.82}
 /* "Details" drawer: the full card panel relocated below the dock, full-width
    as a horizontal band — same treatment as the schematic view's All-options. */
-.layout.dock-mode.dock-mode-all aside.panel{grid-column:1 / -1; display:block; margin-top:4px}
+.layout.dock-mode.dock-mode-all aside.panel{grid-column:1 / -1; display:block; margin-top:4px; overflow:visible}
 .layout.dock-mode.dock-mode-all .panel-body{
   display:grid;
   grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
   align-items:start;
   gap:12px;
-  max-height:46vh;
-  overflow:auto;
-  padding-right:4px;
+  /* No scroll box of its own (Dirk, 25.09.2026: "kann nicht bis zum Ende
+     scrollen"): a 46vh box inside the scrolling page kept its bottom below the
+     window, so its end could not be seen. The page is the only scroller. */
+  max-height:none;
+  overflow:visible;
 }
 
 /* All options, in both housings (schematic + anatomical dock): the relocated

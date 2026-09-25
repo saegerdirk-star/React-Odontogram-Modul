@@ -48,6 +48,11 @@
     vanished.
   - "All options" (schematic and anatomical dock): selects ran up to 250 px
     past their card; the cards now keep them inside.
+  - "All options" could not be scrolled to its end: the card panel was its
+    own 46vh scroll box inside the scrolling page, with its bottom below the
+    window. The page is now the only scroller (schematic and anatomical dock).
+  - The page background gradient tiled every window height and left a hard
+    edge on long pages; it is now painted once, the ground colour continues.
 
 ### Fixed
 
