@@ -1,92 +1,72 @@
 # Changelog
 
-## Unreleased
+## 4.2.0 - 2026-09-25
+
+The schematic view, reworked after a review of how charly, DS-Win, Z1, tomedo,
+Dentport and derec draw a chart (`docs/marktschau/README.md`) and against
+charly's 01-Befund mask (`docs/charly/01-befund-gesamtmaske.png`).
+
+### Added
+
+- **Keyboard entry in the schematic view** (`handleChartKeydown`): the same
+  shorthand as on a tooth tile, Tab walk 18 → 28, then 38 → 48 (Shift+Tab
+  back), arrows move the selection, Enter/Backspace/Esc and Cmd/Strg+Z. The
+  keypad head shows what has been typed (`onShorthandReadout`).
+- A visible **caries switch** in the keypad (schematic and anatomical
+  Befund-Dock), first in the mode row like charly's `C` before
+  Am/G/Kst/Ker: lit red while surface clicks and `m o d v l` enter caries.
+- A **Dentition** row in the keypad: `MZ` (charly's key, also typable)
+  switches the selected teeth between milk tooth and permanent tooth, on
+  positions 1–5 only, keeping their findings; **Primary / Mixed dentition**
+  apply the presets from the compact view, after a confirmation.
+- **Pocket depths as lines** in the schematic (toolbar switch, off by default),
+  like charly's PA curves but with the WHO probe's thresholds instead of a
+  2 mm grid: an orange dotted line at 3.5 mm, a stronger red line at 5.5 mm.
+  Vestibular sites solid, oral dashed; each site a dot coloured by its band.
+  Display only, from the six probed sites; nominal scale (a drawn root = 10 mm).
+- **Milk teeth in the schematic**: smaller, crown-heavy, numbered as themselves
+  (55 on 15); at 4/5 a primary molar with thin, splayed roots (3 upper,
+  2 lower) and a molar top view. A tooth not erupted yet is a faint dotted
+  outline; a tooth under the gum carries the gum band over its whole crown.
+- `toggleSurfaceShorthand`: a click on a surface toggles its finding.
 
 ### Changed
 
-- Schematic view, after a review of how charly, DS-Win, Z1, tomedo, Dentport
-  and derec draw a chart (`docs/marktschau/README.md`): the tooth numbers sit
-  back to back on the occlusal plane with a vertical midline; the top view's
-  shape tells molar, premolar and anterior tooth apart; a crown or bridge
-  shows in the top view as well; bridge members are joined by connectors;
-  outlines use one calmer slate ink.
-- Schematic view, proportions after charly's 01-Befund mask
-  (`docs/charly/01-befund-gesamtmaske.png`): wide, low tooth columns with a
-  larger top view (76 px columns instead of 60 × 210 tall ones), so the chart
-  takes the full width; the keypad is dense like charly's key field (no cards,
-  groups side by side, inline row labels, small keys) and about half the
-  chart's height instead of equal to it. The keypad is shared with the
-  anatomical view's Befund-Dock, which gets the same density.
-- Keypad surface keys are labelled `m o d v l` in lower case — what is typed,
-  as in charly (upper-case `D` is the eruption stage, `K`/`A`/`G`/`E` are
-  materials).
-- A visible **caries switch** in the keypad (schematic view and the anatomical
-  Befund-Dock), first in the mode row like charly's `C` before Am/G/Kst/Ker:
-  lit red while surface clicks and `m o d v l` enter caries, and one click
-  goes back to caries from an armed material.
-- Shorthand: surfaces typed with no material armed are caries (`mod` =
-  caries MOD) — charly's `C` state. Before, they were reported as unknown, so
-  the keyboard did nothing while the keypad's surface keys entered caries.
-- Shorthand keyboard (tooth tile and schematic view): a surface key applies
-  ON THE KEYSTROKE — `m o d` shows caries (or, with a material, the filling)
-  as it is typed; before, surfaces collected until Tab/Enter and nothing
-  appeared. A stage typed right after (`mod K3`, charly's order) grades the
-  surfaces just entered. A key that is complete but could still grow (`o`
-  before `o.B.`, `K` before `K3`) applies after a 0.6 s pause.
-- Schematic view, review of every state (25.09.2026):
-  - **Milk teeth** were drawn as the permanent tooth of their slot, so a
-    primary or mixed dentition showed a full permanent set. A milk tooth is
-    now smaller, crown-heavy, numbered as itself (55 on 15), and at 4/5 a
-    primary molar with thin, splayed roots (3 upper, 2 lower) and a molar top
-    view. A tooth **not erupted** yet is a faint dotted outline (it drew as a
-    present tooth); a tooth **under the gum** carries the gum band over its
-    whole crown.
-  - Tooth numbers follow the numbering system (they printed raw FDI) and
-    hidden wisdom teeth stay hidden, as on the anatomical chart.
-  - Dark theme: the keypad had no dark variant (its title was unreadable), the
-    top views drew inverted (the outer ring had no fill), restoration badges
-    vanished.
-  - "All options" (schematic and anatomical dock): selects ran up to 250 px
-    past their card; the cards now keep them inside.
-  - "All options" could not be scrolled to its end: the card panel was its
-    own 46vh scroll box inside the scrolling page, with its bottom below the
-    window. The page is now the only scroller (schematic and anatomical dock).
-  - The page background gradient tiled every window height and left a hard
-    edge on long pages; it is now painted once, the ground colour continues.
-- Keypad: a **Dentition** row — `MZ` (charly's key, also typable) SWITCHES
-  the selected teeth between milk tooth and permanent tooth, on positions 1–5
-  only, and keeps their findings; **Primary dentition** / **Mixed dentition** apply the
-  presets from the compact view, after a confirmation since they reset every
-  tooth. Until now milk teeth were reachable only under All options.
-- Schematic view: **pocket depths as lines** (toolbar switch, off by default),
-  like charly's PA curves but with the WHO probe's thresholds instead of an
-  even 2 mm grid — an orange dotted line at 3.5 mm and a stronger red line at
-  5.5 mm. The vestibular sites run as a solid line, the oral ones dashed; each
-  site is a dot coloured by its band. Display only, from the six probed sites
-  of the periodontal chart; depth measured from the cervical line on a nominal
-  scale (a drawn root = 10 mm).
-- English keypad: the composite material read "Kunststoff"; it reads
-  "Composite". The schematic tooltip shows the displayed number (74 for a
-  milk tooth on 34), not the slot.
+- Schematic layout: the tooth numbers sit back to back on the occlusal plane
+  with a vertical midline; the top view's shape tells molar, premolar and
+  anterior tooth apart; a crown or bridge shows in the top view as well;
+  bridge members are joined by connectors; one calmer slate ink.
+- Schematic proportions after charly's mask: wide, low tooth columns (76 px
+  instead of 60 × 210) so the chart takes the full width; the keypad is dense
+  like charly's key field and about half the chart's height. The anatomical
+  Befund-Dock shares the keypad and its density.
+- Mouse entry in the schematic: the first click on a tooth only selects it; a
+  click on a surface or root of the selected tooth enters the finding.
+- Shorthand: a surface key applies on the keystroke (`m o d` shows as typed);
+  a stage right after grades the surfaces just entered (`mod K3`); surfaces
+  with no material are caries (charly's `C` state); a key that could still
+  grow (`o` → `o.B.`, `K` → `K3`) applies after a 0.6 s pause.
+- Keypad surface keys are labelled `m o d v l` in lower case, as typed.
 
 ### Fixed
 
-- Schematic view: in the upper arch the restoration badge (K/B/V/…) stood at
-  the root tips instead of at the crown.
-- Schematic view, mouse entry: the first click on a tooth now only selects
-  it. Before, the surface and root zones cover nearly the whole tooth, so
-  selecting a tooth by mouse wrote caries (top view) or a root filling (root)
-  on the way. A click on a surface or root of the SELECTED tooth enters the
-  finding, and the same click again takes it off (new
-  `toggleSurfaceShorthand`); before, a click could only add.
-- Schematic view, keyboard entry: keys typed there did nothing (every key
-  handler hung on the anatomical tooth tile holding the focus). The view now
-  takes the keys itself (`handleChartKeydown`): the same shorthand, Tab walk
-  18 → 28, then 38 → 48 (Shift+Tab back), arrows move the selection,
-  Enter/Backspace/Esc and Cmd/Strg+Z as on a tile. The keypad head shows what
-  has been typed (`onShorthandReadout`).
-- Schematic view: the selection highlight could vanish after a key that wrote
-  nothing while the tooth stayed selected.
+- Schematic: milk teeth were drawn as the permanent tooth of their slot, so a
+  primary or mixed dentition showed a full permanent set; a not-erupted tooth
+  drew as present.
+- Schematic: tooth numbers ignored the numbering system, hidden wisdom teeth
+  showed, the tooltip showed the slot (34) for a milk tooth (74).
+- Schematic: in the upper arch the restoration badge stood at the root tips.
+- Schematic: selecting a tooth by mouse wrote caries or a root filling on the
+  way; a click could only add, never take a finding back.
+- Schematic: keys typed there did nothing; the selection highlight could
+  vanish after a key that wrote nothing.
+- Dark theme: the keypad had no dark variant (unreadable title), the top views
+  drew inverted, restoration badges vanished.
+- "All options" (schematic and anatomical dock): selects ran up to 250 px past
+  their card, and the panel was its own scroll box whose end could not be
+  reached — the page is now the only scroller.
+- The page background gradient tiled every window height and left a hard edge.
+- English keypad: the composite material read "Kunststoff".
 
 ## 4.1.0 - 2026-09-16
 
