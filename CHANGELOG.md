@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Schematic view, after a review of how charly, DS-Win, Z1, tomedo, Dentport
+  and derec draw a chart (`docs/marktschau/README.md`): the tooth numbers sit
+  back to back on the occlusal plane with a vertical midline; the top view's
+  shape tells molar, premolar and anterior tooth apart; a crown or bridge
+  shows in the top view as well; bridge members are joined by connectors;
+  outlines use one calmer slate ink.
+
+### Fixed
+
+- Schematic view: in the upper arch the restoration badge (K/B/V/…) stood at
+  the root tips instead of at the crown.
+
 ## 4.1.0 - 2026-09-16
 
 ### Plan alternatives (Planalternativen, Phase 1)

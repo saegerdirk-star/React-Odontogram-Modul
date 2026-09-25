@@ -9,13 +9,15 @@
  *   - a SIDE view = crown 2/5 of length + roots 3/5, crown facing the occlusal
  *     plane (middle), roots outward; crown width Front = premolar, molars wider;
  *     root count 1/2/3 from `rootsOf`; the roots fill the cervical at crown width.
- *   - a DRAUFSICHT = a rounded five-surface box (O centre, M/D/B/L outer).
+ *   - a DRAUFSICHT = a rounded five-surface box (O centre, M/D/B/L outer) whose
+ *     shape says the tooth class (molar / premolar / anterior incisal edge).
  *
  * Pure string generation over a `getState` reader (`ToothDisplayState`). No new
  * odontogram state, no payload/FHIR change → parity-free. Phase 1 is DISPLAY
  * ONLY; interactivity is a later phase.
  */
-import { rootsOf, isUpperTooth, isAnteriorTooth, type ToothDisplayState } from "./odontogram";
+import { rootsOf, isAnteriorTooth, type ToothDisplayState } from "./odontogram";
+import { bridgeConstructions } from "./bridgeOverlay";
 
 // Arch order (occlusal-to-occlusal in the middle): upper side glyphs point their
 // roots UP, lower point DOWN.
@@ -34,7 +36,13 @@ const CROWN_W_FRONT = 30;          // Front = Praemolar
 const CROWN_W_MOLAR = 50;
 
 // --- colours -------------------------------------------------------------
-const INK = "#333";
+// One slate-blue ink for every outline instead of near-black: the market review
+// (25.09.2026) found the calmest charts draw outline-only in ONE hue and leave
+// colour to the findings. Guides (midline) and ghosts sit lighter still.
+const INK = "#3b4a63";
+const NUM_INK = "#7a8699";
+const GUIDE = "#c9d1dc";
+const GHOST = "#c3cad4";
 const CARIES = "#c62828";
 // direct filling materials
 const FILL_COLORS: Record<string, string> = {
@@ -161,8 +169,8 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
 
   if (missing && !pontic && !replaced) {
     // ghost outline only
-    parts.push(`<path d="${crownPath(cx, w, top, cerv)}" fill="none" stroke="#c9c9c9" stroke-width="1.2" stroke-dasharray="3 3"/>`);
-    for (const d of rootPaths(cx, w, cerv, apex, n)) parts.push(`<path d="${d}" fill="none" stroke="#c9c9c9" stroke-width="1.2" stroke-dasharray="3 3"/>`);
+    parts.push(`<path d="${crownPath(cx, w, top, cerv)}" fill="none" stroke="${GHOST}" stroke-width="1.2" stroke-dasharray="3 3"/>`);
+    for (const d of rootPaths(cx, w, cerv, apex, n)) parts.push(`<path d="${d}" fill="none" stroke="${GHOST}" stroke-width="1.2" stroke-dasharray="3 3"/>`);
   } else {
     // crown fill
     let crownFill = "#fff";
@@ -377,22 +385,28 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
   if (crownDown) g = `<g transform="translate(0,${SIDE_H}) scale(1,-1)">${g}</g>`;
 
   // upright text annotations, added AFTER the flip so they never read upside down.
+  // They hang on the END of the glyph they describe — the restoration badge at
+  // the CROWN end, root-canal/resection labels at the ROOT end — so in the upper
+  // arch (flipped, crown at the bottom) they swap ends with the tooth. They used
+  // to sit at fixed y, which put a crown's "K" beside the root tips of 16.
+  const crownY = crownDown ? SIDE_H - 3 : 14;
+  const rootY = crownDown ? 14 : SIDE_H - 4;
   const anno: string[] = [];
   const badge = crowned ? (rt === "bridge" ? "B" : "K") : replaced ? "e" : rt === "veneer" ? "V" : rt === "onlay" ? "On" : rt === "inlay" ? "I" : "";
-  if (badge) anno.push(`<text x="${CELL_W - 5}" y="14" text-anchor="end" font-size="11" font-weight="600" fill="${INK}">${badge}</text>`);
+  if (badge) anno.push(`<text x="${CELL_W - 5}" y="${crownY}" text-anchor="end" font-size="11" font-weight="600" fill="${INK}">${badge}</text>`);
   if (!implant && (anyFill || anyPost)) {
     const t = anyFill && anyPost ? "WF·St" : anyPost ? "St" : "WF";
-    anno.push(`<text x="${CELL_W - 5}" y="${SIDE_H - 4}" text-anchor="end" font-size="9" fill="#b5722f">${t}</text>`);
+    anno.push(`<text x="${CELL_W - 5}" y="${rootY}" text-anchor="end" font-size="9" fill="#b5722f">${t}</text>`);
   }
   const mob = { m1: "I", m2: "II", m3: "III" }[s.mobility] ?? "";
-  if (mob) anno.push(`<text x="5" y="${SIDE_H - 4}" font-size="10" fill="#666">${mob}</text>`);
-  // resection labels (top-left): Hem/Amp/Prä for a split/removed root, WSR for
-  // an apicoectomy — both can apply (a hemisected tooth can also carry a WSR).
+  if (mob) anno.push(`<text x="5" y="${rootY}" font-size="10" fill="#666">${mob}</text>`);
+  // resection labels (crown end, left): Hem/Amp/Prä for a split/removed root,
+  // WSR for an apicoectomy — both can apply (a hemisected tooth can also carry a WSR).
   const resTxt = [
     s.rootResection === "hemisection" ? "Hem" : s.rootResection === "amputation" ? "Amp" : s.rootResection === "premolarisation" ? "Prä" : "",
     s.endoResection ? "WSR" : "",
   ].filter(Boolean).join("·");
-  if (resTxt) anno.push(`<text x="5" y="14" font-size="9" fill="#b70000">${resTxt}</text>`);
+  if (resTxt) anno.push(`<text x="5" y="${crownY}" font-size="9" fill="#b70000">${resTxt}</text>`);
 
   return g + anno.join("");
 }
@@ -400,7 +414,6 @@ function sideGlyph(toothNo: number, s: ToothDisplayState, crownDown: boolean): s
 // ---------------------------------------------------------------------------
 // Occlusal five-surface box. Surfaces: O centre, plus M/D/B/L outer zones.
 // ---------------------------------------------------------------------------
-const SURF_KEYS = ["mesial", "distal", "buccal", "lingual", "occlusal"] as const;
 function surfaceColor(surf: string, s: ToothDisplayState): string | null {
   const filled = s.fillingSurfaces.includes(surf);
   const carious = s.caries.includes(`caries-${surf}`);   // caries Set keys are `caries-<surface>`
@@ -412,116 +425,112 @@ function surfaceColor(surf: string, s: ToothDisplayState): string | null {
   return null;
 }
 
-function occlBox(toothNo: number, s: ToothDisplayState): string {
-  // box coords in a CELL_W x OCCL_H cell, centred. ANTERIOR teeth (13-23, 43-33)
-  // have no occlusal table but an INCISAL EDGE — their top view is a wider,
-  // flatter box whose centre is a horizontal incisal-edge BAR (mesiodistal)
-  // rather than the molar occlusal square (Dirk, 30.08.2026).
+/** The occlusal box geometry of ONE tooth, in a CELL_W x OCCL_H cell — the
+ *  single source for the drawing, the surface fills and the click zones, which
+ *  used to carry three copies of it. The SHAPE says the tooth class (market
+ *  review 25.09.2026: every chart Dirk's staff know draws a premolar differently
+ *  from a molar, and it costs nothing): a molar is the widest, near-square box;
+ *  a premolar narrower and markedly rounder; an anterior tooth (13-23, 43-33)
+ *  has no occlusal table but an INCISAL EDGE — a wide flat box whose centre is a
+ *  mesiodistal bar (Dirk, 30.08.2026). */
+interface OcclGeom {
+  anterior: boolean; cx: number; cy: number;
+  x0: number; y0: number; boxW: number; boxH: number; outerRx: number;
+  ix0: number; iy0: number; inW: number; inH: number; innerRx: number;
+}
+function occlGeom(toothNo: number): OcclGeom {
   const anterior = isAnteriorTooth(toothNo);
-  const bw = 44, cx = CELL_W / 2, cy = OCCL_H / 2;
-  const boxW = bw, boxH = anterior ? 30 : bw;
-  const inW = anterior ? 26 : 18, inH = anterior ? 9 : 18;
-  const x0 = cx - boxW / 2, y0 = cy - boxH / 2;
-  const ix0 = cx - inW / 2, iy0 = cy - inH / 2;
-  const outerRx = anterior ? 6 : 8, innerRx = anterior ? 3 : 4;
+  const cx = CELL_W / 2, cy = OCCL_H / 2;
+  const [boxW, boxH, outerRx, inW, inH, innerRx] =
+    anterior ? [40, 28, 7, 24, 8, 3]
+    : isMolar(toothNo) ? [48, 44, 9, 20, 18, 4]
+    : [38, 40, 14, 14, 16, 5];                       // premolar
+  return {
+    anterior, cx, cy, boxW, boxH, outerRx, inW, inH, innerRx,
+    x0: cx - boxW / 2, y0: cy - boxH / 2, ix0: cx - inW / 2, iy0: cy - inH / 2,
+  };
+}
+/** The five surface regions of a box, keyed by surface. B = top, L = bottom;
+ *  the LEFT/RIGHT zones are mesial/distal by quadrant, so mesial always faces
+ *  the arch midline (mesialOnLeft = quadrant 2/3). */
+function surfaceShapes(toothNo: number, g: OcclGeom): Record<string, string> {
+  const { x0, y0, boxW, boxH, ix0, iy0, inW, inH } = g;
+  const left = `M${x0},${y0} L${x0},${y0 + boxH} L${ix0},${iy0 + inH} L${ix0},${iy0} Z`;
+  const right = `M${x0 + boxW},${y0} L${x0 + boxW},${y0 + boxH} L${ix0 + inW},${iy0 + inH} L${ix0 + inW},${iy0} Z`;
+  const onLeft = mesialOnLeft(toothNo);
+  return {
+    buccal: `M${x0},${y0} L${x0 + boxW},${y0} L${ix0 + inW},${iy0} L${ix0},${iy0} Z`,
+    lingual: `M${x0},${y0 + boxH} L${x0 + boxW},${y0 + boxH} L${ix0 + inW},${iy0 + inH} L${ix0},${iy0 + inH} Z`,
+    occlusal: `M${ix0},${iy0} h${inW} v${inH} h${-inW} Z`,
+    [onLeft ? "mesial" : "distal"]: left,
+    [onLeft ? "distal" : "mesial"]: right,
+  };
+}
+function isCrowned(s: ToothDisplayState): boolean {
+  return s.restorationType === "crown" || s.restorationType === "bridge";
+}
+
+function occlBox(toothNo: number, s: ToothDisplayState): string {
+  const g = occlGeom(toothNo);
+  const { anterior, cx, cy, x0, y0, boxW, boxH, outerRx, ix0, iy0, inW, inH, innerRx } = g;
   const missing = s.toothSelection === "none" || s.toothSelection === "no-tooth-after-extraction";
   const replaced = missing && (s.prosthesis === "removable-partial" || s.prosthesis === "removable-full");
   const parts: string[] = [];
+  const outline = `<rect x="${x0}" y="${y0}" width="${boxW}" height="${boxH}" rx="${outerRx}"`;
   if (replaced) {
     // a removable-denture tooth (Prothesenzahn): a filled box in denture colour
-    parts.push(`<rect x="${x0}" y="${y0}" width="${boxW}" height="${boxH}" rx="${outerRx}" fill="#ecdcc4" stroke="${INK}" stroke-width="1.4"/>`);
+    parts.push(`${outline} fill="#ecdcc4" stroke="${INK}" stroke-width="1.4"/>`);
     return parts.join("");
   }
   if (missing && s.restorationType !== "bridge") {
-    parts.push(`<rect x="${x0}" y="${y0}" width="${boxW}" height="${boxH}" rx="${outerRx}" fill="none" stroke="#c9c9c9" stroke-width="1.2" stroke-dasharray="3 3"/>`);
+    parts.push(`${outline} fill="none" stroke="${GHOST}" stroke-width="1.2" stroke-dasharray="3 3"/>`);
     return parts.join("");
   }
-  // outer zones as coloured trapezoids between the inner region and the outer box.
-  // B = top, L = bottom; the LEFT/RIGHT zones are mesial/distal by quadrant so
-  // mesial always faces the arch midline (mesialOnLeft = quadrant 2/3). For an
-  // anterior the inner region is the incisal bar, so buccal/lingual become thin
-  // labial/palatal strips and the centre reads as the biting edge.
-  const leftShape = `M${x0},${y0} L${x0},${y0 + boxH} L${ix0},${iy0 + inH} L${ix0},${iy0} Z`;
-  const rightShape = `M${x0 + boxW},${y0} L${x0 + boxW},${y0 + boxH} L${ix0 + inW},${iy0 + inH} L${ix0 + inW},${iy0} Z`;
-  const topShape = `M${x0},${y0} L${x0 + boxW},${y0} L${ix0 + inW},${iy0} L${ix0},${iy0} Z`;
-  const botShape = `M${x0},${y0 + boxH} L${x0 + boxW},${y0 + boxH} L${ix0 + inW},${iy0 + inH} L${ix0},${iy0 + inH} Z`;
-  const onLeft = mesialOnLeft(toothNo);
-  const zones: [string, string][] = [
-    ["buccal", topShape], ["lingual", botShape],
-    [onLeft ? "mesial" : "distal", leftShape], [onLeft ? "distal" : "mesial", rightShape],
-  ];
+  // A crown covers the whole table, so the TOP VIEW shows it too — it used to
+  // show only in the side view and the box stayed white. Same material tone as
+  // the side-view crown; the surface lines stay drawn over it, faintly.
+  const crowned = isCrowned(s);
+  if (crowned) {
+    parts.push(`${outline} fill="${CROWN_COLORS[s.restorationMaterial] ?? "#ddd"}"/>`);
+  }
+  const shapes = surfaceShapes(toothNo, g);
+  const clip = (id: string, inner: string) =>
+    `<clipPath id="${id}">${outline}/></clipPath><g clip-path="url(#${id})">${inner}</g>`;
   // The zone trapezoids run to the SQUARE outer corners, but the outline is
-  // rounded (rx=8) — so a coloured surface poked past the rounding (Dirk,
+  // rounded — so a coloured surface poked past the rounding (Dirk,
   // 24.08.2026). Clip the fills to the same rounded box the outline draws.
   const zonePaths: string[] = [];
-  for (const [surf, shape] of zones) {
+  for (const surf of ["buccal", "lingual", "mesial", "distal"]) {
     const c = surfaceColor(surf, s);
-    if (c) zonePaths.push(`<path d="${shape}" fill="${c}" opacity="0.9"/>`);
+    if (c) zonePaths.push(`<path d="${shapes[surf]}" fill="${c}" opacity="0.9"/>`);
   }
-  if (zonePaths.length) {
-    const clipId = `occlClip-${toothNo}`;
-    parts.push(`<clipPath id="${clipId}"><rect x="${x0}" y="${y0}" width="${boxW}" height="${boxH}" rx="${outerRx}"/></clipPath>`);
-    parts.push(`<g clip-path="url(#${clipId})">${zonePaths.join("")}</g>`);
-  }
-  // Teilkrone pro Fläche (charly TEILKRONE1-4): mark the surfaces a partial crown
-  // (onlay) covers with the crown material tone, so a partial onlay reads as
-  // partial. Empty coverage = whole table, drawn as the "On" badge alone.
-  if (s.restorationType === "onlay" && s.onlayCoverage.length) {
-    const col = CROWN_COLORS[s.restorationMaterial] ?? "#cbb26b";
-    const occlShape = `M${ix0},${iy0} h${inW} v${inH} h${-inW} Z`;
-    const surfShape: Record<string, string> = {
-      buccal: topShape, lingual: botShape, occlusal: occlShape,
-      [onLeft ? "mesial" : "distal"]: leftShape,
-      [onLeft ? "distal" : "mesial"]: rightShape,
-    };
-    const clipId = `onlayClip-${toothNo}`;
-    const covered = s.onlayCoverage.map(surf => surfShape[surf]).filter(Boolean)
-      .map(d => `<path d="${d}" fill="${col}" opacity="0.6" stroke="${INK}" stroke-width="0.8"/>`).join("");
-    parts.push(`<clipPath id="${clipId}"><rect x="${x0}" y="${y0}" width="${boxW}" height="${boxH}" rx="${outerRx}"/></clipPath>`);
-    parts.push(`<g clip-path="url(#${clipId})">${covered}</g>`);
-  }
-  // Inlay-Flächen (Dirk 31.08.2026): dieselbe Darstellung — die Flächen, die das
-  // Inlay umfasst, im Restaurationsmaterial-Ton (für den Kostenplan hinterlegt).
-  if (s.restorationType === "inlay" && s.inlayCoverage.length) {
-    const col = CROWN_COLORS[s.restorationMaterial] ?? "#cbb26b";
-    const occlShape = `M${ix0},${iy0} h${inW} v${inH} h${-inW} Z`;
-    const surfShape: Record<string, string> = {
-      buccal: topShape, lingual: botShape, occlusal: occlShape,
-      [onLeft ? "mesial" : "distal"]: leftShape,
-      [onLeft ? "distal" : "mesial"]: rightShape,
-    };
-    const clipId = `inlayClip-${toothNo}`;
-    const covered = s.inlayCoverage.map(surf => surfShape[surf]).filter(Boolean)
-      .map(d => `<path d="${d}" fill="${col}" opacity="0.55" stroke="${INK}" stroke-width="0.8"/>`).join("");
-    parts.push(`<clipPath id="${clipId}"><rect x="${x0}" y="${y0}" width="${boxW}" height="${boxH}" rx="${outerRx}"/></clipPath>`);
-    parts.push(`<g clip-path="url(#${clipId})">${covered}</g>`);
-  }
-  // Veneer-Flächen (Dirk 31.08.2026): dieselbe Darstellung für den Kostenplan.
-  if (s.restorationType === "veneer" && s.veneerCoverage.length) {
-    const col = CROWN_COLORS[s.restorationMaterial] ?? "#e2d6c4";
-    const occlShape = `M${ix0},${iy0} h${inW} v${inH} h${-inW} Z`;
-    const surfShape: Record<string, string> = {
-      buccal: topShape, lingual: botShape, occlusal: occlShape,
-      [onLeft ? "mesial" : "distal"]: leftShape,
-      [onLeft ? "distal" : "mesial"]: rightShape,
-    };
-    const clipId = `veneerClip-${toothNo}`;
-    const covered = s.veneerCoverage.map(surf => surfShape[surf]).filter(Boolean)
-      .map(d => `<path d="${d}" fill="${col}" opacity="0.55" stroke="${INK}" stroke-width="0.8"/>`).join("");
-    parts.push(`<clipPath id="${clipId}"><rect x="${x0}" y="${y0}" width="${boxW}" height="${boxH}" rx="${outerRx}"/></clipPath>`);
-    parts.push(`<g clip-path="url(#${clipId})">${covered}</g>`);
+  if (zonePaths.length) parts.push(clip(`occlClip-${toothNo}`, zonePaths.join("")));
+  // Teilkrone / Inlay / Veneer pro Fläche (charly TEILKRONE1-4; Dirk 31.08.2026):
+  // the surfaces the restoration covers, in its material tone, so a partial one
+  // reads as partial. Empty coverage = whole table, drawn as the badge alone.
+  const coverage = s.restorationType === "onlay" ? { list: s.onlayCoverage, fallback: "#cbb26b", op: 0.6 }
+    : s.restorationType === "inlay" ? { list: s.inlayCoverage, fallback: "#cbb26b", op: 0.55 }
+    : s.restorationType === "veneer" ? { list: s.veneerCoverage, fallback: "#e2d6c4", op: 0.55 }
+    : null;
+  if (coverage && coverage.list.length) {
+    const col = CROWN_COLORS[s.restorationMaterial] ?? coverage.fallback;
+    const covered = coverage.list.map(surf => shapes[surf]).filter(Boolean)
+      .map(d => `<path d="${d}" fill="${col}" opacity="${coverage.op}" stroke="${INK}" stroke-width="0.8"/>`).join("");
+    parts.push(clip(`${s.restorationType}Clip-${toothNo}`, covered));
   }
   const oc = surfaceColor("occlusal", s);
-  parts.push(`<rect x="${x0}" y="${y0}" width="${boxW}" height="${boxH}" rx="${outerRx}" fill="none" stroke="${INK}" stroke-width="1.5"/>`);
-  // Centre: the molar occlusal square, or the anterior incisal-edge bar. The bar
-  // carries a slightly heavier top line — that is the biting edge itself.
-  parts.push(`<rect x="${ix0}" y="${iy0}" width="${inW}" height="${inH}" rx="${innerRx}" fill="${oc ?? "#fff"}" stroke="${INK}" stroke-width="1.2"/>`);
+  parts.push(`${outline} fill="none" stroke="${INK}" stroke-width="1.5"/>`);
+  // Centre: the occlusal table, or the anterior incisal-edge bar. Under a crown
+  // the inner lines are kept for orientation but lighter, and not filled white.
+  const innerFill = oc ?? (crowned ? "none" : "#fff");
+  const innerStroke = crowned ? 0.8 : 1.2;
+  parts.push(`<rect x="${ix0}" y="${iy0}" width="${inW}" height="${inH}" rx="${innerRx}" fill="${innerFill}" stroke="${INK}" stroke-width="${innerStroke}"/>`);
   if (anterior) {
     parts.push(`<line x1="${ix0 + 1}" y1="${cy}" x2="${ix0 + inW - 1}" y2="${cy}" stroke="${INK}" stroke-width="1.4"/>`);
   } else {
-    // short corner ticks (posterior only)
-    const t = 6;
-    parts.push(`<g stroke="${INK}" stroke-width="0.9">`
+    // short corner ticks toward the box corners (posterior only)
+    const t = isMolar(toothNo) ? 6 : 4;
+    parts.push(`<g stroke="${INK}" stroke-width="${crowned ? 0.6 : 0.9}">`
       + `<line x1="${ix0}" y1="${iy0}" x2="${ix0 - t}" y2="${iy0 - t}"/>`
       + `<line x1="${ix0 + inW}" y1="${iy0}" x2="${ix0 + inW + t}" y2="${iy0 - t}"/>`
       + `<line x1="${ix0}" y1="${iy0 + inH}" x2="${ix0 - t}" y2="${iy0 + inH + t}"/>`
@@ -541,28 +550,15 @@ function occlBox(toothNo: number, s: ToothDisplayState): string {
 
 /** Transparent, CLICKABLE surface zones over the occlusal box — one per surface,
  *  carrying `data-tooth` and `data-surf` (the shorthand char m/o/d/v/l). Same
- *  geometry as `occlBox`; laid on TOP of the column hit rect so a click on a
- *  surface enters a finding there, a click elsewhere still selects the tooth. */
+ *  geometry as `occlBox` (both read `occlGeom`); laid on TOP of the column hit
+ *  rect so a click on a surface enters a finding there, a click elsewhere still
+ *  selects the tooth. */
 function occlSurfaceHits(toothNo: number): string {
-  const anterior = isAnteriorTooth(toothNo);
-  const bw = 44, cx = CELL_W / 2, cy = OCCL_H / 2;
-  const boxW = bw, boxH = anterior ? 30 : bw;
-  const inW = anterior ? 26 : 18, inH = anterior ? 9 : 18;
-  const x0 = cx - boxW / 2, y0 = cy - boxH / 2;
-  const ix0 = cx - inW / 2, iy0 = cy - inH / 2;
-  const leftShape = `M${x0},${y0} L${x0},${y0 + boxH} L${ix0},${iy0 + inH} L${ix0},${iy0} Z`;
-  const rightShape = `M${x0 + boxW},${y0} L${x0 + boxW},${y0 + boxH} L${ix0 + inW},${iy0 + inH} L${ix0 + inW},${iy0} Z`;
-  const topShape = `M${x0},${y0} L${x0 + boxW},${y0} L${ix0 + inW},${iy0} L${ix0},${iy0} Z`;
-  const botShape = `M${x0},${y0 + boxH} L${x0 + boxW},${y0 + boxH} L${ix0 + inW},${iy0 + inH} L${ix0},${iy0 + inH} Z`;
-  const occlShape = `M${ix0},${iy0} h${inW} v${inH} h${-inW} Z`;
-  const onLeft = mesialOnLeft(toothNo);
+  const shapes = surfaceShapes(toothNo, occlGeom(toothNo));
   // surface -> shorthand char: mesial m, distal d, buccal v, lingual l, occlusal o
-  const zones: [string, string][] = [
-    ["v", topShape], ["l", botShape], ["o", occlShape],
-    [onLeft ? "m" : "d", leftShape], [onLeft ? "d" : "m", rightShape],
-  ];
-  return zones.map(([ch, d]) =>
-    `<path class="schematic-surf-hit" data-tooth="${toothNo}" data-surf="${ch}" d="${d}" fill="transparent"/>`).join("");
+  const chars: [string, string][] = [["buccal", "v"], ["lingual", "l"], ["occlusal", "o"], ["mesial", "m"], ["distal", "d"]];
+  return chars.map(([surf, ch]) =>
+    `<path class="schematic-surf-hit" data-tooth="${toothNo}" data-surf="${ch}" d="${shapes[surf]}" fill="transparent"/>`).join("");
 }
 
 // ---------------------------------------------------------------------------
@@ -570,21 +566,46 @@ function occlSurfaceHits(toothNo: number): string {
 // ---------------------------------------------------------------------------
 export type GetDisplayState = (toothNo: number) => ToothDisplayState;
 
-function archRows(teeth: number[], getState: GetDisplayState, sideOnTop: boolean): string {
-  // returns two rows of <g> (side + occlusal) plus a number row; y-stacked
-  const cols = teeth.length;
-  const numY = 0, r1Y = NUM_H, r2Y = NUM_H + (sideOnTop ? SIDE_H : OCCL_H);
+/** One arch as three stacked rows. The occlusal rows and the tooth numbers sit
+ *  in the MIDDLE of the chart, the side views outward (roots out) — the layout
+ *  every German chart shares (charly, DS-Win, Z1, tomedo, Dentport, derec):
+ *    upper: side · occlusal · numbers      lower: numbers · occlusal · side
+ *  so the two number rows stand back to back on the occlusal plane. */
+function archRows(teeth: number[], getState: GetDisplayState, upper: boolean): string {
+  const sideY = upper ? 0 : NUM_H + OCCL_H;
+  const occlY = upper ? SIDE_H : NUM_H;
+  const numY = upper ? SIDE_H + OCCL_H : 0;
   const nums = teeth.map((tn, i) =>
-    `<text x="${i * CELL_W + CELL_W / 2}" y="${NUM_H - 5}" text-anchor="middle" font-size="11" fill="#888">${tn}</text>`).join("");
+    `<text x="${i * CELL_W + CELL_W / 2}" y="${numY + (upper ? NUM_H - 4 : NUM_H - 6)}" text-anchor="middle" font-size="11" fill="${NUM_INK}">${tn}</text>`).join("");
   const rowSide = teeth.map((tn, i) => {
-    const g = sideGlyph(tn, getState(tn), /*crownDown*/ isUpperTooth(tn));
-    const y = sideOnTop ? r1Y : r2Y;
-    return `<g transform="translate(${i * CELL_W},${y})">${g}</g>`;
+    const g = sideGlyph(tn, getState(tn), /*crownDown*/ upper);
+    return `<g transform="translate(${i * CELL_W},${sideY})">${g}</g>`;
   }).join("");
-  const rowOccl = teeth.map((tn, i) => {
-    const y = sideOnTop ? r2Y : r1Y;
-    return `<g transform="translate(${i * CELL_W},${y})">${occlBox(tn, getState(tn))}</g>`;
-  }).join("");
+  const rowOccl = teeth.map((tn, i) =>
+    `<g transform="translate(${i * CELL_W},${occlY})">${occlBox(tn, getState(tn))}</g>`).join("");
+  // Brücke: the members of each bridge (abutment crowns + pontics, from the same
+  // `bridgeConstructions` the anatomical overlay draws) are JOINED — a connector
+  // between neighbouring occlusal boxes and between neighbouring side-view
+  // crowns, in the bridge's material. Drawn BEFORE the rows so the boxes and
+  // crowns lie on top and only the joint between them shows.
+  const connectors: string[] = [];
+  {
+    const pad = (SIDE_H - TOOTH_LEN) / 2, crownH = TOOTH_LEN * CROWN_FRAC;
+    const crownMid = upper ? SIDE_H - (pad + crownH / 2) : pad + crownH / 2;
+    for (const span of bridgeConstructions(getState)) {
+      if (!teeth.includes(span[0])) continue;
+      const col = CROWN_COLORS[getState(span[0]).restorationMaterial] ?? "#c9c9c9";
+      for (let k = 0; k + 1 < span.length; k++) {
+        const a = teeth.indexOf(span[k]), b = teeth.indexOf(span[k + 1]);
+        if (a < 0 || b !== a + 1) continue;
+        const ga = occlGeom(span[k]), gb = occlGeom(span[k + 1]);
+        const ox1 = a * CELL_W + ga.cx + ga.boxW / 2 - 3, ox2 = b * CELL_W + gb.cx - gb.boxW / 2 + 3;
+        connectors.push(`<rect class="schematic-bridge" x="${ox1}" y="${occlY + OCCL_H / 2 - 5}" width="${ox2 - ox1}" height="10" fill="${col}" stroke="${INK}" stroke-width="1"/>`);
+        const sx1 = a * CELL_W + CELL_W / 2 + crownWidth(span[k]) / 2 - 3, sx2 = b * CELL_W + CELL_W / 2 - crownWidth(span[k + 1]) / 2 + 3;
+        connectors.push(`<rect class="schematic-bridge" x="${sx1}" y="${(sideY + crownMid - 5).toFixed(1)}" width="${sx2 - sx1}" height="10" fill="${col}" stroke="${INK}" stroke-width="1"/>`);
+      }
+    }
+  }
   // Phase 2 (odontogram-ip3): one transparent hit rect per tooth column, laid
   // LAST so it sits on top and captures the click for BOTH the side glyph and
   // the occlusal box. It carries `data-tooth`; the view delegates off that and
@@ -605,8 +626,7 @@ function archRows(teeth: number[], getState: GetDisplayState, sideOnTop: boolean
     const pad = (SIDE_H - TOOTH_LEN) / 2;
     const cerv = pad + TOOTH_LEN * CROWN_FRAC, apex = pad + TOOTH_LEN;
     const seg = w / n, rh = apex - cerv;
-    const rootTop = isUpperTooth(tn) ? SIDE_H - apex : cerv;   // upper is flipped → roots up
-    const sideY = sideOnTop ? r1Y : r2Y;
+    const rootTop = upper ? SIDE_H - apex : cerv;   // upper is flipped → roots up
     return canals.map((name, j) => {
       const x = i * CELL_W + (centers[j] - seg / 2);
       return `<rect class="schematic-canal-hit" data-tooth="${tn}" data-canal="${name}" x="${x.toFixed(1)}" y="${(sideY + rootTop).toFixed(1)}" width="${seg.toFixed(1)}" height="${rh.toFixed(1)}" fill="transparent"/>`;
@@ -617,8 +637,7 @@ function archRows(teeth: number[], getState: GetDisplayState, sideOnTop: boolean
   // the anatomical splint overlay draws.
   const splintBars: string[] = [];
   {
-    const sideY = sideOnTop ? r1Y : r2Y;
-    const y = sideY + SIDE_H * (sideOnTop ? 0.72 : 0.28);
+    const y = sideY + SIDE_H * (upper ? 0.72 : 0.28);
     let run: number[] = [];
     const flush = () => {
       if (run.length >= 2) {
@@ -635,7 +654,6 @@ function archRows(teeth: number[], getState: GetDisplayState, sideOnTop: boolean
   // of each run of teeth under the appliance (minLen 1 — a splint may sit on one).
   const splintGuard: string[] = [];
   {
-    const occlY = sideOnTop ? r2Y : r1Y;   // occlusal row y for this arch
     const y = occlY + OCCL_H / 2;
     let run: number[] = [];
     const flush = () => {
@@ -652,28 +670,29 @@ function archRows(teeth: number[], getState: GetDisplayState, sideOnTop: boolean
   // Clickable surface zones over the occlusal box, laid LAST (above the column
   // hit) so a click on a surface enters a finding there; only on a tooth that
   // actually carries surfaces (present natural/milk tooth).
-  const occlY = sideOnTop ? r2Y : r1Y;
   const surfHits = teeth.map((tn, i) => {
     const s = getState(tn);
     if (s.toothSelection !== "tooth-base" && s.toothSelection !== "milktooth") return "";
     return `<g transform="translate(${i * CELL_W},${occlY})">${occlSurfaceHits(tn)}</g>`;
   }).join("");
-  return nums + rowSide + rowOccl + hits + canalHits + splintBars.join("") + splintGuard.join("") + surfHits;
+  return nums + connectors.join("") + rowSide + rowOccl + hits + canalHits + splintBars.join("") + splintGuard.join("") + surfHits;
 }
 
 /** Full schematic chart as one standalone <svg> string. Upper arch: side glyphs
- *  on top (roots up), occlusal below; lower arch: occlusal on top, side glyphs
- *  below (roots down) — the occlusal plane sits in the middle. */
+ *  on top (roots up), occlusal below, numbers below that; lower arch the mirror
+ *  image — the occlusal plane and both number rows sit in the middle, and a
+ *  vertical midline runs between 11/21 and 41/31. */
 export function buildSchematicSvg(getState: GetDisplayState): string {
   const w = UPPER_ARCH.length * CELL_W;
-  const upperH = NUM_H + SIDE_H + OCCL_H;
-  const lowerH = NUM_H + OCCL_H + SIDE_H;
-  const gap = 10;
-  const h = upperH + gap + lowerH;
-  const upper = `<g transform="translate(0,0)">${archRows(UPPER_ARCH, getState, /*sideOnTop*/ true)}</g>`;
-  const lower = `<g transform="translate(0,${upperH + gap})">${archRows(LOWER_ARCH, getState, /*sideOnTop*/ false)}</g>`;
+  const archH = NUM_H + SIDE_H + OCCL_H;
+  const gap = 2;
+  const h = archH + gap + archH;
+  const mid = (UPPER_ARCH.length / 2) * CELL_W;
+  const midline = `<line x1="${mid}" y1="4" x2="${mid}" y2="${h - 4}" stroke="${GUIDE}" stroke-width="1"/>`;
+  const upper = `<g transform="translate(0,0)">${archRows(UPPER_ARCH, getState, /*upper*/ true)}</g>`;
+  const lower = `<g transform="translate(0,${archH + gap})">${archRows(LOWER_ARCH, getState, /*upper*/ false)}</g>`;
   // No width/height attribute: the size is set in CSS (max-width AND max-height),
   // so the chart can be capped to a share of the VIEWPORT HEIGHT and the finding
   // dock always fits below it on a laptop screen (Dirk, 31.08.2026).
-  return `<svg class="schematic-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,system-ui,sans-serif">${upper}${lower}</svg>`;
+  return `<svg class="schematic-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,system-ui,sans-serif">${midline}${upper}${lower}</svg>`;
 }
