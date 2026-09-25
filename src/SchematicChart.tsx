@@ -27,6 +27,8 @@ import {
   cycleEndoCanal,
   setRootResection,
   handleChartKeydown,
+  formatToothLabel,
+  getWisdomVisible,
 } from "./odontogram";
 import { teethBetween } from "./shorthand";
 import { buildSchematicSvg } from "./schematicGraphic";
@@ -67,7 +69,12 @@ export default function SchematicChart({
   const suppressClick = useRef(false);
 
   useEffect(() => {
-    const rebuild = () => setSvg(buildSchematicSvg(getToothDisplayState));
+    // Same number and same hidden wisdom teeth as the anatomical chart.
+    const WISDOM = new Set([18, 28, 38, 48]);
+    const rebuild = () => setSvg(buildSchematicSvg(getToothDisplayState, {
+      label: formatToothLabel,
+      hidden: (tn) => !getWisdomVisible() && WISDOM.has(tn),
+    }));
     rebuild();
     return onStateChange(rebuild);
   }, []);

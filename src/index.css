@@ -1108,6 +1108,21 @@ select:focus{
 }
 .dark .chart-mode-btn{color: var(--text)}
 .dark .chart-mode-btn:hover{background: rgba(96,165,250,.18)}
+/* Text drawn on the PAGE ground in the schematic (restoration badges) takes
+   the page's light text on the dark theme; the slate ink vanished there. */
+.dark svg.schematic-chart .schem-badge{fill:#cbd5e1}
+/* The keypad (schematic + anatomical Befund-Dock) had no dark variant: a
+   light panel with the page's light text on it — its title was unreadable
+   (found in the 25.09.2026 review). */
+.dark .schematic-keypad{background: rgba(30,41,59,.92); border-color: var(--line)}
+.dark .keypad-group{border-color: var(--line)}
+.dark .keypad-btn{background: rgba(255,255,255,.05); color: var(--text); border-color: var(--line)}
+.dark .keypad-btn:active:not(:disabled){background: rgba(96,165,250,.18)}
+.dark .keypad-mat.is-active{background:#3b7bff; color:#fff; border-color:#3b7bff}
+.dark .keypad-caries{color:#f28b82}
+.dark .keypad-caries.is-active{background:#c62828; color:#fff; border-color:#c62828}
+.dark .keypad-readout{background: rgba(96,165,250,.16); color:#bfd7ff}
+.dark .keypad-readout.is-notice{background: rgba(242,139,130,.14); color:#f6b8b1}
 .dark .plan-chip{border-color: rgba(96,165,250,.4); background: rgba(96,165,250,.10)}
 .dark .plan-chip-name{color: var(--text)}
 .dark .plan-chip-name:hover{background: rgba(96,165,250,.18)}
@@ -1627,6 +1642,23 @@ select:focus{
   overflow:auto;
   padding-right:4px;
 }
+
+/* All options, in both housings (schematic + anatomical dock): the relocated
+   card panel is a grid of 260 px tracks, but every <select> carries a 220 px
+   minimum and sits BESIDE its label — so label + select ran up to 250 px past
+   the card's frame (Dirk, 25.09.2026, screenshot). A grid item also defaults
+   to min-width:auto and grew past its track. Here the cards stay in their
+   track, a row wraps its label above the control when both do not fit, and a
+   select shrinks to the card instead of holding its 220 px. */
+.layout.schematic-edit.schematic-edit-all .panel-body > *,
+.layout.dock-mode.dock-mode-all .panel-body > *{min-width:0; max-width:100%}
+.layout.schematic-edit.schematic-edit-all .panel-body .row,
+.layout.dock-mode.dock-mode-all .panel-body .row{flex-wrap:wrap}
+.layout.schematic-edit.schematic-edit-all .panel-body select,
+.layout.dock-mode.dock-mode-all .panel-body select{min-width:0; max-width:100%; flex:1 1 150px}
+/* A label that WRAPS its select (wear, discoloration) must wrap too. */
+.layout.schematic-edit.schematic-edit-all .panel-body .row > label,
+.layout.dock-mode.dock-mode-all .panel-body .row > label{display:flex; flex-wrap:wrap; align-items:center; gap:6px; min-width:0; max-width:100%}
 
 /* The compact keypad. */
 .schematic-keypad{

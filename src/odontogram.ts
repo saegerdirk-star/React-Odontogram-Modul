@@ -9234,7 +9234,12 @@ function setWisdomVisible(on: Any){
   // Wisdom teeth fade via opacity (no size change), so the ResizeObserver won't
   // fire — redraw the bridge overlay explicitly so a span onto a wisdom tooth stays current.
   updateBridgeOverlay();
+  // The schematic view draws from state, not from the tiles: tell it.
+  notifyStateChange();
 }
+/** Whether wisdom teeth (18/28/38/48) are shown — read by the schematic view,
+ *  which hides them exactly like the anatomical grid does. */
+export function getWisdomVisible(): boolean { return wisdomVisible; }
 
 /** Toggle visibility of the bone/gum base layer on all teeth. */
 function setShowBase(on: Any){
@@ -15584,6 +15589,8 @@ export function setNumberingSystem(system: NumberingSystem){
   numberingSystem = system;
   updateAllToothTileNumbers();
   updateActiveLabel();
+  // The schematic view and the summary print numbers from state: tell them.
+  notifyStateChange();
 }
 
 /**

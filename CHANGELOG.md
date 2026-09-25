@@ -33,6 +33,21 @@
   appeared. A stage typed right after (`mod K3`, charly's order) grades the
   surfaces just entered. A key that is complete but could still grow (`o`
   before `o.B.`, `K` before `K3`) applies after a 0.6 s pause.
+- Schematic view, review of every state (25.09.2026):
+  - **Milk teeth** were drawn as the permanent tooth of their slot, so a
+    primary or mixed dentition showed a full permanent set. A milk tooth is
+    now smaller, crown-heavy, numbered as itself (55 on 15), and at 4/5 a
+    primary molar with thin, splayed roots (3 upper, 2 lower) and a molar top
+    view. A tooth **not erupted** yet is a faint dotted outline (it drew as a
+    present tooth); a tooth **under the gum** carries the gum band over its
+    whole crown.
+  - Tooth numbers follow the numbering system (they printed raw FDI) and
+    hidden wisdom teeth stay hidden, as on the anatomical chart.
+  - Dark theme: the keypad had no dark variant (its title was unreadable), the
+    top views drew inverted (the outer ring had no fill), restoration badges
+    vanished.
+  - "All options" (schematic and anatomical dock): selects ran up to 250 px
+    past their card; the cards now keep them inside.
 
 ### Fixed
 
