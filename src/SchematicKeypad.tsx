@@ -24,7 +24,7 @@
  * UI language.
  */
 import { type ReactNode, useEffect, useState } from "react";
-import { applyShorthand, setRetention, onShorthandReadout, getShorthandBuffer, type ShorthandReadout } from "./odontogram";
+import { applyShorthand, setRetention, onShorthandReadout, getShorthandBuffer, applyDentitionSuggestion, type ShorthandReadout } from "./odontogram";
 import { t } from "./i18n/useI18n";
 
 type Btn = { label: string; token?: string; titleKey: string; mat?: boolean };
@@ -186,6 +186,20 @@ export default function SchematicKeypad({ tooth, mat, stage, onMat, onStage, onC
         <Group title={t("schematic.keypad.row.state")}>
           <Row label="">{STATE_BTNS.map(btn)}</Row>
           <Row label={t("schematic.keypad.row.eruption")}>{ERUPTION_BTNS.map(btn)}</Row>
+          {/* Milk teeth (Dirk, 25.09.2026: "Wie schalte ich hier auf Milchzaehne
+              um?" - in the compact view there was no way). charly's `MZ` marks
+              the selected teeth as milk teeth; the two dentition presets reset
+              EVERY tooth, so they ask first, and they need no tooth selected. */}
+          <Row label={t("schematic.keypad.row.dentition")}>
+            <button type="button" className="keypad-btn" aria-label={t("schematic.keypad.t.mz")} data-tip={t("schematic.keypad.t.mz")}
+              disabled={!enabled} onClick={() => apply("MZ")}>MZ</button>
+            <button type="button" className="keypad-btn" onClick={() => {
+              if (window.confirm(t("schematic.keypad.confirmDentition"))) applyDentitionSuggestion("primary");
+            }}>{t("status.primaryDentition")}</button>
+            <button type="button" className="keypad-btn" onClick={() => {
+              if (window.confirm(t("schematic.keypad.confirmDentition"))) applyDentitionSuggestion("mixed");
+            }}>{t("status.mixedDentition")}</button>
+          </Row>
         </Group>
 
         <Group title={t("schematic.keypad.row.restoration")}>

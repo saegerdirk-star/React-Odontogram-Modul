@@ -170,6 +170,18 @@ describe("Kurzschrift auf der Tastatur", () => {
     expect(zahn(46).cariesSeverity).toEqual({ mesial: 4, occlusal: 4, distal: 4 });
   }, 90000);
 
+  it("MZ macht den markierten Zahn zum Milchzahn - nur auf den Plaetzen 1 bis 5", async () => {
+    await raster();
+    await act(async () => { kachel(34).dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    kachel(34).focus();
+    await tippe("MZ");
+    expect(zahn(34).toothSelection).toBe("milktooth");
+    await act(async () => { kachel(36).dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    kachel(36).focus();
+    await tippe("MZ");                       // ein Molarenplatz hat keinen Milchzahn
+    expect(zahn(36).toothSelection ?? "tooth-base").toBe("tooth-base");
+  }, 90000);
+
   it("Totalprothese: alles markiert, ein e", async () => {
     await raster();
     const sichtbar = Array.from(

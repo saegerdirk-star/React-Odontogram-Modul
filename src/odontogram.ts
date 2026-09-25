@@ -8517,6 +8517,9 @@ function writeShorthandEdit(s: Any, edit: ShorthandEdit, toothNo: number): void 
     return;
   }
   if(edit.kind === "axis"){
+    // `MZ`: a milk tooth exists only on positions 1-5 (PRIMARY_MILK); on a
+    // molar position the key writes nothing rather than an impossible tooth.
+    if(edit.field === "toothSelection" && edit.value === "milktooth" && !PRIMARY_MILK.has(toothNo)) return;
     s[edit.field] = edit.value;
     return;
   }

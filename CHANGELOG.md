@@ -53,6 +53,14 @@
     window. The page is now the only scroller (schematic and anatomical dock).
   - The page background gradient tiled every window height and left a hard
     edge on long pages; it is now painted once, the ground colour continues.
+- Keypad: a **Dentition** row — `MZ` (charly's key, also typable) makes the
+  selected teeth milk teeth, on positions 1–5 only (`o.B.` returns to the
+  permanent tooth); **Primary dentition** / **Mixed dentition** apply the
+  presets from the compact view, after a confirmation since they reset every
+  tooth. Until now milk teeth were reachable only under All options.
+- English keypad: the composite material read "Kunststoff"; it reads
+  "Composite". The schematic tooltip shows the displayed number (74 for a
+  milk tooth on 34), not the slot.
 
 ### Fixed
 

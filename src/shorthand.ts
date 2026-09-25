@@ -120,6 +120,11 @@ export const SHORTHAND_DE: Record<string, Entry> = {
   // (Bead odontogram-0n8). Die Stufe wird als Ziffer angehaengt, wie `K3` bei
   // der Kariesstufe - ein blankes `D` wartet deshalb auf seine Ziffer und tut
   // fuer sich nichts, weil laengere Schluessel damit beginnen (`shouldCommit`).
+  // charlys `MZ`: der markierte Zahn ist ein MILCHZAHN (Dirk, 25.09.2026 - im
+  // Schema gab es keinen Weg dorthin). Nur auf den Plaetzen 1-5; auf einem
+  // Molarenplatz gibt es keinen Milchzahn, dort schreibt der Schreiber nichts.
+  // Zurueck zum bleibenden Zahn wie in charly mit `o.B.`.
+  "MZ":   { kind: "axis", field: "toothSelection", value: "milktooth" },
   "D1":   { kind: "axis", field: "eruptionStage", value: "emerging" },
   "D2":   { kind: "axis", field: "eruptionStage", value: "half-crown" },
   "D3":   { kind: "axis", field: "eruptionStage", value: "full-crown" },

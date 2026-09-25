@@ -197,7 +197,8 @@ export default function SchematicChart({
             style={{ left: tip.x + 14, top: tip.y + 14 }}
             role="tooltip"
           >
-            <div className="schematic-tooltip-title">{tip.tn}</div>
+            {/* the number the chart shows (numbering system, 74 for a milk tooth on 34) */}
+            <div className="schematic-tooltip-title">{formatToothLabel(tip.tn)}</div>
             {lines.length
               ? lines.map((l, i) => (
                   <div key={i} className="schematic-tooltip-line">{l}</div>
