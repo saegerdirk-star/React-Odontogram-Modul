@@ -105,3 +105,38 @@ describe("schematic: milk teeth, not erupted, numbering, hidden wisdom teeth (25
     expect(s).not.toContain(">#18<");
   });
 });
+
+describe("schematic: pocket depths as lines (WHO 3.5 / 5.5 mm)", () => {
+  const pd: Record<number, Record<string, number>> = {
+    16: { MB: 6, B: 3, DB: 7, ML: 4, L: 3, DL: 5 },
+    15: { MB: 2, B: 2, DB: 3, ML: 3, L: 2, DL: 3 },
+  };
+  it("is drawn only when asked for", () => {
+    expect(svg()).not.toContain("schem-pocket-layer");
+    const s = buildSchematicSvg(getToothDisplayState, { pocketDepths: (tn) => pd[tn] ?? {} });
+    expect(s).toContain("schem-pocket-layer");
+  });
+
+  it("draws both WHO reference lines per present tooth, and one line per aspect", () => {
+    const s = buildSchematicSvg(getToothDisplayState, { pocketDepths: (tn) => pd[tn] ?? {} });
+    expect(count(s, 'class="schem-who-55"')).toBe(32);
+    expect(count(s, 'class="schem-who-35"')).toBe(32);
+    // 16 and 15 are neighbours: one buccal and one oral run through both
+    expect(count(s, 'class="schem-pocket"')).toBe(1);
+    expect(count(s, 'class="schem-pocket is-oral"')).toBe(1);
+  });
+
+  it("colours a site by the WHO band: over 5.5 red, over 3.5 orange", () => {
+    const s = buildSchematicSvg(getToothDisplayState, { pocketDepths: (tn) => pd[tn] ?? {} });
+    expect(count(s, 'r="2.4" fill="#c62828"')).toBe(2);   // 16 MB 6, DB 7 (buccal)
+    expect(count(s, 'stroke="#d98f4a" stroke-width="1.3"')).toBe(2);   // 16 ML 4, DL 5 (oral, hollow)
+  });
+
+  it("breaks at a missing tooth and skips it", () => {
+    __setToothStateForTest(25, { toothSelection: "none" });
+    const s = buildSchematicSvg(getToothDisplayState, { pocketDepths: () => ({ MB: 2, B: 2, DB: 2, ML: 2, L: 2, DL: 2 }) });
+    expect(count(s, 'class="schem-who-55"')).toBe(31);
+    // upper arch splits at 25 into two runs, lower stays one: 3 buccal runs
+    expect(count(s, 'class="schem-pocket"')).toBe(3);
+  });
+});

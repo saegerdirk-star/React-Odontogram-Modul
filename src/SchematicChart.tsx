@@ -29,6 +29,7 @@ import {
   handleChartKeydown,
   formatToothLabel,
   getWisdomVisible,
+  getToothPerio,
 } from "./odontogram";
 import { teethBetween } from "./shorthand";
 import { buildSchematicSvg } from "./schematicGraphic";
@@ -53,6 +54,7 @@ export default function SchematicChart({
   primary,
   onSelectionChange,
   onSurface,
+  pocketLines = false,
 }: {
   /** The whole selection — every one gets the active highlight. */
   selected: number[];
@@ -60,6 +62,8 @@ export default function SchematicChart({
   primary: number | null;
   onSelectionChange: (teeth: number[], primary: number) => void;
   onSurface: (toothNo: number, surfChar: string) => void;
+  /** Draw the probing depths as lines with the WHO 3.5 / 5.5 mm references. */
+  pocketLines?: boolean;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [svg, setSvg] = useState("");
@@ -74,10 +78,11 @@ export default function SchematicChart({
     const rebuild = () => setSvg(buildSchematicSvg(getToothDisplayState, {
       label: formatToothLabel,
       hidden: (tn) => !getWisdomVisible() && WISDOM.has(tn),
+      pocketDepths: pocketLines ? (tn) => getToothPerio(tn).pd : undefined,
     }));
     rebuild();
     return onStateChange(rebuild);
-  }, []);
+  }, [pocketLines]);
 
   // Keyboard entry (Dirk, 25.09.2026 — charly works by keyboard): the schematic
   // view has no focusable tooth tile, so the keys are taken at the document

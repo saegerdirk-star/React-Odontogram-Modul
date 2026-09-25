@@ -58,6 +58,13 @@
   only, and keeps their findings; **Primary dentition** / **Mixed dentition** apply the
   presets from the compact view, after a confirmation since they reset every
   tooth. Until now milk teeth were reachable only under All options.
+- Schematic view: **pocket depths as lines** (toolbar switch, off by default),
+  like charly's PA curves but with the WHO probe's thresholds instead of an
+  even 2 mm grid — an orange dotted line at 3.5 mm and a stronger red line at
+  5.5 mm. The vestibular sites run as a solid line, the oral ones dashed; each
+  site is a dot coloured by its band. Display only, from the six probed sites
+  of the periodontal chart; depth measured from the cervical line on a nominal
+  scale (a drawn root = 10 mm).
 - English keypad: the composite material read "Kunststoff"; it reads
   "Composite". The schematic tooltip shows the displayed number (74 for a
   milk tooth on 34), not the slot.

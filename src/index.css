@@ -1572,6 +1572,7 @@ select:focus{
   display:flex; align-items:center; justify-content:space-between; gap:12px;
 }
 .schematic-hint{color:var(--muted, #667); font-size:13px}
+.schematic-toolbar-actions{display:flex; gap:8px; align-items:center}
 
 /* The transparent per-column hit rect. No fill (it must never tint the glyph);
    hover and the active column show as a stroked box only. */

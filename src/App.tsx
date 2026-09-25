@@ -343,6 +343,9 @@ export default function App({
   // flipped by the "All options" toggle in the schematic header, reveals them.
   // Session-only UI state, never touches the case.
   const [schematicShowAll, setSchematicShowAll] = useState<boolean>(false);
+  // Pocket depths as lines in the schematic (Dirk, 25.09.2026): a display layer
+  // over the side views, off by default.
+  const [schematicPockets, setSchematicPockets] = useState<boolean>(false);
   // Anatomical Befund-Dock "Details" drawer: reveals the full card panel below
   // the dock (the long tail of rare options), mirroring the schematic view's
   // "All options" toggle. Session-only.
@@ -1285,6 +1288,17 @@ export default function App({
           <div className="schematic-column" dir="ltr">
             <div className="schematic-toolbar">
               <span className="schematic-hint">{t("schematic.editHint")}</span>
+              <span className="schematic-toolbar-actions">
+              <button
+                type="button"
+                id="schematicPocketToggle"
+                className={"btn btn-ghost btn-sm" + (schematicPockets ? " is-active" : "")}
+                aria-pressed={schematicPockets}
+                title={t("schematic.pocketLinesTip")}
+                onClick={() => setSchematicPockets((v) => !v)}
+              >
+                {t("schematic.pocketLines")}
+              </button>
               <button
                 type="button"
                 id="schematicShowAllToggle"
@@ -1294,12 +1308,14 @@ export default function App({
               >
                 {schematicShowAll ? t("schematic.compact") : t("schematic.showAll")}
               </button>
+              </span>
             </div>
             <SchematicChart
               selected={schematicSelection}
               primary={schematicTooth}
               onSelectionChange={onSchematicSelectionChange}
               onSurface={onSchematicSurface}
+              pocketLines={schematicPockets}
             />
             {!schematicShowAll && (
               <SchematicKeypad

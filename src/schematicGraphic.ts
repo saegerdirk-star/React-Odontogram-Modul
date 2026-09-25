@@ -625,6 +625,86 @@ function occlSurfaceHits(toothNo: number, milk = false): string {
 }
 
 // ---------------------------------------------------------------------------
+// Pocket depths as lines over the side view, like charly's PA curves (Dirk,
+// 25.09.2026) — but with the WHO probe's two thresholds instead of charly's
+// even 2 mm grid: 3.5 mm (the probe's band starts: PSI code 3) and 5.5 mm (the
+// band disappears: code 4, the one that matters), drawn differently from each
+// other. Display only, from the six probed sites the periodontal chart records;
+// nothing is entered here.
+//
+// Depth is measured from the tooth's cervical line, which stands in for the
+// gingival margin: what is plotted is the PROBING DEPTH, so the thresholds read
+// directly. The scale is nominal (a drawn root = 10 mm, chosen for legibility:
+// at 13 mm the 5.5 line hugged the crown) — the roots are schematic, not to
+// scale; exact values stay in the periodontal view.
+// ---------------------------------------------------------------------------
+const POCKET_ROOT_MM = 10;
+const MM_PX = (TOOTH_LEN * (1 - CROWN_FRAC)) / POCKET_ROOT_MM;
+const WHO_BAND_TOP = 3.5, WHO_BAND_BOTTOM = 5.5;
+const POCKET_INK = "#7b3fb0";
+const WHO_TOP_INK = "#d98f4a", WHO_BOTTOM_INK = "#c62828";
+const BUCCAL_SITES = ["MB", "B", "DB"] as const, ORAL_SITES = ["ML", "L", "DL"] as const;
+
+function pocketLayer(
+  teeth: number[], getState: GetDisplayState, upper: boolean, sideY: number,
+  pocketDepths: (tn: number) => Record<string, number>, hidden: (tn: number) => boolean,
+): string {
+  const drawable = (tn: number) => {
+    const sel = getState(tn).toothSelection;
+    return !hidden(tn) && sel !== "none" && sel !== "no-tooth-after-extraction" && sel !== "not-erupted" && sel !== "tooth-under-gum";
+  };
+  // arch y of a depth below the cervical line (the upper side view is flipped)
+  const yAt = (tn: number, mm: number) => {
+    const m = glyphMetrics(tn, getState(tn));
+    const yc = m.cerv + Math.min(mm, POCKET_ROOT_MM + 2) * MM_PX;
+    return sideY + (upper ? SIDE_H - yc : yc);
+  };
+  const out: string[] = [];
+  // the two WHO reference lines, one short segment per present tooth so they
+  // follow a milk tooth's shorter crown too
+  teeth.forEach((tn, i) => {
+    if (!drawable(tn)) return;
+    const x1 = i * CELL_W + 2, x2 = (i + 1) * CELL_W - 2;
+    const y35 = yAt(tn, WHO_BAND_TOP).toFixed(1), y55 = yAt(tn, WHO_BAND_BOTTOM).toFixed(1);
+    out.push(`<line class="schem-who-35" x1="${x1}" y1="${y35}" x2="${x2}" y2="${y35}" stroke="${WHO_TOP_INK}" stroke-width="1" stroke-dasharray="1.5 3" stroke-linecap="round" opacity="0.9"/>`);
+    out.push(`<line class="schem-who-55" x1="${x1}" y1="${y55}" x2="${x2}" y2="${y55}" stroke="${WHO_BOTTOM_INK}" stroke-width="1.6" opacity="0.75"/>`);
+  });
+  // one line per aspect through the probed sites, in arch order; an uncharted
+  // site or an absent tooth breaks it
+  const line = (sites: readonly string[], oral: boolean) => {
+    const runs: string[][] = []; let run: string[] = [];
+    const dots: string[] = [];
+    const flush = () => { if (run.length > 1) runs.push(run); run = []; };
+    teeth.forEach((tn, i) => {
+      if (!drawable(tn)) { flush(); return; }
+      const pd = pocketDepths(tn) ?? {};
+      const m = glyphMetrics(tn, getState(tn));
+      const mesialLeft = mesialOnLeft(tn);
+      // left-to-right on screen: mesial first where mesial is on the left
+      const ordered = mesialLeft ? [sites[0], sites[1], sites[2]] : [sites[2], sites[1], sites[0]];
+      ordered.forEach((site, k) => {
+        const v = pd[site];
+        if (typeof v !== "number") { flush(); return; }
+        const x = i * CELL_W + CELL_W / 2 + (k - 1) * m.w * 0.38;
+        const y = yAt(tn, v);
+        run.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+        const col = v > WHO_BAND_BOTTOM ? WHO_BOTTOM_INK : v > WHO_BAND_TOP ? WHO_TOP_INK : POCKET_INK;
+        dots.push(oral
+          ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.3" fill="#fff" stroke="${col}" stroke-width="1.3"/>`
+          : `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.4" fill="${col}"/>`);
+      });
+    });
+    flush();
+    const dash = oral ? ` stroke-dasharray="4 3"` : "";
+    for (const r of runs) out.push(`<polyline class="schem-pocket${oral ? " is-oral" : ""}" points="${r.join(" ")}" fill="none" stroke="${POCKET_INK}" stroke-width="1.5"${dash} stroke-linejoin="round" opacity="${oral ? 0.75 : 0.95}"/>`);
+    out.push(...dots);
+  };
+  line(ORAL_SITES, true);
+  line(BUCCAL_SITES, false);
+  return `<g class="schem-pocket-layer" pointer-events="none">${out.join("")}</g>`;
+}
+
+// ---------------------------------------------------------------------------
 // Whole chart.
 // ---------------------------------------------------------------------------
 export type GetDisplayState = (toothNo: number) => ToothDisplayState;
@@ -754,7 +834,8 @@ function archRows(teeth: number[], getState: GetDisplayState, upper: boolean, op
     if (s.toothSelection !== "tooth-base" && s.toothSelection !== "milktooth") return "";
     return `<g transform="translate(${i * CELL_W},${occlY})">${occlSurfaceHits(tn, s.toothSelection === "milktooth")}</g>`;
   }).join("");
-  return nums + connectors.join("") + rowSide + rowOccl + hits + canalHits + splintBars.join("") + splintGuard.join("") + surfHits;
+  const pockets = opts.pocketDepths ? pocketLayer(teeth, getState, upper, sideY, opts.pocketDepths, hidden) : "";
+  return nums + connectors.join("") + rowSide + rowOccl + pockets + hits + canalHits + splintBars.join("") + splintGuard.join("") + surfHits;
 }
 
 /** Full schematic chart as one standalone <svg> string. Upper arch: side glyphs
@@ -767,6 +848,9 @@ export interface SchematicOptions {
   label?: (toothNo: number) => string;
   /** A tooth drawn as nothing — wisdom teeth switched off. */
   hidden?: (toothNo: number) => boolean;
+  /** Probing depths per site (`getToothPerio(tn).pd`). Given, the pocket-depth
+   *  layer is drawn over the side views; omitted, it is not. */
+  pocketDepths?: (toothNo: number) => Record<string, number>;
 }
 function escapeXml(t: string): string {
   return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
