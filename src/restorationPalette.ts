@@ -286,3 +286,57 @@ export function applyRestorationPalette(root: { style: CSSStyleDeclaration } | n
     entry.vars.forEach((v, i) => root.style.setProperty(v, values[i] ?? picked));
   }
 }
+
+/**
+ * The standard palette of the anatomical "Entwurf v1" style (Claude Design,
+ * 25.09.2026, docs/design/anatomisch-v1.md): no red and no green on a material,
+ * no gradient. It is keyed by CSS VARIABLE, not by entry, because the two ramp
+ * materials go FLAT here — all nine stops one colour — which `resolveEntry`
+ * (it keeps the ramp's lightness sweep on purpose) cannot express.
+ *
+ * It only stands in for the fork default: a practice that chose its own
+ * colours keeps them in either style (see `usesDraftPalette` in odontogram.ts).
+ */
+const DRAFT_FLAT: Record<string, string> = {
+  "--odon-rest-gold": "#dca72a",
+  "--odon-rest-gradia": "#8fb0dc",
+  "--odon-rest-zircon": "#ddecf3",
+  "--odon-rest-metal": "#a3abb5",
+  "--odon-rest-temporary": "#f2c9a0",
+  "--odon-rest-telescope": "#dca72a",
+  "--odon-rest-telescope-connector": "#dca72a",
+  "--odon-rest-telescope-connector-anterior": "#dca72a",
+  "--odon-rest-telescope-inner": "#9c730c",
+  "--odon-fill-composite": "#8fb0dc",
+  "--odon-fill-amalgam": "#666d77",
+  "--odon-fill-gic": "#c1b1e0",
+  "--odon-fill-temporary": "#f2c9a0",
+  // Not in the draft at all; the fork default stays (Dirk's pick), flagged to him.
+  "--odon-rest-denture-tooth": "#41c86c",
+};
+export const DRAFT_V1_PALETTE: Record<string, string> = {
+  ...DRAFT_FLAT,
+  ...Object.fromEntries(Array.from({ length: 9 }, (_, i) => [`--odon-rest-emax-${i}`, "#f0e2c6"])),
+  ...Object.fromEntries(Array.from({ length: 9 }, (_, i) => [`--odon-rest-metal-ceramic-${i}`, "#ece0c8"])),
+};
+
+/** The draft's colour per MATERIAL value (for the bridge connectors, which the
+ *  overlay paints from a material name rather than from the cascade). */
+export const DRAFT_V1_MATERIAL: Record<string, string> = {
+  emax: "#f0e2c6", gold: "#dca72a", gradia: "#8fb0dc", zircon: "#ddecf3",
+  metal: "#a3abb5", "metal-ceramic": "#ece0c8", telescope: "#dca72a", temporary: "#f2c9a0",
+};
+
+/** Write a variable-keyed palette onto `root`: every palette variable it names
+ *  is set, every other one REMOVED — so switching from here back to
+ *  `applyRestorationPalette` leaves nothing of this one behind. */
+export function applyPaletteVars(root: { style: CSSStyleDeclaration } | null | undefined,
+                                 vars: Record<string, string>): void {
+  if(!root?.style) return;
+  for(const entry of RESTORATION_PALETTE){
+    for(const v of entry.vars){
+      if(v in vars) root.style.setProperty(v, vars[v]);
+      else root.style.removeProperty(v);
+    }
+  }
+}

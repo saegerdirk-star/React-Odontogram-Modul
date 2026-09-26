@@ -202,6 +202,9 @@ function luecken_aufhellen(band: SVGSVGElement, gridRect: DOMRect,
     rect.setAttribute("height", String(bot - top));
     rect.setAttribute("fill", "#ffffff");
     rect.setAttribute("fill-opacity", "0.7");   // = `.tooth-tile` background
+    // A style that paints the band in its final colour (no 70 %-white tile
+    // over it — `odon-style-v1`) hides these washes by this class.
+    rect.setAttribute("class", "gum-wash");
     band.appendChild(rect);
   };
 
