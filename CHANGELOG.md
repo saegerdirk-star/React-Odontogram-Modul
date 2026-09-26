@@ -1,5 +1,31 @@
 # Changelog
 
+## 4.4.0 - 2026-09-26
+
+### Added
+
+- **Anatomical style "Draft v1"** (Settings → Tooth details → *Anatomical
+  style*: Classic | Draft v1), the first stage of Claude Design's proposal
+  for the anatomical view (`docs/design/anatomisch-v1/`). A **third look
+  beside the classic one, never a replacement**: classic stays the default,
+  and switching back restores the chart exactly (pixel- and markup-identical,
+  verified). Session state like the depth switch; no payload, FHIR or
+  template change, SVG fingerprints byte-identical. The tooth drawings are
+  unchanged — the draft's placeholder teeth are not adopted.
+  - a material palette without red, green or gradient: composite blue, GIC
+    violet, amalgam and NEM grey, gold, e.max and metal-ceramic ivory (flat,
+    no longer the yellow-green-blue "heat map"), zircon pale blue, temporary
+    apricot; each with a contour in its darker tone. It replaces only the
+    fork default — a practice's own colours are kept.
+  - red only for caries; inflammation (apical, pulpitis, periodontal,
+    peri-implant) orange, the periodontal/peri-implant glyph as a frame with
+    a faint fill instead of a solid area; the extraction cross and the
+    marginal-leakage mark in ink; the mobility numeral in ink.
+  - gingiva, bone and pulp desaturated; tiles without frames and without the
+    70 % white, so the band behind them shows its final colour.
+  - a designed dark theme: dampened tooth body, dark bone and gingiva, no grey
+    blocks for missing teeth.
+
 ## 4.3.0 - 2026-09-25
 
 ### Changed

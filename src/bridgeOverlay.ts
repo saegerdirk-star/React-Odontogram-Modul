@@ -625,6 +625,9 @@ export function renderBridgeOverlay(deps: RenderBridgeOverlayDeps): void {
       strip.setAttribute("width", _f(cb.width));
       strip.setAttribute("height", _f(h));
       strip.setAttribute("fill", GUM_STRIP_COLOR);
+      // Marked so a display style can repaint it with ITS gingiva (the
+      // attribute fill yields to any CSS rule).
+      strip.setAttribute("data-gum-strip", "1");
       overlay.appendChild(strip);
     }
   }

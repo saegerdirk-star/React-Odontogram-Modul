@@ -21,6 +21,7 @@ import {
   getRestorationColours, isRestorationPaletteDefault, setRestorationColour, resetRestorationColours,
   getShorthandEnabled, setShorthandEnabled, getShorthandTabWalk, setShorthandTabWalk,
   getToothDepth, setToothDepth,
+  getAnatomicalStyle, setAnatomicalStyle, type AnatomicalStyle,
 } from "./odontogram";
 import { SHORTHAND_DE, SHORTHAND_PENDING, MATERIALS } from "./shorthand";
 import { AXES } from "./registry/axes";
@@ -416,6 +417,27 @@ function DepthToggle({ t }: { t: TFn }) {
   );
 }
 
+/** Anatomische Darstellung (Claude Design "Entwurf v1", 26.09.2026): eine
+ *  dritte Ansicht neben der klassischen, umschaltbar und ohne Folgen fuer die
+ *  Befunddaten. Liest und schreibt die Maschine direkt, wie {@link DepthToggle}. */
+const ANATOMICAL_STYLE_OPTIONS: { value: AnatomicalStyle; labelKey: string }[] = [
+  { value: "classic", labelKey: "settings.anatStyle.classic" },
+  { value: "draft-v1", labelKey: "settings.anatStyle.draftV1" },
+];
+function AnatomicalStyleSelect({ t }: { t: TFn }) {
+  const [, bump] = useState(0);
+  return (
+    <SelectRow<AnatomicalStyle>
+      t={t}
+      label={t("settings.anatStyle.label")}
+      descKey="settings.anatStyle.desc"
+      value={getAnatomicalStyle()}
+      options={ANATOMICAL_STYLE_OPTIONS}
+      onChange={(v) => { setAnatomicalStyle(v); bump((n) => n + 1); }}
+    />
+  );
+}
+
 export const SETTINGS_TABS: SettingsTab[] = [
   {
     id: "general",
@@ -506,6 +528,7 @@ export const SETTINGS_TABS: SettingsTab[] = [
     titleKey: "settings.tab.toothDetails",
     render: ({ t, s }) => (
       <>
+        <AnatomicalStyleSelect t={t} />
         <DepthToggle t={t} />
         <SelectRow<ToothDetailLevel>
           t={t}

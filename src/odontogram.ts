@@ -44,6 +44,7 @@ import {
   RESTORATION_PALETTE, applyRestorationPalette, getRestorationPalette as paletteValues,
   setRestorationColourValue, resetRestorationPaletteValues, setRestorationPaletteValues,
   restorationColour, paletteEntry, restorationPaletteIsDefault as paletteIsDefault,
+  DRAFT_V1_PALETTE, DRAFT_V1_MATERIAL, applyPaletteVars,
 } from "./restorationPalette";
 // Bead odontogram-dma: retention gating + bar-span derivation, kept DOM-free.
 import {
@@ -2071,7 +2072,7 @@ function updateBridgeOverlay(){
   // Die Baender ZUERST: sie liegen hinter allem, die beiden anderen Auflagen
   // darueber. Alle drei lesen dieselbe Kachelgeometrie.
   renderGumOverlay(grid);
-  renderBridgeOverlay({ grid, getState: bridgeStateFor, materialColor: defaultMaterialColor });
+  renderBridgeOverlay({ grid, getState: bridgeStateFor, materialColor: bridgeMaterialColor });
   updateRetentionBarOverlay(grid);
   updateSplintOverlay(grid);
   updateOcclusalSplintOverlay(grid);
@@ -8385,6 +8386,34 @@ export function setToothDepth(on: boolean): void {
 function syncToothDepthClass(): void {
   const grid = document.getElementById("toothGrid");
   if(grid) grid.classList.toggle("odon-depth", toothDepth);
+  if(grid) grid.classList.toggle("odon-style-v1", anatomicalStyle === "draft-v1");
+}
+
+// Anatomical display style (Claude Design "Entwurf v1", 26.09.2026). A THIRD
+// look beside the classic one, never a replacement: session state like the
+// depth switch, default "classic", and everything the draft changes hangs off
+// ONE class on #toothGrid (`odon-style-v1`, rules in index.css) plus the
+// draft palette above — switching back removes both and the chart is exactly
+// what it was. Colours and strokes only: no layer is switched and no template
+// is touched, so the SVG fingerprint (id/opacity/class) is byte-identical.
+export type AnatomicalStyle = "classic" | "draft-v1";
+export const ANATOMICAL_STYLES: readonly AnatomicalStyle[] = ["classic", "draft-v1"];
+let anatomicalStyle: AnatomicalStyle = "classic";
+
+export function getAnatomicalStyle(): AnatomicalStyle { return anatomicalStyle; }
+export function setAnatomicalStyle(style: AnatomicalStyle): void {
+  if(!ANATOMICAL_STYLES.includes(style) || style === anatomicalStyle) return;
+  anatomicalStyle = style;
+  syncToothDepthClass();
+  syncRestorationPalette();
+  updateBridgeOverlay();   // connectors carry the material colour
+  notifyStateChange();
+}
+
+/** The bridge connectors are painted from a material NAME, not the cascade. */
+function bridgeMaterialColor(material: string): string {
+  if(usesDraftPalette() && DRAFT_V1_MATERIAL[material]) return DRAFT_V1_MATERIAL[material];
+  return defaultMaterialColor(material);
 }
 
 let shorthandEnabled = true;
@@ -10649,7 +10678,18 @@ function paletteRoot(): { style: CSSStyleDeclaration } | null {
 
 /** Push the palette onto the DOM. Nothing else has to run: every restoration
  *  fill in the assets reads its variable, so the cascade repaints. */
-function syncRestorationPalette(): void { applyRestorationPalette(paletteRoot()); }
+function syncRestorationPalette(): void {
+  if(usesDraftPalette()) applyPaletteVars(paletteRoot(), DRAFT_V1_PALETTE);
+  else applyRestorationPalette(paletteRoot());
+}
+
+/** The draft's palette replaces the FORK DEFAULT only: a practice that chose
+ *  its own colours keeps them in either style (Claude Design's handover:
+ *  "Die neue Standardpalette gilt nur dort, wo die Praxis nichts eingestellt
+ *  hat"). */
+function usesDraftPalette(): boolean {
+  return anatomicalStyle === "draft-v1" && paletteIsDefault();
+}
 
 /** Every colour a practice can choose, in picker order, with the colour each
  *  currently shows (chosen, else the shipped default). */
@@ -13869,7 +13909,7 @@ export function buildOdontogramSvg(): { xml: string; width: number; height: numb
   const bridgeSpans = detectBridgeSpans(bridgeStateFor);
   if(bridgeSpans.length){
     const rectFor = (toothNo: number) => tileRectFor(grid, gridRect, toothNo);
-    const bars = computeBridgeBars(bridgeSpans, bridgeStateFor, rectFor, defaultMaterialColor);
+    const bars = computeBridgeBars(bridgeSpans, bridgeStateFor, rectFor, bridgeMaterialColor);
     for(const bar of bars) out.appendChild(barRect(bar));
   }
 

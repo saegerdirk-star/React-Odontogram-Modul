@@ -3559,3 +3559,143 @@ body.odon-dragging{ cursor: cell; }
 .tooth-grid > svg.papilla-marks{
   position: absolute; inset: 0; pointer-events: none; z-index: 3;
 }
+
+
+/* Anatomische Darstellung "Entwurf v1" (Claude Design, 26.09.2026).
+   -------------------------------------------------------------------------
+   Eine DRITTE Ansicht neben der klassischen, kein Ersatz: alles haengt an der
+   einen Klasse `odon-style-v1` auf #toothGrid (setAnatomicalStyle) - ohne sie
+   greift keine Regel hier, und der Zahn sieht aus wie vorher. Die Palette der
+   Materialien kommt ueber die Variablen (DRAFT_V1_PALETTE in
+   restorationPalette.ts), der Rest steht hier.
+
+   Nur Farbe und Strich, nichts wird geschaltet: der Fingerabdruck (id,
+   opacity, class) bleibt byte-gleich. `!important` wie ueberall in dieser
+   Datei, wo eine Vorlage ihre Fuellung INLINE traegt.
+
+   Stufe 1 von docs/design/anatomisch-v1.md: Palette, Signale, entsaettigte
+   Gingiva/Knochen/Pulpa, Kacheln ohne Rahmen, dunkles Thema. */
+#toothGrid.odon-style-v1{
+  --v1-ink: #1d2127;
+  --v1-caries: #d32f2f;
+  --v1-caries-edge: #a82424;
+  --v1-caries-under: #9a1f1f;       /* unter einer Fuellung: dunkler, aber Rot */
+  --v1-inflam: #e8781e;
+  --v1-inflam-soft: #fcecdf;        /* = Entzuendung 14 % auf Weiss */
+  --v1-gum: #f0dbd6;
+  --v1-bone: #f5efe3;
+  --v1-pulp: #f0c6bf;
+  --v1-select: rgba(29,33,39,.045);
+  --v1-hover: rgba(29,33,39,.03);
+}
+.dark #toothGrid.odon-style-v1{
+  --v1-ink: #f1eee8;
+  --v1-caries: #ff5147;
+  --v1-caries-edge: #d9403a;
+  --v1-caries-under: #c93a33;
+  --v1-inflam: #ff9a3d;
+  --v1-inflam-soft: #3a2a1d;
+  --v1-gum: #4a3538;
+  --v1-bone: #28251f;
+  --v1-pulp: #a4706a;
+  --v1-select: rgba(241,238,232,.07);
+  --v1-hover: rgba(241,238,232,.04);
+}
+
+/* Kacheln A: ohne Rahmen, ohne 70 %-Weiss. Das Band dahinter steht damit in
+   seiner ENDFARBE (--v1-gum), statt durch das Weiss vorkompensiert zu werden -
+   deshalb faellt auch die Aufhellung der Luecken (.gum-wash) weg. */
+#toothGrid.odon-style-v1 .tooth-tile,
+#toothGrid.odon-style-v1 .tooth-tile.placeholder{
+  border-color: transparent;
+  background: transparent;
+}
+#toothGrid.odon-style-v1 .tooth-tile:hover{ background: var(--v1-hover); }
+#toothGrid.odon-style-v1 .tooth-tile.active{
+  border-color: var(--v1-ink);
+  background: var(--v1-select);
+}
+#toothGrid.odon-style-v1 .tooth-tile.active::after{ border-color: transparent; animation: none; }
+#toothGrid.odon-style-v1 .tooth-tile.active .tooth-svg svg{ filter: none; animation: none; }
+#toothGrid.odon-style-v1 > svg.gum-overlay .gum-wash{ display: none; }
+#toothGrid.odon-style-v1 > svg.gum-overlay [id="gum-base"]{ fill: var(--v1-gum) !important; }
+#toothGrid.odon-style-v1 > svg.gum-overlay [id="bone-base"]{ fill: var(--v1-bone) !important; }
+#toothGrid.odon-style-v1 [data-gum-strip]{ fill: var(--v1-gum); }
+#toothGrid.odon-style-v1 .tooth-tile [id="tooth-healthy-pulp"] path{ fill: var(--v1-pulp) !important; }
+
+/* Signale: Rot NUR fuer Karies, Entzuendung orange, Extraktion in Tusche. */
+#toothGrid.odon-style-v1 .tooth-tile [id^="caries-"] [style*="fill: #b3261e"],
+#toothGrid.odon-style-v1 .tooth-tile [id^="caries-"][style*="fill: #b3261e"]{
+  fill: var(--v1-caries) !important; stroke: var(--v1-caries-edge) !important;
+}
+#toothGrid.odon-style-v1 .tooth-tile [id^="subcaries-"] [style*="fill: #721813"],
+#toothGrid.odon-style-v1 .tooth-tile [id^="subcaries-"][style*="fill: #721813"]{
+  fill: var(--v1-caries-under) !important; stroke: var(--v1-caries-edge) !important;
+}
+#toothGrid.odon-style-v1 .tooth-tile [id="extraction-plan"] [style*="stroke: #b70000"]{
+  stroke: var(--v1-ink) !important;
+}
+#toothGrid.odon-style-v1 .tooth-tile [style*="fill: #ffa46a"],
+#toothGrid.odon-style-v1 .tooth-tile [style*="fill: #ff422a"]{ fill: var(--v1-inflam) !important; }
+/* Parodontal/periimplantaer und der Knochenabbau: ein Rahmen mit leiser
+   Flaeche, keine Vollflaeche - sie liegen gross ueber dem Zahn. */
+#toothGrid.odon-style-v1 .tooth-tile [id="parodontal"] [style*="fill: #ffa46a"],
+#toothGrid.odon-style-v1 .tooth-tile [id="parodontal"][style*="fill: #ffa46a"],
+#toothGrid.odon-style-v1 .tooth-tile [style*="fill: #d9534f"]{
+  fill: var(--v1-inflam-soft) !important; stroke: var(--v1-inflam) !important; stroke-width: 1.4px;
+}
+#toothGrid.odon-style-v1 .tooth-tile [style*="stroke: #ffa46a"]{ stroke: var(--v1-inflam) !important; }
+#toothGrid.odon-style-v1 .tooth-tile [style*="fill: #feffd5"]{ fill: var(--v1-inflam-soft) !important; }
+/* Randspalt: statt der grellen lila Linie in Tusche (der Keil der Vorlage
+   kommt mit Stufe 3, in der eigenen Zeichenebene). */
+#toothGrid.odon-style-v1 .tooth-tile [id="crown-leakage"] [style*="#9e00e9"],
+#toothGrid.odon-style-v1 .tooth-tile [id="crown-leakage"][style*="#9e00e9"]{
+  fill: var(--v1-ink) !important; stroke: var(--v1-ink) !important;
+}
+#toothGrid.odon-style-v1 .tooth-tile[data-mobility]::before{ color: var(--v1-ink); }
+
+/* Materialien: flach, kein Verlauf - die Kuppeln der klassischen Ansicht
+   (odonKrone...) gelten hier nicht; e.max und Metallkeramik werden ueber
+   ihre neun gleichen Rampen-Variablen flach. Kontur je Material in dessen
+   dunklerem Ton, 1,2. */
+#toothGrid.odon-style-v1 .tooth-tile [id="gold-crown"],
+#toothGrid.odon-style-v1 .tooth-tile [id="gold-veneer"]{ fill: var(--odon-rest-gold, #dca72a) !important; stroke: #9c730c !important; }
+#toothGrid.odon-style-v1 .tooth-tile [id="gradia-crown"],
+#toothGrid.odon-style-v1 .tooth-tile [id="gradia-veneer"]{ fill: var(--odon-rest-gradia, #8fb0dc) !important; stroke: #4f78ad !important; }
+#toothGrid.odon-style-v1 .tooth-tile [id="zircon-crown"],
+#toothGrid.odon-style-v1 .tooth-tile [id="zircon-veneer"]{ fill: var(--odon-rest-zircon, #ddecf3) !important; stroke: #7c9db1 !important; }
+#toothGrid.odon-style-v1 .tooth-tile [id="metal-crown"]{ fill: var(--odon-rest-metal, #a3abb5) !important; stroke: #646c77 !important; }
+#toothGrid.odon-style-v1 .tooth-tile [id="temporary-crown"],
+#toothGrid.odon-style-v1 .tooth-tile [id="temporary-veneer"]{ fill: var(--odon-rest-temporary, #f2c9a0) !important; stroke: #bf8a57 !important; }
+#toothGrid.odon-style-v1 .tooth-tile [id="telescope-crown-outside"]{ fill: var(--odon-rest-telescope, #dca72a) !important; stroke: #9c730c !important; }
+#toothGrid.odon-style-v1 .tooth-tile [id="telescope-crown-inside"]{ fill: var(--odon-rest-telescope-inner, #9c730c) !important; }
+#toothGrid.odon-style-v1 .tooth-tile [id="emax-crown"],
+#toothGrid.odon-style-v1 .tooth-tile [id="emax-veneer"]{ fill: var(--odon-rest-emax-4, #f0e2c6) !important; stroke: #b39a6c !important; }
+#toothGrid.odon-style-v1 .tooth-tile [id="metal-ceramic-crown"]{ fill: var(--odon-rest-metal-ceramic-4, #ece0c8) !important; stroke: #8b9098 !important; }
+#toothGrid.odon-style-v1 .tooth-tile [id$="-crown"],
+#toothGrid.odon-style-v1 .tooth-tile [id$="-veneer"]{ stroke-width: 1.2px; }
+
+/* Fuellungen: Kontur im dunkleren Ton des Materials (die Vorlage gab
+   Komposit einen Gruenrand). Am Variablennamen erkannt, nicht an der id. */
+#toothGrid.odon-style-v1 .tooth-tile [style*="--odon-fill-composite"]{ stroke: #4f78ad !important; }
+#toothGrid.odon-style-v1 .tooth-tile [style*="--odon-fill-gic"]{ stroke: #7f68b8 !important; }
+#toothGrid.odon-style-v1 .tooth-tile [style*="--odon-fill-amalgam"]{ stroke: #3f454d !important; }
+#toothGrid.odon-style-v1 .tooth-tile [style*="--odon-fill-temporary"]{ stroke: #bf8a57 !important; }
+
+/* Kauflaeche unter e.max und Metallkeramik: die klassische Ansicht gibt ihnen
+   feste, gruenliche Toene (#cfe0d8) - hier die Materialfarbe, flach. Die
+   Hoecker und Fissuren (odontogram-qvr) bleiben sichtbar. */
+#toothGrid.odon-style-v1 .tooth-tile.occl-view[data-occl-resto="emax"] [id="background-cusp"],
+#toothGrid.odon-style-v1 .tooth-tile.occl-view[data-occl-resto="emax"] [id="tooth-base"] [id="cusps"] path[style]{ fill: var(--odon-rest-emax-4, #f0e2c6) !important; }
+#toothGrid.odon-style-v1 .tooth-tile.occl-view[data-occl-resto="metal-ceramic"] [id="background-cusp"],
+#toothGrid.odon-style-v1 .tooth-tile.occl-view[data-occl-resto="metal-ceramic"] [id="tooth-base"] [id="cusps"] path[style]{ fill: var(--odon-rest-metal-ceramic-4, #ece0c8) !important; }
+#toothGrid.odon-style-v1 .tooth-tile.occl-view[data-occl-resto="metal-ceramic"] [id="fissure"] path,
+#toothGrid.odon-style-v1 .tooth-tile [id^="metal-ceramic"] [style*="stroke: #1b3f1c"]{ stroke: #8b9098 !important; }
+
+/* Dunkles Thema: der Zahnkoerper gedaempft, damit er nicht blendet - als
+   Filter auf die Substanz-Ebenen, so bleibt die Tiefenwirkung erhalten und
+   keine Materialfarbe wird mitgedimmt. */
+.dark #toothGrid.odon-style-v1 .tooth-tile [id="tooth-base"],
+.dark #toothGrid.odon-style-v1 .tooth-tile [id="milktooth-base"]{
+  filter: brightness(.84) sepia(.18);
+}
