@@ -1624,6 +1624,10 @@ export default function App({
               </div>
               <div id="cariesChecks"></div>
               <div id="cariesSubcrownRow" className="check-grid subcrown-row"></div>
+              {/* Bead odontogram-d1b: cervical caries whose side the source does not name. */}
+              <div id="cervicalUnknownCariesRow" className="row inline-checks hidden">
+                <label title={t("cervical.unknown.hint")}><input type="checkbox" id="cervicalUnknownCaries" /><span>{t("cervical.unknown.label")}</span></label>
+              </div>
               <div id="rootCariesRow" className="row">
                 <span>{t("caries.rootLabel")}</span>
                 <select id="rootCariesSelect"></select>
@@ -1642,6 +1646,10 @@ export default function App({
                 <select id="fillingSelect"></select>
               </div>
               <div id="fillingSurfaceChecks" className="hidden"></div>
+              {/* Bead odontogram-d1b: a cervical filling whose side the source does not name. */}
+              <div id="cervicalUnknownFillingRow" className="row inline-checks hidden">
+                <label title={t("cervical.unknown.hint")}><input type="checkbox" id="cervicalUnknownFilling" /><span>{t("cervical.unknown.label")}</span></label>
+              </div>
               <label id="fissureSealingRow" className="row fissure-row">
                 <input type="checkbox" id="fissureSealing" />
                 <span>{t("filling.fissureSealing")}</span>

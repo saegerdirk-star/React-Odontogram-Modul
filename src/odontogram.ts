@@ -612,7 +612,12 @@ function defaultState(){
     // lesion, or both — extends into the cervical region. A MEMBERSHIP set over
     // buccal/lingual, never a sixth surface: the marker qualifies a surface, it
     // does not add one, so getFillingSurfaceCount() is untouched by it.
-    cervicalSurfaces: new Set(), // subset of { buccal, lingual }
+    cervicalSurfaces: new Set(), // subset of { buccal, lingual, mesial, distal }
+    // Bead odontogram-d1b: a cervical finding whose SIDE is not documented
+    // (charly records "zervikal" with no side on 257 of 621 fillings). A
+    // tooth-level set over { filling, caries }: shown as an open finding,
+    // never drawn on a surface and never counted as one.
+    cervicalSideUnknown: new Set(),
     // SP8 Task 1 foundation, wired up (render + migration) in Task 3: implant-only
     // peri-implant disease axis. none | mucositis | peri-implantitis-mild |
     // peri-implantitis-moderate | peri-implantitis-severe.
@@ -5280,6 +5285,7 @@ function __plainStateForTest(s: Any): Record<string, unknown> {
     cariesSeverity: Object.fromEntries(s.cariesSeverity ?? []),
     fillingDefect: Object.fromEntries(s.fillingDefect ?? []),
     cervicalSurfaces: Array.from(s.cervicalSurfaces ?? []),
+    cervicalSideUnknown: Array.from(s.cervicalSideUnknown ?? []),
     mods: Array.from(s.mods ?? []),
   };
 }
@@ -5618,6 +5624,12 @@ function getStateSummary(toothNo: number): string[]{
       .filter((surf) => state.cervicalSurfaces.has(surf) && cervicalInvolvementApplies(state, surf))
       .map((surf) => summarySurfaceLetter(surf, toothNo));
     if(surfaces.length) summary.push(`${t("cervical.label")} (${surfaces.join(", ")})`);
+  }
+  // Bead odontogram-d1b: cervical, side not documented — an open finding.
+  if(cervicalSideUnknownAllowed(state) && state.cervicalSideUnknown?.size > 0){
+    const kinds = CERVICAL_UNKNOWN_KINDS.filter((k) => state.cervicalSideUnknown.has(k))
+      .map((k) => t("cervical.unknown." + k));
+    summary.push(`${t("cervical.unknown.label")} (${kinds.join(", ")})`);
   }
 
   // Caries (+ SP9 coarse severity qualifier)
@@ -6511,6 +6523,14 @@ function syncControlsFromState(state: Any){
   $("#calculusToggle").checked = !!state.calculus;
   const calculusAllowed = state.toothSelection === "tooth-base" || state.toothSelection === "milktooth";
   $("#calculusRow").classList.toggle("hidden", !calculusAllowed);
+  // Bead odontogram-d1b: cervical, side not documented — one switch in each
+  // of the caries and fillings cards, on the same predicate as the setter.
+  const cervUnknownAllowed = cervicalSideUnknownAllowed(state);
+  for(const [kind, id] of [["filling", "Filling"], ["caries", "Caries"]] as const){
+    const box = $("#cervicalUnknown" + id) as HTMLInputElement | null;
+    if(box) box.checked = cervUnknownAllowed && !!state.cervicalSideUnknown?.has(kind);
+    $("#cervicalUnknown" + id + "Row")?.classList.toggle("hidden", !cervUnknownAllowed);
+  }
   // SP8 Task 5: periImplant (enum) is authored via a picker, shown only for an
   // implant; on an implant it also supersedes the parodontal/inflammation mods.
   setSelectOptions($("#periImplantSelect"), getPeriImplantOptions(), state.periImplant);
@@ -9393,6 +9413,8 @@ function serializeState(s: Any){
     // chart that never records cervical involvement stays byte-identical apart
     // from the version field (payload 2.24).
     ...((s.cervicalSurfaces?.size ?? 0) > 0 ? { cervicalSurfaces: Array.from(s.cervicalSurfaces) } : {}),
+    // Bead odontogram-d1b: omit-when-empty (payload 2.48), like the line above.
+    ...((s.cervicalSideUnknown?.size ?? 0) > 0 ? { cervicalSideUnknown: CERVICAL_UNKNOWN_KINDS.filter((k) => s.cervicalSideUnknown.has(k)) } : {}),
     // SP-perio P1 Task 1: omitted ENTIRELY when no site is charted (mirrors
     // the customStates/note pattern below) — a no-perio tooth/payload stays
     // byte-identical to its pre-perio serialization.
@@ -9541,10 +9563,16 @@ export const VALID_FILLING_DEFECT_SET = new Set(["marginal", "fracture", "wear"]
  *  MARKER on the vestibular or oral surface (BEMA writes it as the suffix
  *  "z"/"7": "vz"/"47", "lz"/"57"). Modelling it as a sixth surface would
  *  inflate the surface count and so the position tier, which is exactly the
- *  error this set exists to prevent. Mesial, distal and occlusal are absent
- *  deliberately: a proximal box already reaches the cervical third by
- *  definition, and an occlusal cavity cannot reach the neck at all. */
-export const VALID_CERVICAL_SURFACES = new Set(["buccal", "lingual"]);
+ *  error this set exists to prevent. Occlusal is absent because an occlusal
+ *  cavity cannot reach the neck. MESIAL and DISTAL joined on 03.10.2026
+ *  (bead odontogram-d1b): charly's treatment record names `mz`/`dz` per side,
+ *  134 of 621 cervical fillings on the production clone sit there, and the
+ *  decoder used to reject the whole bundle for one. */
+export const VALID_CERVICAL_SURFACES = new Set(["buccal", "lingual", "mesial", "distal"]);
+/** Bead odontogram-d1b: what a "cervical, side not documented" finding can be
+ *  — in this order everywhere it is listed. */
+export const CERVICAL_UNKNOWN_KINDS = ["filling", "caries"] as const;
+const VALID_CERVICAL_UNKNOWN = new Set<string>(CERVICAL_UNKNOWN_KINDS);
 // SP-perio P2b Task 2: the union of every entrance value furcationEntrances()
 // can ever return, across all tooth positions — used by hydrateState to
 // validate a raw payload's `furcation` keys generically (hydrateState has no
@@ -9906,6 +9934,8 @@ function hydrateState(raw: Any, inferLegacySecondaryCaries = true){
   // a hand-edited payload claiming an occlusal cervix is dropped rather than
   // stored, because there is no control that could ever author it.
   s.cervicalSurfaces = filterSet(raw.cervicalSurfaces, VALID_CERVICAL_SURFACES);
+  // Bead odontogram-d1b (payload 2.48): additive, legacy payloads have none.
+  s.cervicalSideUnknown = filterSet(raw.cervicalSideUnknown, VALID_CERVICAL_UNKNOWN);
   s.fillingMaterial = validateEnum(raw.fillingMaterial, VALID_FILLING_MATERIAL, s.fillingMaterial);
   s.fillingSurfaces = filterSet(raw.fillingSurfaces, VALID_FILLING_SURFACES);
   s.fillingSurfaceMaterials = new Map();
@@ -11263,6 +11293,43 @@ export function setCervicalInvolvement(toothNo: number, surface: string, involve
       if(set.has(surface)){ set.delete(surface); notifyStateChange(); return true; }
     }
     return false;
+  });
+}
+
+/** Bead odontogram-d1b: whether "cervical, side not documented" can be said
+ *  of this tooth at all — a PRESENT natural or milk tooth. Not gated on a
+ *  charted surface: the cervical filling IS often the tooth's only filling,
+ *  and charly simply did not say on which side. ONE predicate for the
+ *  control, the setter, the tooltip, the summary and the projection. */
+function cervicalSideUnknownAllowed(state: Any): boolean {
+  return !!state && (state.toothSelection === "tooth-base" || state.toothSelection === "milktooth");
+}
+
+/** The kinds (`filling`, `caries`) recorded as "cervical, side not
+ *  documented" on `toothNo`, in that order; empty where the predicate refuses. */
+export function getCervicalSideUnknown(toothNo: number): string[] {
+  const s = toothState.get(toothNo);
+  if(!cervicalSideUnknownAllowed(s)) return [];
+  return CERVICAL_UNKNOWN_KINDS.filter((k) => s.cervicalSideUnknown?.has(k));
+}
+
+/** Record (or clear) "cervical, side not documented" for a filling or a
+ *  caries lesion. Guards BEFORE the DS-1 gate (the `setRetention` precedent),
+ *  so a refused call marks nothing plan-edited and does not notify. It is
+ *  never a surface: nothing is drawn on one, and the surface count a fee
+ *  mapping reads ({@link getFillingSurfaceCount}) does not see it. */
+export function setCervicalSideUnknown(toothNo: number, kind: string, on: boolean): void {
+  if(!VALID_CERVICAL_UNKNOWN.has(kind)) return;
+  let s = toothState.get(toothNo);
+  if(!s){ s = defaultState(); toothState.set(toothNo, s); }
+  if(!cervicalSideUnknownAllowed(s)) return;
+  gateToothEdit(toothNo, () => {
+    if(!s.cervicalSideUnknown) s.cervicalSideUnknown = new Set();
+    const set = s.cervicalSideUnknown as Set<string>;
+    if(on === set.has(kind)) return false;
+    if(on) set.add(kind); else set.delete(kind);
+    notifyStateChange();
+    return true;
   });
 }
 
@@ -15315,6 +15382,18 @@ function wireControls(){
     });
   });
 
+  // Bead odontogram-d1b: cervical, side not documented (filling / caries)
+  for(const [kind, id] of [["filling", "Filling"], ["caries", "Caries"]] as const){
+    $("#cervicalUnknown" + id)?.addEventListener("change", (e: Event)=>{
+      const on = (e.target as HTMLInputElement).checked;
+      applyToSelected((s: Any)=>{
+        if(!cervicalSideUnknownAllowed(s)) return;
+        if(!s.cervicalSideUnknown) s.cervicalSideUnknown = new Set();
+        if(on) s.cervicalSideUnknown.add(kind); else s.cervicalSideUnknown.delete(kind);
+      });
+    });
+  }
+
   // Calculus
   $("#calculusToggle").addEventListener("change", (e)=>{
     applyToSelected((s)=>{ s.calculus = (e.target as HTMLInputElement).checked; });
@@ -15849,6 +15928,9 @@ export type ToothDisplayState = {
   rootCap: boolean; onlayCoverage: string[]; inlayCoverage: string[]; veneerCoverage: string[];
   // read by the schematic's shorthand lane (charly's `)L(`, `Fra`, `+ − ?`, `p`)
   missingClosed: boolean; rootFracture: string; sensibility: string; percussion: string;
+  // bead odontogram-d1b: the cervical marker per surface (only where it still
+  // applies) and the tooth-level "cervical, side not documented"
+  cervicalSurfaces: string[]; cervicalSideUnknown: string[];
 };
 
 export function getToothDisplayState(toothNo: number): ToothDisplayState {
@@ -15909,6 +15991,9 @@ export function getToothDisplayState(toothNo: number): ToothDisplayState {
     rootFracture: String(s.rootFracture ?? "none"),
     sensibility: String(s.sensibility ?? "none"),
     percussion: String(s.percussion ?? "none"),
+    cervicalSurfaces: SUMMARY_SURFACE_ORDER.filter((surf) => s.cervicalSurfaces?.has?.(surf) && cervicalInvolvementApplies(s, surf)),
+    cervicalSideUnknown: cervicalSideUnknownAllowed(s)
+      ? CERVICAL_UNKNOWN_KINDS.filter((k) => s.cervicalSideUnknown?.has?.(k)) : [],
   };
 }
 
@@ -16110,6 +16195,15 @@ export function getOdontogramSummary(): OdontogramSummary {
         const cervSuffix = cerv.length ? ` – ${t("cervical.label")}: ${cerv.join(", ")}` : "";
         fillings.push(`${lbl(toothNo)} (${letters.join(", ")})${suffix}${cervSuffix}`);
       }
+    }
+
+    // Bead odontogram-d1b: "cervical, side not documented" is its own entry
+    // under fillings or caries — never folded into a surface list, because it
+    // names no surface, and never counted as one.
+    if(cervicalSideUnknownAllowed(s) && s.cervicalSideUnknown?.size > 0){
+      const open = `${lbl(toothNo)} (${t("cervical.unknown.label")})`;
+      if(s.cervicalSideUnknown.has("filling")) fillings.push(open);
+      if(s.cervicalSideUnknown.has("caries")) caries.push(open);
     }
 
     // Endo and the independent root-post material share the treatment section,

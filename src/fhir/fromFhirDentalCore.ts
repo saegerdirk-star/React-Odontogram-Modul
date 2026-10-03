@@ -903,7 +903,9 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
           key = `radiographicDepth:${surface}`;
           if (!claim(fdi, key, value, scope)) return undefined;
           (target.radiographicDepth ??= {})[surface] = value;
-        } else if (local === "cervical-involvement" && (surface === "buccal" || surface === "lingual") && resource.valueBoolean === true) {
+        } else if (local === "cervical-involvement" && surface && ["buccal", "lingual", "mesial", "distal"].includes(surface) && resource.valueBoolean === true) {
+          // odontogram-d1b: mesial/distal accepted (charly mz/dz) - before,
+          // one such marker made the decoder reject the whole bundle.
           key = `cervicalSurfaces:${surface}`;
           if (!claim(fdi, key, true, scope)) return undefined;
           (target.cervicalSurfaces ??= []).push(surface);

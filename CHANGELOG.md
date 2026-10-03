@@ -1,5 +1,40 @@
 # Changelog
 
+## 4.5.0 - 2026-10-03
+
+### Added
+
+- **Cervical fillings and caries in the schematic view** (bead
+  odontogram-d1b). A surface whose filling or caries reaches the neck shows a
+  narrow band on the OUTER edge of its zone in the top view — caries in dark
+  red, a filling in ink — following the drawn outline on every tooth class.
+  The shorthand lane writes charly's suffix after the surface (`K movz`,
+  `c mz`). The anatomical view still draws nothing for it (odontogram-wxt's
+  decision stands); tooltip and summary name it as before.
+- **"Cervical, side not documented"** (`cervicalSideUnknown`, per kind
+  `filling` / `caries`): a cervical finding whose side the source does not
+  record — charly has 257 of 621 cervical fillings like that. Shown as an open
+  finding in the tooltip, the summary and the schematic lane (`z?`); never
+  drawn on a surface and never counted as one. Two switches in the Caries and
+  Fillings cards, a present natural or milk tooth only. API
+  `getCervicalSideUnknown` / `setCervicalSideUnknown`.
+
+### Changed
+
+- Cervical involvement is accepted on **mesial and distal** as well as
+  buccal and lingual (charly's `mz`/`dz`): model, popup, document and both
+  Dental Core directions. The decoder used to reject a whole bundle for one
+  mesial or distal marker.
+- Payload **2.48** (additive, omit-when-empty).
+
+### Not yet
+
+- Dental Core has no carrier for "side not documented" until
+  fhir-dental-core fdc-w9z: a populated value is refused at the FHIR export
+  (`UnsupportedDentalCoreContentError`) rather than dropped.
+- The surface count a fee mapping reads (`getFillingSurfaceCount`) ignores
+  both, as before.
+
 ## 4.4.0 - 2026-09-26
 
 ### Added
