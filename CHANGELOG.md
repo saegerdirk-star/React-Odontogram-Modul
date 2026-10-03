@@ -1,5 +1,19 @@
 # Changelog
 
+## 4.5.1 - 2026-10-03
+
+### Changed
+
+- **"Cervical, side not documented" now crosses the FHIR boundary** instead of
+  being refused: a `cervical-involvement` finding **without** a tooth surface,
+  whose value names what reaches the neck (`caries` | `direct-filling`) — the
+  shape fhir-dental-core fdc-w9z defines (cognovis/fhir-dental-core#21). With
+  a surface it stays a boolean, as before. The import reads it back into
+  `cervicalSideUnknown`, never as root caries and never as a surface, and
+  rejects a surfaceless one that does not say what is cervical. Still in the
+  odontogram's own code system like the surface form; both move to the Dental
+  Core codes with the SDK upgrade.
+
 ## 4.5.0 - 2026-10-03
 
 ### Added
@@ -31,7 +45,7 @@
 
 - Dental Core has no carrier for "side not documented" until
   fhir-dental-core fdc-w9z: a populated value is refused at the FHIR export
-  (`UnsupportedDentalCoreContentError`) rather than dropped.
+  (`UnsupportedDentalCoreContentError`) rather than dropped. (Lifted in 4.5.1.)
 - The surface count a fee mapping reads (`getFillingSurfaceCount`) ignores
   both, as before.
 

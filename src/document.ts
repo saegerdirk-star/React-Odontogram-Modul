@@ -141,9 +141,9 @@ export interface ToothRecord {
   // Bead odontogram-d1b (payload >=2.48): mesial/distal join buccal/lingual in
   // `cervicalSurfaces` above, and a cervical finding whose SIDE the source does
   // not record is kept here, per kind ("filling", "caries") — never as a
-  // surface. Present only when non-empty. Dental Core has no carrier for it yet
-  // (fhir-dental-core fdc-w9z), so a populated value is refused at the FHIR
-  // boundary rather than dropped.
+  // surface. Present only when non-empty. At the FHIR boundary it is a
+  // cervical-involvement finding WITHOUT a surface whose value names the kind
+  // (fhir-dental-core fdc-w9z), never root caries.
   cervicalSideUnknown?: string[];
   // Bead odontogram-dma: the retention element holding a removable denture to
   // this tooth, and the side it engages. ONE value, never a set.

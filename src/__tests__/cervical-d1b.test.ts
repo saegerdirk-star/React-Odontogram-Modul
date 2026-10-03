@@ -13,7 +13,7 @@
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import { PAYLOAD_VERSION } from "../document";
-import { buildDentalCoreBundle, parseDentalCoreBundle, UnsupportedDentalCoreContentError } from "../fhir";
+import { buildDentalCoreBundle, parseDentalCoreBundle } from "../fhir";
 import type { OdontogramExportPayload } from "../fhir/types";
 import {
   __resetChartStateForTest, __setToothStateForTest, __getToothStateForTest,
@@ -121,11 +121,29 @@ describe("Dental Core", () => {
     expect(parseDentalCoreBundle(buildDentalCoreBundle(source, options))).toMatchObject(source);
   });
 
-  it("refuses an unknown side explicitly rather than dropping it (no carrier before fdc-w9z)", () => {
+  it("round-trips an unknown side as cervical-involvement WITHOUT a surface (fdc-w9z)", () => {
     const source: OdontogramExportPayload = {
       version: PAYLOAD_VERSION, globals: {},
-      teeth: { "36": { cervicalSideUnknown: ["filling"] } },
+      teeth: { "36": { cervicalSideUnknown: ["filling", "caries"] }, "45": { cervicalSideUnknown: ["caries"] } },
     };
-    expect(() => buildDentalCoreBundle(source, options)).toThrow(UnsupportedDentalCoreContentError);
+    const bundle = buildDentalCoreBundle(source, options);
+    const cervical = (bundle.entry ?? []).map((e) => e.resource as { code?: { coding?: { code?: string }[] }; bodySite?: { extension?: unknown[] } })
+      .filter((r) => r?.code?.coding?.some((c) => c.code === "cervical-involvement"));
+    expect(cervical).toHaveLength(3);
+    expect(cervical.every((r) => !r.bodySite?.extension?.length)).toBe(true);
+    const back = parseDentalCoreBundle(bundle);
+    expect(back).toMatchObject(source);
+    // never root caries, never a surface
+    expect(back?.teeth["45"]?.rootCaries).toBeUndefined();
+    expect(back?.teeth["45"]?.caries).toBeUndefined();
+  });
+
+  it("rejects a surfaceless cervical finding that does not say what is cervical", () => {
+    const source: OdontogramExportPayload = { version: PAYLOAD_VERSION, globals: {}, teeth: { "36": { cervicalSideUnknown: ["caries"] } } };
+    const bundle = structuredClone(buildDentalCoreBundle(source, options));
+    const r = (bundle.entry ?? []).map((e) => e.resource as unknown as Record<string, unknown>)
+      .find((x) => JSON.stringify(x?.code ?? "").includes("cervical-involvement"))!;
+    delete r.valueCodeableConcept; r.valueBoolean = true;
+    expect(parseDentalCoreBundle(bundle)).toBeUndefined();
   });
 });
