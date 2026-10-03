@@ -1,7 +1,7 @@
 # 🦷 React Advanced Odontogram
 
 [![npm](https://img.shields.io/npm/v/react-advanced-odontogram?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/react-advanced-odontogram)
-[![Version](https://img.shields.io/badge/version-4.4.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
+[![Version](https://img.shields.io/badge/version-4.5.0-green?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/releases)
 [![License](https://img.shields.io/badge/license-MIT-orange?style=for-the-badge)](https://github.com/ZoliQua/React-Odontogram-Modul/blob/main/LICENSE)
 [![DOI](https://raw.githubusercontent.com/ZoliQua/React-Odontogram-Modul/main/src/assets/zenodo.21156787.svg)](https://doi.org/10.5281/zenodo.21156787)
 
@@ -262,6 +262,7 @@ yes, across the jaw never.
 - ⌨️ **Charting by shorthand** (see above) — mark teeth by dragging, Shift+arrow or Shift+click, then type the finding; Tab walks the arch
 - 🪞 **Depth shading** — a body gradient across crown and root and a soft shading where the tooth enters the gum, so the arch reads as a relief rather than a cut-out. Only the tooth substance is shaded: colour carries meaning here. One switch in Settings → Tooth details
 - 🎨 **Anatomical style: Classic | Draft v1** — a second look for the anatomical chart from a Claude Design proposal: a material palette without red, green or gradient, red reserved for caries, inflammation in orange, extraction and marks in ink, frameless tiles, desaturated gingiva and a designed dark theme. The tooth drawings stay the same; a practice's own colours are kept. Classic is the default and switching back restores it exactly. Settings → Tooth details
+- 🦷 **Cervical findings on all four sides** — a filling or caries that reaches the neck is marked on its surface (buccal, lingual, mesial or distal; never counted as an extra surface) and drawn in the schematic view as a band on the outer edge of the zone; a cervical finding whose side the source does not record is kept as "side not documented" instead of being guessed
 - 🔢 FDI / Universal / Palmer numbering · 🌐 12 UI languages (HU/EN/DE/ES/IT/SK/PL/RU/PT-BR/AR/ZH/FR, Arabic RTL) · 🎨 theming via `--odon-*` CSS variables · 🧩 plugin system · ⌨️ keyboard accessibility
 
 ## 📖 Documentation

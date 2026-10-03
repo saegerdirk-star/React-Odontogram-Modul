@@ -233,7 +233,8 @@ function validProfileField(field: keyof ToothRecord, value: unknown): boolean {
   }
   if (field === "cariesSeverity") return scalarMap(value, (key) => SURFACES.has(key), (item) => Number.isInteger(item) && (item as number) >= 0 && (item as number) <= 6);
   if (field === "radiographicDepth") return scalarMap(value, (key) => Boolean(LOCAL_VALUE_MAPS.fillingSurfaces?.[key]), (item) => typeof item === "string" && Boolean(LOCAL_VALUE_MAPS.radiographicDepth?.[item]));
-  if (field === "cervicalSurfaces") return Array.isArray(value) && value.every((item) => item === "buccal" || item === "lingual");
+  // odontogram-d1b: mesial/distal too (charly's mz/dz).
+  if (field === "cervicalSurfaces") return Array.isArray(value) && value.every((item) => ["buccal", "lingual", "mesial", "distal"].includes(String(item)));
   if (field === "assessment") return scalarMap(value, (key) => /^[A-Za-z0-9._:-]+$/.test(key), (item) => ["assessed", "not-assessed", "unmeasurable", "not-applicable"].includes(String(item)));
   if (field === "note") return typeof value === "string" && value.length > 0;
   if (field === "fillingSurfaceMaterials") return scalarMap(value, (key) => SURFACES.has(key) && key !== "subcrown", (item) => typeof item === "string" && Boolean(LOCAL_VALUE_MAPS.fillingMaterial?.[item]));

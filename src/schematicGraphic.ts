@@ -508,7 +508,8 @@ const FILL_KEY: Record<string, string> = { amalgam: "A", composite: "K", gic: "G
 const SURF_ORDER = ["mesial", "occlusal", "distal", "buccal", "lingual"];
 const SURF_CH: Record<string, string> = { mesial: "m", occlusal: "o", distal: "d", buccal: "v", lingual: "l" };
 const STAGE_KEY: Record<number, string> = { 2: "K1", 3: "K2", 4: "K3", 5: "K4", 6: "K5" };
-const surfCode = (list: string[]) => SURF_ORDER.filter((x) => list.includes(x)).map((x) => SURF_CH[x]).join("");
+const surfCode = (list: string[], cervical: string[] = []) => SURF_ORDER.filter((x) => list.includes(x))
+  .map((x) => SURF_CH[x] + (cervical.includes(x) ? "z" : "")).join("");
 const join = (...xs: (string | undefined)[]) => xs.filter(Boolean).join(" ");
 
 export function laneTokens(toothNo: number, s: ToothDisplayState): [LaneToken[], LaneToken[]] {
@@ -534,14 +535,21 @@ export function laneTokens(toothNo: number, s: ToothDisplayState): [LaneToken[],
       const m = s.fillingSurfaceMaterials[surf] ?? "composite";
       byMat.set(m, [...(byMat.get(m) ?? []), surf]);
     }
-    for (const [m, list] of byMat) l1.push({ t: join(FILL_KEY[m] ?? m, surfCode(list)) });
+    // `z` after a surface = charly's cervical suffix (`vz`, `mz`), odontogram-d1b
+    const cerv = s.cervicalSurfaces ?? [];
+    for (const [m, list] of byMat) l1.push({ t: join(FILL_KEY[m] ?? m, surfCode(list, cerv)) });
     // caries: `c` + the stage when every carious surface has the same one
     const car = SURF_ORDER.filter((x) => s.caries.includes(`caries-${x}`));
     if (car.length) {
       const sev = car.map((x) => s.cariesSeverity[x]);
       const stage = sev.every((v) => v != null && v === sev[0]) ? (STAGE_KEY[sev[0]] ?? "") : "";
-      l1.push({ t: `c${stage} ${surfCode(car)}`, red: true });
+      l1.push({ t: `c${stage} ${surfCode(car, cerv)}`, red: true });
     }
+    // cervical, side not documented: the suffix with no surface in front of it
+    // — the ONLY place it shows in the schematic; no zone is coloured, since
+    // nothing is known about which side
+    const unknown = s.cervicalSideUnknown ?? [];
+    if (unknown.length) l1.push({ t: "z?", red: unknown.includes("caries") && !unknown.includes("filling") });
   }
   if (sel === "implant") l2.push({ t: "i" });
   const endo = s.endo === "endo-filling" || s.endo === "endo-glass-pin" || s.endo === "endo-metal-pin" ? "wf"
@@ -624,6 +632,8 @@ function surfaceShapes(toothNo: number, sh: ToothShape): Record<string, string> 
   for (const surf of ["mesial", "distal", "buccal", "lingual"]) out[surf] = quad[sideOf(toothNo, surf)];
   return out;
 }
+/** odontogram-d1b: width of the cervical band inside the outline. */
+const CERV_BAND = 4.5;
 function rrectPath(x0: number, y0: number, x1: number, y1: number, r: number): string {
   const f = (v: number) => +v.toFixed(2);
   return `M${f(x0 + r)},${f(y0)} L${f(x1 - r)},${f(y0)} Q${f(x1)},${f(y0)} ${f(x1)},${f(y0 + r)} L${f(x1)},${f(y1 - r)} Q${f(x1)},${f(y1)} ${f(x1 - r)},${f(y1)} L${f(x0 + r)},${f(y1)} Q${f(x0)},${f(y1)} ${f(x0)},${f(y1 - r)} L${f(x0)},${f(y0 + r)} Q${f(x0)},${f(y0)} ${f(x0 + r)},${f(y0)} Z`;
@@ -674,6 +684,20 @@ function occlBox(toothNo: number, s: ToothDisplayState, P: Palette): string {
   // separators: from the inner field's corners to the frame
   const [bx0, by0, bx1, by1] = sh.bbox;
   const x0 = bx0 - 3, y0 = by0 - 3, x1 = bx1 + 3, y1 = by1 + 3;
+  // odontogram-d1b: a cervical finding is a narrow strip on the OUTER edge of
+  // its surface zone (the side of the zone that faces the neck), in a darker
+  // tone than what it qualifies — caries red, else ink over the filling. Drawn
+  // as a wide stroke of the OUTLINE itself, clipped to the zone: the outer half
+  // falls away in the tooth clip around it, the inner half is a band that
+  // follows the drawn edge exactly on every tooth class. Never a zone of its own.
+  for (const surf of s.cervicalSurfaces ?? []) {
+    if (!outer.includes(surf)) continue;
+    const carious = s.caries.includes(`caries-${surf}`);
+    if (!carious && !s.fillingSurfaces.includes(surf)) continue;
+    const zoneId = `cervClip-${toothNo}-${surf}`;
+    parts.push(`<clipPath id="${zoneId}"><path d="${shapes[surf]}"/></clipPath>`);
+    inClip.push(`<path class="schem-cervical" data-surf="${surf}" d="${sh.occ}" fill="none" stroke="${carious ? P.cariesEdge : P.ink}" stroke-opacity="${carious ? 1 : 0.75}" stroke-width="${CERV_BAND * 2}" stroke-linejoin="round" clip-path="url(#${zoneId})"/>`);
+  }
   const [a, b, c, d, r] = sh.inner;
   const sep = crowned ? P.neutralEdge : P.inner;
   inClip.push(`<g stroke="${sep}" stroke-width="1.1" opacity="0.8"><line x1="${a}" y1="${b}" x2="${x0}" y2="${y0}"/><line x1="${c}" y1="${b}" x2="${x1}" y2="${y0}"/><line x1="${a}" y1="${d}" x2="${x0}" y2="${y1}"/><line x1="${c}" y1="${d}" x2="${x1}" y2="${y1}"/></g>`);
