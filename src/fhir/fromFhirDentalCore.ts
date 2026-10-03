@@ -909,6 +909,17 @@ export function parseDentalCoreBundle(input: unknown): OdontogramExportPayload |
           key = `cervicalSurfaces:${surface}`;
           if (!claim(fdi, key, true, scope)) return undefined;
           (target.cervicalSurfaces ??= []).push(surface);
+        } else if (local === "cervical-involvement" && !hasExtension(resource.bodySite, DENTAL_CORE_PROFILES["tooth-surface"])) {
+          // odontogram-d1b / fhir-dental-core fdc-w9z: no surface = cervical,
+          // side not recorded; the value names what reaches the neck. Never a
+          // surface and never root caries.
+          const value = localValue(resource.valueCodeableConcept);
+          const kind = value === "caries" ? "caries" : value === "direct-filling" ? "filling" : undefined;
+          if (!kind) return undefined;
+          key = `cervicalSideUnknown:${kind}`;
+          if (!claim(fdi, key, true, scope)) return undefined;
+          const kinds = new Set([...(target.cervicalSideUnknown ?? []), kind]);
+          target.cervicalSideUnknown = ["filling", "caries"].filter((k) => kinds.has(k));
         } else if (local.startsWith("assessment:")) {
           const point = local.slice("assessment:".length);
           const value = localValue(resource.valueCodeableConcept);

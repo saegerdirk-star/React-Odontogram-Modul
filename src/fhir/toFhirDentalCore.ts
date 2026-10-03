@@ -125,7 +125,7 @@ const PERI_IMPLANT_FIELDS = new Set<keyof ToothRecord>(["periImplant", "mpi", "m
 const IMPLANT_FIELDS = new Set<keyof ToothRecord>(["implantProduct"]);
 const RESTORATION_PRODUCT_FIELDS = new Set<keyof ToothRecord>(["restorationProduct", "fillingProducts"]);
 const RECESSION_FIELDS = new Set<keyof ToothRecord>(["millerClass"]);
-const ADDITIONAL_FINDING_FIELDS = new Set<keyof ToothRecord>(["pulpDx", "apicalDx", "radiographicDepth", "cervicalSurfaces", "assessment", "note"]);
+const ADDITIONAL_FINDING_FIELDS = new Set<keyof ToothRecord>(["pulpDx", "apicalDx", "radiographicDepth", "cervicalSurfaces", "cervicalSideUnknown", "assessment", "note"]);
 const SERVICE_REQUEST_FIELDS = new Set<keyof ToothRecord>(["extractionPlan", "crownReplace", "crownNeeded"]);
 const SOURCE_PRESERVATION_FIELDS = new Set<keyof ToothRecord>([
   "implantPosition", "crownFractureType", "orthoProgressive", "rootResection", "papillaLoss",
@@ -235,6 +235,8 @@ function validProfileField(field: keyof ToothRecord, value: unknown): boolean {
   if (field === "radiographicDepth") return scalarMap(value, (key) => Boolean(LOCAL_VALUE_MAPS.fillingSurfaces?.[key]), (item) => typeof item === "string" && Boolean(LOCAL_VALUE_MAPS.radiographicDepth?.[item]));
   // odontogram-d1b: mesial/distal too (charly's mz/dz).
   if (field === "cervicalSurfaces") return Array.isArray(value) && value.every((item) => ["buccal", "lingual", "mesial", "distal"].includes(String(item)));
+  // odontogram-d1b / fhir-dental-core fdc-w9z: cervical, side not recorded.
+  if (field === "cervicalSideUnknown") return Array.isArray(value) && value.every((item) => item === "filling" || item === "caries");
   if (field === "assessment") return scalarMap(value, (key) => /^[A-Za-z0-9._:-]+$/.test(key), (item) => ["assessed", "not-assessed", "unmeasurable", "not-applicable"].includes(String(item)));
   if (field === "note") return typeof value === "string" && value.length > 0;
   if (field === "fillingSurfaceMaterials") return scalarMap(value, (key) => SURFACES.has(key) && key !== "subcrown", (item) => typeof item === "string" && Boolean(LOCAL_VALUE_MAPS.fillingMaterial?.[item]));
@@ -682,6 +684,14 @@ function additionalFindings(record: ToothRecord, fdi: string, payload: Odontogra
   for (const surface of record.cervicalSurfaces ?? []) result.push([
     `Observation/additional/${plan ? "plan/" : ""}${fdi}/cervicalSurfaces/${surface}`,
     generated(DentalFindingProfile, { ...common(), code: { coding: [coding(LOCAL_SYSTEM, "cervical-involvement")] }, bodySite: { ...bodySite(fdi), extension: [surfaceExtension(surface)] }, valueBoolean: true }),
+  ]);
+  // fhir-dental-core fdc-w9z: the same code with NO surface is "cervical, side
+  // not recorded"; the value names what reaches the neck (caries |
+  // direct-filling, the codes of ValueSet cervical-involvement-kind). Local
+  // codes here like the line above until the SDK carries Dental Core >= 0.10.
+  for (const kind of ["filling", "caries"].filter((k) => record.cervicalSideUnknown?.includes(k))) result.push([
+    `Observation/additional/${plan ? "plan/" : ""}${fdi}/cervicalSideUnknown/${kind}`,
+    generated(DentalFindingProfile, { ...common(), code: { coding: [coding(LOCAL_SYSTEM, "cervical-involvement")] }, bodySite: bodySite(fdi), valueCodeableConcept: localConcept(kind === "caries" ? "caries" : "direct-filling") }),
   ]);
   for (const [point, value] of Object.entries(record.assessment ?? {})) result.push([
     `Observation/additional/${plan ? "plan/" : ""}${fdi}/assessment/${point}`,
